@@ -154,31 +154,50 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => 
     const [locale, setLocale] = useState<Locale>('en');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
-    const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '', factory_name: '', industry_type: 'manufacturing', remember: false });
+    const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '', factory_name: '', industry_type: 'general_manufacturing', industry_other: '', remember: false });
     const update = (key: string, value: string | boolean) => setForm(current => ({ ...current, [key]: value }));
     const submit = async (event: React.FormEvent) => {
         event.preventDefault(); setBusy(true); setError('');
         try {
             const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-            const data = await api<{ user: AuthUser }>(endpoint, { method: 'POST', body: JSON.stringify({ ...form, locale }) });
+            const data = await api<{ user: AuthUser }>(endpoint, { method: 'POST', body: JSON.stringify({ ...form, industry_type: form.industry_type === 'other' ? form.industry_other : form.industry_type, locale }) });
             onAuthenticated(data.user);
         } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to continue.'); }
         finally { setBusy(false); }
     };
     const words = locale === 'en' ? {
         title: mode === 'login' ? 'Welcome back' : 'Create your factory workspace', subtitle: mode === 'login' ? 'Sign in to manage your operations.' : 'Start your secure ICYEREKEZO OMS workspace.',
-        name: 'Full name', factory: 'Factory name', industry: 'Industry type', email: 'Email address', password: 'Password', confirm: 'Confirm password', remember: 'Remember me',
+        name: 'Full name', factory: 'Factory name', industry: 'Industry type', specifyIndustry: 'Specify the factory industry', email: 'Email address', password: 'Password', confirm: 'Confirm password', remember: 'Remember me',
         action: mode === 'login' ? 'Sign in securely' : 'Create workspace', switchText: mode === 'login' ? 'New to ICYEREKEZO?' : 'Already have an account?', switchAction: mode === 'login' ? 'Create a workspace' : 'Sign in',
     } : {
         title: mode === 'login' ? 'Bon retour' : 'Creez votre espace usine', subtitle: mode === 'login' ? 'Connectez-vous pour gerer vos operations.' : 'Demarrez votre espace ICYEREKEZO OMS securise.',
-        name: 'Nom complet', factory: "Nom de l'usine", industry: "Type d'industrie", email: 'Adresse e-mail', password: 'Mot de passe', confirm: 'Confirmer le mot de passe', remember: 'Se souvenir de moi',
+        name: 'Nom complet', factory: "Nom de l'usine", industry: "Type d'industrie", specifyIndustry: "Precisez le type d'industrie", email: 'Adresse e-mail', password: 'Mot de passe', confirm: 'Confirmer le mot de passe', remember: 'Se souvenir de moi',
         action: mode === 'login' ? 'Se connecter' : "Creer l'espace", switchText: mode === 'login' ? 'Nouveau sur ICYEREKEZO ?' : 'Vous avez deja un compte ?', switchAction: mode === 'login' ? 'Creer un espace' : 'Se connecter',
     };
 
     return <main className="auth-page">
         <section className="auth-story"><Logo/><div className="auth-story-copy"><span className="auth-kicker"><ShieldCheck size={15}/> Secure factory operations</span><h1>From raw material<br/>to final delivery.</h1><p>One connected workspace for production, inventory, quality, sales, and traceability.</p><div className="auth-points"><span><PackageCheck/>Batch traceability</span><span><Activity/>Real-time operations</span><span><ShieldCheck/>Tenant-level security</span></div></div><small>ICYEREKEZO means direction. Every operation, clearly guided.</small></section>
         <section className="auth-form-side"><button className="auth-language" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={16}/>{locale === 'en' ? 'Francais' : 'English'}</button><form className="auth-card" onSubmit={submit}><div className="auth-mobile-logo"><Logo/></div><h2>{words.title}</h2><p>{words.subtitle}</p>{error && <div className="form-error">{error}</div>}
-            {mode === 'register' && <><label>{words.name}<input value={form.name} onChange={e => update('name', e.target.value)} required autoComplete="name"/></label><label>{words.factory}<input value={form.factory_name} onChange={e => update('factory_name', e.target.value)} required/></label><label>{words.industry}<select value={form.industry_type} onChange={e => update('industry_type', e.target.value)}><option value="manufacturing">General manufacturing</option><option value="clothing">Clothing and textiles</option><option value="food">Food and beverages</option><option value="dairy">Dairy products</option><option value="pharmaceutical">Pharmaceutical</option></select></label></>}
+            {mode === 'register' && <><label>{words.name}<input value={form.name} onChange={e => update('name', e.target.value)} required autoComplete="name"/></label><label>{words.factory}<input value={form.factory_name} onChange={e => update('factory_name', e.target.value)} required/></label><label>{words.industry}<select value={form.industry_type} onChange={e => update('industry_type', e.target.value)}>
+                <option value="general_manufacturing">{locale === 'en' ? 'General manufacturing' : 'Fabrication generale'}</option>
+                <option value="clothing_textiles">{locale === 'en' ? 'Clothing and textiles' : 'Vetements et textiles'}</option>
+                <option value="food_processing">{locale === 'en' ? 'Food processing' : 'Transformation alimentaire'}</option>
+                <option value="beverages">{locale === 'en' ? 'Beverages and drinks' : 'Boissons'}</option>
+                <option value="dairy">{locale === 'en' ? 'Milk and dairy products' : 'Lait et produits laitiers'}</option>
+                <option value="pharmaceuticals_medicines">{locale === 'en' ? 'Medicines and pharmaceuticals' : 'Medicaments et produits pharmaceutiques'}</option>
+                <option value="plastics_rubber">{locale === 'en' ? 'Plastics and rubber materials' : 'Matieres plastiques et caoutchouc'}</option>
+                <option value="steel_metals">{locale === 'en' ? 'Steel and metal products' : 'Acier et produits metalliques'}</option>
+                <option value="grain_flour_milling">{locale === 'en' ? 'Maize, grain and flour milling' : 'Mouture de mais, cereales et farine'}</option>
+                <option value="agriculture_animal_feed">{locale === 'en' ? 'Agriculture and animal feed' : 'Agriculture et alimentation animale'}</option>
+                <option value="construction_materials">{locale === 'en' ? 'Construction materials, cement and bricks' : 'Materiaux de construction, ciment et briques'}</option>
+                <option value="furniture_wood">{locale === 'en' ? 'Furniture and wood products' : 'Meubles et produits du bois'}</option>
+                <option value="paper_packaging_printing">{locale === 'en' ? 'Paper, packaging and printing' : 'Papier, emballage et imprimerie'}</option>
+                <option value="chemicals_cosmetics_soap">{locale === 'en' ? 'Chemicals, cosmetics and soap' : 'Produits chimiques, cosmetiques et savon'}</option>
+                <option value="electronics_electrical">{locale === 'en' ? 'Electronics and electrical products' : 'Produits electroniques et electriques'}</option>
+                <option value="automotive_machinery">{locale === 'en' ? 'Automotive parts and machinery' : 'Pieces automobiles et machines'}</option>
+                <option value="recycling_waste">{locale === 'en' ? 'Recycling and waste processing' : 'Recyclage et traitement des dechets'}</option>
+                <option value="other">{locale === 'en' ? 'Other type of factory' : "Autre type d'usine"}</option>
+            </select></label>{form.industry_type === 'other' && <label>{words.specifyIndustry}<input value={form.industry_other} onChange={e => update('industry_other', e.target.value)} required maxLength={80}/></label>}</>}
             <label>{words.email}<input type="email" value={form.email} onChange={e => update('email', e.target.value)} required autoComplete="email"/></label><label>{words.password}<input type="password" value={form.password} onChange={e => update('password', e.target.value)} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'}/></label>
             {mode === 'register' && <label>{words.confirm}<input type="password" value={form.password_confirmation} onChange={e => update('password_confirmation', e.target.value)} required autoComplete="new-password"/></label>}
             {mode === 'login' && <label className="check-row"><input type="checkbox" checked={form.remember} onChange={e => update('remember', e.target.checked)}/><span>{words.remember}</span></label>}
