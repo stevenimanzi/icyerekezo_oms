@@ -50,7 +50,11 @@ class FactoryManagerAccessTest extends TestCase
             ->assertJsonPath('report.type', 'all')
             ->assertJsonStructure(['summary', 'production', 'inventory', 'team', 'activities']);
         $this->postJson('/api/factory/warehouses', ['name' => 'Manager Warehouse', 'code' => 'MGR-WH', 'type' => 'general'])->assertCreated();
-        $this->postJson('/api/manufacturing/workflows', ['name' => 'Cut and finish', 'code' => 'CUT-FIN', 'stages' => [['name' => 'Cutting', 'code' => 'CUT', 'sequence' => 1]]])->assertCreated();
+        $workflow = $this->postJson('/api/manufacturing/workflows', ['name' => 'Cut and finish', 'code' => 'CUT-FIN', 'stages' => [['name' => 'Cutting', 'code' => 'CUT', 'sequence' => 1]]])->assertCreated()->json();
+        $this->putJson('/api/manufacturing/workflows/'.$workflow['id'], ['name' => 'Cut, weld and finish', 'code' => 'CUT-FIN', 'status' => 'active', 'stages' => [
+            ['name' => 'Cutting', 'code' => 'CUT', 'expected_minutes' => 30, 'required_workers' => 2, 'quality_required' => false, 'approval_required' => false],
+            ['name' => 'Welding', 'code' => 'WELD', 'expected_minutes' => 60, 'required_workers' => 3, 'quality_required' => true, 'approval_required' => true],
+        ]])->assertOk()->assertJsonCount(2, 'stages')->assertJsonPath('stages.1.sequence', 2);
         $this->getJson('/api/inventory/overview')->assertForbidden();
 
         $this->postJson('/api/team/users', [

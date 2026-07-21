@@ -54,6 +54,36 @@ class ManufacturingController extends Controller
         return response()->json($workflow->load('stages'), 201);
     }
 
+    public function updateWorkflow(Request $request, WorkflowTemplate $workflow): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        abort_unless($workflow->factory_id === $factoryId, 404);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:160'],
+            'code' => ['required', 'string', 'max:40', Rule::unique('workflow_templates')->where('factory_id', $factoryId)->ignore($workflow->id)],
+            'description' => ['nullable', 'string'],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'stages' => ['required', 'array', 'min:1'],
+            'stages.*.name' => ['required', 'string', 'max:160'],
+            'stages.*.code' => ['required', 'string', 'max:40'],
+            'stages.*.expected_minutes' => ['nullable', 'integer', 'min:0'],
+            'stages.*.required_workers' => ['nullable', 'integer', 'min:1'],
+            'stages.*.quality_required' => ['required', 'boolean'],
+            'stages.*.approval_required' => ['required', 'boolean'],
+        ]);
+
+        DB::transaction(function () use ($workflow, $data) {
+            $stages = $data['stages'];
+            unset($data['stages']);
+            $workflow->update($data);
+            $workflow->stages()->delete();
+            $workflow->stages()->createMany(collect($stages)->values()->map(fn ($stage, $index) => $stage + ['sequence' => $index + 1])->all());
+        });
+        AuditLog::record('production.workflow_updated', "Updated workflow {$workflow->name}", $workflow);
+
+        return response()->json($workflow->fresh()->load('stages'));
+    }
+
     public function storeOrder(Request $request, ManufacturingService $service): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
