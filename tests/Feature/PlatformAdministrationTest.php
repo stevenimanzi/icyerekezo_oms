@@ -24,7 +24,7 @@ class PlatformAdministrationTest extends TestCase
         $settings = ['registration_enabled' => false, 'default_locale' => 'fr', 'currency_code' => 'USD', 'timezone' => 'UTC', 'backup_retention_days' => 45, 'support_phone' => '+250 788 000 000'];
 
         $this->actingAs($admin)->putJson('/api/platform/settings', $settings)->assertOk();
-        $this->getJson('/api/search?q=Defaults')->assertOk()->assertJsonStructure(['data']);
+        $this->getJson('/api/search?q=Defaults')->assertOk()->assertJsonPath('data.0.page', 'system-settings');
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');
         $this->post('/api/platform/settings/logo', ['logo' => UploadedFile::fake()->createWithContent('brand.png', $png)])->assertOk()->assertJsonPath('logo_url', fn ($value) => str_starts_with($value, '/uploads/system/system-logo.png'));
         $this->get('/')->assertOk()->assertSee('/uploads/system/system-logo.png', false);
