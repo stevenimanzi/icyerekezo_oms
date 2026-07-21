@@ -166,18 +166,17 @@ class PlatformAdminController extends Controller
 
     public function tickets(): JsonResponse
     {
-        return response()->json(SupportTicket::with('messages')->latest()->paginate(25));
+        return response()->json(SupportTicket::with(['messages.user:id,name,is_platform_admin', 'user:id,name,email', 'factory:id,name'])->latest('updated_at')->paginate(25));
     }
 
     public function replyTicket(Request $request, SupportTicket $ticket): JsonResponse
     {
         $data = $request->validate(['message' => ['required', 'string', 'max:10000'], 'status' => ['nullable', Rule::in(['open', 'in_progress', 'waiting_customer', 'resolved', 'closed'])]]);
         $message = SupportMessage::create(['support_ticket_id' => $ticket->id, 'user_id' => $request->user()->id, 'message' => $data['message']]);
-        if (isset($data['status'])) {
-            $ticket->update(['status' => $data['status'], 'assigned_to' => $request->user()->id, 'resolved_at' => $data['status'] === 'resolved' ? now() : null]);
-        }
+        $status = $data['status'] ?? 'waiting_customer';
+        $ticket->update(['status' => $status, 'assigned_to' => $request->user()->id, 'resolved_at' => $status === 'resolved' ? now() : null]);
 
-        return response()->json($message, 201);
+        return response()->json($message->load('user:id,name,is_platform_admin'), 201);
     }
 
     public function settings(Request $request): JsonResponse
@@ -203,9 +202,9 @@ class PlatformAdminController extends Controller
     public function backup(Request $request): JsonResponse
     {
         $backup = DatabaseBackup::create(['requested_by' => $request->user()->id, 'status' => 'pending']);
-        CreateDatabaseBackup::dispatch($backup->id);
+        CreateDatabaseBackup::dispatchSync($backup->id);
         AuditLog::record('platform.backup_requested', 'Database backup requested', $backup);
 
-        return response()->json($backup, 202);
+        return response()->json($backup->fresh(), 202);
     }
 }

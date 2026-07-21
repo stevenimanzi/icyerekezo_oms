@@ -79,6 +79,9 @@ class PlatformAdministrationTest extends TestCase
             ->assertJsonPath('audience', 'all');
         $this->postJson("/api/platform/tickets/{$ticket['id']}/reply", ['message' => 'We are investigating this issue.', 'status' => 'in_progress'])->assertCreated();
         $this->assertDatabaseHas('support_tickets', ['id' => $ticket['id'], 'status' => 'in_progress', 'assigned_to' => $admin->id]);
-        $this->assertDatabaseCount('support_messages', 2);
+        $owner = User::where('email', 'support-owner@test.local')->firstOrFail();
+        $this->actingAs($owner)->postJson("/api/support/tickets/{$ticket['id']}/reply", ['message' => 'Thank you. I am waiting for the update.'])->assertCreated();
+        $this->assertDatabaseHas('support_tickets', ['id' => $ticket['id'], 'status' => 'open']);
+        $this->assertDatabaseCount('support_messages', 3);
     }
 }

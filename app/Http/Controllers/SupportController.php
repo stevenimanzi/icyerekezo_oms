@@ -13,7 +13,7 @@ class SupportController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        return response()->json(SupportTicket::where('user_id', $request->user()->id)->with('messages')->latest()->paginate(20));
+        return response()->json(SupportTicket::where('user_id', $request->user()->id)->with(['messages.user:id,name,is_platform_admin', 'factory:id,name'])->latest('updated_at')->paginate(20));
     }
 
     public function store(Request $request): JsonResponse
@@ -22,7 +22,7 @@ class SupportController extends Controller
         $ticket = SupportTicket::create(['factory_id' => $request->user()->current_factory_id, 'user_id' => $request->user()->id, 'ticket_number' => 'SUP-'.now()->format('ymd').'-'.Str::upper(Str::random(6)), 'subject' => $data['subject'], 'category' => $data['category'], 'priority' => $data['priority'] ?? 'normal']);
         SupportMessage::create(['support_ticket_id' => $ticket->id, 'user_id' => $request->user()->id, 'message' => $data['message']]);
 
-        return response()->json($ticket->load('messages'), 201);
+        return response()->json($ticket->load(['messages.user:id,name,is_platform_admin', 'factory:id,name']), 201);
     }
 
     public function reply(Request $request, SupportTicket $ticket): JsonResponse
@@ -30,6 +30,9 @@ class SupportController extends Controller
         abort_unless($ticket->user_id === $request->user()->id, 404);
         $data = $request->validate(['message' => ['required', 'string', 'max:10000']]);
 
-        return response()->json(SupportMessage::create(['support_ticket_id' => $ticket->id, 'user_id' => $request->user()->id, 'message' => $data['message']]), 201);
+        $message = SupportMessage::create(['support_ticket_id' => $ticket->id, 'user_id' => $request->user()->id, 'message' => $data['message']]);
+        $ticket->update(['status' => 'open', 'resolved_at' => null]);
+
+        return response()->json($message->load('user:id,name,is_platform_admin'), 201);
     }
 }
