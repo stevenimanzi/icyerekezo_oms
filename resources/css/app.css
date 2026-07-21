@@ -190,3 +190,10 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .employee-create-form label small { color:var(--muted); font-size:11px; font-weight:400; }
 @media(max-width:1050px){.employee-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.employee-form-grid{grid-template-columns:1fr}}
 @media(max-width:1050px){.department-card{grid-template-columns:minmax(0,1fr) minmax(180px,1fr)}.department-card .table-action{grid-column:2}}@media(max-width:620px){.department-card{grid-template-columns:1fr}.department-card .table-action{grid-column:auto;width:100%}}
+
+/* Department cards must remain readable inside the sidebar layout. */
+.department-grid { grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr)); align-items:start; }
+.department-card { width:100%; min-width:0; height:auto; grid-template-columns:minmax(0,1fr); align-items:start; }
+.department-card>div,.department-card label,.department-card select,.department-card .table-action { width:100%; min-width:0; max-width:100%; }
+.department-card h3 { width:100%; white-space:normal; word-break:normal; overflow-wrap:break-word; }
+.department-card .table-action { grid-column:auto; }
