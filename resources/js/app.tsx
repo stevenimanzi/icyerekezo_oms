@@ -9,6 +9,21 @@ import {
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 type Locale = 'en' | 'fr';
+type AuthUser = {
+    id: number; name: string; email: string; locale: Locale;
+    current_factory: { id: number; name: string; slug: string; industry_type?: string };
+};
+
+const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(url, {
+        ...options,
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), ...(options.headers ?? {}) },
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || 'Something went wrong.');
+    return payload;
+}
 
 const copy = {
     en: {
@@ -51,7 +66,7 @@ function Logo() {
     return <div className="brand"><div className="brand-mark"><Factory size={20}/></div><div><strong>ICYEREKEZO</strong><span>OMS</span></div></div>;
 }
 
-function App() {
+function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
     const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('icy_locale') as Locale) || 'en');
     const [dark, setDark] = useState(() => localStorage.getItem('icy_theme') === 'dark');
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -89,7 +104,7 @@ function App() {
                     <button className="locale-btn" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={17}/><span>{locale === 'en' ? 'FR' : 'EN'}</span></button>
                     <button className="icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={19}/> : <Moon size={19}/>}</button>
                     <button className="icon-btn notification" aria-label="Notifications"><Bell size={19}/><b>4</b></button>
-                    <button className="user-menu"><span className="avatar">JM</span><span className="user-copy"><strong>Jean Mugabo</strong><small>Factory owner</small></span><ChevronDown size={16}/></button>
+                    <button className="user-menu" onClick={onLogout} title={locale === 'en' ? 'Sign out' : 'Sign out'}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>Factory owner</small></span><ChevronDown size={16}/></button>
                 </div>
             </header>
             <div className="page">
@@ -114,6 +129,62 @@ function App() {
         </main>
         {notice && <div className="toast">{notice}</div>}
     </div>;
+}
+
+function App() {
+    const [user, setUser] = useState<AuthUser | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        api<{ user: AuthUser }>('/api/auth/me').then(data => setUser(data.user)).catch(() => setUser(null)).finally(() => setLoading(false));
+    }, []);
+
+    if (loading) return <div className="boot-screen"><div className="brand-mark"><Factory size={20}/></div><span>ICYEREKEZO OMS</span></div>;
+    if (!user) return <AuthScreen onAuthenticated={setUser}/>;
+
+    const logout = async () => {
+        await api('/api/auth/logout', { method: 'POST' });
+        setUser(null);
+    };
+    return <Dashboard user={user} onLogout={logout}/>;
+}
+
+function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
+    const [mode, setMode] = useState<'login' | 'register'>('login');
+    const [locale, setLocale] = useState<Locale>('en');
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '', factory_name: '', industry_type: 'manufacturing', remember: false });
+    const update = (key: string, value: string | boolean) => setForm(current => ({ ...current, [key]: value }));
+    const submit = async (event: React.FormEvent) => {
+        event.preventDefault(); setBusy(true); setError('');
+        try {
+            const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+            const data = await api<{ user: AuthUser }>(endpoint, { method: 'POST', body: JSON.stringify({ ...form, locale }) });
+            onAuthenticated(data.user);
+        } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to continue.'); }
+        finally { setBusy(false); }
+    };
+    const words = locale === 'en' ? {
+        title: mode === 'login' ? 'Welcome back' : 'Create your factory workspace', subtitle: mode === 'login' ? 'Sign in to manage your operations.' : 'Start your secure ICYEREKEZO OMS workspace.',
+        name: 'Full name', factory: 'Factory name', industry: 'Industry type', email: 'Email address', password: 'Password', confirm: 'Confirm password', remember: 'Remember me',
+        action: mode === 'login' ? 'Sign in securely' : 'Create workspace', switchText: mode === 'login' ? 'New to ICYEREKEZO?' : 'Already have an account?', switchAction: mode === 'login' ? 'Create a workspace' : 'Sign in',
+    } : {
+        title: mode === 'login' ? 'Bon retour' : 'Creez votre espace usine', subtitle: mode === 'login' ? 'Connectez-vous pour gerer vos operations.' : 'Demarrez votre espace ICYEREKEZO OMS securise.',
+        name: 'Nom complet', factory: "Nom de l'usine", industry: "Type d'industrie", email: 'Adresse e-mail', password: 'Mot de passe', confirm: 'Confirmer le mot de passe', remember: 'Se souvenir de moi',
+        action: mode === 'login' ? 'Se connecter' : "Creer l'espace", switchText: mode === 'login' ? 'Nouveau sur ICYEREKEZO ?' : 'Vous avez deja un compte ?', switchAction: mode === 'login' ? 'Creer un espace' : 'Se connecter',
+    };
+
+    return <main className="auth-page">
+        <section className="auth-story"><Logo/><div className="auth-story-copy"><span className="auth-kicker"><ShieldCheck size={15}/> Secure factory operations</span><h1>From raw material<br/>to final delivery.</h1><p>One connected workspace for production, inventory, quality, sales, and traceability.</p><div className="auth-points"><span><PackageCheck/>Batch traceability</span><span><Activity/>Real-time operations</span><span><ShieldCheck/>Tenant-level security</span></div></div><small>ICYEREKEZO means direction. Every operation, clearly guided.</small></section>
+        <section className="auth-form-side"><button className="auth-language" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={16}/>{locale === 'en' ? 'Francais' : 'English'}</button><form className="auth-card" onSubmit={submit}><div className="auth-mobile-logo"><Logo/></div><h2>{words.title}</h2><p>{words.subtitle}</p>{error && <div className="form-error">{error}</div>}
+            {mode === 'register' && <><label>{words.name}<input value={form.name} onChange={e => update('name', e.target.value)} required autoComplete="name"/></label><label>{words.factory}<input value={form.factory_name} onChange={e => update('factory_name', e.target.value)} required/></label><label>{words.industry}<select value={form.industry_type} onChange={e => update('industry_type', e.target.value)}><option value="manufacturing">General manufacturing</option><option value="clothing">Clothing and textiles</option><option value="food">Food and beverages</option><option value="dairy">Dairy products</option><option value="pharmaceutical">Pharmaceutical</option></select></label></>}
+            <label>{words.email}<input type="email" value={form.email} onChange={e => update('email', e.target.value)} required autoComplete="email"/></label><label>{words.password}<input type="password" value={form.password} onChange={e => update('password', e.target.value)} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'}/></label>
+            {mode === 'register' && <label>{words.confirm}<input type="password" value={form.password_confirmation} onChange={e => update('password_confirmation', e.target.value)} required autoComplete="new-password"/></label>}
+            {mode === 'login' && <label className="check-row"><input type="checkbox" checked={form.remember} onChange={e => update('remember', e.target.checked)}/><span>{words.remember}</span></label>}
+            <button className="auth-submit" disabled={busy}>{busy ? 'Please wait...' : words.action}<ChevronRight size={17}/></button><div className="auth-switch"><span>{words.switchText}</span><button type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}>{words.switchAction}</button></div>
+        </form></section>
+    </main>;
 }
 
 function Metric({ icon, label, value, suffix, detail, trend, tone }: { icon: React.ReactNode; label: string; value: string; suffix?: string; detail: string; trend: string; tone: string }) {

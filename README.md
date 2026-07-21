@@ -56,7 +56,7 @@ The local development environment initially uses SQLite so the application runs 
 
 ## Current milestone
 
-The Laravel/React/TypeScript foundation and first responsive operations dashboard are complete. The dashboard includes English/French switching, theme switching, responsive navigation, operational KPIs, production output, activity, and active production orders.
+The Laravel/React/TypeScript foundation, MySQL database, responsive operations dashboard, and security foundation are complete. Users can register a factory workspace, sign in and out, use English or French, and access a tenant-scoped dashboard. Factory memberships, roles, 49 granular permissions, factory context switching, and audit history are enforced by the backend.
 
 ## Local development
 
