@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-    Activity, Bell, Boxes, ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck,
-    Factory, Gauge, HelpCircle, Languages, LayoutDashboard, Menu, Moon, PackageCheck,
+    Activity, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CreditCard, Database,
+    Factory, Gauge, HelpCircle, Languages, LayoutDashboard, Megaphone, Menu, MessageSquare, Moon, PackageCheck,
     PackageOpen, Search, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Warehouse,
     Wrench, X, Zap,
 } from 'lucide-react';
@@ -16,6 +16,8 @@ type AuthUser = {
     roles: { id: number; name: string; slug: string; dashboard_key: string }[];
     employee_profile?: { job_title?: string; department?: { name: string }; workstation?: { name: string; type: string } } | null;
     active_assignments: { id: number; assignment_type: string; title: string; priority: string; status: string; due_at?: string }[];
+    announcements?: { id: number; title: string; message: string; severity: string; published_at: string }[];
+    system?: { name: string; logo_url?: string; support_email?: string };
 };
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
@@ -66,8 +68,9 @@ const productionOrders = [
     { id: 'PO-2026-0411', product: 'Whole milk 1L', detail: 'Batch ML-0720 · 1,200 units', stage: 'Packaging', progress: 92, due: 'Today', color: '#0ea5e9' },
 ];
 
-function Logo() {
-    return <div className="brand"><div className="brand-mark"><Factory size={20}/></div><div><strong>ICYEREKEZO</strong><span>OMS</span></div></div>;
+function Logo({ name = 'ICYEREKEZO OMS', logoUrl }: { name?: string; logoUrl?: string } = {}) {
+    const words = name.split(' '); const suffix = words.length > 1 ? words.pop() : 'OMS';
+    return <div className="brand"><div className="brand-mark">{logoUrl ? <img src={logoUrl} alt=""/> : <Factory size={20}/>}</div><div><strong>{words.join(' ')}</strong><span>{suffix}</span></div></div>;
 }
 
 function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
@@ -75,7 +78,7 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
     const [dark, setDark] = useState(() => localStorage.getItem('icy_theme') === 'dark');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
-    const [activePage, setActivePage] = useState('dashboard');
+    const [activePage, setActivePage] = useState(user.is_platform_admin ? 'platform-dashboard' : 'dashboard');
     const [searchOpen, setSearchOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
@@ -94,25 +97,25 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
         window.addEventListener('keydown', shortcut); return () => window.removeEventListener('keydown', shortcut);
     }, []);
 
-    const nav = useMemo(() => ([
+    const nav = useMemo(() => (user.is_platform_admin ? [
+        ['platform-dashboard', LayoutDashboard, locale === 'en' ? 'Platform overview' : 'Vue plateforme', '*'], ['factories', Building2, locale === 'en' ? 'Factories' : 'Usines', '*'], ['platform-users', Users, locale === 'en' ? 'All users' : 'Tous les utilisateurs', '*'], ['subscriptions', CreditCard, locale === 'en' ? 'Subscriptions' : 'Abonnements', '*'], ['announcements', Megaphone, locale === 'en' ? 'Announcements' : 'Annonces', '*'], ['support-center', MessageSquare, locale === 'en' ? 'Support centre' : 'Centre de support', '*'], ['backups', Database, locale === 'en' ? 'Database backups' : 'Sauvegardes', '*'], ['system-settings', Settings, locale === 'en' ? 'System settings' : 'Paramètres système', '*'],
+    ] as const : [
         ['dashboard', LayoutDashboard, t.dashboard, '*'], ['procurement', ShoppingCart, t.procurement, 'procurement.view'], ['inventory', Warehouse, t.warehouse, 'inventory.view'], ['products', Boxes, t.products, 'products.view'],
         ['production', Gauge, t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
         ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
-    ] as const).filter(([, , , permission]) => permission === '*' || can(permission)), [t, user.permissions]);
+    ] as const).filter(([, , , permission]) => permission === '*' || can(permission)), [t, locale, user.is_platform_admin, user.permissions]);
 
     const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(null), 2600); };
 
     return <div className="app-shell">
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-            <div className="sidebar-head"><Logo/><button className="icon-btn mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20}/></button></div>
+            <div className="sidebar-head"><Logo name={user.system?.name} logoUrl={user.system?.logo_url}/><button className="icon-btn mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20}/></button></div>
             <nav>
                 <p className="nav-label">{t.general}</p>
                 {nav.map(([key, Icon, label]) => <button key={key} className={`nav-item ${activePage === key ? 'active' : ''}`} onClick={() => { setActivePage(key); setSidebarOpen(false); }}><Icon size={18}/><span>{label}</span>{label === t.warehouse && <i>3</i>}</button>)}
-                <p className="nav-label">{t.management}</p>
-                {(can('factory.manage') || user.is_platform_admin) && <button className={`nav-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}><Settings size={18}/><span>{t.settings}</span></button>}
-                <button className={`nav-item ${activePage === 'support' ? 'active' : ''}`} onClick={() => { setActivePage('support'); setSidebarOpen(false); }}><HelpCircle size={18}/><span>{t.support}</span></button>
+                {!user.is_platform_admin && <><p className="nav-label">{t.management}</p>{can('factory.manage') && <button className={`nav-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}><Settings size={18}/><span>{t.settings}</span></button>}<button className={`nav-item ${activePage === 'support' ? 'active' : ''}`} onClick={() => { setActivePage('support'); setSidebarOpen(false); }}><HelpCircle size={18}/><span>{t.support}</span></button></>}
             </nav>
-            <button className="factory-card" onClick={() => setActivePage('settings')}><div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}</div><div><strong>{user.current_factory?.name || 'ICYEREKEZO OMS'}</strong><span>{locale === 'en' ? 'Factory workspace' : 'Espace usine'}</span></div><ChevronRight size={17}/></button>
+            <button className="factory-card" onClick={() => setActivePage(user.is_platform_admin ? 'system-settings' : 'settings')}><div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}</div><div><strong>{user.current_factory?.name || user.system?.name || 'ICYEREKEZO OMS'}</strong><span>{user.is_platform_admin ? (locale === 'en' ? 'Platform control centre' : 'Centre de contrôle') : (locale === 'en' ? 'Factory workspace' : 'Espace usine')}</span></div><ChevronRight size={17}/></button>
         </aside>
         {sidebarOpen && <button className="backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)}/>} 
         <main className="main-area">
@@ -122,7 +125,7 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
                 <div className="top-actions">
                     <button className="locale-btn" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={17}/><span>{locale === 'en' ? 'FR' : 'EN'}</span></button>
                     <button className="icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={19}/> : <Moon size={19}/>}</button>
-                    <div className="popover-anchor"><button className="icon-btn notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={19}/><b>4</b></button>{notificationsOpen && <div className="top-popover notification-menu"><strong>{locale === 'en' ? 'Notifications' : 'Notifications'}</strong><span>3 low-stock items need attention</span><span>Quality inspection is awaiting approval</span><span>Production order PO-0418 is due today</span><button onClick={() => { setNotificationsOpen(false); setActivePage('reports'); }}>View all activity</button></div>}</div>
+                    <div className="popover-anchor"><button className="icon-btn notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={19}/><b>{user.announcements?.length || 0}</b></button>{notificationsOpen && <div className="top-popover notification-menu"><strong>{locale === 'en' ? 'Notifications' : 'Notifications'}</strong>{user.announcements?.length ? user.announcements.slice(0,4).map(item => <span key={item.id}><b>{item.title}</b>{item.message}</span>) : <span>{locale === 'en' ? 'No new announcements' : 'Aucune nouvelle annonce'}</span>}<button onClick={() => { setNotificationsOpen(false); setActivePage(user.is_platform_admin ? 'announcements' : 'support'); }}>View all activity</button></div>}</div>
                     <div className="popover-anchor"><button className="user-menu" onClick={() => setProfileOpen(!profileOpen)}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>{profileOpen && <div className="top-popover profile-menu"><button onClick={() => { setActivePage('settings'); setProfileOpen(false); }}>{locale === 'en' ? 'Profile & settings' : 'Profil et paramètres'}</button><button onClick={onLogout}>{locale === 'en' ? 'Sign out' : 'Se déconnecter'}</button></div>}</div>
                 </div>
             </header>
@@ -154,6 +157,14 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
 }
 
 const moduleContent = {
+    'platform-dashboard': { icon: LayoutDashboard, en: ['Platform control centre', 'Monitor every factory, subscription, user, support request and system service.', ['System health', 'Factory activity', 'Subscription status', 'Security events']], fr: ['Centre de contrôle plateforme', 'Supervisez les usines, abonnements, utilisateurs, demandes et services.', ['Santé système', 'Activité des usines', 'État des abonnements', 'Événements sécurité']] },
+    factories: { icon: Building2, en: ['Factory administration', 'Register, approve, activate, suspend and monitor every factory account.', ['All factories', 'Pending approval', 'Active factories', 'Suspended factories']], fr: ['Administration des usines', 'Enregistrez, approuvez, activez, suspendez et surveillez chaque usine.', ['Toutes les usines', 'En attente', 'Usines actives', 'Usines suspendues']] },
+    'platform-users': { icon: Users, en: ['Platform users', 'Search all accounts, control status and grant trusted platform administrators.', ['All users', 'Factory owners', 'Platform administrators', 'Inactive accounts']], fr: ['Utilisateurs plateforme', 'Recherchez les comptes, contrôlez leur état et les administrateurs.', ['Tous les utilisateurs', 'Propriétaires', 'Administrateurs', 'Comptes inactifs']] },
+    subscriptions: { icon: CreditCard, en: ['Subscriptions & plans', 'Configure plans, limits, billing periods, renewals and automatic suspension.', ['Subscription plans', 'Active subscriptions', 'Expiring soon', 'Payment history']], fr: ['Abonnements et forfaits', 'Configurez forfaits, limites, périodes, renouvellements et suspensions.', ['Forfaits', 'Abonnements actifs', 'Expiration proche', 'Historique paiements']] },
+    announcements: { icon: Megaphone, en: ['Platform announcements', 'Send operational, billing or emergency messages to all platform users.', ['Compose message', 'Published', 'Scheduled', 'Expired']], fr: ['Annonces plateforme', 'Envoyez des messages opérationnels, financiers ou urgents à tous.', ['Composer', 'Publiées', 'Planifiées', 'Expirées']] },
+    'support-center': { icon: MessageSquare, en: ['Support centre', 'Receive factory problems, reply to conversations and track resolution.', ['Open tickets', 'In progress', 'Waiting customer', 'Resolved']], fr: ['Centre de support', 'Recevez les problèmes, répondez et suivez leur résolution.', ['Tickets ouverts', 'En cours', 'Attente client', 'Résolus']] },
+    backups: { icon: Database, en: ['Database backups', 'Request encrypted database backups and monitor scheduled recovery points.', ['Backup history', 'Create backup', 'Schedule', 'Recovery status']], fr: ['Sauvegardes base de données', 'Demandez des sauvegardes et surveillez les points de restauration.', ['Historique', 'Créer sauvegarde', 'Planification', 'État restauration']] },
+    'system-settings': { icon: Settings, en: ['System configuration', 'Manage platform identity, logo, registration, maintenance and support contacts.', ['Identity & branding', 'Registration', 'Maintenance mode', 'Security']], fr: ['Configuration système', 'Gérez identité, logo, inscriptions, maintenance et contacts.', ['Identité et marque', 'Inscription', 'Mode maintenance', 'Sécurité']] },
     procurement: { icon: ShoppingCart, en: ['Procurement', 'Control suppliers, requests, quotations, purchase orders and receipts.', ['Purchase requests', 'Supplier quotations', 'Purchase orders', 'Goods receipts']], fr: ['Achats', 'Gérez les fournisseurs, demandes, devis, commandes et réceptions.', ['Demandes d’achat', 'Devis fournisseurs', 'Bons de commande', 'Réceptions']] },
     inventory: { icon: Warehouse, en: ['Inventory & warehouses', 'Track every movement across warehouses, locations, batches and stock states.', ['Current stock', 'Stock movements', 'Transfers', 'Counts & adjustments']], fr: ['Stocks et entrepôts', 'Suivez chaque mouvement par entrepôt, emplacement, lot et état.', ['Stock actuel', 'Mouvements', 'Transferts', 'Comptages et ajustements']] },
     products: { icon: Boxes, en: ['Products & BOM', 'Manage materials, finished products, versions and manufacturing recipes.', ['Items & SKUs', 'Categories', 'Bills of materials', 'Units & conversions']], fr: ['Produits et nomenclatures', 'Gérez les matières, produits finis, versions et recettes de fabrication.', ['Articles et SKU', 'Catégories', 'Nomenclatures', 'Unités et conversions']] },
@@ -173,7 +184,7 @@ function ModulePage({ page, locale, can, onNavigate }: { page: string; locale: L
     const [title, description, sections] = module[locale];
     const [selected, setSelected] = useState(0);
     const Icon = module.icon;
-    const createPermission: Record<string, string | null> = { procurement: 'procurement.create', inventory: 'inventory.adjust', products: 'products.create', production: 'production.plan', quality: 'quality.inspect', sales: 'sales.create', logistics: 'logistics.plan', team: 'users.create', machines: 'maintenance.create', reports: 'reports.export', settings: 'factory.manage', support: null };
+    const createPermission: Record<string, string | null> = { 'platform-dashboard': null, factories: null, 'platform-users': null, subscriptions: null, announcements: null, 'support-center': null, backups: null, 'system-settings': null, procurement: 'procurement.create', inventory: 'inventory.adjust', products: 'products.create', production: 'production.plan', quality: 'quality.inspect', sales: 'sales.create', logistics: 'logistics.plan', team: 'users.create', machines: 'maintenance.create', reports: 'reports.export', settings: 'factory.manage', support: null };
     const mayCreate = createPermission[page] === null || (createPermission[page] ? can(createPermission[page]!) : false);
     const action = page === 'production' ? (locale === 'en' ? 'Create production order' : 'Créer un ordre de production') : page === 'team' ? (locale === 'en' ? 'Add employee' : 'Ajouter un employé') : (locale === 'en' ? 'Create new' : 'Créer');
     return <section className="module-page">

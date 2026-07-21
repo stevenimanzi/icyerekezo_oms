@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Factory;
 use App\Models\Permission;
+use App\Models\PlatformAnnouncement;
 use App\Models\Role;
+use App\Models\SystemSetting;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -119,6 +121,8 @@ class AuthController extends Controller
             'workspace' => $user->is_platform_admin && ! $user->current_factory_id ? 'platform_admin' : ($roles->first()?->dashboard_key ?? 'operations'),
             'employee_profile' => $user->employeeProfile,
             'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
+            'announcements' => PlatformAnnouncement::whereNotNull('published_at')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->latest('published_at')->limit(10)->get(['id', 'title', 'message', 'severity', 'published_at']),
+            'system' => ['name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'), 'logo_url' => SystemSetting::valueFor('logo_url'), 'support_email' => SystemSetting::valueFor('support_email')],
         ];
     }
 
