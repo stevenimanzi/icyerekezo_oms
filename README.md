@@ -56,7 +56,7 @@ The local development environment initially uses SQLite so the application runs 
 
 ## Current milestone
 
-The Laravel/React/TypeScript foundation, MySQL database, responsive operations dashboard, and security foundation are complete. Users can register a factory workspace, sign in and out, use English or French, and access a tenant-scoped dashboard. Factory memberships, roles, 49 granular permissions, factory context switching, and audit history are enforced by the backend.
+The Laravel/React/TypeScript foundation, MySQL database, responsive operations dashboard, and security foundation are complete. Users can register a factory workspace, sign in and out, use English or French, and access a tenant-scoped dashboard. Factory memberships, roles, 49 granular permissions, factory context switching, and audit history are enforced by the backend. Factory branches and departments, units and conversions, item categories and products, suppliers, warehouses and locations, batches, stock balances, and an immutable transaction-safe stock ledger are now implemented at the data and API layers.
 
 ## Local development
 

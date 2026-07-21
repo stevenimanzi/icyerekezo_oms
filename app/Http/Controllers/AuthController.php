@@ -6,7 +6,9 @@ use App\Models\AuditLog;
 use App\Models\Factory;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Unit;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Support\PermissionCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,6 +57,10 @@ class AuthController extends Controller
             $role = Role::create(['factory_id' => $factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner', 'is_system' => true]);
             $role->permissions()->sync(Permission::pluck('id'));
             $user->roles()->attach($role->id, ['factory_id' => $factory->id]);
+            foreach ([['Piece', 'pc', 'count', 0], ['Kilogram', 'kg', 'mass', 3], ['Litre', 'L', 'volume', 3], ['Metre', 'm', 'length', 3]] as [$name, $symbol, $dimension, $precision]) {
+                Unit::create(compact('name', 'symbol', 'dimension', 'precision') + ['factory_id' => $factory->id]);
+            }
+            Warehouse::create(['factory_id' => $factory->id, 'name' => 'Main Warehouse', 'code' => 'MAIN', 'type' => 'general']);
 
             return [$user, $factory];
         });
