@@ -75,16 +75,29 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
     const [dark, setDark] = useState(() => localStorage.getItem('icy_theme') === 'dark');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
+    const [activePage, setActivePage] = useState('dashboard');
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
     const t = copy[locale];
     const can = (permission: string) => user.permissions.includes('*') || user.permissions.includes(permission);
     const workspaceName = ({ platform_admin: 'Platform administration', executive: t.overview, production: locale === 'en' ? 'Production command centre' : 'Centre de production', warehouse: locale === 'en' ? 'Warehouse workspace' : 'Espace entrepot', procurement: locale === 'en' ? 'Procurement workspace' : 'Espace achats', quality: locale === 'en' ? 'Quality control workspace' : 'Espace controle qualite', cutting: locale === 'en' ? 'Cutting workstation' : 'Poste de coupe', workstation: locale === 'en' ? 'Operator workstation' : 'Poste operateur', logistics: locale === 'en' ? 'Logistics workspace' : 'Espace logistique', sales: locale === 'en' ? 'Sales workspace' : 'Espace ventes', finance: locale === 'en' ? 'Finance workspace' : 'Espace finances' } as Record<string,string>)[user.workspace] || t.overview;
     useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('icy_theme', dark ? 'dark' : 'light'); }, [dark]);
     useEffect(() => { document.documentElement.lang = locale; localStorage.setItem('icy_locale', locale); }, [locale]);
+    useEffect(() => {
+        const shortcut = (event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+                event.preventDefault(); document.querySelector<HTMLInputElement>('.search input')?.focus();
+            }
+            if (event.key === 'Escape') { setSearchOpen(false); setNotificationsOpen(false); setProfileOpen(false); }
+        };
+        window.addEventListener('keydown', shortcut); return () => window.removeEventListener('keydown', shortcut);
+    }, []);
 
     const nav = useMemo(() => ([
-        [LayoutDashboard, t.dashboard, true, '*'], [ShoppingCart, t.procurement, false, 'procurement.view'], [Warehouse, t.warehouse, false, 'inventory.view'], [Boxes, t.products, false, 'products.view'],
-        [Gauge, t.planning, false, 'production.view'], [ClipboardCheck, t.control, false, 'quality.view'], [PackageOpen, t.sales, false, 'sales.view'], [Truck, t.logistics, false, 'logistics.view'],
-        [Users, t.people, false, 'users.view'], [Wrench, t.machines, false, 'maintenance.view'], [Activity, t.reports, false, 'reports.view'],
+        ['dashboard', LayoutDashboard, t.dashboard, '*'], ['procurement', ShoppingCart, t.procurement, 'procurement.view'], ['inventory', Warehouse, t.warehouse, 'inventory.view'], ['products', Boxes, t.products, 'products.view'],
+        ['production', Gauge, t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
+        ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
     ] as const).filter(([, , , permission]) => permission === '*' || can(permission)), [t, user.permissions]);
 
     const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(null), 2600); };
@@ -94,27 +107,28 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
             <div className="sidebar-head"><Logo/><button className="icon-btn mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20}/></button></div>
             <nav>
                 <p className="nav-label">{t.general}</p>
-                {nav.map(([Icon, label, active]) => <button key={label} className={`nav-item ${active ? 'active' : ''}`} onClick={() => { setSidebarOpen(false); if (!active) toast(`${label} — ${locale === 'en' ? 'coming in the next module' : 'disponible dans le prochain module'}`); }}><Icon size={18}/><span>{label}</span>{label === t.warehouse && <i>3</i>}</button>)}
+                {nav.map(([key, Icon, label]) => <button key={key} className={`nav-item ${activePage === key ? 'active' : ''}`} onClick={() => { setActivePage(key); setSidebarOpen(false); }}><Icon size={18}/><span>{label}</span>{label === t.warehouse && <i>3</i>}</button>)}
                 <p className="nav-label">{t.management}</p>
-                {(can('factory.manage') || user.is_platform_admin) && <button className="nav-item"><Settings size={18}/><span>{t.settings}</span></button>}
-                <button className="nav-item"><HelpCircle size={18}/><span>{t.support}</span></button>
+                {(can('factory.manage') || user.is_platform_admin) && <button className={`nav-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}><Settings size={18}/><span>{t.settings}</span></button>}
+                <button className={`nav-item ${activePage === 'support' ? 'active' : ''}`} onClick={() => { setActivePage('support'); setSidebarOpen(false); }}><HelpCircle size={18}/><span>{t.support}</span></button>
             </nav>
-            <div className="factory-card"><div className="factory-avatar">KL</div><div><strong>Kigali Manufacturing</strong><span>Main plant · Kigali</span></div><ChevronRight size={17}/></div>
+            <button className="factory-card" onClick={() => setActivePage('settings')}><div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}</div><div><strong>{user.current_factory?.name || 'ICYEREKEZO OMS'}</strong><span>{locale === 'en' ? 'Factory workspace' : 'Espace usine'}</span></div><ChevronRight size={17}/></button>
         </aside>
         {sidebarOpen && <button className="backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)}/>} 
         <main className="main-area">
             <header className="topbar">
                 <button className="icon-btn menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu"><Menu size={21}/></button>
-                <label className="search"><Search size={18}/><input aria-label={t.search} placeholder={t.search}/><kbd>⌘ K</kbd></label>
+                <label className="search"><Search size={18}/><input aria-label={t.search} placeholder={t.search} onFocus={() => setSearchOpen(true)} onKeyDown={event => { if (event.key === 'Enter') { setSearchOpen(false); setActivePage('products'); toast(locale === 'en' ? 'Search opened in Products & BOM.' : 'Recherche ouverte dans Produits et nomenclatures.'); } }}/><kbd>Ctrl K</kbd>{searchOpen && <div className="top-popover search-popover"><strong>{locale === 'en' ? 'Quick search' : 'Recherche rapide'}</strong><button onMouseDown={() => { setActivePage('products'); setSearchOpen(false); }}>{t.products}</button><button onMouseDown={() => { setActivePage('production'); setSearchOpen(false); }}>{t.planning}</button><button onMouseDown={() => { setActivePage('inventory'); setSearchOpen(false); }}>{t.warehouse}</button></div>}</label>
                 <div className="top-actions">
                     <button className="locale-btn" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={17}/><span>{locale === 'en' ? 'FR' : 'EN'}</span></button>
                     <button className="icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={19}/> : <Moon size={19}/>}</button>
-                    <button className="icon-btn notification" aria-label="Notifications"><Bell size={19}/><b>4</b></button>
-                    <button className="user-menu" onClick={onLogout} title={locale === 'en' ? 'Sign out' : 'Sign out'}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>
+                    <div className="popover-anchor"><button className="icon-btn notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={19}/><b>4</b></button>{notificationsOpen && <div className="top-popover notification-menu"><strong>{locale === 'en' ? 'Notifications' : 'Notifications'}</strong><span>3 low-stock items need attention</span><span>Quality inspection is awaiting approval</span><span>Production order PO-0418 is due today</span><button onClick={() => { setNotificationsOpen(false); setActivePage('reports'); }}>View all activity</button></div>}</div>
+                    <div className="popover-anchor"><button className="user-menu" onClick={() => setProfileOpen(!profileOpen)}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>{profileOpen && <div className="top-popover profile-menu"><button onClick={() => { setActivePage('settings'); setProfileOpen(false); }}>{locale === 'en' ? 'Profile & settings' : 'Profil et paramètres'}</button><button onClick={onLogout}>{locale === 'en' ? 'Sign out' : 'Se déconnecter'}</button></div>}</div>
                 </div>
             </header>
             <div className="page">
-                <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => toast(locale === 'en' ? 'Production order form opens in the next step.' : 'Le formulaire d’ordre sera ajouté à la prochaine étape.')}><Zap size={17}/>{t.newOrder}</button></div>
+                {activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
+                <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => setActivePage('production')}><Zap size={17}/>{t.newOrder}</button></div>
                 <section className="workspace-banner"><div><span>{locale === 'en' ? 'Your workspace' : 'Votre espace'}</span><strong>{workspaceName}</strong><small>{user.employee_profile?.workstation ? `${user.employee_profile.department?.name || ''} / ${user.employee_profile.workstation.name}` : (user.roles[0]?.name || 'ICYEREKEZO OMS')}</small></div>{user.active_assignments?.length > 0 && <div className="assignment-preview"><b>{user.active_assignments.length} {locale === 'en' ? 'active assignments' : 'taches actives'}</b>{user.active_assignments.slice(0, 2).map(task => <span key={task.id}>{task.title} · {task.status.replace('_', ' ')}</span>)}</div>}</section>
                 <section className="metric-grid">
                     <Metric icon={<Factory/>} label={t.production} value="1,842" suffix="units" detail={t.productionHint} trend="+12.4%" tone="blue" />
@@ -131,11 +145,43 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
                         <ActivityItem icon={<Truck/>} tone="blue" title="Shipment dispatched" text="SHP-00842 · Rubavu distribution centre" time="1 hr"/>
                     </div></article>
                 </section>
-                <article className="panel orders-panel"><PanelTitle title={t.activeOrders} action={<button className="text-btn">{t.viewAll}<ChevronRight size={16}/></button>}/><div className="table-scroll"><table><thead><tr><th>{t.order}</th><th>{t.product}</th><th>{t.stage}</th><th>{t.progress}</th><th>{t.due}</th></tr></thead><tbody>{productionOrders.map((item, index) => <tr key={item.id}><td><strong>{item.id}</strong></td><td><div className="product-cell"><span className={`product-icon p${index}`}><Boxes size={17}/></span><div><strong>{item.product}</strong><small>{item.detail}</small></div></div></td><td><span className={`status s${index}`}>{locale === 'fr' ? (index === 0 ? 'Couture' : index === 1 ? t.inspection : t.packaging) : item.stage}</span></td><td><div className="progress-cell"><div className="progress"><span style={{ width: `${item.progress}%`, background: item.color }}/></div><b>{item.progress}%</b></div></td><td><strong>{item.due}</strong></td></tr>)}</tbody></table></div></article>
+                <article className="panel orders-panel"><PanelTitle title={t.activeOrders} action={<button className="text-btn" onClick={() => setActivePage('production')}>{t.viewAll}<ChevronRight size={16}/></button>}/><div className="table-scroll"><table><thead><tr><th>{t.order}</th><th>{t.product}</th><th>{t.stage}</th><th>{t.progress}</th><th>{t.due}</th></tr></thead><tbody>{productionOrders.map((item, index) => <tr key={item.id}><td><strong>{item.id}</strong></td><td><div className="product-cell"><span className={`product-icon p${index}`}><Boxes size={17}/></span><div><strong>{item.product}</strong><small>{item.detail}</small></div></div></td><td><span className={`status s${index}`}>{locale === 'fr' ? (index === 0 ? 'Couture' : index === 1 ? t.inspection : t.packaging) : item.stage}</span></td><td><div className="progress-cell"><div className="progress"><span style={{ width: `${item.progress}%`, background: item.color }}/></div><b>{item.progress}%</b></div></td><td><strong>{item.due}</strong></td></tr>)}</tbody></table></div></article>
+                </>}
             </div>
         </main>
         {notice && <div className="toast">{notice}</div>}
     </div>;
+}
+
+const moduleContent = {
+    procurement: { icon: ShoppingCart, en: ['Procurement', 'Control suppliers, requests, quotations, purchase orders and receipts.', ['Purchase requests', 'Supplier quotations', 'Purchase orders', 'Goods receipts']], fr: ['Achats', 'Gérez les fournisseurs, demandes, devis, commandes et réceptions.', ['Demandes d’achat', 'Devis fournisseurs', 'Bons de commande', 'Réceptions']] },
+    inventory: { icon: Warehouse, en: ['Inventory & warehouses', 'Track every movement across warehouses, locations, batches and stock states.', ['Current stock', 'Stock movements', 'Transfers', 'Counts & adjustments']], fr: ['Stocks et entrepôts', 'Suivez chaque mouvement par entrepôt, emplacement, lot et état.', ['Stock actuel', 'Mouvements', 'Transferts', 'Comptages et ajustements']] },
+    products: { icon: Boxes, en: ['Products & BOM', 'Manage materials, finished products, versions and manufacturing recipes.', ['Items & SKUs', 'Categories', 'Bills of materials', 'Units & conversions']], fr: ['Produits et nomenclatures', 'Gérez les matières, produits finis, versions et recettes de fabrication.', ['Articles et SKU', 'Catégories', 'Nomenclatures', 'Unités et conversions']] },
+    production: { icon: Gauge, en: ['Production', 'Plan demand, check materials and execute configurable factory workflows.', ['Production orders', 'Planning', 'Workflow templates', 'Stage execution']], fr: ['Production', 'Planifiez la demande, vérifiez les matières et exécutez les flux configurables.', ['Ordres de production', 'Planification', 'Modèles de flux', 'Exécution des étapes']] },
+    quality: { icon: ClipboardCheck, en: ['Quality control', 'Inspect incoming materials, production stages and finished batches.', ['Inspection queue', 'Test templates', 'Defects & rework', 'Certificates']], fr: ['Contrôle qualité', 'Inspectez les matières reçues, les étapes et les lots finis.', ['File d’inspection', 'Modèles de test', 'Défauts et retouches', 'Certificats']] },
+    sales: { icon: PackageOpen, en: ['Sales & orders', 'Manage customers, quotations, orders, invoices and returns.', ['Customer orders', 'Quotations', 'Invoices', 'Returns']], fr: ['Ventes et commandes', 'Gérez les clients, devis, commandes, factures et retours.', ['Commandes clients', 'Devis', 'Factures', 'Retours']] },
+    logistics: { icon: Truck, en: ['Logistics', 'Plan packing, dispatch, routes, vehicles and proof of delivery.', ['Shipments', 'Dispatch board', 'Vehicles & drivers', 'Proof of delivery']], fr: ['Logistique', 'Planifiez emballage, expédition, routes, véhicules et preuve de livraison.', ['Expéditions', 'Tableau d’envoi', 'Véhicules et chauffeurs', 'Preuve de livraison']] },
+    team: { icon: Users, en: ['Team & shifts', 'Assign secure role workspaces, stations, shifts and daily work.', ['Employees', 'Roles & permissions', 'Work assignments', 'Shifts & attendance']], fr: ['Équipe et horaires', 'Attribuez les rôles, postes, horaires et travaux quotidiens.', ['Employés', 'Rôles et permissions', 'Affectations', 'Horaires et présence']] },
+    machines: { icon: Wrench, en: ['Machines & maintenance', 'Track machine availability, maintenance plans, breakdowns and downtime.', ['Machine register', 'Maintenance schedule', 'Repair requests', 'Downtime']], fr: ['Machines et maintenance', 'Suivez disponibilité, maintenance, pannes et temps d’arrêt.', ['Registre machines', 'Plan de maintenance', 'Demandes de réparation', 'Temps d’arrêt']] },
+    reports: { icon: Activity, en: ['Reports & analytics', 'Review operational performance and export trusted business reports.', ['Executive reports', 'Inventory reports', 'Production reports', 'Financial reports']], fr: ['Rapports et analyses', 'Analysez la performance et exportez des rapports fiables.', ['Rapports exécutifs', 'Rapports de stock', 'Rapports de production', 'Rapports financiers']] },
+    settings: { icon: Settings, en: ['Factory settings', 'Configure factory identity, branches, departments, approvals and numbering.', ['Factory profile', 'Branches & departments', 'Approval rules', 'Security settings']], fr: ['Paramètres de l’usine', 'Configurez identité, sites, départements, validations et numérotation.', ['Profil usine', 'Sites et départements', 'Règles de validation', 'Paramètres de sécurité']] },
+    support: { icon: HelpCircle, en: ['Help & support', 'Find guidance, report a problem or contact the ICYEREKEZO support team.', ['Getting started', 'User guide', 'Support tickets', 'System status']], fr: ['Aide et support', 'Consultez les guides, signalez un problème ou contactez le support.', ['Bien démarrer', 'Guide utilisateur', 'Tickets support', 'État du système']] },
+} as const;
+
+function ModulePage({ page, locale, can, onNavigate }: { page: string; locale: Locale; can: (permission: string) => boolean; onNavigate: (page: string) => void }) {
+    const module = moduleContent[page as keyof typeof moduleContent] || moduleContent.support;
+    const [title, description, sections] = module[locale];
+    const [selected, setSelected] = useState(0);
+    const Icon = module.icon;
+    const action = page === 'production' ? (locale === 'en' ? 'Create production order' : 'Créer un ordre de production') : page === 'team' ? (locale === 'en' ? 'Add employee' : 'Ajouter un employé') : (locale === 'en' ? 'Create new' : 'Créer');
+    return <section className="module-page">
+        <div className="module-hero"><div className="module-title"><span><Icon size={22}/></span><div><div className="eyebrow"><i></i>{locale === 'en' ? 'Live module' : 'Module actif'}</div><h1>{title}</h1><p>{description}</p></div></div><button className="primary-btn" onClick={() => setSelected(0)}><Zap size={17}/>{action}</button></div>
+        <div className="module-tabs" role="tablist">{sections.map((section, index) => <button key={section} className={selected === index ? 'active' : ''} onClick={() => setSelected(index)}>{section}</button>)}</div>
+        <section className="module-grid">
+            <article className="panel module-main"><PanelTitle title={sections[selected]} action={<button className="text-btn">{locale === 'en' ? 'Export' : 'Exporter'}<ChevronRight size={16}/></button>}/><div className="empty-state"><span><Icon size={28}/></span><h3>{locale === 'en' ? `${sections[selected]} workspace is ready` : `L’espace ${sections[selected]} est prêt`}</h3><p>{locale === 'en' ? 'Records created in this module will appear here with role-based actions, filters and audit history.' : 'Les enregistrements apparaîtront ici avec actions par rôle, filtres et historique.'}</p><button className="secondary-btn" onClick={() => setSelected((selected + 1) % sections.length)}>{locale === 'en' ? 'Explore next section' : 'Section suivante'}</button></div></article>
+            <aside className="panel module-side"><PanelTitle title={locale === 'en' ? 'Module status' : 'État du module'} action={<Activity size={17}/>}/><div className="status-list"><div><span>{locale === 'en' ? 'Access' : 'Accès'}</span><b>{can('*') ? 'Administrator' : 'Role controlled'}</b></div><div><span>{locale === 'en' ? 'Data scope' : 'Portée'}</span><b>{locale === 'en' ? 'Current factory only' : 'Usine actuelle'}</b></div><div><span>{locale === 'en' ? 'Audit trail' : 'Audit'}</span><b className="success">{locale === 'en' ? 'Enabled' : 'Activé'}</b></div></div><button className="link-card" onClick={() => onNavigate('reports')}><Activity size={18}/><span>{locale === 'en' ? 'Open reports' : 'Ouvrir les rapports'}</span><ChevronRight size={17}/></button></aside>
+        </section>
+    </section>;
 }
 
 function App() {

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FactoryContextController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\ManufacturingController;
 use App\Http\Controllers\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,12 @@ Route::prefix('api')->group(function () {
             Route::post('/team/workstations', [TeamWorkspaceController::class, 'storeWorkstation'])->middleware('permission:factory.manage');
             Route::post('/team/assignments', [TeamWorkspaceController::class, 'assign'])->middleware('permission:users.update');
             Route::patch('/team/assignments/{assignment}', [TeamWorkspaceController::class, 'updateAssignment']);
+            Route::get('/manufacturing/overview', [ManufacturingController::class, 'overview'])->middleware('permission:production.view');
+            Route::post('/manufacturing/boms', [ManufacturingController::class, 'storeBom'])->middleware('permission:production.plan');
+            Route::post('/manufacturing/workflows', [ManufacturingController::class, 'storeWorkflow'])->middleware('permission:production.plan');
+            Route::post('/manufacturing/orders', [ManufacturingController::class, 'storeOrder'])->middleware('permission:production.plan');
+            Route::post('/manufacturing/orders/{order}/approve', [ManufacturingController::class, 'approveOrder'])->middleware('permission:production.approve');
+            Route::patch('/manufacturing/stages/{execution}', [ManufacturingController::class, 'updateStage'])->middleware('permission:production.execute');
         });
     });
 });
