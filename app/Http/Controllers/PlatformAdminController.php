@@ -49,7 +49,7 @@ class PlatformAdminController extends Controller
             $counter = 2;
             while (Factory::where('slug', $slug)->exists()) {
                 $slug = $base.'-'.$counter++;
-            } $factory = Factory::create(['uuid' => (string) Str::uuid(), 'name' => $data['factory_name'], 'slug' => $slug, 'industry_type' => $data['industry_type'], 'email' => $data['owner_email'], 'status' => 'pending']);
+            } $factory = Factory::create(['uuid' => (string) Str::uuid(), 'name' => $data['factory_name'], 'slug' => $slug, 'industry_type' => $data['industry_type'], 'email' => $data['owner_email'], 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'), 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali'), 'default_locale' => SystemSetting::valueFor('default_locale', 'en'), 'status' => 'pending']);
             $owner = User::create(['current_factory_id' => $factory->id, 'name' => $data['owner_name'], 'email' => Str::lower($data['owner_email']), 'password' => $data['owner_password']]);
             $factory->users()->attach($owner->id, ['is_owner' => true, 'is_active' => true, 'joined_at' => now(), 'job_title' => 'Factory owner']);
             $role = Role::create(['factory_id' => $factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner', 'dashboard_key' => 'executive', 'is_system' => true]);
@@ -181,9 +181,23 @@ class PlatformAdminController extends Controller
 
     public function settings(Request $request): JsonResponse
     {
-        $data = $request->validate(['system_name' => ['nullable', 'string', 'max:120'], 'logo_url' => ['nullable', 'url', 'max:1000'], 'support_email' => ['nullable', 'email'], 'registration_enabled' => ['nullable', 'boolean'], 'maintenance_enabled' => ['nullable', 'boolean'], 'maintenance_message' => ['nullable', 'string', 'max:1000']]);
+        $data = $request->validate([
+            'system_name' => ['nullable', 'string', 'max:120'],
+            'system_tagline' => ['nullable', 'string', 'max:180'],
+            'logo_url' => ['nullable', 'url', 'max:1000'],
+            'support_email' => ['nullable', 'email'],
+            'support_phone' => ['nullable', 'string', 'max:40'],
+            'default_locale' => ['nullable', Rule::in(['en', 'fr'])],
+            'currency_code' => ['nullable', Rule::in(['RWF', 'USD', 'EUR'])],
+            'timezone' => ['nullable', Rule::in(['Africa/Kigali', 'Africa/Johannesburg', 'Africa/Nairobi', 'UTC'])],
+            'backup_retention_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'registration_enabled' => ['nullable', 'boolean'],
+            'maintenance_enabled' => ['nullable', 'boolean'],
+            'maintenance_message' => ['nullable', 'string', 'max:1000'],
+        ]);
         foreach ($data as $key => $value) {
-            SystemSetting::updateOrCreate(['key' => $key], ['value' => is_bool($value) ? ($value ? '1' : '0') : $value, 'type' => is_bool($value) ? 'boolean' : 'string', 'is_public' => in_array($key, ['system_name', 'logo_url', 'support_email', 'maintenance_enabled', 'maintenance_message'])]);
+            $type = is_bool($value) ? 'boolean' : (is_int($value) ? 'integer' : 'string');
+            SystemSetting::updateOrCreate(['key' => $key], ['value' => is_bool($value) ? ($value ? '1' : '0') : $value, 'type' => $type, 'is_public' => in_array($key, ['system_name', 'system_tagline', 'logo_url', 'support_email', 'support_phone', 'default_locale', 'currency_code', 'timezone', 'maintenance_enabled', 'maintenance_message'])]);
         } AuditLog::record('platform.settings_updated', 'Updated system settings');
 
         return response()->json(['message' => 'System settings updated.']);

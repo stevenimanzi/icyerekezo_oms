@@ -16,6 +16,21 @@ class PlatformAdministrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_system_registration_and_factory_defaults_are_enforced(): void
+    {
+        $admin = User::factory()->create(['current_factory_id' => null, 'is_platform_admin' => true, 'is_active' => true]);
+        $settings = ['registration_enabled' => false, 'default_locale' => 'fr', 'currency_code' => 'USD', 'timezone' => 'UTC', 'backup_retention_days' => 45, 'support_phone' => '+250 788 000 000'];
+
+        $this->actingAs($admin)->putJson('/api/platform/settings', $settings)->assertOk();
+        $registration = ['name' => 'Owner', 'email' => 'closed@test.local', 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Defaults Factory', 'industry_type' => 'general_manufacturing'];
+        $this->postJson('/api/auth/register', $registration)->assertForbidden();
+
+        $this->actingAs($admin)->putJson('/api/platform/settings', ['registration_enabled' => true])->assertOk();
+        $this->postJson('/api/auth/register', $registration)->assertCreated();
+        $this->assertDatabaseHas('factories', ['name' => 'Defaults Factory', 'default_locale' => 'fr', 'currency_code' => 'USD', 'timezone' => 'UTC']);
+        $this->assertDatabaseHas('users', ['email' => 'closed@test.local', 'locale' => 'fr']);
+    }
+
     public function test_subscription_page_lists_the_three_default_plans_in_price_order(): void
     {
         $admin = User::factory()->create(['current_factory_id' => null, 'is_platform_admin' => true, 'is_active' => true]);

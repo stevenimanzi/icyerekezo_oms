@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DatabaseBackup;
+use App\Models\SystemSetting;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -32,6 +33,7 @@ class DatabaseBackupService
                 throw new \RuntimeException(trim($process->getErrorOutput()) ?: 'Database backup command failed.');
             }
             $backup->update(['status' => 'completed', 'path' => 'backups/'.$filename, 'size_bytes' => filesize($path), 'completed_at' => now()]);
+            $this->removeExpiredBackups();
         } catch (Throwable $exception) {
             if (isset($stream) && is_resource($stream)) {
                 gzclose($stream);
@@ -44,5 +46,16 @@ class DatabaseBackupService
                 File::delete($credentials);
             }
         }
+    }
+
+    private function removeExpiredBackups(): void
+    {
+        $days = max(1, (int) SystemSetting::valueFor('backup_retention_days', 30));
+        DatabaseBackup::where('status', 'completed')->where('completed_at', '<', now()->subDays($days))->get()->each(function (DatabaseBackup $oldBackup) {
+            if ($oldBackup->path) {
+                File::delete(storage_path('app/private/'.$oldBackup->path));
+            }
+            $oldBackup->delete();
+        });
     }
 }

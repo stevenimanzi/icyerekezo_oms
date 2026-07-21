@@ -25,6 +25,7 @@ class AuthController extends Controller
 {
     public function register(Request $request): JsonResponse
     {
+        abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'New factory registration is currently closed. Please contact support.');
         $passwordRule = Password::min(10)->mixedCase()->numbers()->symbols();
         if (app()->isProduction()) {
             $passwordRule->uncompromised();
@@ -47,14 +48,16 @@ class AuthController extends Controller
                 'slug' => $this->uniqueFactorySlug($data['factory_name']),
                 'industry_type' => $data['industry_type'],
                 'email' => $data['email'],
-                'default_locale' => $data['locale'] ?? 'en',
+                'default_locale' => $data['locale'] ?? SystemSetting::valueFor('default_locale', 'en'),
+                'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'),
+                'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali'),
             ]);
             $user = User::create([
                 'current_factory_id' => $factory->id,
                 'name' => $data['name'],
                 'email' => Str::lower($data['email']),
                 'password' => $data['password'],
-                'locale' => $data['locale'] ?? 'en',
+                'locale' => $data['locale'] ?? SystemSetting::valueFor('default_locale', 'en'),
             ]);
             $factory->users()->attach($user->id, ['is_owner' => true, 'is_active' => true, 'joined_at' => now(), 'job_title' => 'Factory owner']);
             $role = Role::create(['factory_id' => $factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner', 'dashboard_key' => 'executive', 'is_system' => true]);
@@ -122,7 +125,7 @@ class AuthController extends Controller
             'employee_profile' => $user->employeeProfile,
             'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
             'announcements' => PlatformAnnouncement::whereNotNull('published_at')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->latest('published_at')->limit(10)->get(['id', 'title', 'message', 'severity', 'published_at']),
-            'system' => ['name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'), 'logo_url' => SystemSetting::valueFor('logo_url'), 'support_email' => SystemSetting::valueFor('support_email')],
+            'system' => ['name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'), 'tagline' => SystemSetting::valueFor('system_tagline', 'Factory operations made clear.'), 'logo_url' => SystemSetting::valueFor('logo_url'), 'support_email' => SystemSetting::valueFor('support_email'), 'support_phone' => SystemSetting::valueFor('support_phone'), 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'), 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali')],
         ];
     }
 

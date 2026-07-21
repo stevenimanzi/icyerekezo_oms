@@ -18,7 +18,7 @@ type AuthUser = {
     employee_profile?: { job_title?: string; department?: { name: string }; workstation?: { name: string; type: string } } | null;
     active_assignments: { id: number; assignment_type: string; title: string; priority: string; status: string; due_at?: string }[];
     announcements?: { id: number; title: string; message: string; severity: string; published_at: string }[];
-    system?: { name: string; logo_url?: string; support_email?: string };
+    system?: { name: string; tagline?: string; logo_url?: string; support_email?: string; support_phone?: string; currency_code?: string; timezone?: string };
 };
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
