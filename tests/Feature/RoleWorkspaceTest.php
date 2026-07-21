@@ -23,7 +23,7 @@ class RoleWorkspaceTest extends TestCase
             'locale' => 'en',
         ])->assertCreated();
 
-        $this->assertDatabaseCount('roles', 11);
+        $this->assertDatabaseCount('roles', 12);
         $warehouseRole = Role::where('slug', 'warehouse-keeper')->firstOrFail();
 
         $workstation = $this->postJson('/api/team/workstations', [

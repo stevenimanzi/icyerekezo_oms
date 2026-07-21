@@ -10,6 +10,7 @@ final class RoleTemplateCatalog
 {
     public const TEMPLATES = [
         'factory-administrator' => ['Factory Administrator', 'executive', ['*']],
+        'factory-manager' => ['Factory Manager', 'executive', ['factory.*', 'users.*', 'production.view', 'production.plan', 'reports.*', 'audit.view']],
         'production-manager' => ['Production Manager', 'production', ['production.*', 'products.view', 'inventory.view', 'quality.view', 'maintenance.view', 'reports.view']],
         'warehouse-keeper' => ['Warehouse Keeper', 'warehouse', ['inventory.*', 'products.view', 'procurement.view', 'procurement.receive']],
         'procurement-officer' => ['Procurement Officer', 'procurement', ['procurement.*', 'inventory.view', 'products.view', 'reports.view']],

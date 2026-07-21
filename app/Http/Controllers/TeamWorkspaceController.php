@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\EmployeeProfile;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WorkAssignment;
@@ -12,8 +13,10 @@ use App\Models\Workstation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class TeamWorkspaceController extends Controller
 {
@@ -23,7 +26,8 @@ class TeamWorkspaceController extends Controller
 
         return response()->json([
             'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
-            'roles' => Role::where('factory_id', $factoryId)->get(['id', 'name', 'slug', 'dashboard_key']),
+            'roles' => Role::where('factory_id', $factoryId)->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
+            'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
             'departments' => Department::where('is_active', true)->get(),
             'workstations' => Workstation::where('is_active', true)->get(),
         ]);
@@ -41,6 +45,8 @@ class TeamWorkspaceController extends Controller
             'employee_number' => ['required', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $factoryId)],
             'job_title' => ['nullable', 'string', 'max:120'],
         ]);
+        $role = Role::where('factory_id', $factoryId)->with('permissions:id,slug')->findOrFail($data['role_id']);
+        $this->assertCanGrantRole($request->user(), $role);
         $user = DB::transaction(function () use ($data, $factoryId) {
             $user = User::firstOrCreate(['email' => strtolower($data['email'])], ['name' => $data['name'], 'password' => $data['password'], 'locale' => 'en']);
             $user->factories()->syncWithoutDetaching([$factoryId => ['is_active' => true, 'is_owner' => false, 'joined_at' => now(), 'job_title' => $data['job_title'] ?? null]]);
@@ -55,6 +61,64 @@ class TeamWorkspaceController extends Controller
         AuditLog::record('team.user_created', "Created workspace account for {$user->name}", $user);
 
         return response()->json($user->load('employeeProfile.department', 'employeeProfile.workstation'), 201);
+    }
+
+    public function storeRole(Request $request): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'dashboard_key' => ['required', Rule::in(['executive', 'production', 'warehouse', 'procurement', 'quality', 'cutting', 'workstation', 'logistics', 'sales', 'finance'])],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'permission_ids' => ['required', 'array', 'min:1'],
+            'permission_ids.*' => ['integer', 'exists:permissions,id'],
+        ]);
+        $permissions = Permission::whereIn('id', $data['permission_ids'])->get();
+        $this->assertCanGrantPermissions($request->user(), $permissions->pluck('slug')->all());
+        $role = DB::transaction(function () use ($data, $permissions, $factoryId) {
+            $base = Str::slug($data['name']) ?: 'custom-role';
+            $slug = $base;
+            $counter = 2;
+            while (Role::where('factory_id', $factoryId)->where('slug', $slug)->exists()) {
+                $slug = $base.'-'.$counter++;
+            }
+            $role = Role::create(['factory_id' => $factoryId, 'name' => $data['name'], 'slug' => $slug, 'dashboard_key' => $data['dashboard_key'], 'description' => $data['description'] ?? null, 'is_system' => false]);
+            $role->permissions()->sync($permissions->pluck('id'));
+
+            return $role;
+        });
+        AuditLog::record('team.role_created', "Created custom role {$role->name}", $role);
+
+        return response()->json($role->load('permissions:id,name,slug,module'), 201);
+    }
+
+    public function updateUser(Request $request, User $user): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
+        abort_if($membership->is_owner, 422, 'The factory owner account cannot be changed here.');
+        $data = $request->validate([
+            'role_id' => ['nullable', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
+            'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
+            'workstation_id' => ['nullable', Rule::exists('workstations', 'id')->where('factory_id', $factoryId)],
+            'job_title' => ['nullable', 'string', 'max:120'], 'is_active' => ['nullable', 'boolean'],
+        ]);
+        if (! empty($data['role_id'])) {
+            $role = Role::where('factory_id', $factoryId)->with('permissions:id,slug')->findOrFail($data['role_id']);
+            $this->assertCanGrantRole($request->user(), $role);
+            $user->roles()->wherePivot('factory_id', $factoryId)->detach();
+            $user->roles()->attach($role->id, ['factory_id' => $factoryId]);
+        }
+        $profileData = collect($data)->only(['department_id', 'workstation_id', 'job_title'])->filter(fn ($value) => $value !== null)->all();
+        if ($profileData) {
+            EmployeeProfile::where(['factory_id' => $factoryId, 'user_id' => $user->id])->update($profileData);
+        }
+        if (array_key_exists('is_active', $data)) {
+            $user->factories()->updateExistingPivot($factoryId, ['is_active' => $data['is_active']]);
+        }
+        AuditLog::record('team.user_updated', "Updated workspace access for {$user->name}", $user);
+
+        return response()->json(['message' => 'User access updated.']);
     }
 
     public function storeWorkstation(Request $request): JsonResponse
@@ -84,5 +148,22 @@ class TeamWorkspaceController extends Controller
         AuditLog::record('work.status_changed', "Assignment changed to {$assignment->status}", $assignment);
 
         return response()->json($assignment);
+    }
+
+    private function assertCanGrantRole(User $actor, Role $role): void
+    {
+        $this->assertCanGrantPermissions($actor, $role->permissions->pluck('slug')->all());
+    }
+
+    private function assertCanGrantPermissions(User $actor, array $permissions): void
+    {
+        $isFactoryAdministrator = $actor->roles()->wherePivot('factory_id', $actor->current_factory_id)->whereIn('slug', ['factory-owner', 'factory-administrator'])->exists();
+        if ($actor->is_platform_admin || $isFactoryAdministrator) {
+            return;
+        }
+        $unauthorized = collect($permissions)->reject(fn ($permission) => $actor->hasPermission($permission));
+        if ($unauthorized->isNotEmpty()) {
+            throw ValidationException::withMessages(['permissions' => 'You cannot grant access that you do not have.']);
+        }
     }
 }
