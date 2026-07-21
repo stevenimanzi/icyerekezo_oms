@@ -16,6 +16,21 @@ class PlatformAdministrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_subscription_page_lists_the_three_default_plans_in_price_order(): void
+    {
+        $admin = User::factory()->create(['current_factory_id' => null, 'is_platform_admin' => true, 'is_active' => true]);
+
+        $this->actingAs($admin)
+            ->getJson('/api/platform/subscriptions')
+            ->assertOk()
+            ->assertJsonPath('plans.0.code', 'STARTER')
+            ->assertJsonPath('plans.0.monthly_price', 100000)
+            ->assertJsonPath('plans.1.code', 'PROFESSIONAL')
+            ->assertJsonPath('plans.1.monthly_price', 200000)
+            ->assertJsonPath('plans.2.code', 'ENTERPRISE')
+            ->assertJsonPath('plans.2.monthly_price', 300000);
+    }
+
     public function test_only_super_admin_can_control_factories_subscriptions_maintenance_and_backups(): void
     {
         $admin = User::factory()->create(['current_factory_id' => null, 'is_platform_admin' => true, 'is_active' => true]);
