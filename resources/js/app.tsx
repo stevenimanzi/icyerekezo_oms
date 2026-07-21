@@ -11,7 +11,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 type Locale = 'en' | 'fr';
 type AuthUser = {
     id: number; name: string; email: string; locale: Locale;
-    current_factory: { id: number; name: string; slug: string; industry_type?: string };
+    current_factory: { id: number; name: string; slug: string; industry_type?: string } | null;
 };
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
