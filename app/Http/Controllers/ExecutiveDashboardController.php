@@ -19,7 +19,7 @@ class ExecutiveDashboardController extends Controller
         $productionToday = (float) ProductionOrder::withoutGlobalScopes()->where('factory_id', $factoryId)->whereDate('updated_at', today())->sum('completed_quantity');
         $openOrders = ProductionOrder::withoutGlobalScopes()->where('factory_id', $factoryId)->whereIn('status', $openStatuses)->count();
         $inventoryValue = (float) StockBalance::withoutGlobalScopes()->where('stock_balances.factory_id', $factoryId)->join('items', 'items.id', '=', 'stock_balances.item_id')->sum(DB::raw('stock_balances.quantity_on_hand * items.standard_cost'));
-        $lowStock = Item::withoutGlobalScopes()->where('items.factory_id', $factoryId)->where('items.is_active', true)->leftJoin('stock_balances', 'stock_balances.item_id', '=', 'items.id')->groupBy('items.id', 'items.reorder_level')->havingRaw('COALESCE(SUM(stock_balances.quantity_on_hand), 0) <= items.reorder_level')->get()->count();
+        $lowStock = Item::withoutGlobalScopes()->select('items.id', 'items.reorder_level')->where('items.factory_id', $factoryId)->where('items.is_active', true)->leftJoin('stock_balances', 'stock_balances.item_id', '=', 'items.id')->groupBy('items.id', 'items.reorder_level')->havingRaw('COALESCE(SUM(stock_balances.quantity_on_hand), 0) <= items.reorder_level')->get()->count();
         $totals = ProductionOrder::withoutGlobalScopes()->where('factory_id', $factoryId)->selectRaw('COALESCE(SUM(planned_quantity),0) planned, COALESCE(SUM(completed_quantity),0) completed')->first();
         $completionRate = (float) $totals->planned > 0 ? round(((float) $totals->completed / (float) $totals->planned) * 100, 1) : 0;
 
