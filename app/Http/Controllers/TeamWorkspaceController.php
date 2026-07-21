@@ -28,7 +28,7 @@ class TeamWorkspaceController extends Controller
             'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
             'roles' => Role::where('factory_id', $factoryId)->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
             'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
-            'departments' => Department::where('is_active', true)->get(),
+            'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get(),
             'workstations' => Workstation::where('is_active', true)->get(),
         ]);
     }
@@ -137,6 +137,27 @@ class TeamWorkspaceController extends Controller
         AuditLog::record('team.department_created', "Created department {$department->name}", $department);
 
         return response()->json($department, 201);
+    }
+
+    public function updateDepartment(Request $request, Department $department): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        abort_unless($department->factory_id === $factoryId, 404);
+        $data = $request->validate([
+            'manager_id' => ['nullable', Rule::exists('factory_user', 'user_id')->where('factory_id', $factoryId)->where('is_active', true)],
+        ]);
+
+        DB::transaction(function () use ($department, $data, $factoryId) {
+            $department->update(['manager_id' => $data['manager_id'] ?? null]);
+            if (! empty($data['manager_id'])) {
+                EmployeeProfile::where(['factory_id' => $factoryId, 'user_id' => $data['manager_id']])->update([
+                    'department_id' => $department->id,
+                ]);
+            }
+        });
+        AuditLog::record('team.department_manager_updated', "Updated manager for {$department->name}", $department);
+
+        return response()->json($department->fresh()->load('manager:id,name,email')->loadCount('employees'));
     }
 
     public function assign(Request $request): JsonResponse

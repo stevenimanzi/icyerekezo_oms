@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -44,6 +45,10 @@ class FactoryManagerAccessTest extends TestCase
             ->assertJsonCount(8, 'stages');
         $this->assertDatabaseHas('departments', ['name' => 'Welding']);
         $this->assertDatabaseHas('workstations', ['name' => 'Quality Control Main Station']);
+        $welding = Department::where('name', 'Welding')->firstOrFail();
+        $this->patchJson('/api/team/departments/'.$welding->id, ['manager_id' => $manager->id])->assertOk()
+            ->assertJsonPath('manager.id', $manager->id);
+        $this->assertDatabaseHas('employee_profiles', ['user_id' => $manager->id, 'department_id' => $welding->id]);
         $this->postJson('/api/team/departments', ['name' => 'Research and Development', 'code' => 'RND'])->assertCreated();
         $this->getJson('/api/reports?period=week&type=all')->assertOk()
             ->assertJsonPath('factory.name', 'Controlled Factory')

@@ -10,4 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 class Department extends Model
 {
     use BelongsToFactory;
+
+    public function manager()
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function employees()
+    {
+        return $this->hasMany(EmployeeProfile::class);
+    }
 }
