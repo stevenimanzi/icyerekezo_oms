@@ -39,11 +39,18 @@ class FactoryManagerAccessTest extends TestCase
         }
 
         $this->getJson('/api/team/workspaces')->assertOk();
+        $this->assertDatabaseHas('departments', ['factory_id' => $manager->current_factory_id, 'name' => 'Production', 'code' => 'PRODUCTION']);
+        $productionManagerRole = Role::where('slug', 'production-manager')->firstOrFail();
+        $this->postJson('/api/team/users', [
+            'name' => 'Production Lead', 'email' => 'production.lead@roles.test', 'password' => 'Production@12345', 'password_confirmation' => 'Production@12345',
+            'role_id' => $productionManagerRole->id,
+        ])->assertCreated();
         $this->getJson('/api/factory/flow-suggestion')->assertOk()
             ->assertJsonPath('industry', 'steel_metals')
-            ->assertJsonPath('suggestion.departments.1.name', 'Cutting');
+            ->assertJsonFragment(['name' => 'Production'])
+            ->assertJsonFragment(['name' => 'Cutting']);
         $this->postJson('/api/factory/flow-suggestion/apply')->assertCreated()
-            ->assertJsonCount(8, 'stages');
+            ->assertJsonCount(9, 'stages');
         $this->assertDatabaseHas('departments', ['name' => 'Welding']);
         $this->assertDatabaseHas('workstations', ['name' => 'Quality Control Main Station']);
         $welding = Department::where('name', 'Welding')->firstOrFail();

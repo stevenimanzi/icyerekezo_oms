@@ -18,6 +18,9 @@ class IndustryFlowCatalog
             'furniture_wood' => ['Raw Materials', 'Cutting', 'Assembly', 'Finishing', 'Quality Control', 'Packaging', 'Finished Goods'],
         ];
         $departments = $groups[$industry] ?? ['Raw Materials', 'Production', 'Quality Control', 'Packaging', 'Finished Goods', 'Logistics'];
+        if (! in_array('Production', $departments, true)) {
+            array_splice($departments, 1, 0, ['Production']);
+        }
 
         return [
             'name' => 'Recommended '.str_replace('_', ' ', $industry).' workflow',

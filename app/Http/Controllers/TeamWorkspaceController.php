@@ -23,10 +23,20 @@ class TeamWorkspaceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
+        Department::firstOrCreate(
+            ['factory_id' => $factoryId, 'code' => 'PRODUCTION'],
+            ['name' => 'Production', 'is_active' => true],
+        );
+        $roles = Role::where('factory_id', $factoryId);
+        $isManagerOnly = $request->user()->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'factory-manager')->exists()
+            && ! $request->user()->roles()->wherePivot('factory_id', $factoryId)->whereIn('slug', ['factory-owner', 'factory-administrator'])->exists();
+        if ($isManagerOnly) {
+            $roles->whereNotIn('slug', ['factory-owner', 'factory-administrator', 'factory-manager']);
+        }
 
         return response()->json([
             'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
-            'roles' => Role::where('factory_id', $factoryId)->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
+            'roles' => $roles->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
             'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
             'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get(),
             'workstations' => Workstation::where('is_active', true)->get(),
@@ -188,6 +198,10 @@ class TeamWorkspaceController extends Controller
 
     private function assertCanGrantRole(User $actor, Role $role): void
     {
+        $isFactoryManager = $actor->roles()->wherePivot('factory_id', $actor->current_factory_id)->where('slug', 'factory-manager')->exists();
+        if ($isFactoryManager && ! in_array($role->slug, ['factory-owner', 'factory-administrator', 'factory-manager'], true)) {
+            return;
+        }
         $this->assertCanGrantPermissions($actor, $role->permissions->pluck('slug')->all());
     }
 
