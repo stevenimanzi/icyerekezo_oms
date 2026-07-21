@@ -35,14 +35,20 @@ Route::prefix('api')->group(function () {
             Route::post('/factories', [PlatformAdminController::class, 'storeFactory']);
             Route::patch('/factories/{factory}', [PlatformAdminController::class, 'updateFactory']);
             Route::get('/users', [PlatformAdminController::class, 'users']);
+            Route::post('/users', [PlatformAdminController::class, 'storeFactoryUser']);
             Route::patch('/users/{user}', [PlatformAdminController::class, 'updateUser']);
+            Route::put('/users/{user}/password', [PlatformAdminController::class, 'resetPassword']);
             Route::post('/plans', [PlatformAdminController::class, 'storePlan']);
+            Route::get('/subscriptions', [PlatformAdminController::class, 'subscriptions']);
             Route::post('/factories/{factory}/subscriptions', [PlatformAdminController::class, 'subscribe']);
             Route::post('/announcements', [PlatformAdminController::class, 'announce']);
+            Route::get('/announcements', [PlatformAdminController::class, 'announcements']);
             Route::get('/tickets', [PlatformAdminController::class, 'tickets']);
             Route::post('/tickets/{ticket}/reply', [PlatformAdminController::class, 'replyTicket']);
             Route::put('/settings', [PlatformAdminController::class, 'settings']);
+            Route::get('/settings', [PlatformAdminController::class, 'getSettings']);
             Route::post('/backups', [PlatformAdminController::class, 'backup']);
+            Route::get('/backups', [PlatformAdminController::class, 'backups']);
         });
         Route::middleware('tenant')->group(function () {
             Route::get('/inventory/overview', [InventoryController::class, 'overview'])->middleware('permission:inventory.view');

@@ -15,6 +15,11 @@ class AuditLog extends Model
         return ['old_values' => 'array', 'new_values' => 'array', 'created_at' => 'datetime'];
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public static function record(string $event, string $description, ?Model $subject = null, array $old = [], array $new = []): self
     {
         $request = request();
