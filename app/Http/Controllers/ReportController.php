@@ -10,6 +10,7 @@ use App\Models\StockTransaction;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ReportController extends Controller
@@ -17,6 +18,8 @@ class ReportController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $factory = $request->user()->currentFactory;
+        $productionOnly = $request->user()->roles()->wherePivot('factory_id', $factory->id)->where('dashboard_key', 'production')->exists()
+            && ! $request->user()->roles()->wherePivot('factory_id', $factory->id)->whereIn('slug', ['factory-owner', 'factory-administrator', 'factory-manager'])->exists();
         $data = $request->validate([
             'period' => ['nullable', Rule::in(['day', 'week', 'month', 'custom'])],
             'type' => ['nullable', Rule::in(['all', 'departments', 'production', 'inventory', 'activity'])],
@@ -25,10 +28,19 @@ class ReportController extends Controller
             'to' => ['nullable', 'date', 'after_or_equal:from'],
         ]);
         [$from, $to] = $this->range($data);
-        $type = $data['type'] ?? 'all';
+        $type = $productionOnly ? 'production' : ($data['type'] ?? 'all');
         $departmentId = isset($data['department_id']) ? (int) $data['department_id'] : null;
 
+        $flowDepartmentIds = DB::table('workflow_stages')
+            ->join('workflow_templates', 'workflow_templates.id', '=', 'workflow_stages.workflow_template_id')
+            ->where('workflow_templates.factory_id', $factory->id)->where('workflow_templates.status', 'active')
+            ->whereNotNull('workflow_stages.department_id')->distinct()->pluck('workflow_stages.department_id');
+        if ($productionOnly && $departmentId && ! $flowDepartmentIds->contains($departmentId)) {
+            abort(403, 'This department is not part of the active production flow.');
+        }
+
         $departments = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)
+            ->when($productionOnly, fn ($query) => $query->whereIn('id', $flowDepartmentIds))
             ->when($departmentId, fn ($query) => $query->whereKey($departmentId))
             ->with('manager:id,name')->withCount('employees')->orderBy('name')->get();
 
@@ -48,7 +60,7 @@ class ReportController extends Controller
             $userIds = EmployeeProfile::withoutGlobalScopes()->where('factory_id', $factory->id)->where('department_id', $departmentId)->pluck('user_id');
             $activitiesQuery->whereIn('user_id', $userIds);
         }
-        $activities = $activitiesQuery->with('user:id,name')->latest()->get(['id', 'user_id', 'event', 'description', 'created_at']);
+        $activities = $productionOnly ? collect() : $activitiesQuery->with('user:id,name')->latest()->get(['id', 'user_id', 'event', 'description', 'created_at']);
         $userDepartments = EmployeeProfile::withoutGlobalScopes()->where('factory_id', $factory->id)->whereNotNull('department_id')->pluck('department_id', 'user_id');
         $activityCounts = $activities->groupBy(fn ($activity) => $userDepartments[$activity->user_id] ?? 0)->map->count();
 
@@ -67,20 +79,20 @@ class ReportController extends Controller
             ];
         })->values();
 
-        $inventory = in_array($type, ['all', 'inventory'], true) ? StockTransaction::withoutGlobalScopes()
+        $inventory = ! $productionOnly && in_array($type, ['all', 'inventory'], true) ? StockTransaction::withoutGlobalScopes()
             ->where('stock_transactions.factory_id', $factory->id)->whereBetween('occurred_at', [$from, $to])
             ->join('items', 'items.id', '=', 'stock_transactions.item_id')->join('warehouses', 'warehouses.id', '=', 'stock_transactions.warehouse_id')
             ->select('stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.unit_cost', 'stock_transactions.balance_after', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as item_name', 'items.sku', 'warehouses.name as warehouse_name')->latest('occurred_at')->get() : collect();
 
         return response()->json([
             'factory' => $factory->only(['name', 'industry_type', 'email', 'phone', 'currency_code', 'timezone']),
-            'filters' => ['departments' => Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->orderBy('name')->get(['id', 'name'])],
-            'report' => ['type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
-            'summary' => ['departments' => $departmentActivity->count(), 'production_orders' => $executions->pluck('production_order_id')->unique()->count(), 'stages_processed' => $executions->count(), 'completed_stages' => $executions->where('status', 'completed')->count(), 'output_quantity' => (float) $executions->sum('output_quantity'), 'rejected_quantity' => (float) $executions->sum('rejected_quantity'), 'waste_quantity' => (float) $executions->sum('waste_quantity'), 'downtime_minutes' => (int) $executions->sum('downtime_minutes'), 'stock_movements' => $inventory->count(), 'operational_events' => $activities->count()],
+            'filters' => ['departments' => Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($productionOnly, fn ($query) => $query->whereIn('id', $flowDepartmentIds))->orderBy('name')->get(['id', 'name'])],
+            'report' => ['scope' => $productionOnly ? 'production_flow' : 'factory', 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
+            'summary' => array_filter([($productionOnly ? 'flow_categories' : 'departments') => $departmentActivity->count(), 'production_orders' => $executions->pluck('production_order_id')->unique()->count(), 'stages_processed' => $executions->count(), 'completed_stages' => $executions->where('status', 'completed')->count(), 'output_quantity' => (float) $executions->sum('output_quantity'), 'rejected_quantity' => (float) $executions->sum('rejected_quantity'), 'waste_quantity' => (float) $executions->sum('waste_quantity'), 'downtime_minutes' => (int) $executions->sum('downtime_minutes'), 'stock_movements' => $productionOnly ? null : $inventory->count(), 'operational_events' => $productionOnly ? null : $activities->count()], fn ($value) => $value !== null),
             'department_activity' => $departmentActivity,
             'production' => in_array($type, ['all', 'departments', 'production'], true) ? $executions : [],
             'inventory' => $inventory,
-            'activities' => in_array($type, ['all', 'departments', 'activity'], true) ? $activities : [],
+            'activities' => ! $productionOnly && in_array($type, ['all', 'departments', 'activity'], true) ? $activities : [],
         ]);
     }
 

@@ -43,5 +43,14 @@ class DepartmentDashboardAccessTest extends TestCase
         ])->assertForbidden();
 
         $this->getJson('/api/manufacturing/overview')->assertOk();
+        $this->getJson('/api/reports?period=week&type=all')->assertOk()
+            ->assertJsonPath('report.scope', 'production_flow')
+            ->assertJsonPath('report.type', 'production')
+            ->assertJsonMissingPath('summary.stock_movements')
+            ->assertJsonMissingPath('summary.operational_events')
+            ->assertJsonCount(0, 'inventory')
+            ->assertJsonCount(0, 'activities')
+            ->assertJsonFragment(['name' => 'Cutting'])
+            ->assertJsonFragment(['name' => 'Quality Control']);
     }
 }
