@@ -90,6 +90,13 @@ function pathForPage(user: AuthUser, page: string): string {
     const workspace = user.workspace || 'operations'; return page === 'dashboard' ? `/${workspace}` : `/${workspace}/${page}`;
 }
 
+class PageBoundary extends React.Component<{resetKey:string;children:React.ReactNode},{failed:boolean}> {
+    state={failed:false};
+    static getDerivedStateFromError(){return {failed:true}}
+    componentDidUpdate(previous:{resetKey:string}){if(previous.resetKey!==this.props.resetKey&&this.state.failed)this.setState({failed:false})}
+    render(){return this.state.failed?<div className="panel page-recovery"><Activity size={28}/><h2>This page could not finish loading</h2><p>The application is still running. Try opening the page again.</p><button className="primary-btn" onClick={()=>this.setState({failed:false})}>Try again</button></div>:this.props.children}
+}
+
 function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout: () => void; onMaintenance: (message:string) => void }) {
     const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('icy_locale') as Locale) || 'en');
     const [dark, setDark] = useState(() => localStorage.getItem('icy_theme') === 'dark');
@@ -163,7 +170,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                 </div>
             </header>
             <div className="page">
-                {activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage === 'dashboard' ? <ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/> : activePage === 'settings' ? <FlowSetupPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')}/> : activePage === 'production' ? <ProductionFlowPage/> : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
+                <PageBoundary resetKey={activePage}>{activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage === 'dashboard' ? <ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/> : activePage === 'settings' ? <FlowSetupPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')}/> : activePage === 'production' ? <ProductionFlowPage/> : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
                 <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => setActivePage('production')}><Zap size={17}/>{t.newOrder}</button></div>
                 <section className="workspace-banner"><div><span>{locale === 'en' ? 'Your workspace' : 'Votre espace'}</span><strong>{workspaceName}</strong><small>{user.employee_profile?.workstation ? `${user.employee_profile.department?.name || ''} / ${user.employee_profile.workstation.name}` : (user.roles[0]?.name || 'ICYEREKEZO OMS')}</small></div>{user.active_assignments?.length > 0 && <div className="assignment-preview"><b>{user.active_assignments.length} {locale === 'en' ? 'active assignments' : 'taches actives'}</b>{user.active_assignments.slice(0, 2).map(task => <span key={task.id}>{task.title} · {task.status.replace('_', ' ')}</span>)}</div>}</section>
                 <section className="metric-grid">
@@ -182,7 +189,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                     </div></article>
                 </section>
                 <article className="panel orders-panel"><PanelTitle title={t.activeOrders} action={<button className="text-btn" onClick={() => setActivePage('production')}>{t.viewAll}<ChevronRight size={16}/></button>}/><div className="table-scroll"><table><thead><tr><th>{t.order}</th><th>{t.product}</th><th>{t.stage}</th><th>{t.progress}</th><th>{t.due}</th></tr></thead><tbody>{productionOrders.map((item, index) => <tr key={item.id}><td><strong>{item.id}</strong></td><td><div className="product-cell"><span className={`product-icon p${index}`}><Boxes size={17}/></span><div><strong>{item.product}</strong><small>{item.detail}</small></div></div></td><td><span className={`status s${index}`}>{locale === 'fr' ? (index === 0 ? 'Couture' : index === 1 ? t.inspection : t.packaging) : item.stage}</span></td><td><div className="progress-cell"><div className="progress"><span style={{ width: `${item.progress}%`, background: item.color }}/></div><b>{item.progress}%</b></div></td><td><strong>{item.due}</strong></td></tr>)}</tbody></table></div></article>
-                </>}
+                </>}</PageBoundary>
             </div>
         </main>
         {notice && <div className="toast">{notice}</div>}

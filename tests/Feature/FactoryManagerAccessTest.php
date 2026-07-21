@@ -61,7 +61,13 @@ class FactoryManagerAccessTest extends TestCase
         $this->getJson('/api/reports?period=week&type=all')->assertOk()
             ->assertJsonPath('factory.name', 'Controlled Factory')
             ->assertJsonPath('report.type', 'all')
-            ->assertJsonStructure(['summary', 'production', 'inventory', 'team', 'activities']);
+            ->assertJsonStructure(['summary', 'department_activity', 'production', 'inventory', 'activities'])
+            ->assertJsonFragment(['name' => 'Research and Development', 'stages_processed' => 0, 'output_quantity' => 0]);
+        $productionDepartment = Department::where('code', 'PRODUCTION')->firstOrFail();
+        $this->getJson('/api/reports?period=day&type=departments&department_id='.$productionDepartment->id)->assertOk()
+            ->assertJsonCount(1, 'department_activity')
+            ->assertJsonPath('department_activity.0.name', 'Production')
+            ->assertJsonPath('department_activity.0.production_orders', 0);
         $this->postJson('/api/factory/warehouses', ['name' => 'Manager Warehouse', 'code' => 'MGR-WH', 'type' => 'general'])->assertCreated();
         $workflow = $this->postJson('/api/manufacturing/workflows', ['name' => 'Cut and finish', 'code' => 'CUT-FIN', 'stages' => [['name' => 'Cutting', 'code' => 'CUT', 'sequence' => 1]]])->assertCreated()->json();
         $this->putJson('/api/manufacturing/workflows/'.$workflow['id'], ['name' => 'Cut, weld and finish', 'code' => 'CUT-FIN', 'status' => 'active', 'stages' => [

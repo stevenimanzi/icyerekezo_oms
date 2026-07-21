@@ -204,3 +204,5 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .department-table select { width:100%; min-width:220px; min-height:40px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--text); }
 .department-table .table-action { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .department-code { color:var(--brand); letter-spacing:.05em; }
+.page-recovery { min-height:360px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:35px; text-align:center; }
+.page-recovery svg { color:var(--brand); }.page-recovery h2 { margin:14px 0 6px; }.page-recovery p { margin:0 0 18px; color:var(--muted); }
