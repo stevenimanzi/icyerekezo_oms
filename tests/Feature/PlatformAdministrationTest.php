@@ -29,6 +29,11 @@ class PlatformAdministrationTest extends TestCase
             ->assertJsonPath('plans.1.monthly_price', 200000)
             ->assertJsonPath('plans.2.code', 'ENTERPRISE')
             ->assertJsonPath('plans.2.monthly_price', 300000);
+
+        $this->postJson('/api/platform/plans', ['name' => 'Starter', 'code' => 'starter', 'monthly_price' => 100000, 'currency_code' => 'RWF'])
+            ->assertOk()
+            ->assertJsonPath('code', 'STARTER');
+        $this->assertDatabaseCount('subscription_plans', 3);
     }
 
     public function test_only_super_admin_can_control_factories_subscriptions_maintenance_and_backups(): void

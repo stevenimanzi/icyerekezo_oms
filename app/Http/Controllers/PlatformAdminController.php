@@ -126,9 +126,11 @@ class PlatformAdminController extends Controller
 
     public function storePlan(Request $request): JsonResponse
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:100'], 'code' => ['required', 'string', 'max:40', 'unique:subscription_plans,code'], 'monthly_price' => ['required', 'numeric', 'min:0'], 'currency_code' => ['required', 'string', 'size:3'], 'limits' => ['nullable', 'array'], 'features' => ['nullable', 'array']]);
+        $data = $request->validate(['name' => ['required', 'string', 'max:100'], 'code' => ['required', 'string', 'max:40'], 'monthly_price' => ['required', 'numeric', 'min:0'], 'currency_code' => ['required', 'string', 'size:3'], 'limits' => ['nullable', 'array'], 'features' => ['nullable', 'array']]);
+        $code = strtoupper($data['code']);
+        $plan = SubscriptionPlan::updateOrCreate(['code' => $code], array_merge($data, ['code' => $code, 'is_active' => true]));
 
-        return response()->json(SubscriptionPlan::create($data), 201);
+        return response()->json($plan, $plan->wasRecentlyCreated ? 201 : 200);
     }
 
     public function subscriptions(): JsonResponse
