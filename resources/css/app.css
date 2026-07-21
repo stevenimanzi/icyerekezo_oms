@@ -185,4 +185,8 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .department-card label { display:flex; min-width:0; flex-direction:column; gap:6px; color:var(--muted); font-size:12px; font-weight:700; }
 .department-card select { width:100%; min-width:0; min-height:42px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--text); }
 .department-card .table-action { min-height:42px; display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
+.employee-create-form { order:-1; }
+.employee-form-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.employee-create-form label small { color:var(--muted); font-size:11px; font-weight:400; }
+@media(max-width:1050px){.employee-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.employee-form-grid{grid-template-columns:1fr}}
 @media(max-width:1050px){.department-card{grid-template-columns:minmax(0,1fr) minmax(180px,1fr)}.department-card .table-action{grid-column:2}}@media(max-width:620px){.department-card{grid-template-columns:1fr}.department-card .table-action{grid-column:auto;width:100%}}
