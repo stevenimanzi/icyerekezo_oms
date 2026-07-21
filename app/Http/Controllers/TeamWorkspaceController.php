@@ -25,7 +25,7 @@ class TeamWorkspaceController extends Controller
         $factoryId = $request->user()->current_factory_id;
 
         return response()->json([
-            'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
+            'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
             'roles' => Role::where('factory_id', $factoryId)->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
             'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
             'departments' => Department::where('is_active', true)->get(),
@@ -109,7 +109,7 @@ class TeamWorkspaceController extends Controller
             $user->roles()->wherePivot('factory_id', $factoryId)->detach();
             $user->roles()->attach($role->id, ['factory_id' => $factoryId]);
         }
-        $profileData = collect($data)->only(['department_id', 'workstation_id', 'job_title'])->filter(fn ($value) => $value !== null)->all();
+        $profileData = collect($data)->only(['department_id', 'workstation_id', 'job_title'])->all();
         if ($profileData) {
             EmployeeProfile::where(['factory_id' => $factoryId, 'user_id' => $user->id])->update($profileData);
         }
@@ -127,6 +127,16 @@ class TeamWorkspaceController extends Controller
         $data = $request->validate(['name' => ['required', 'string', 'max:120'], 'code' => ['required', 'string', 'max:40', Rule::unique('workstations')->where('factory_id', $factoryId)], 'type' => ['required', Rule::in(['cutting', 'sewing', 'mixing', 'processing', 'bottling', 'packaging', 'quality', 'warehouse', 'dispatch', 'machine', 'other'])], 'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)], 'description' => ['nullable', 'string', 'max:1000']]);
 
         return response()->json(Workstation::create($data), 201);
+    }
+
+    public function storeDepartment(Request $request): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $data = $request->validate(['name' => ['required', 'string', 'max:120'], 'code' => ['required', 'string', 'max:40', Rule::unique('departments')->where('factory_id', $factoryId)]]);
+        $department = Department::create($data + ['factory_id' => $factoryId, 'is_active' => true]);
+        AuditLog::record('team.department_created', "Created department {$department->name}", $department);
+
+        return response()->json($department, 201);
     }
 
     public function assign(Request $request): JsonResponse

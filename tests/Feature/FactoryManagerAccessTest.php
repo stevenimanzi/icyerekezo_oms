@@ -37,6 +37,18 @@ class FactoryManagerAccessTest extends TestCase
         }
 
         $this->getJson('/api/team/workspaces')->assertOk();
+        $this->getJson('/api/factory/flow-suggestion')->assertOk()
+            ->assertJsonPath('industry', 'steel_metals')
+            ->assertJsonPath('suggestion.departments.1.name', 'Cutting');
+        $this->postJson('/api/factory/flow-suggestion/apply')->assertCreated()
+            ->assertJsonCount(8, 'stages');
+        $this->assertDatabaseHas('departments', ['name' => 'Welding']);
+        $this->assertDatabaseHas('workstations', ['name' => 'Quality Control Main Station']);
+        $this->postJson('/api/team/departments', ['name' => 'Research and Development', 'code' => 'RND'])->assertCreated();
+        $this->getJson('/api/reports?period=week&type=all')->assertOk()
+            ->assertJsonPath('factory.name', 'Controlled Factory')
+            ->assertJsonPath('report.type', 'all')
+            ->assertJsonStructure(['summary', 'production', 'inventory', 'team', 'activities']);
         $this->postJson('/api/factory/warehouses', ['name' => 'Manager Warehouse', 'code' => 'MGR-WH', 'type' => 'general'])->assertCreated();
         $this->postJson('/api/manufacturing/workflows', ['name' => 'Cut and finish', 'code' => 'CUT-FIN', 'stages' => [['name' => 'Cutting', 'code' => 'CUT', 'sequence' => 1]]])->assertCreated();
         $this->getJson('/api/inventory/overview')->assertForbidden();

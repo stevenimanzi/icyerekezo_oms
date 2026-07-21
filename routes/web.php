@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\FactoryContextController;
 use App\Http\Controllers\ExecutiveDashboardController;
+use App\Http\Controllers\FactoryContextController;
+use App\Http\Controllers\FactoryFlowController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManufacturingController;
 use App\Http\Controllers\PlatformAdminController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TeamWorkspaceController;
@@ -56,6 +58,9 @@ Route::prefix('api')->group(function () {
         });
         Route::middleware('tenant')->group(function () {
             Route::get('/executive/dashboard', ExecutiveDashboardController::class);
+            Route::get('/factory/flow-suggestion', [FactoryFlowController::class, 'suggestion'])->middleware('permission:factory.manage');
+            Route::post('/factory/flow-suggestion/apply', [FactoryFlowController::class, 'apply'])->middleware('permission:factory.manage');
+            Route::get('/reports', ReportController::class)->middleware('permission:reports.view');
             Route::get('/inventory/overview', [InventoryController::class, 'overview'])->middleware('permission:inventory.view');
             Route::get('/inventory/items', [InventoryController::class, 'items'])->middleware('permission:products.view');
             Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->middleware('permission:products.create');
@@ -68,6 +73,7 @@ Route::prefix('api')->group(function () {
             Route::patch('/team/users/{user}', [TeamWorkspaceController::class, 'updateUser'])->middleware('permission:users.update');
             Route::post('/team/roles', [TeamWorkspaceController::class, 'storeRole'])->middleware('permission:users.assign_roles');
             Route::post('/team/workstations', [TeamWorkspaceController::class, 'storeWorkstation'])->middleware('permission:factory.manage');
+            Route::post('/team/departments', [TeamWorkspaceController::class, 'storeDepartment'])->middleware('permission:factory.manage');
             Route::post('/team/assignments', [TeamWorkspaceController::class, 'assign'])->middleware('permission:users.update');
             Route::patch('/team/assignments/{assignment}', [TeamWorkspaceController::class, 'updateAssignment']);
             Route::get('/manufacturing/overview', [ManufacturingController::class, 'overview'])->middleware('permission:production.view');
