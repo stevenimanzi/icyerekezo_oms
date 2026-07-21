@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     Activity, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CreditCard, Database,
@@ -74,12 +74,25 @@ function Logo({ name = 'ICYEREKEZO OMS', logoUrl }: { name?: string; logoUrl?: s
     return <div className="brand"><div className="brand-mark">{logoUrl ? <img src={logoUrl} alt=""/> : <Factory size={20}/>}</div><div><strong>{words.join(' ')}</strong><span>{suffix}</span></div></div>;
 }
 
+const adminPagePaths: Record<string, string> = { 'platform-dashboard': '/admin', factories: '/admin/factories', 'platform-users': '/admin/users', subscriptions: '/admin/subscriptions', announcements: '/admin/announcements', 'support-center': '/admin/support', backups: '/admin/backups', 'system-settings': '/admin/settings' };
+const adminPathPages = Object.fromEntries(Object.entries(adminPagePaths).map(([page, path]) => [path, page]));
+function pageFromLocation(user: AuthUser): string {
+    const path = window.location.pathname.replace(/\/$/, '') || '/';
+    if (user.is_platform_admin) return adminPathPages[path] || 'platform-dashboard';
+    const parts = path.split('/').filter(Boolean); const page = parts.length > 1 ? parts[1] : 'dashboard'; return ({ report: 'reports', users: 'team', products_bom: 'products' } as Record<string,string>)[page] || page;
+}
+function pathForPage(user: AuthUser, page: string): string {
+    if (user.is_platform_admin) return adminPagePaths[page] || '/admin';
+    const workspace = user.workspace || 'operations'; return page === 'dashboard' ? `/${workspace}` : `/${workspace}/${page}`;
+}
+
 function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
     const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('icy_locale') as Locale) || 'en');
     const [dark, setDark] = useState(() => localStorage.getItem('icy_theme') === 'dark');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
-    const [activePage, setActivePage] = useState(user.is_platform_admin ? 'platform-dashboard' : 'dashboard');
+    const [activePage, setActivePage] = useState(() => pageFromLocation(user));
+    const skipHistory = useRef(true);
     const [searchOpen, setSearchOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
@@ -88,6 +101,12 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
     const workspaceName = ({ platform_admin: 'Platform administration', executive: t.overview, production: locale === 'en' ? 'Production command centre' : 'Centre de production', warehouse: locale === 'en' ? 'Warehouse workspace' : 'Espace entrepot', procurement: locale === 'en' ? 'Procurement workspace' : 'Espace achats', quality: locale === 'en' ? 'Quality control workspace' : 'Espace controle qualite', cutting: locale === 'en' ? 'Cutting workstation' : 'Poste de coupe', workstation: locale === 'en' ? 'Operator workstation' : 'Poste operateur', logistics: locale === 'en' ? 'Logistics workspace' : 'Espace logistique', sales: locale === 'en' ? 'Sales workspace' : 'Espace ventes', finance: locale === 'en' ? 'Finance workspace' : 'Espace finances' } as Record<string,string>)[user.workspace] || t.overview;
     useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('icy_theme', dark ? 'dark' : 'light'); }, [dark]);
     useEffect(() => { document.documentElement.lang = locale; localStorage.setItem('icy_locale', locale); }, [locale]);
+    useEffect(() => {
+        const path = pathForPage(user, activePage); document.title = `${activePage.replaceAll('-', ' ')} | ${user.system?.name || 'ICYEREKEZO OMS'}`;
+        if (skipHistory.current) { skipHistory.current = false; if (window.location.pathname !== path) window.history.replaceState({ page: activePage }, '', path); }
+        else if (window.location.pathname !== path) window.history.pushState({ page: activePage }, '', path);
+    }, [activePage, user]);
+    useEffect(() => { const back = () => { skipHistory.current = true; setActivePage(pageFromLocation(user)); }; window.addEventListener('popstate', back); return () => window.removeEventListener('popstate', back); }, [user]);
     useEffect(() => {
         const shortcut = (event: KeyboardEvent) => {
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -105,6 +124,10 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
         ['production', Gauge, t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
         ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
     ] as const).filter(([, , , permission]) => permission === '*' || can(permission)), [t, locale, user.is_platform_admin, user.permissions]);
+    useEffect(() => {
+        const allowed = nav.map(([key]) => key as string); if (!user.is_platform_admin) { allowed.push('support'); if (can('factory.manage')) allowed.push('settings'); }
+        if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : 'dashboard');
+    }, [activePage, nav, user.is_platform_admin]);
 
     const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(null), 2600); };
 
@@ -127,7 +150,7 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
                     <button className="locale-btn" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={17}/><span>{locale === 'en' ? 'FR' : 'EN'}</span></button>
                     <button className="icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={19}/> : <Moon size={19}/>}</button>
                     <div className="popover-anchor"><button className="icon-btn notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={19}/><b>{user.announcements?.length || 0}</b></button>{notificationsOpen && <div className="top-popover notification-menu"><strong>{locale === 'en' ? 'Notifications' : 'Notifications'}</strong>{user.announcements?.length ? user.announcements.slice(0,4).map(item => <span key={item.id}><b>{item.title}</b>{item.message}</span>) : <span>{locale === 'en' ? 'No new announcements' : 'Aucune nouvelle annonce'}</span>}<button onClick={() => { setNotificationsOpen(false); setActivePage(user.is_platform_admin ? 'announcements' : 'support'); }}>View all activity</button></div>}</div>
-                    <div className="popover-anchor"><button className="user-menu" onClick={() => setProfileOpen(!profileOpen)}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>{profileOpen && <div className="top-popover profile-menu"><button onClick={() => { setActivePage('settings'); setProfileOpen(false); }}>{locale === 'en' ? 'Profile & settings' : 'Profil et paramètres'}</button><button onClick={onLogout}>{locale === 'en' ? 'Sign out' : 'Se déconnecter'}</button></div>}</div>
+                    <div className="popover-anchor"><button className="user-menu" onClick={() => setProfileOpen(!profileOpen)}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>{profileOpen && <div className="top-popover profile-menu"><button onClick={() => { setActivePage(user.is_platform_admin ? 'system-settings' : 'settings'); setProfileOpen(false); }}>{locale === 'en' ? 'Profile & settings' : 'Profil et paramètres'}</button><button onClick={onLogout}>{locale === 'en' ? 'Sign out' : 'Se déconnecter'}</button></div>}</div>
                 </div>
             </header>
             <div className="page">
