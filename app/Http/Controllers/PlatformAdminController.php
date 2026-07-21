@@ -23,6 +23,7 @@ use App\Support\RoleTemplateCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -184,7 +185,7 @@ class PlatformAdminController extends Controller
         $data = $request->validate([
             'system_name' => ['nullable', 'string', 'max:120'],
             'system_tagline' => ['nullable', 'string', 'max:180'],
-            'logo_url' => ['nullable', 'url', 'max:1000'],
+            'logo_url' => ['nullable', 'string', 'max:1000', 'regex:/^(https?:\/\/|\/)/'],
             'support_email' => ['nullable', 'email'],
             'support_phone' => ['nullable', 'string', 'max:40'],
             'default_locale' => ['nullable', Rule::in(['en', 'fr'])],
@@ -206,6 +207,24 @@ class PlatformAdminController extends Controller
     public function getSettings(): JsonResponse
     {
         return response()->json(SystemSetting::pluck('value', 'key'));
+    }
+
+    public function uploadLogo(Request $request): JsonResponse
+    {
+        $data = $request->validate(['logo' => ['required', 'file', 'mimes:png,jpg,jpeg,webp,ico', 'max:2048']]);
+        $directory = public_path('uploads/system');
+        File::ensureDirectoryExists($directory);
+        foreach (File::glob($directory.DIRECTORY_SEPARATOR.'system-logo.*') as $oldLogo) {
+            File::delete($oldLogo);
+        }
+        $extension = strtolower($data['logo']->getClientOriginalExtension());
+        $filename = 'system-logo.'.$extension;
+        $data['logo']->move($directory, $filename);
+        $logoUrl = '/uploads/system/'.$filename.'?v='.now()->timestamp;
+        SystemSetting::updateOrCreate(['key' => 'logo_url'], ['value' => $logoUrl, 'type' => 'string', 'is_public' => true]);
+        AuditLog::record('platform.logo_updated', 'Updated the system logo');
+
+        return response()->json(['logo_url' => $logoUrl]);
     }
 
     public function backups(): JsonResponse

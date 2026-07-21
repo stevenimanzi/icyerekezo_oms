@@ -8,7 +8,9 @@ use App\Models\FactorySubscription;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -22,6 +24,10 @@ class PlatformAdministrationTest extends TestCase
         $settings = ['registration_enabled' => false, 'default_locale' => 'fr', 'currency_code' => 'USD', 'timezone' => 'UTC', 'backup_retention_days' => 45, 'support_phone' => '+250 788 000 000'];
 
         $this->actingAs($admin)->putJson('/api/platform/settings', $settings)->assertOk();
+        $this->getJson('/api/search?q=Defaults')->assertOk()->assertJsonStructure(['data']);
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');
+        $this->post('/api/platform/settings/logo', ['logo' => UploadedFile::fake()->createWithContent('brand.png', $png)])->assertOk()->assertJsonPath('logo_url', fn ($value) => str_starts_with($value, '/uploads/system/system-logo.png'));
+        $this->get('/')->assertOk()->assertSee('/uploads/system/system-logo.png', false);
         $registration = ['name' => 'Owner', 'email' => 'closed@test.local', 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Defaults Factory', 'industry_type' => 'general_manufacturing'];
         $this->postJson('/api/auth/register', $registration)->assertForbidden();
 
@@ -29,6 +35,7 @@ class PlatformAdministrationTest extends TestCase
         $this->postJson('/api/auth/register', $registration)->assertCreated();
         $this->assertDatabaseHas('factories', ['name' => 'Defaults Factory', 'default_locale' => 'fr', 'currency_code' => 'USD', 'timezone' => 'UTC']);
         $this->assertDatabaseHas('users', ['email' => 'closed@test.local', 'locale' => 'fr']);
+        File::deleteDirectory(public_path('uploads/system'));
     }
 
     public function test_subscription_page_lists_the_three_default_plans_in_price_order(): void

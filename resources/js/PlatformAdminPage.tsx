@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, Building2, CheckCircle2, CreditCard, Database, Megaphone, MessageSquare, Plus, RefreshCw, Save, Settings, ShieldCheck, Users } from 'lucide-react';
+import SystemSettingsPanel from './SystemSettingsPanel';
 
 type Locale = 'en' | 'fr';
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 async function request(url: string, options: RequestInit = {}) {
-    const response = await fetch(url, { ...options, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), ...(options.headers || {}) } });
-    const payload = await response.json(); if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Request failed.'); return payload;
+    const response = await fetch(url, { ...options, headers: { Accept: 'application/json', ...(options.body instanceof FormData ? {} : {'Content-Type': 'application/json'}), 'X-CSRF-TOKEN': csrf(), ...(options.headers || {}) } });
+    const text=await response.text();let payload:any={};try{payload=text?JSON.parse(text):{}}catch{throw new Error('The server returned a web page instead of data. Please refresh and sign in again.')}if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Request failed.'); return payload;
 }
 
 const pageInfo: Record<string, [React.ElementType, string, string]> = {
@@ -27,6 +28,7 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
     useEffect(() => { setShowForm(false); setForm({}); load(); }, [page]);
     useEffect(() => { if (!['support-center','platform-dashboard','backups'].includes(page)) return; const timer=window.setInterval(()=>request(endpoint).then(setData).catch(()=>{}),5000); return ()=>window.clearInterval(timer); }, [page,endpoint]);
     const run = async (url: string, method: string, body?: any, message = 'Saved successfully.') => { setBusy(true); setError(''); setSuccess(''); try { await request(url, { method, body: body ? JSON.stringify(body) : undefined }); setSuccess(message); setShowForm(false); await load(); } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to save.'); setBusy(false); } };
+    const uploadLogo = async (file:File) => { const body=new FormData();body.append('logo',file);setBusy(true);setError('');try{await request('/api/platform/settings/logo',{method:'POST',body});setSuccess('System logo uploaded.');await load();window.setTimeout(()=>window.location.reload(),500)}catch(reason){setError(reason instanceof Error?reason.message:'Unable to upload logo.');setBusy(false)} };
     const records = page === 'platform-users' ? (data?.users?.data || []) : (data?.data || []);
 
     return <section className="platform-page">
@@ -39,7 +41,7 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
         {page === 'announcements' && <><SimpleForm open={showForm} fields={[['title','Title'],['message','Message','textarea'],['severity','Severity','select',['info','success','warning','critical']],['audience','Audience','select',['all','factory_owners','factory_users']]]} form={form} setForm={setForm} submit={(values:any)=>run('/api/platform/announcements','POST',values,'Announcement published to users.')}/><AdminTable headers={['Title','Message','Severity','Audience','Published']} rows={records.map((item:any)=>[<b>{item.title}</b>,item.message,<Status value={item.severity}/>,item.audience,new Date(item.published_at).toLocaleString()])}/></>}
         {page === 'support-center' && <SupportPanel records={records} busy={busy} reply={(id,message,status)=>run(`/api/platform/tickets/${id}/reply`,'POST',{message,status},'Reply sent.')}/>} 
         {page === 'backups' && <><BackupAction open={showForm} busy={busy} submit={()=>run('/api/platform/backups','POST',undefined,'Backup queued securely.')}/><AdminTable headers={['Requested','Status','Size','File','Completed']} rows={records.map((item:any)=>[new Date(item.created_at).toLocaleString(),<Status value={item.status}/>,item.size_bytes?`${(item.size_bytes/1048576).toFixed(2)} MB`:'—',item.path||'—',item.completed_at?new Date(item.completed_at).toLocaleString():'—'])}/></>}
-        {page === 'system-settings' && <SettingsPanel settings={data||{}} editing={showForm} busy={busy} submit={values=>run('/api/platform/settings','PUT',values,'System configuration updated.')} />}
+        {page === 'system-settings' && <SystemSettingsPanel settings={data||{}} editing={showForm} busy={busy} uploadLogo={uploadLogo} submit={async(values:any)=>{await run('/api/platform/settings','PUT',values,'System configuration updated.');window.setTimeout(()=>window.location.reload(),500)}} />}
         {busy && !data && <div className="admin-loading">Loading platform controls…</div>}
     </section>;
 }

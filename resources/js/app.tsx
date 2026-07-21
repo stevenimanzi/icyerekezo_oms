@@ -27,8 +27,10 @@ async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
         ...options,
         headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), ...(options.headers ?? {}) },
     });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || 'Something went wrong.');
+    const text = await response.text();
+    let payload: any = {};
+    try { payload = text ? JSON.parse(text) : {}; } catch { const error:any = new Error('The server returned a web page instead of data. Please refresh and sign in again.'); error.status=response.status; throw error; }
+    if (!response.ok) { const error:any=new Error(payload.message || 'Something went wrong.');error.status=response.status;throw error; }
     return payload;
 }
 
@@ -74,7 +76,7 @@ function Logo({ name = 'ICYEREKEZO OMS', logoUrl }: { name?: string; logoUrl?: s
     return <div className="brand"><div className="brand-mark">{logoUrl ? <img src={logoUrl} alt=""/> : <Factory size={20}/>}</div><div><strong>{words.join(' ')}</strong><span>{suffix}</span></div></div>;
 }
 
-const adminPagePaths: Record<string, string> = { 'platform-dashboard': '/admin', factories: '/admin/factories', 'platform-users': '/admin/users', subscriptions: '/admin/subscriptions', announcements: '/admin/announcements', 'support-center': '/admin/support', backups: '/admin/backups', 'system-settings': '/admin/settings' };
+const adminPagePaths: Record<string, string> = { 'platform-dashboard': '/admin', factories: '/admin/factories', 'platform-users': '/admin/users', subscriptions: '/admin/subscriptions', announcements: '/admin/announcements', notifications: '/admin/notifications', 'support-center': '/admin/support', backups: '/admin/backups', 'system-settings': '/admin/settings' };
 const adminPathPages = Object.fromEntries(Object.entries(adminPagePaths).map(([page, path]) => [path, page]));
 function pageFromLocation(user: AuthUser): string {
     const path = window.location.pathname.replace(/\/$/, '') || '/';
@@ -86,7 +88,7 @@ function pathForPage(user: AuthUser, page: string): string {
     const workspace = user.workspace || 'operations'; return page === 'dashboard' ? `/${workspace}` : `/${workspace}/${page}`;
 }
 
-function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout: () => void; onMaintenance: (message:string) => void }) {
     const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('icy_locale') as Locale) || 'en');
     const [dark, setDark] = useState(() => localStorage.getItem('icy_theme') === 'dark');
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -95,6 +97,9 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
     const skipHistory = useRef(true);
     const [searchOpen, setSearchOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [liveAnnouncements,setLiveAnnouncements]=useState(user.announcements||[]);
+    const [searchQuery,setSearchQuery]=useState('');
+    const [searchResults,setSearchResults]=useState<any[]>([]);
     const [profileOpen, setProfileOpen] = useState(false);
     const t = copy[locale];
     const can = (permission: string) => user.permissions.includes('*') || user.permissions.includes(permission);
@@ -107,6 +112,8 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
         else if (window.location.pathname !== path) window.history.pushState({ page: activePage }, '', path);
     }, [activePage, user]);
     useEffect(() => { const back = () => { skipHistory.current = true; setActivePage(pageFromLocation(user)); }; window.addEventListener('popstate', back); return () => window.removeEventListener('popstate', back); }, [user]);
+    useEffect(()=>{const refresh=()=>api<{user:AuthUser}>('/api/auth/me').then(result=>setLiveAnnouncements(result.user.announcements||[])).catch((reason:any)=>{if(reason?.status===503)onMaintenance(reason.message)});const timer=window.setInterval(refresh,5000);return()=>window.clearInterval(timer)},[onMaintenance]);
+    useEffect(()=>{if(searchQuery.trim().length<2){setSearchResults([]);return}const timer=window.setTimeout(()=>api<{data:any[]}>(`/api/search?q=${encodeURIComponent(searchQuery)}`).then(result=>setSearchResults(result.data)).catch(()=>setSearchResults([])),250);return()=>window.clearTimeout(timer)},[searchQuery]);
     useEffect(() => {
         const shortcut = (event: KeyboardEvent) => {
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -118,14 +125,14 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
     }, []);
 
     const nav = useMemo(() => (user.is_platform_admin ? [
-        ['platform-dashboard', LayoutDashboard, locale === 'en' ? 'Platform overview' : 'Vue plateforme', '*'], ['factories', Building2, locale === 'en' ? 'Factories' : 'Usines', '*'], ['platform-users', Users, locale === 'en' ? 'All users' : 'Tous les utilisateurs', '*'], ['subscriptions', CreditCard, locale === 'en' ? 'Subscriptions' : 'Abonnements', '*'], ['announcements', Megaphone, locale === 'en' ? 'Announcements' : 'Annonces', '*'], ['support-center', MessageSquare, locale === 'en' ? 'Support centre' : 'Centre de support', '*'], ['backups', Database, locale === 'en' ? 'Database backups' : 'Sauvegardes', '*'], ['system-settings', Settings, locale === 'en' ? 'System settings' : 'Paramètres système', '*'],
+        ['platform-dashboard', LayoutDashboard, locale === 'en' ? 'Platform overview' : 'Vue plateforme', '*'], ['factories', Building2, locale === 'en' ? 'Factories' : 'Usines', '*'], ['platform-users', Users, locale === 'en' ? 'All users' : 'Tous les utilisateurs', '*'], ['subscriptions', CreditCard, locale === 'en' ? 'Subscriptions' : 'Abonnements', '*'], ['announcements', Megaphone, locale === 'en' ? 'Announcements' : 'Annonces', '*'], ['notifications', Bell, locale === 'en' ? 'Notifications' : 'Notifications', '*'], ['support-center', MessageSquare, locale === 'en' ? 'Support centre' : 'Centre de support', '*'], ['backups', Database, locale === 'en' ? 'Database backups' : 'Sauvegardes', '*'], ['system-settings', Settings, locale === 'en' ? 'System settings' : 'Paramètres système', '*'],
     ] as const : [
         ['dashboard', LayoutDashboard, t.dashboard, '*'], ['procurement', ShoppingCart, t.procurement, 'procurement.view'], ['inventory', Warehouse, t.warehouse, 'inventory.view'], ['products', Boxes, t.products, 'products.view'],
         ['production', Gauge, t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
         ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
     ] as const).filter(([, , , permission]) => permission === '*' || can(permission)), [t, locale, user.is_platform_admin, user.permissions]);
     useEffect(() => {
-        const allowed = nav.map(([key]) => key as string); if (!user.is_platform_admin) { allowed.push('support'); if (can('factory.manage')) allowed.push('settings'); }
+        const allowed = nav.map(([key]) => key as string); if (!user.is_platform_admin) { allowed.push('support','notifications'); if (can('factory.manage')) allowed.push('settings'); }
         if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : 'dashboard');
     }, [activePage, nav, user.is_platform_admin]);
 
@@ -145,16 +152,16 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
         <main className="main-area">
             <header className="topbar">
                 <button className="icon-btn menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu"><Menu size={21}/></button>
-                <label className="search"><Search size={18}/><input aria-label={t.search} placeholder={t.search} onFocus={() => setSearchOpen(true)} onKeyDown={event => { if (event.key === 'Enter') { setSearchOpen(false); setActivePage('products'); toast(locale === 'en' ? 'Search opened in Products & BOM.' : 'Recherche ouverte dans Produits et nomenclatures.'); } }}/><kbd>Ctrl K</kbd>{searchOpen && <div className="top-popover search-popover"><strong>{locale === 'en' ? 'Quick search' : 'Recherche rapide'}</strong><button onMouseDown={() => { setActivePage('products'); setSearchOpen(false); }}>{t.products}</button><button onMouseDown={() => { setActivePage('production'); setSearchOpen(false); }}>{t.planning}</button><button onMouseDown={() => { setActivePage('inventory'); setSearchOpen(false); }}>{t.warehouse}</button></div>}</label>
+                <label className="search"><Search size={18}/><input aria-label={t.search} placeholder={t.search} value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} onFocus={() => setSearchOpen(true)}/><kbd>Ctrl K</kbd>{searchOpen && <div className="top-popover search-popover"><strong>{locale === 'en' ? 'Live search results' : 'Résultats en direct'}</strong>{searchQuery.trim().length<2?<span>{locale==='en'?'Type at least 2 letters':'Saisissez au moins 2 lettres'}</span>:searchResults.length?searchResults.map((item,index)=><button key={`${item.type}-${item.title}-${index}`} onMouseDown={()=>{setActivePage(item.page);setSearchOpen(false);setSearchQuery('')}}><b>{item.title}</b><small>{item.type} · {item.subtitle}</small></button>):<span>{locale==='en'?'No matching records':'Aucun résultat'}</span>}</div>}</label>
                 <div className="top-actions">
                     <button className="locale-btn" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={17}/><span>{locale === 'en' ? 'FR' : 'EN'}</span></button>
                     <button className="icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={19}/> : <Moon size={19}/>}</button>
-                    <div className="popover-anchor"><button className="icon-btn notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={19}/><b>{user.announcements?.length || 0}</b></button>{notificationsOpen && <div className="top-popover notification-menu"><strong>{locale === 'en' ? 'Notifications' : 'Notifications'}</strong>{user.announcements?.length ? user.announcements.slice(0,4).map(item => <span key={item.id}><b>{item.title}</b>{item.message}</span>) : <span>{locale === 'en' ? 'No new announcements' : 'Aucune nouvelle annonce'}</span>}<button onClick={() => { setNotificationsOpen(false); setActivePage(user.is_platform_admin ? 'announcements' : 'support'); }}>View all activity</button></div>}</div>
+                    <div className="popover-anchor"><button className="icon-btn notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={19}/><b>{liveAnnouncements.length}</b></button>{notificationsOpen && <div className="top-popover notification-menu"><strong>{locale === 'en' ? 'Notifications' : 'Notifications'}</strong>{liveAnnouncements.length ? liveAnnouncements.slice(0,4).map(item => <span key={item.id}><b>{item.title}</b>{item.message}</span>) : <span>{locale === 'en' ? 'No new announcements' : 'Aucune nouvelle annonce'}</span>}<button onClick={() => { setNotificationsOpen(false); setActivePage('notifications'); }}>{locale==='en'?'View all notifications':'Voir toutes les notifications'}</button></div>}</div>
                     <div className="popover-anchor"><button className="user-menu" onClick={() => setProfileOpen(!profileOpen)}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>{profileOpen && <div className="top-popover profile-menu"><button onClick={() => { setActivePage(user.is_platform_admin ? 'system-settings' : 'settings'); setProfileOpen(false); }}>{locale === 'en' ? 'Profile & settings' : 'Profil et paramètres'}</button><button onClick={onLogout}>{locale === 'en' ? 'Sign out' : 'Se déconnecter'}</button></div>}</div>
                 </div>
             </header>
             <div className="page">
-                {user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
+                {activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
                 <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => setActivePage('production')}><Zap size={17}/>{t.newOrder}</button></div>
                 <section className="workspace-banner"><div><span>{locale === 'en' ? 'Your workspace' : 'Votre espace'}</span><strong>{workspaceName}</strong><small>{user.employee_profile?.workstation ? `${user.employee_profile.department?.name || ''} / ${user.employee_profile.workstation.name}` : (user.roles[0]?.name || 'ICYEREKEZO OMS')}</small></div>{user.active_assignments?.length > 0 && <div className="assignment-preview"><b>{user.active_assignments.length} {locale === 'en' ? 'active assignments' : 'taches actives'}</b>{user.active_assignments.slice(0, 2).map(task => <span key={task.id}>{task.title} · {task.status.replace('_', ' ')}</span>)}</div>}</section>
                 <section className="metric-grid">
@@ -203,6 +210,10 @@ const moduleContent = {
     support: { icon: HelpCircle, en: ['Help & support', 'Find guidance, report a problem or contact the ICYEREKEZO support team.', ['Getting started', 'User guide', 'Support tickets', 'System status']], fr: ['Aide et support', 'Consultez les guides, signalez un problème ou contactez le support.', ['Bien démarrer', 'Guide utilisateur', 'Tickets support', 'État du système']] },
 } as const;
 
+function NotificationsPage({announcements,locale}:{announcements:NonNullable<AuthUser['announcements']>;locale:Locale}) {
+    return <section className="module-page"><div className="module-hero"><div className="module-title"><span><Bell size={22}/></span><div><div className="eyebrow"><i></i>{locale==='en'?'Live updates':'Mises à jour'}</div><h1>{locale==='en'?'Notifications':'Notifications'}</h1><p>{locale==='en'?'System messages appear here automatically.':'Les messages système apparaissent automatiquement ici.'}</p></div></div></div><div className="notification-page">{announcements.length?announcements.map(item=><article className="panel" key={item.id}><span className={`notice-icon ${item.severity}`}><Megaphone size={20}/></span><div><div><h3>{item.title}</h3><span className={`admin-status ${item.severity}`}>{item.severity}</span></div><p>{item.message}</p><time>{new Date(item.published_at).toLocaleString()}</time></div></article>):<div className="panel empty-state"><span><Bell size={28}/></span><h3>{locale==='en'?'No notifications':'Aucune notification'}</h3><p>{locale==='en'?'New system messages will appear here automatically.':'Les nouveaux messages apparaîtront ici automatiquement.'}</p></div>}</div></section>
+}
+
 function UserSupportChat({user,locale}:{user:AuthUser;locale:Locale}) {
     const [tickets,setTickets]=useState<any[]>([]);const [activeId,setActiveId]=useState<number|null>(null);const [creating,setCreating]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [message,setMessage]=useState('');const [form,setForm]=useState({subject:'',message:'',category:'general',priority:'normal'});
     const load=async()=>{try{const result:any=await api('/api/support/tickets');setTickets(result.data||[])}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load support messages.')}};
@@ -235,22 +246,26 @@ function ModulePage({ page, locale, can, onNavigate }: { page: string; locale: L
 function App() {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const [maintenance,setMaintenance]=useState('');
 
     useEffect(() => {
-        api<{ user: AuthUser }>('/api/auth/me').then(data => setUser(data.user)).catch(() => setUser(null)).finally(() => setLoading(false));
+        api<{ user: AuthUser }>('/api/auth/me').then(data => setUser(data.user)).catch((reason:any) => {setUser(null);if(reason?.status===503)setMaintenance(reason.message)}).finally(() => setLoading(false));
     }, []);
 
     if (loading) return <div className="boot-screen"><div className="brand-mark"><Factory size={20}/></div><span>ICYEREKEZO OMS</span></div>;
-    if (!user) return <AuthScreen onAuthenticated={setUser}/>;
+    if (maintenance) return <MaintenanceScreen message={maintenance} onRetry={()=>window.location.reload()} onAdmin={()=>setMaintenance('')}/>;
+    if (!user) return <AuthScreen onAuthenticated={setUser} onMaintenance={setMaintenance}/>;
 
     const logout = async () => {
         await api('/api/auth/logout', { method: 'POST' });
         setUser(null);
     };
-    return <Dashboard user={user} onLogout={logout}/>;
+    return <Dashboard user={user} onLogout={logout} onMaintenance={setMaintenance}/>;
 }
 
-function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
+function MaintenanceScreen({message,onRetry,onAdmin}:{message:string;onRetry:()=>void;onAdmin:()=>void}){return <main className="maintenance-screen"><div className="brand-mark"><Wrench size={24}/></div><span>ICYEREKEZO OMS</span><h1>Scheduled maintenance</h1><p>{message}</p><div><button className="primary-btn" onClick={onRetry}>Check again</button><button className="secondary-btn" onClick={onAdmin}>Administrator sign in</button></div><small>Platform administrators retain access to manage the system.</small></main>}
+
+function AuthScreen({ onAuthenticated,onMaintenance }: { onAuthenticated: (user: AuthUser) => void;onMaintenance:(message:string)=>void }) {
     const [mode, setMode] = useState<'login' | 'register'>('login');
     const [locale, setLocale] = useState<Locale>('en');
     const [busy, setBusy] = useState(false);
@@ -263,7 +278,7 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => 
             const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
             const data = await api<{ user: AuthUser }>(endpoint, { method: 'POST', body: JSON.stringify({ ...form, industry_type: form.industry_type === 'other' ? form.industry_other : form.industry_type, locale }) });
             onAuthenticated(data.user);
-        } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to continue.'); }
+        } catch (reason:any) { if(reason?.status===503)onMaintenance(reason.message);else setError(reason instanceof Error ? reason.message : 'Unable to continue.'); }
         finally { setBusy(false); }
     };
     const words = locale === 'en' ? {

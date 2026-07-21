@@ -5,6 +5,7 @@ use App\Http\Controllers\FactoryContextController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManufacturingController;
 use App\Http\Controllers\PlatformAdminController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,7 @@ Route::prefix('api')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/factories/switch', [FactoryContextController::class, 'switch']);
+        Route::get('/search', SearchController::class);
         Route::get('/support/tickets', [SupportController::class, 'index']);
         Route::post('/support/tickets', [SupportController::class, 'store']);
         Route::post('/support/tickets/{ticket}/reply', [SupportController::class, 'reply']);
@@ -46,6 +48,7 @@ Route::prefix('api')->group(function () {
             Route::get('/tickets', [PlatformAdminController::class, 'tickets']);
             Route::post('/tickets/{ticket}/reply', [PlatformAdminController::class, 'replyTicket']);
             Route::put('/settings', [PlatformAdminController::class, 'settings']);
+            Route::post('/settings/logo', [PlatformAdminController::class, 'uploadLogo']);
             Route::get('/settings', [PlatformAdminController::class, 'getSettings']);
             Route::post('/backups', [PlatformAdminController::class, 'backup']);
             Route::get('/backups', [PlatformAdminController::class, 'backups']);

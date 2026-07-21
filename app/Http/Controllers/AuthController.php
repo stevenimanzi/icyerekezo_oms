@@ -86,6 +86,9 @@ class AuthController extends Controller
         if (! $user || ! $user->is_active || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json(['message' => 'The provided credentials are incorrect.'], 422);
         }
+        if (! $user->is_platform_admin && SystemSetting::valueFor('maintenance_enabled', false)) {
+            return response()->json(['message' => SystemSetting::valueFor('maintenance_message', 'The platform is undergoing scheduled maintenance.')], 503);
+        }
         Auth::login($user, (bool) ($credentials['remember'] ?? false));
         $request->session()->regenerate();
         $user->update(['last_login_at' => now(), 'last_login_ip' => $request->ip()]);
