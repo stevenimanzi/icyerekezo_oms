@@ -197,3 +197,10 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .department-card>div,.department-card label,.department-card select,.department-card .table-action { width:100%; min-width:0; max-width:100%; }
 .department-card h3 { width:100%; white-space:normal; word-break:normal; overflow-wrap:break-word; }
 .department-card .table-action { grid-column:auto; }
+.department-table { width:100%; min-width:0; }
+.department-table table { width:100%; min-width:760px; }
+.department-table th,.department-table td { vertical-align:middle; }
+.department-table td:nth-child(2) { white-space:normal; min-width:180px; }
+.department-table select { width:100%; min-width:220px; min-height:40px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--text); }
+.department-table .table-action { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+.department-code { color:var(--brand); letter-spacing:.05em; }
