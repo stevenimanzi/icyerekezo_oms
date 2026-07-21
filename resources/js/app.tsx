@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import {
     Activity, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CreditCard, Database,
     Factory, Gauge, HelpCircle, Languages, LayoutDashboard, Megaphone, Menu, MessageSquare, Moon, PackageCheck,
-    PackageOpen, Search, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Warehouse,
+    PackageOpen, RefreshCw, Search, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Warehouse,
     Wrench, X, Zap,
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
