@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FactoryContextController;
+use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManufacturingController;
 use App\Http\Controllers\PlatformAdminController;
@@ -54,6 +55,7 @@ Route::prefix('api')->group(function () {
             Route::get('/backups', [PlatformAdminController::class, 'backups']);
         });
         Route::middleware('tenant')->group(function () {
+            Route::get('/executive/dashboard', ExecutiveDashboardController::class);
             Route::get('/inventory/overview', [InventoryController::class, 'overview'])->middleware('permission:inventory.view');
             Route::get('/inventory/items', [InventoryController::class, 'items'])->middleware('permission:products.view');
             Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->middleware('permission:products.create');

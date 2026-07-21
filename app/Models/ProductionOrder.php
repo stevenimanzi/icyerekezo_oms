@@ -21,6 +21,11 @@ class ProductionOrder extends Model
         return $this->hasMany(ProductionStageExecution::class);
     }
 
+    public function item()
+    {
+        return $this->belongsTo(Item::class);
+    }
+
     public function billOfMaterial()
     {
         return $this->belongsTo(BillOfMaterial::class);
