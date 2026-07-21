@@ -209,3 +209,8 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .live-report-status { display:flex; align-items:center; gap:7px; min-height:42px; padding:0 5px; color:#15803d; font-size:12px; font-weight:700; white-space:nowrap; }
 .live-report-status i { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 0 4px #22c55e20; animation:live-pulse 1.8s infinite; }
 @keyframes live-pulse { 50% { opacity:.45; } }
+.support-actions,.chat-ticket-status { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.support-live { display:flex; align-items:center; gap:7px; color:#15803d; font-size:12px; font-weight:700; white-space:nowrap; }
+.support-live i { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 0 4px #22c55e20; }
+.chat-welcome p { color:var(--muted); }.chat-empty { padding:24px; color:var(--muted); text-align:center; }
+@media(max-width:1050px){.support-actions{width:100%}.support-actions button{flex:1;justify-content:center}.support-live{width:100%}}
