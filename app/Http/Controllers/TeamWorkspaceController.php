@@ -42,9 +42,14 @@ class TeamWorkspaceController extends Controller
             'role_id' => ['required', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
             'workstation_id' => ['nullable', Rule::exists('workstations', 'id')->where('factory_id', $factoryId)],
-            'employee_number' => ['required', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $factoryId)],
+            'employee_number' => ['nullable', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $factoryId)],
             'job_title' => ['nullable', 'string', 'max:120'],
         ]);
+        if (empty($data['employee_number'])) {
+            do {
+                $data['employee_number'] = 'EMP-'.Str::upper(Str::random(8));
+            } while (EmployeeProfile::where('factory_id', $factoryId)->where('employee_number', $data['employee_number'])->exists());
+        }
         $role = Role::where('factory_id', $factoryId)->with('permissions:id,slug')->findOrFail($data['role_id']);
         $this->assertCanGrantRole($request->user(), $role);
         $user = DB::transaction(function () use ($data, $factoryId) {

@@ -23,10 +23,11 @@ class FactoryManagerAccessTest extends TestCase
         $administratorRole = Role::where('slug', 'factory-administrator')->firstOrFail();
         $managerResponse = $this->postJson('/api/team/users', [
             'name' => 'Factory Manager', 'email' => 'manager@roles.test', 'password' => 'Manager@12345', 'password_confirmation' => 'Manager@12345',
-            'role_id' => $managerRole->id, 'employee_number' => 'MGR-001', 'job_title' => 'Factory Manager',
+            'role_id' => $managerRole->id, 'job_title' => 'Factory Manager',
         ])->assertCreated()->json();
 
         $manager = User::findOrFail($managerResponse['id']);
+        $this->assertMatchesRegularExpression('/^EMP-[A-Z0-9]{8}$/', $manager->employeeProfile->employee_number);
         $this->actingAs($manager)->getJson('/api/auth/me')->assertOk()
             ->assertJsonPath('user.workspace', 'executive');
         $permissions = $this->getJson('/api/auth/me')->json('user.permissions');
