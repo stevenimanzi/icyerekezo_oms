@@ -73,7 +73,10 @@ class PlatformAdministrationTest extends TestCase
         $this->postJson('/api/auth/register', ['name' => 'Owner', 'email' => 'support-owner@test.local', 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Support Factory', 'industry_type' => 'general_manufacturing'])->assertCreated();
         $ticket = $this->postJson('/api/support/tickets', ['subject' => 'Cannot receive stock', 'message' => 'The receipt screen needs help.', 'category' => 'technical', 'priority' => 'high'])->assertCreated()->json();
         $admin = User::factory()->create(['current_factory_id' => null, 'is_platform_admin' => true]);
-        $this->actingAs($admin)->postJson('/api/platform/announcements', ['title' => 'Planned maintenance', 'message' => 'The platform will be upgraded tonight.', 'severity' => 'warning', 'audience' => 'all'])->assertCreated();
+        $this->actingAs($admin)->postJson('/api/platform/announcements', ['title' => 'Planned maintenance', 'message' => 'The platform will be upgraded tonight.'])
+            ->assertCreated()
+            ->assertJsonPath('severity', 'info')
+            ->assertJsonPath('audience', 'all');
         $this->postJson("/api/platform/tickets/{$ticket['id']}/reply", ['message' => 'We are investigating this issue.', 'status' => 'in_progress'])->assertCreated();
         $this->assertDatabaseHas('support_tickets', ['id' => $ticket['id'], 'status' => 'in_progress', 'assigned_to' => $admin->id]);
         $this->assertDatabaseCount('support_messages', 2);
