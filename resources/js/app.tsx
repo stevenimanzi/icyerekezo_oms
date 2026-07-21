@@ -12,6 +12,10 @@ type Locale = 'en' | 'fr';
 type AuthUser = {
     id: number; name: string; email: string; locale: Locale;
     current_factory: { id: number; name: string; slug: string; industry_type?: string } | null;
+    is_platform_admin: boolean; permissions: string[]; workspace: string;
+    roles: { id: number; name: string; slug: string; dashboard_key: string }[];
+    employee_profile?: { job_title?: string; department?: { name: string }; workstation?: { name: string; type: string } } | null;
+    active_assignments: { id: number; assignment_type: string; title: string; priority: string; status: string; due_at?: string }[];
 };
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
@@ -72,14 +76,16 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
     const t = copy[locale];
+    const can = (permission: string) => user.permissions.includes('*') || user.permissions.includes(permission);
+    const workspaceName = ({ platform_admin: 'Platform administration', executive: t.overview, production: locale === 'en' ? 'Production command centre' : 'Centre de production', warehouse: locale === 'en' ? 'Warehouse workspace' : 'Espace entrepot', procurement: locale === 'en' ? 'Procurement workspace' : 'Espace achats', quality: locale === 'en' ? 'Quality control workspace' : 'Espace controle qualite', cutting: locale === 'en' ? 'Cutting workstation' : 'Poste de coupe', workstation: locale === 'en' ? 'Operator workstation' : 'Poste operateur', logistics: locale === 'en' ? 'Logistics workspace' : 'Espace logistique', sales: locale === 'en' ? 'Sales workspace' : 'Espace ventes', finance: locale === 'en' ? 'Finance workspace' : 'Espace finances' } as Record<string,string>)[user.workspace] || t.overview;
     useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('icy_theme', dark ? 'dark' : 'light'); }, [dark]);
     useEffect(() => { document.documentElement.lang = locale; localStorage.setItem('icy_locale', locale); }, [locale]);
 
-    const nav = useMemo(() => [
-        [LayoutDashboard, t.dashboard, true], [ShoppingCart, t.procurement], [Warehouse, t.warehouse], [Boxes, t.products],
-        [Gauge, t.planning], [ClipboardCheck, t.control], [PackageOpen, t.sales], [Truck, t.logistics],
-        [Users, t.people], [Wrench, t.machines], [Activity, t.reports],
-    ] as const, [t]);
+    const nav = useMemo(() => ([
+        [LayoutDashboard, t.dashboard, true, '*'], [ShoppingCart, t.procurement, false, 'procurement.view'], [Warehouse, t.warehouse, false, 'inventory.view'], [Boxes, t.products, false, 'products.view'],
+        [Gauge, t.planning, false, 'production.view'], [ClipboardCheck, t.control, false, 'quality.view'], [PackageOpen, t.sales, false, 'sales.view'], [Truck, t.logistics, false, 'logistics.view'],
+        [Users, t.people, false, 'users.view'], [Wrench, t.machines, false, 'maintenance.view'], [Activity, t.reports, false, 'reports.view'],
+    ] as const).filter(([, , , permission]) => permission === '*' || can(permission)), [t, user.permissions]);
 
     const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(null), 2600); };
 
@@ -90,7 +96,7 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
                 <p className="nav-label">{t.general}</p>
                 {nav.map(([Icon, label, active]) => <button key={label} className={`nav-item ${active ? 'active' : ''}`} onClick={() => { setSidebarOpen(false); if (!active) toast(`${label} — ${locale === 'en' ? 'coming in the next module' : 'disponible dans le prochain module'}`); }}><Icon size={18}/><span>{label}</span>{label === t.warehouse && <i>3</i>}</button>)}
                 <p className="nav-label">{t.management}</p>
-                <button className="nav-item"><Settings size={18}/><span>{t.settings}</span></button>
+                {(can('factory.manage') || user.is_platform_admin) && <button className="nav-item"><Settings size={18}/><span>{t.settings}</span></button>}
                 <button className="nav-item"><HelpCircle size={18}/><span>{t.support}</span></button>
             </nav>
             <div className="factory-card"><div className="factory-avatar">KL</div><div><strong>Kigali Manufacturing</strong><span>Main plant · Kigali</span></div><ChevronRight size={17}/></div>
@@ -104,11 +110,12 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
                     <button className="locale-btn" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={17}/><span>{locale === 'en' ? 'FR' : 'EN'}</span></button>
                     <button className="icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={19}/> : <Moon size={19}/>}</button>
                     <button className="icon-btn notification" aria-label="Notifications"><Bell size={19}/><b>4</b></button>
-                    <button className="user-menu" onClick={onLogout} title={locale === 'en' ? 'Sign out' : 'Sign out'}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>Factory owner</small></span><ChevronDown size={16}/></button>
+                    <button className="user-menu" onClick={onLogout} title={locale === 'en' ? 'Sign out' : 'Sign out'}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>
                 </div>
             </header>
             <div className="page">
                 <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => toast(locale === 'en' ? 'Production order form opens in the next step.' : 'Le formulaire d’ordre sera ajouté à la prochaine étape.')}><Zap size={17}/>{t.newOrder}</button></div>
+                <section className="workspace-banner"><div><span>{locale === 'en' ? 'Your workspace' : 'Votre espace'}</span><strong>{workspaceName}</strong><small>{user.employee_profile?.workstation ? `${user.employee_profile.department?.name || ''} / ${user.employee_profile.workstation.name}` : (user.roles[0]?.name || 'ICYEREKEZO OMS')}</small></div>{user.active_assignments?.length > 0 && <div className="assignment-preview"><b>{user.active_assignments.length} {locale === 'en' ? 'active assignments' : 'taches actives'}</b>{user.active_assignments.slice(0, 2).map(task => <span key={task.id}>{task.title} · {task.status.replace('_', ' ')}</span>)}</div>}</section>
                 <section className="metric-grid">
                     <Metric icon={<Factory/>} label={t.production} value="1,842" suffix="units" detail={t.productionHint} trend="+12.4%" tone="blue" />
                     <Metric icon={<ShoppingCart/>} label={t.orders} value="38" detail={t.ordersHint} trend="+5" tone="amber" />

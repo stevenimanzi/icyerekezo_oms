@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FactoryContextController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -30,6 +31,11 @@ Route::prefix('api')->group(function () {
             Route::get('/factory/setup-options', [InventoryController::class, 'setup'])->middleware('permission:factory.view');
             Route::post('/factory/units', [InventoryController::class, 'storeUnit'])->middleware('permission:factory.manage');
             Route::post('/factory/warehouses', [InventoryController::class, 'storeWarehouse'])->middleware('permission:factory.manage');
+            Route::get('/team/workspaces', [TeamWorkspaceController::class, 'index'])->middleware('permission:users.view');
+            Route::post('/team/users', [TeamWorkspaceController::class, 'storeUser'])->middleware('permission:users.create');
+            Route::post('/team/workstations', [TeamWorkspaceController::class, 'storeWorkstation'])->middleware('permission:factory.manage');
+            Route::post('/team/assignments', [TeamWorkspaceController::class, 'assign'])->middleware('permission:users.update');
+            Route::patch('/team/assignments/{assignment}', [TeamWorkspaceController::class, 'updateAssignment']);
         });
     });
 });

@@ -10,6 +10,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Support\PermissionCatalog;
+use App\Support\RoleTemplateCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -54,9 +55,10 @@ class AuthController extends Controller
                 'locale' => $data['locale'] ?? 'en',
             ]);
             $factory->users()->attach($user->id, ['is_owner' => true, 'is_active' => true, 'joined_at' => now(), 'job_title' => 'Factory owner']);
-            $role = Role::create(['factory_id' => $factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner', 'is_system' => true]);
+            $role = Role::create(['factory_id' => $factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner', 'dashboard_key' => 'executive', 'is_system' => true]);
             $role->permissions()->sync(Permission::pluck('id'));
             $user->roles()->attach($role->id, ['factory_id' => $factory->id]);
+            RoleTemplateCatalog::createFor($factory);
             foreach ([['Piece', 'pc', 'count', 0], ['Kilogram', 'kg', 'mass', 3], ['Litre', 'L', 'volume', 3], ['Metre', 'm', 'length', 3]] as [$name, $symbol, $dimension, $precision]) {
                 Unit::create(compact('name', 'symbol', 'dimension', 'precision') + ['factory_id' => $factory->id]);
             }
@@ -104,12 +106,19 @@ class AuthController extends Controller
 
     private function userPayload(User $user): array
     {
-        $user->load('currentFactory:id,uuid,name,slug,industry_type,currency_code,timezone,default_locale', 'factories:id,uuid,name,slug');
+        $user->load('currentFactory:id,uuid,name,slug,industry_type,currency_code,timezone,default_locale', 'factories:id,uuid,name,slug', 'employeeProfile.department:id,name,code', 'employeeProfile.workstation:id,name,code,type');
+        $roles = $user->roles()->wherePivot('factory_id', $user->current_factory_id)->with('permissions:id,slug')->get();
+        $permissions = $user->is_platform_admin ? collect(['*']) : $roles->pluck('permissions')->flatten()->pluck('slug')->unique()->values();
 
         return [
             'id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'locale' => $user->locale,
+            'is_platform_admin' => $user->is_platform_admin,
             'current_factory' => $user->currentFactory, 'factories' => $user->factories,
-            'permissions' => $user->roles()->wherePivot('factory_id', $user->current_factory_id)->with('permissions:id,slug')->get()->pluck('permissions')->flatten()->pluck('slug')->unique()->values(),
+            'roles' => $roles->map->only(['id', 'name', 'slug', 'dashboard_key']),
+            'permissions' => $permissions,
+            'workspace' => $user->is_platform_admin && ! $user->current_factory_id ? 'platform_admin' : ($roles->first()?->dashboard_key ?? 'operations'),
+            'employee_profile' => $user->employeeProfile,
+            'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
         ];
     }
 

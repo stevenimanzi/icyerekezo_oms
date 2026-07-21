@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['factory_id', 'name', 'slug', 'description', 'is_system'])]
+#[Fillable(['factory_id', 'name', 'slug', 'dashboard_key', 'description', 'is_system'])]
 class Role extends Model
 {
     protected function casts(): array
