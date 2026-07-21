@@ -92,3 +92,31 @@ button { color:inherit; }
 .table-action { padding:6px 9px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:#2563eb; font-size:9px; font-weight:700; cursor:pointer; }.activity-feed { max-height:360px; overflow:auto; padding:7px 18px 18px; }.activity-feed>div { display:flex; gap:9px; padding:10px 0; border-bottom:1px solid var(--line); }.activity-feed>div>span { display:grid; width:28px; height:28px; flex:0 0 28px; place-items:center; border-radius:8px; background:#eaf1ff; color:#2563eb; }.activity-feed b,.activity-feed small { display:block; }.activity-feed b { font-size:9px; }.activity-feed small { margin-top:3px; color:var(--muted); font-size:8px; }
 @media (max-width:860px) { .auth-page { grid-template-columns:1fr; }.auth-story { display:none; }.auth-form-side { padding:90px 22px 40px; }.auth-mobile-logo { display:block; margin-bottom:38px; }.auth-language { right:20px; } }
 @media (prefers-reduced-motion:reduce) { *,*:before,*:after { scroll-behavior:auto!important; animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+
+/* Accessible application typography: 16px body, 14px controls, 12px minimum metadata. */
+html { font-size:16px; }
+body { font-size:16px; line-height:1.5; }
+button,input,select,textarea { font-size:14px; line-height:1.45; }
+.brand strong { font-size:17px; }.brand span { font-size:12px; }
+.nav-label { font-size:12px; }.nav-item { min-height:48px; height:auto; font-size:15px; }.nav-item i { font-size:12px; }
+.factory-avatar { font-size:13px; }.factory-card strong { font-size:14px; }.factory-card span { font-size:12px; }
+.search input { font-size:14px; }.search kbd { font-size:12px; }.locale-btn { font-size:14px; }
+.user-copy strong { font-size:14px; }.user-copy small { font-size:12px; }
+.page-heading h1,.module-title h1,.platform-heading h1 { font-size:30px; }.page-heading p,.module-title p,.platform-heading p { font-size:14px; }
+.eyebrow,.platform-kicker { font-size:12px; }.primary-btn,.secondary-btn,.text-btn,.table-action { font-size:14px; }
+.workspace-banner>div:first-child span { font-size:12px; }.workspace-banner>div:first-child strong { font-size:17px; }.workspace-banner>div:first-child small,.assignment-preview b,.assignment-preview span { font-size:13px; }
+.metric-copy>span { font-size:13px; }.metric-copy>div strong { font-size:24px; }.metric-copy>div small,.metric-copy p { font-size:12px; }
+.panel-title h2,.admin-split>.panel>h2 { font-size:17px; }.chart-legend { font-size:12px; }
+.activity-item strong { font-size:14px; }.activity-item p,.activity-item time { font-size:12px; }
+th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.product-cell small { font-size:12px; }.status,.admin-status { font-size:12px; }.progress-cell b { font-size:12px; }
+.top-popover strong { font-size:14px; }.top-popover button,.top-popover span { font-size:13px; }
+.module-tabs button { font-size:14px; }.empty-state h3 { font-size:18px; }.empty-state p { font-size:14px; }.status-list div,.link-card span { font-size:13px; }
+.admin-alert { font-size:14px; }.admin-metrics small,.admin-metrics p { font-size:12px; }.admin-metrics strong { font-size:23px; }
+.ticket-list>div { font-size:13px; }.admin-form h2 { font-size:19px; }.admin-form>p { font-size:14px; }.admin-form label { font-size:13px; }
+.admin-form input,.admin-form textarea,.admin-form select,.reply-row input { min-height:46px; font-size:14px; }.admin-form textarea { min-height:100px; }
+.ticket-head b { font-size:12px; }.ticket-head h3 { font-size:16px; }.conversation p { font-size:14px; }.settings-summary p { font-size:14px; }
+.activity-feed b { font-size:13px; }.activity-feed small { font-size:12px; }.toast { font-size:14px; }
+.auth-kicker { font-size:12px; }.auth-story>small,.auth-points span { font-size:13px; }.auth-language { font-size:14px; }
+.auth-card>p { font-size:15px; }.auth-card label:not(.check-row),.check-row,.auth-switch,.form-error { font-size:14px; }
+.auth-card input:not([type='checkbox']),.auth-card select,.auth-submit { min-height:48px; font-size:14px; }
+@media (max-width:600px) { .page-heading h1,.module-title h1,.platform-heading h1 { font-size:26px; } .nav-item { font-size:16px; } }
