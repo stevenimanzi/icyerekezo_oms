@@ -1,0 +1,32 @@
+import React, { useEffect, useState } from 'react';
+import { Activity, CheckCircle2, Clock3, Factory, ListChecks, PackageCheck, RefreshCw, Users } from 'lucide-react';
+
+async function api(url:string,options:RequestInit={}){const response=await fetch(url,{...options,headers:{Accept:'application/json','Content-Type':'application/json',...(options.headers||{})}});const text=await response.text();let data:any;try{data=JSON.parse(text)}catch{throw new Error('The dashboard received an invalid server response.')}if(!response.ok)throw new Error(data.message||'Unable to load department data.');return data}
+const n=(value:any)=>Number(value||0).toLocaleString();
+
+export default function DepartmentDashboard({user,locale,onNavigate}:any){
+    const [data,setData]=useState<any>(null);const [error,setError]=useState('');const [busy,setBusy]=useState<number|null>(null);const [updated,setUpdated]=useState<Date|null>(null);
+    const load=async()=>{try{setData(await api('/api/department/dashboard'));setError('');setUpdated(new Date())}catch(reason:any){setError(reason.message)}};
+    useEffect(()=>{load();const timer=window.setInterval(load,5000);return()=>window.clearInterval(timer)},[]);
+    const update=async(id:number,status:string)=>{setBusy(id);try{await api('/api/team/assignments/'+id,{method:'PATCH',body:JSON.stringify({status})});await load()}catch(reason:any){setError(reason.message)}finally{setBusy(null)}};
+    const department=data?.department;const metrics=data?.metrics||{};const assignments=data?.assignments||[];const stages=data?.stage_activity||[];
+    const fr=locale==='fr';
+    return <section className="department-dashboard">
+        <div className="page-heading"><div><div className="eyebrow"><span></span>{fr?'ESPACE DÉPARTEMENT EN DIRECT':'LIVE DEPARTMENT WORKSPACE'}</div><h1>{department?.name||user.workspace.replaceAll('_',' ')} {fr?'— Tableau de bord':'dashboard'}</h1><p>{fr?`Bienvenue ${user.name}. Consultez et effectuez le travail qui vous est attribué.`:`Welcome ${user.name}. Review and complete the work assigned to your department.`}</p></div><button className="secondary-btn" onClick={load}><RefreshCw size={16}/>{fr?'Actualiser':'Refresh'}</button></div>
+        {error&&<div className="admin-alert error">{error}</div>}
+        <section className="workspace-banner"><div><span>{fr?'DÉPARTEMENT ACTUEL':'CURRENT DEPARTMENT'}</span><strong>{department?.name||'Department not assigned'}</strong><small>{department?.code||user.workspace.toUpperCase()} · {data?.is_department_manager?(fr?'Responsable du département':'Department manager'):(data?.profile?.job_title||user.roles?.[0]?.name||'Employee')}</small></div><div className="department-live"><i></i>{updated?(fr?'Mis à jour ':'Updated ')+updated.toLocaleTimeString():(fr?'Connexion…':'Connecting…')}</div></section>
+        <section className="department-metrics">
+            <Metric icon={<ListChecks/>} label={fr?'Travail à faire':'Work to do'} value={n(metrics.assigned_work)} tone="blue"/>
+            <Metric icon={<Clock3/>} label={fr?'En cours':'In progress'} value={n(metrics.work_in_progress)} tone="amber"/>
+            <Metric icon={<CheckCircle2/>} label={fr?'Terminé aujourd’hui':'Completed today'} value={n(metrics.completed_today)} tone="green"/>
+            <Metric icon={<Factory/>} label={fr?'Étapes en cours':'Stages in progress'} value={n(metrics.stages_in_progress)} tone="violet"/>
+            <Metric icon={<PackageCheck/>} label={fr?'Production aujourd’hui':'Output today'} value={n(metrics.output_today)} tone="blue"/>
+            <Metric icon={<Activity/>} label={fr?'Rejeté aujourd’hui':'Rejected today'} value={n(metrics.rejected_today)} tone="red"/>
+        </section>
+        <section className="department-grid"><article className="panel"><header className="department-panel-head"><div><h2>{fr?'Mes tâches':'My work assignments'}</h2><p>{data?.is_department_manager?(fr?'Travail de toute votre équipe':'Work across your department team'):(fr?'Travail qui vous est attribué':'Work assigned directly to you')}</p></div><Users size={20}/></header><div className="assignment-list">{assignments.length?assignments.map((item:any)=><article key={item.id}><div><span className={'priority '+item.priority}>{item.priority}</span><h3>{item.title}</h3><p>{item.instructions||'No additional instructions.'}</p><small>{item.user?.name||user.name}{item.due_at?' · Due '+new Date(item.due_at).toLocaleString():''}</small></div><div className="assignment-actions"><select disabled={busy===item.id} value={item.status} onChange={e=>update(item.id,e.target.value)}><option value="assigned">Assigned</option><option value="ready">Ready</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option></select></div></article>):<Empty text={fr?'Aucune tâche attribuée.':'No work has been assigned yet.'}/>}</div></article>
+        <article className="panel"><header className="department-panel-head"><div><h2>{fr?'Activité de production':'Production stage activity'}</h2><p>{fr?'Données réelles du flux de votre département':'Live workflow records for your department'}</p></div><Activity size={20}/></header><div className="stage-activity-list">{stages.length?stages.map((item:any)=><article key={item.id}><div><b>{item.stage?.name||'Production stage'}</b><span>{item.order?.order_number||'Order'} · {item.status.replaceAll('_',' ')}</span></div><div><strong>{n(item.output_quantity)}</strong><small>output</small></div></article>):<Empty text={fr?'Aucune activité enregistrée.':'No production activity recorded for this department.'}/>}</div></article></section>
+        {user.permissions?.includes('production.plan')&&<button className="department-production-link" onClick={()=>onNavigate('production')}><Factory size={18}/><span><b>{fr?'Ouvrir les opérations de production':'Open production operations'}</b><small>{fr?'Planifier et suivre les ordres sans modifier le flux de l’usine':'Plan and monitor orders without changing the factory workflow'}</small></span></button>}
+    </section>
+}
+function Metric({icon,label,value,tone}:any){return <article className="department-metric panel"><span className={'metric-icon '+tone}>{icon}</span><div><small>{label}</small><strong>{value}</strong></div></article>}
+function Empty({text}:{text:string}){return <div className="department-empty"><PackageCheck size={26}/><span>{text}</span></div>}

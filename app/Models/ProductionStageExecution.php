@@ -20,4 +20,9 @@ class ProductionStageExecution extends Model
     {
         return $this->belongsTo(WorkflowStage::class, 'workflow_stage_id');
     }
+
+    public function order()
+    {
+        return $this->belongsTo(ProductionOrder::class, 'production_order_id');
+    }
 }

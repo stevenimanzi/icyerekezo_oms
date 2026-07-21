@@ -15,4 +15,9 @@ class WorkAssignment extends Model
     {
         return ['starts_at' => 'datetime', 'due_at' => 'datetime', 'completed_at' => 'datetime', 'metadata' => 'array'];
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

@@ -188,7 +188,11 @@ class TeamWorkspaceController extends Controller
     public function updateAssignment(Request $request, WorkAssignment $assignment): JsonResponse
     {
         abort_unless($assignment->factory_id === $request->user()->current_factory_id, 404);
-        abort_unless($assignment->user_id === $request->user()->id || $request->user()->hasPermission('users.update'), 403, 'You cannot update this assignment.');
+        $managesAssigneeDepartment = Department::where('factory_id', $request->user()->current_factory_id)
+            ->where('manager_id', $request->user()->id)
+            ->whereHas('employees', fn ($query) => $query->where('user_id', $assignment->user_id))
+            ->exists();
+        abort_unless($assignment->user_id === $request->user()->id || $request->user()->hasPermission('users.update') || $managesAssigneeDepartment, 403, 'You cannot update this assignment.');
         $data = $request->validate(['status' => ['required', Rule::in(['assigned', 'ready', 'in_progress', 'blocked', 'completed', 'cancelled'])]]);
         $assignment->update($data + ['completed_at' => $data['status'] === 'completed' ? now() : null]);
         AuditLog::record('work.status_changed', "Assignment changed to {$assignment->status}", $assignment);

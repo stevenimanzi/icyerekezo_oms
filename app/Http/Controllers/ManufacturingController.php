@@ -17,7 +17,7 @@ class ManufacturingController extends Controller
 {
     public function overview(): JsonResponse
     {
-        return response()->json(['orders' => ProductionOrder::with('executions.stage')->latest()->paginate(20), 'boms' => BillOfMaterial::with('components.item')->latest()->get(), 'workflows' => WorkflowTemplate::with('stages')->latest()->get()]);
+        return response()->json(['orders' => ProductionOrder::with(['item:id,name,sku', 'executions.stage'])->latest()->paginate(20), 'boms' => BillOfMaterial::with(['item:id,name,sku', 'components.item'])->latest()->get(), 'workflows' => WorkflowTemplate::with('stages')->latest()->get()]);
     }
 
     public function storeBom(Request $request): JsonResponse

@@ -25,4 +25,9 @@ class EmployeeProfile extends Model
     {
         return $this->belongsTo(Workstation::class);
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

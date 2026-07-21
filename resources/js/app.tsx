@@ -9,6 +9,8 @@ import {
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import PlatformAdminPage from './PlatformAdminPage';
 import ExecutiveDashboard from './ExecutiveDashboard';
+import DepartmentDashboard from './DepartmentDashboard';
+import ProductionOperations from './ProductionOperations';
 import { FlowSetupPage, ProductionFlowPage, ReportsPage, TeamManagementPage } from './FactoryManagerModules';
 
 type Locale = 'en' | 'fr';
@@ -112,6 +114,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const [profileOpen, setProfileOpen] = useState(false);
     const t = copy[locale];
     const can = (permission: string) => user.permissions.includes('*') || user.permissions.includes(permission);
+    const isExecutiveUser = user.is_platform_admin || user.workspace === 'executive' || user.roles.some(role => ['factory-owner', 'factory-administrator', 'factory-manager'].includes(role.slug));
     const workspaceName = ({ platform_admin: 'Platform administration', executive: t.overview, production: locale === 'en' ? 'Production command centre' : 'Centre de production', warehouse: locale === 'en' ? 'Warehouse workspace' : 'Espace entrepot', procurement: locale === 'en' ? 'Procurement workspace' : 'Espace achats', quality: locale === 'en' ? 'Quality control workspace' : 'Espace controle qualite', cutting: locale === 'en' ? 'Cutting workstation' : 'Poste de coupe', workstation: locale === 'en' ? 'Operator workstation' : 'Poste operateur', logistics: locale === 'en' ? 'Logistics workspace' : 'Espace logistique', sales: locale === 'en' ? 'Sales workspace' : 'Espace ventes', finance: locale === 'en' ? 'Finance workspace' : 'Espace finances' } as Record<string,string>)[user.workspace] || t.overview;
     useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('icy_theme', dark ? 'dark' : 'light'); }, [dark]);
     useEffect(() => { document.documentElement.lang = locale; localStorage.setItem('icy_locale', locale); }, [locale]);
@@ -170,7 +173,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                 </div>
             </header>
             <div className="page">
-                <PageBoundary resetKey={activePage}>{activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage === 'dashboard' ? <ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/> : activePage === 'settings' ? <FlowSetupPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')}/> : activePage === 'production' ? <ProductionFlowPage/> : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
+                <PageBoundary resetKey={activePage}>{activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage === 'dashboard' ? (isExecutiveUser?<ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/>:<DepartmentDashboard user={user} locale={locale} onNavigate={setActivePage}/>) : activePage === 'settings' ? <FlowSetupPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')}/> : activePage === 'production' ? (can('factory.manage')?<ProductionFlowPage/>:<ProductionOperations can={can}/>) : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
                 <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => setActivePage('production')}><Zap size={17}/>{t.newOrder}</button></div>
                 <section className="workspace-banner"><div><span>{locale === 'en' ? 'Your workspace' : 'Votre espace'}</span><strong>{workspaceName}</strong><small>{user.employee_profile?.workstation ? `${user.employee_profile.department?.name || ''} / ${user.employee_profile.workstation.name}` : (user.roles[0]?.name || 'ICYEREKEZO OMS')}</small></div>{user.active_assignments?.length > 0 && <div className="assignment-preview"><b>{user.active_assignments.length} {locale === 'en' ? 'active assignments' : 'taches actives'}</b>{user.active_assignments.slice(0, 2).map(task => <span key={task.id}>{task.title} · {task.status.replace('_', ' ')}</span>)}</div>}</section>
                 <section className="metric-grid">

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ExecutiveDashboardController;
+use App\Http\Controllers\DepartmentDashboardController;
 use App\Http\Controllers\FactoryContextController;
 use App\Http\Controllers\FactoryFlowController;
 use App\Http\Controllers\InventoryController;
@@ -58,6 +59,7 @@ Route::prefix('api')->group(function () {
         });
         Route::middleware('tenant')->group(function () {
             Route::get('/executive/dashboard', ExecutiveDashboardController::class);
+            Route::get('/department/dashboard', DepartmentDashboardController::class);
             Route::get('/factory/flow-suggestion', [FactoryFlowController::class, 'suggestion'])->middleware('permission:factory.manage');
             Route::post('/factory/flow-suggestion/apply', [FactoryFlowController::class, 'apply'])->middleware('permission:factory.manage');
             Route::get('/reports', ReportController::class)->middleware('permission:reports.view');
@@ -79,8 +81,8 @@ Route::prefix('api')->group(function () {
             Route::patch('/team/assignments/{assignment}', [TeamWorkspaceController::class, 'updateAssignment']);
             Route::get('/manufacturing/overview', [ManufacturingController::class, 'overview'])->middleware('permission:production.view');
             Route::post('/manufacturing/boms', [ManufacturingController::class, 'storeBom'])->middleware('permission:production.plan');
-            Route::post('/manufacturing/workflows', [ManufacturingController::class, 'storeWorkflow'])->middleware('permission:production.plan');
-            Route::put('/manufacturing/workflows/{workflow}', [ManufacturingController::class, 'updateWorkflow'])->middleware('permission:production.plan');
+            Route::post('/manufacturing/workflows', [ManufacturingController::class, 'storeWorkflow'])->middleware('permission:factory.manage');
+            Route::put('/manufacturing/workflows/{workflow}', [ManufacturingController::class, 'updateWorkflow'])->middleware('permission:factory.manage');
             Route::post('/manufacturing/orders', [ManufacturingController::class, 'storeOrder'])->middleware('permission:production.plan');
             Route::post('/manufacturing/orders/{order}/approve', [ManufacturingController::class, 'approveOrder'])->middleware('permission:production.approve');
             Route::patch('/manufacturing/stages/{execution}', [ManufacturingController::class, 'updateStage'])->middleware('permission:production.execute');
