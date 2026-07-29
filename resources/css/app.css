@@ -221,12 +221,16 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .team-user-metrics strong { margin-top:2px; font-size:25px; }
 .team-user-metrics p { margin-top:2px; color:var(--muted); font-size:12px; }
 .team-users-table select { min-width:150px; min-height:42px; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--panel); color:var(--text); }
+.team-users-table .admin-table th { font-size:14px; letter-spacing:.04em; }
+.team-users-table .admin-table td { font-size:15px; }
+.team-users-table select,.team-users-table .table-action { font-size:15px; }
 .team-users-table .table-action { display:inline-flex; min-height:40px; align-items:center; gap:6px; white-space:nowrap; }
 .team-users-table .table-action:disabled { opacity:.45; cursor:not-allowed; }
 .team-user-cell { display:flex; min-width:220px; align-items:center; gap:11px; }
 .team-user-cell>span { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border-radius:12px; background:#eaf1ff; color:#2563eb; font-size:12px; font-weight:800; }
 .team-user-cell b,.team-user-cell small { display:block; }
-.team-user-cell small { margin-top:2px; color:var(--muted); }
+.team-user-cell b { font-size:16px; }
+.team-user-cell small { margin-top:2px; color:var(--muted); font-size:14px; }
 .team-modal-backdrop { position:fixed; z-index:100; inset:0; display:grid; place-items:center; padding:24px; overflow:auto; background:rgba(8,18,38,.62); backdrop-filter:blur(6px); }
 .team-modal { width:min(760px,100%); max-height:calc(100vh - 48px); overflow:auto; border:1px solid var(--line); border-radius:20px; background:var(--panel); box-shadow:0 30px 90px rgba(4,15,38,.3); animation:team-modal-in .2s ease; }
 @keyframes team-modal-in { from { opacity:0; transform:translateY(12px) scale(.98); } }
