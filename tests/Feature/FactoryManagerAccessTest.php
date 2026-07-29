@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\WorkflowTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -49,6 +50,14 @@ class FactoryManagerAccessTest extends TestCase
             ->assertJsonPath('industry', 'steel_metals')
             ->assertJsonFragment(['name' => 'Production'])
             ->assertJsonFragment(['name' => 'Cutting']);
+        $this->postJson('/api/factory/flow-suggestion/apply')->assertCreated()
+            ->assertJsonCount(9, 'stages');
+        $suggestedWorkflow = WorkflowTemplate::where('code', 'INDUSTRY-DEFAULT')->firstOrFail();
+        $suggestedWorkflow->stages()->whereIn('code', ['raw_materials', 'production'])->delete();
+        $suggestedWorkflow->stages()->where('code', 'cutting')->update(['sequence' => 1]);
+        $this->postJson('/api/factory/flow-suggestion/apply')->assertCreated()
+            ->assertJsonPath('message', 'Suggested flow applied successfully. You can apply it again whenever your factory setup changes.')
+            ->assertJsonCount(9, 'stages');
         $this->postJson('/api/factory/flow-suggestion/apply')->assertCreated()
             ->assertJsonCount(9, 'stages');
         $this->assertDatabaseHas('departments', ['name' => 'Welding']);
