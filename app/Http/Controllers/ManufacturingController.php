@@ -11,6 +11,7 @@ use App\Services\ManufacturingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ManufacturingController extends Controller
@@ -40,6 +41,7 @@ class ManufacturingController extends Controller
     public function storeWorkflow(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
+        $request->merge(['stages' => $this->normalizeWorkflowStages($request->input('stages', []))]);
         $data = $request->validate(['name' => ['required', 'string', 'max:160'], 'code' => ['required', 'string', 'max:40', Rule::unique('workflow_templates')->where('factory_id', $factoryId)], 'description' => ['nullable', 'string'], 'stages' => ['required', 'array', 'min:1'], 'stages.*.name' => ['required', 'string', 'max:160'], 'stages.*.code' => ['required', 'string', 'max:40'], 'stages.*.sequence' => ['required', 'integer', 'min:1'], 'stages.*.expected_minutes' => ['nullable', 'integer', 'min:0'], 'stages.*.required_workers' => ['nullable', 'integer', 'min:1'], 'stages.*.quality_required' => ['nullable', 'boolean'], 'stages.*.approval_required' => ['nullable', 'boolean']]);
         $workflow = DB::transaction(function () use ($data) {
             $stages = $data['stages'];
@@ -58,6 +60,7 @@ class ManufacturingController extends Controller
     {
         $factoryId = $request->user()->current_factory_id;
         abort_unless($workflow->factory_id === $factoryId, 404);
+        $request->merge(['stages' => $this->normalizeWorkflowStages($request->input('stages', []))]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
             'code' => ['required', 'string', 'max:40', Rule::unique('workflow_templates')->where('factory_id', $factoryId)->ignore($workflow->id)],
@@ -82,6 +85,20 @@ class ManufacturingController extends Controller
         AuditLog::record('production.workflow_updated', "Updated workflow {$workflow->name}", $workflow);
 
         return response()->json($workflow->fresh()->load('stages'));
+    }
+
+    private function normalizeWorkflowStages(array $stages): array
+    {
+        return collect($stages)->values()->map(function (array $stage, int $index) {
+            $name = trim((string) ($stage['name'] ?? ''));
+
+            return [
+                ...$stage,
+                'code' => Str::upper(Str::limit(Str::slug($name, '-'), 40, '')),
+                'sequence' => $index + 1,
+                'expected_minutes' => 0,
+            ];
+        })->all();
     }
 
     public function storeOrder(Request $request, ManufacturingService $service): JsonResponse
