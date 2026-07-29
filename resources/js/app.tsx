@@ -15,7 +15,8 @@ import ProductionOperations from './ProductionOperations';
 import QualityControlPage from './QualityControlPage';
 import MachinesPage from './MachinesPage';
 import FactorySettingsPage from './FactorySettingsPage';
-import { FlowSetupPage, ProductionFlowPage, ReportsPage, TeamManagementPage } from './FactoryManagerModules';
+import ReportsPage from './ClearReportsPage';
+import { FlowSetupPage, ProductionFlowPage, TeamManagementPage } from './FactoryManagerModules';
 
 type Locale = 'en' | 'fr';
 type AuthUser = {
