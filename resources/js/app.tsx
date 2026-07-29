@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     Activity, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CreditCard, Database,
-    Factory, Gauge, HelpCircle, Languages, LayoutDashboard, Megaphone, Menu, MessageSquare, Moon, PackageCheck,
+    Eye, EyeOff, Factory, Gauge, HelpCircle, Languages, LayoutDashboard, LockKeyhole, Mail, Megaphone, Menu, MessageSquare, Moon, PackageCheck,
     PackageOpen, RefreshCw, Search, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Warehouse,
-    Wrench, X, Zap,
+    UserRound, Wrench, X, Zap,
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import PlatformAdminPage from './PlatformAdminPage';
@@ -284,6 +284,7 @@ function AuthScreen({ onAuthenticated,onMaintenance }: { onAuthenticated: (user:
     const [locale, setLocale] = useState<Locale>('en');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '', factory_name: '', industry_type: 'general_manufacturing', industry_other: '', remember: false });
     const update = (key: string, value: string | boolean) => setForm(current => ({ ...current, [key]: value }));
     const submit = async (event: React.FormEvent) => {
@@ -297,18 +298,20 @@ function AuthScreen({ onAuthenticated,onMaintenance }: { onAuthenticated: (user:
     };
     const words = locale === 'en' ? {
         title: mode === 'login' ? 'Welcome back' : 'Create your factory workspace', subtitle: mode === 'login' ? 'Sign in to manage your operations.' : 'Start your secure ICYEREKEZO OMS workspace.',
-        name: 'Full name', factory: 'Factory name', industry: 'Industry type', specifyIndustry: 'Specify the factory industry', email: 'Email address', password: 'Password', confirm: 'Confirm password', remember: 'Remember me',
+        name: 'Full name', factory: 'Factory name', industry: 'Industry type', specifyIndustry: 'Specify the factory industry', email: 'Email address', password: 'Password', confirm: 'Confirm password', remember: 'Keep me signed in',
+        namePlaceholder: 'Enter your full name', factoryPlaceholder: 'Enter your factory name', industryPlaceholder: 'Describe your factory type', emailPlaceholder: 'name@company.com', passwordPlaceholder: 'Enter your password', confirmPlaceholder: 'Enter the password again',
         action: mode === 'login' ? 'Sign in securely' : 'Create workspace', switchText: mode === 'login' ? 'New to ICYEREKEZO?' : 'Already have an account?', switchAction: mode === 'login' ? 'Create a workspace' : 'Sign in',
     } : {
         title: mode === 'login' ? 'Bon retour' : 'Creez votre espace usine', subtitle: mode === 'login' ? 'Connectez-vous pour gerer vos operations.' : 'Demarrez votre espace ICYEREKEZO OMS securise.',
-        name: 'Nom complet', factory: "Nom de l'usine", industry: "Type d'industrie", specifyIndustry: "Precisez le type d'industrie", email: 'Adresse e-mail', password: 'Mot de passe', confirm: 'Confirmer le mot de passe', remember: 'Se souvenir de moi',
+        name: 'Nom complet', factory: "Nom de l'usine", industry: "Type d'industrie", specifyIndustry: "Precisez le type d'industrie", email: 'Adresse e-mail', password: 'Mot de passe', confirm: 'Confirmer le mot de passe', remember: 'Rester connecte',
+        namePlaceholder: 'Saisissez votre nom complet', factoryPlaceholder: "Saisissez le nom de l'usine", industryPlaceholder: "Decrivez le type d'usine", emailPlaceholder: 'nom@entreprise.com', passwordPlaceholder: 'Saisissez votre mot de passe', confirmPlaceholder: 'Saisissez encore le mot de passe',
         action: mode === 'login' ? 'Se connecter' : "Creer l'espace", switchText: mode === 'login' ? 'Nouveau sur ICYEREKEZO ?' : 'Vous avez deja un compte ?', switchAction: mode === 'login' ? 'Creer un espace' : 'Se connecter',
     };
 
     return <main className="auth-page">
-        <section className="auth-story"><Logo/><div className="auth-story-copy"><span className="auth-kicker"><ShieldCheck size={15}/> Secure factory operations</span><h1>From raw material<br/>to final delivery.</h1><p>One connected workspace for production, inventory, quality, sales, and traceability.</p><div className="auth-points"><span><PackageCheck/>Batch traceability</span><span><Activity/>Real-time operations</span><span><ShieldCheck/>Tenant-level security</span></div></div><small>ICYEREKEZO means direction. Every operation, clearly guided.</small></section>
-        <section className="auth-form-side"><button className="auth-language" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={16}/>{locale === 'en' ? 'Francais' : 'English'}</button><form className="auth-card" onSubmit={submit}><div className="auth-mobile-logo"><Logo/></div><h2>{words.title}</h2><p>{words.subtitle}</p>{error && <div className="form-error">{error}</div>}
-            {mode === 'register' && <><label>{words.name}<input value={form.name} onChange={e => update('name', e.target.value)} required autoComplete="name"/></label><label>{words.factory}<input value={form.factory_name} onChange={e => update('factory_name', e.target.value)} required/></label><label>{words.industry}<select value={form.industry_type} onChange={e => update('industry_type', e.target.value)}>
+        <section className="auth-story"><div className="auth-orb auth-orb-one"></div><div className="auth-orb auth-orb-two"></div><Logo/><div className="auth-story-copy"><span className="auth-kicker"><ShieldCheck size={16}/> Secure factory operations</span><h1>Every factory move,<br/><em>clearly connected.</em></h1><p>Run production, stock, quality and delivery from one calm, real-time workspace.</p><div className="auth-points"><span><i><PackageCheck/></i><b>Full traceability<small>Follow every batch</small></b></span><span><i><Activity/></i><b>Live operations<small>See work as it happens</small></b></span><span><i><ShieldCheck/></i><b>Protected data<small>Access by responsibility</small></b></span></div></div><div className="auth-story-foot"><span className="auth-live-dot"></span><p>Operations platform online</p><small>ICYEREKEZO means direction.</small></div></section>
+        <section className="auth-form-side"><div className="auth-topbar"><div className="auth-mobile-logo"><Logo/></div><button type="button" className="auth-language" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={18}/>{locale === 'en' ? 'Francais' : 'English'}</button></div><form className="auth-card" onSubmit={submit}><div className="auth-card-mark"><ShieldCheck size={22}/></div><div className="auth-heading"><span>{mode === 'login' ? (locale === 'en' ? 'WELCOME BACK' : 'BON RETOUR') : (locale === 'en' ? 'GET STARTED' : 'COMMENCER')}</span><h2>{words.title}</h2><p>{words.subtitle}</p></div>{error && <div className="form-error">{error}</div>}
+            {mode === 'register' && <><AuthInput icon={<UserRound/>} label={words.name}><input placeholder={words.namePlaceholder} value={form.name} onChange={e => update('name', e.target.value)} required autoComplete="name"/></AuthInput><AuthInput icon={<Building2/>} label={words.factory}><input placeholder={words.factoryPlaceholder} value={form.factory_name} onChange={e => update('factory_name', e.target.value)} required/></AuthInput><label className="auth-field auth-select-field"><span>{words.industry}</span><div><Factory/><select aria-label={words.industry} value={form.industry_type} onChange={e => update('industry_type', e.target.value)}>
                 <option value="general_manufacturing">{locale === 'en' ? 'General manufacturing' : 'Fabrication generale'}</option>
                 <option value="clothing_textiles">{locale === 'en' ? 'Clothing and textiles' : 'Vetements et textiles'}</option>
                 <option value="food_processing">{locale === 'en' ? 'Food processing' : 'Transformation alimentaire'}</option>
@@ -327,13 +330,18 @@ function AuthScreen({ onAuthenticated,onMaintenance }: { onAuthenticated: (user:
                 <option value="automotive_machinery">{locale === 'en' ? 'Automotive parts and machinery' : 'Pieces automobiles et machines'}</option>
                 <option value="recycling_waste">{locale === 'en' ? 'Recycling and waste processing' : 'Recyclage et traitement des dechets'}</option>
                 <option value="other">{locale === 'en' ? 'Other type of factory' : "Autre type d'usine"}</option>
-            </select></label>{form.industry_type === 'other' && <label>{words.specifyIndustry}<input value={form.industry_other} onChange={e => update('industry_other', e.target.value)} required maxLength={80}/></label>}</>}
-            <label>{words.email}<input type="email" value={form.email} onChange={e => update('email', e.target.value)} required autoComplete="email"/></label><label>{words.password}<input type="password" value={form.password} onChange={e => update('password', e.target.value)} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'}/></label>
-            {mode === 'register' && <label>{words.confirm}<input type="password" value={form.password_confirmation} onChange={e => update('password_confirmation', e.target.value)} required autoComplete="new-password"/></label>}
+            </select><ChevronDown/></div></label>{form.industry_type === 'other' && <AuthInput icon={<Factory/>} label={words.specifyIndustry}><input placeholder={words.industryPlaceholder} value={form.industry_other} onChange={e => update('industry_other', e.target.value)} required maxLength={80}/></AuthInput>}</>}
+            <AuthInput icon={<Mail/>} label={words.email}><input placeholder={words.emailPlaceholder} type="email" value={form.email} onChange={e => update('email', e.target.value)} required autoComplete="email"/></AuthInput>
+            <AuthInput icon={<LockKeyhole/>} label={words.password} action={<button type="button" className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff/> : <Eye/>}</button>}><input placeholder={words.passwordPlaceholder} type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => update('password', e.target.value)} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'}/></AuthInput>
+            {mode === 'register' && <AuthInput icon={<LockKeyhole/>} label={words.confirm}><input placeholder={words.confirmPlaceholder} type={showPassword ? 'text' : 'password'} value={form.password_confirmation} onChange={e => update('password_confirmation', e.target.value)} required autoComplete="new-password"/></AuthInput>}
             {mode === 'login' && <label className="check-row"><input type="checkbox" checked={form.remember} onChange={e => update('remember', e.target.checked)}/><span>{words.remember}</span></label>}
-            <button className="auth-submit" disabled={busy}>{busy ? 'Please wait...' : words.action}<ChevronRight size={17}/></button><div className="auth-switch"><span>{words.switchText}</span><button type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}>{words.switchAction}</button></div>
+            <button className="auth-submit" disabled={busy}><span>{busy ? (locale === 'en' ? 'Signing you in...' : 'Connexion...') : words.action}</span><i><ChevronRight size={18}/></i></button><div className="auth-switch"><span>{words.switchText}</span><button type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}>{words.switchAction}</button></div><p className="auth-assurance"><ShieldCheck/> Your connection is encrypted and protected.</p>
         </form></section>
     </main>;
+}
+
+function AuthInput({icon,label,action,children}:{icon:React.ReactNode;label:string;action?:React.ReactNode;children:React.ReactNode}) {
+    return <label className="auth-field"><span>{label}</span><div>{icon}{children}{action}</div></label>;
 }
 
 function Metric({ icon, label, value, suffix, detail, trend, tone }: { icon: React.ReactNode; label: string; value: string; suffix?: string; detail: string; trend: string; tone: string }) {
