@@ -282,8 +282,16 @@ function App() {
     if (!user) return <AuthScreen onAuthenticated={setUser} onMaintenance={setMaintenance}/>;
 
     const logout = async () => {
-        await api('/api/auth/logout', { method: 'POST' });
+        // Remove the protected interface immediately, then invalidate the
+        // server session and replace browser history with the sign-in page.
         setUser(null);
+        try {
+            await api('/api/auth/logout', { method: 'POST' });
+        } finally {
+            try { sessionStorage.clear(); } catch {}
+            window.history.replaceState(null, '', '/');
+            window.location.replace('/');
+        }
     };
     return <Dashboard user={user} onLogout={logout} onMaintenance={setMaintenance}/>;
 }
