@@ -29,6 +29,7 @@ class ReportController extends Controller
         [$from, $to] = $this->range($data);
         $type = $productionOnly ? 'production' : ($data['type'] ?? 'all');
         $departmentId = isset($data['department_id']) ? (int) $data['department_id'] : null;
+        $configuredDepartmentIds = collect($factory->settings['report']['department_ids'] ?? [])->map(fn ($id) => (int) $id)->filter()->unique();
 
         $flowDepartmentIds = DB::table('workflow_stages')
             ->join('workflow_templates', 'workflow_templates.id', '=', 'workflow_stages.workflow_template_id')
@@ -40,6 +41,7 @@ class ReportController extends Controller
 
         $departments = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)
             ->when($productionOnly, fn ($query) => $query->whereIn('id', $flowDepartmentIds))
+            ->when(! $departmentId && $configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))
             ->when($departmentId, fn ($query) => $query->whereKey($departmentId))
             ->orderBy('name')->get();
 
@@ -49,6 +51,7 @@ class ReportController extends Controller
             ->join('production_orders', 'production_orders.id', '=', 'production_stage_executions.production_order_id')
             ->leftJoin('items', 'items.id', '=', 'production_orders.item_id')
             ->leftJoin('units', 'units.id', '=', 'items.unit_id')
+            ->when(! $departmentId && $configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('workflow_stages.department_id', $configuredDepartmentIds))
             ->when($departmentId, fn ($query) => $query->where('workflow_stages.department_id', $departmentId))
             ->select('production_stage_executions.id', 'production_stage_executions.status', 'production_stage_executions.input_quantity', 'production_stage_executions.output_quantity', 'production_stage_executions.waste_quantity', 'production_stage_executions.rejected_quantity', 'production_stage_executions.updated_at', 'workflow_stages.department_id', 'workflow_stages.name as stage_name', 'production_orders.id as production_order_id', 'production_orders.order_number', 'items.name as product_name', 'units.name as unit_name', 'units.symbol as unit_symbol')
             ->latest('production_stage_executions.updated_at')->get();
@@ -121,7 +124,7 @@ class ReportController extends Controller
                 IndustryDailyReportCatalog::for($factory->industry_type),
                 array_filter($factory->settings['report'] ?? [], fn ($value) => $value !== '' && $value !== [])
             ),
-            'filters' => ['departments' => Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($productionOnly, fn ($query) => $query->whereIn('id', $flowDepartmentIds))->orderBy('name')->get(['id', 'name'])],
+            'filters' => ['departments' => Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($productionOnly, fn ($query) => $query->whereIn('id', $flowDepartmentIds))->when($configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))->orderBy('name')->get(['id', 'name'])],
             'report' => ['scope' => $productionOnly ? 'production_flow' : 'factory', 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
             'summary' => array_filter([($productionOnly ? 'flow_categories' : 'departments') => $departmentActivity->count(), 'production_orders' => $executions->pluck('production_order_id')->unique()->count(), 'work_records' => $executions->count(), 'completed_records' => $executions->where('status', 'completed')->count(), 'quantity_received' => (float) $executions->sum('input_quantity'), 'quantity_completed' => (float) $executions->sum('output_quantity'), 'damaged_quantity' => (float) $executions->sum('rejected_quantity'), 'waste_quantity' => (float) $executions->sum('waste_quantity'), 'stock_movements' => $productionOnly ? null : $inventory->count()], fn ($value) => $value !== null),
             'department_activity' => $departmentActivity,

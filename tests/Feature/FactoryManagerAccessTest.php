@@ -40,7 +40,8 @@ class FactoryManagerAccessTest extends TestCase
         }
         $this->getJson('/api/factory/settings')->assertOk()
             ->assertJsonPath('factory.name', 'Controlled Factory')
-            ->assertJsonPath('settings.opening_time', '08:00');
+            ->assertJsonPath('settings.opening_time', '08:00')
+            ->assertJsonStructure(['report_departments']);
         $this->putJson('/api/factory/settings', [
             'name' => 'Controlled Manufacturing Ltd', 'email' => 'factory@controlled.test', 'phone' => '+250788000000',
             'country_code' => 'RW', 'currency_code' => 'RWF', 'timezone' => 'Africa/Kigali', 'default_locale' => 'en',
@@ -51,7 +52,7 @@ class FactoryManagerAccessTest extends TestCase
                 'production_order_prefix' => 'PROD', 'low_stock_alert_level' => 25,
                 'require_production_approval' => true, 'require_quality_release' => true, 'allow_negative_stock' => false,
                 'report' => [
-                    'title' => 'Daily metal production report', 'default_period' => 'day', 'orientation' => 'landscape',
+                    'title' => 'Daily metal production report', 'footer_text' => 'Approved factory record', 'default_period' => 'day', 'orientation' => 'landscape',
                     'input_label' => 'Metal issued', 'output_label' => 'Finished parts',
                     'show_summary' => true, 'show_daily_register' => true, 'show_department_totals' => true,
                     'show_stock_register' => true, 'show_guidance' => false,
@@ -61,7 +62,9 @@ class FactoryManagerAccessTest extends TestCase
         ])->assertOk()->assertJsonPath('factory.name', 'Controlled Manufacturing Ltd')
             ->assertJsonPath('settings.production_order_prefix', 'PROD')
             ->assertJsonPath('settings.report.title', 'Daily metal production report')
-            ->assertJsonPath('settings.report.output_label', 'Finished parts');
+            ->assertJsonPath('settings.report.output_label', 'Finished parts')
+            ->assertJsonPath('settings.report.footer_text', 'Approved factory record')
+            ->assertJsonPath('settings.report.department_ids', []);
         $this->assertDatabaseHas('factories', ['id' => $manager->current_factory_id, 'name' => 'Controlled Manufacturing Ltd']);
         $this->assertDatabaseHas('audit_logs', ['factory_id' => $manager->current_factory_id, 'event' => 'factory.settings_updated']);
 
