@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Support\IndustryDailyReportCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,7 +16,7 @@ class FactorySettingsController extends Controller
 
         return response()->json([
             'factory' => $factory->only(['id', 'name', 'industry_type', 'email', 'phone', 'country_code', 'currency_code', 'timezone', 'default_locale', 'status']),
-            'settings' => $this->defaults($factory->settings ?? []),
+            'settings' => $this->defaults($factory->settings ?? [], $factory->industry_type),
         ]);
     }
 
@@ -43,9 +44,23 @@ class FactorySettingsController extends Controller
             'settings.require_production_approval' => ['required', 'boolean'],
             'settings.require_quality_release' => ['required', 'boolean'],
             'settings.allow_negative_stock' => ['required', 'boolean'],
+            'settings.report.title' => ['sometimes', 'required', 'string', 'max:120'],
+            'settings.report.default_period' => ['sometimes', 'required', Rule::in(['day', 'week', 'month'])],
+            'settings.report.orientation' => ['sometimes', 'required', Rule::in(['portrait', 'landscape'])],
+            'settings.report.input_label' => ['sometimes', 'required', 'string', 'max:80'],
+            'settings.report.output_label' => ['sometimes', 'required', 'string', 'max:80'],
+            'settings.report.show_summary' => ['sometimes', 'required', 'boolean'],
+            'settings.report.show_daily_register' => ['sometimes', 'required', 'boolean'],
+            'settings.report.show_department_totals' => ['sometimes', 'required', 'boolean'],
+            'settings.report.show_stock_register' => ['sometimes', 'required', 'boolean'],
+            'settings.report.show_guidance' => ['sometimes', 'required', 'boolean'],
+            'settings.report.attributes' => ['sometimes', 'array', 'max:8'],
+            'settings.report.attributes.*' => ['required', 'string', 'max:60', 'distinct'],
+            'settings.report.unit_examples' => ['sometimes', 'array', 'max:8'],
+            'settings.report.unit_examples.*' => ['required', 'string', 'max:20', 'distinct'],
         ]);
         $old = $factory->only(['name', 'email', 'phone', 'country_code', 'currency_code', 'timezone', 'default_locale', 'settings']);
-        $settings = $this->defaults($data['settings']);
+        $settings = $this->defaults($data['settings'], $factory->industry_type);
         $factory->update([
             ...collect($data)->except('settings')->all(),
             'country_code' => strtoupper($data['country_code']),
@@ -60,9 +75,10 @@ class FactorySettingsController extends Controller
         ]);
     }
 
-    private function defaults(array $settings): array
+    private function defaults(array $settings, ?string $industry = null): array
     {
-        return array_merge([
+        $reportDefaults = IndustryDailyReportCatalog::for($industry);
+        $defaults = [
             'address' => '',
             'city' => '',
             'registration_number' => '',
@@ -75,6 +91,29 @@ class FactorySettingsController extends Controller
             'require_production_approval' => true,
             'require_quality_release' => true,
             'allow_negative_stock' => false,
-        ], $settings);
+            'report' => [
+                'title' => $reportDefaults['title'],
+                'default_period' => 'day',
+                'orientation' => 'landscape',
+                'input_label' => $reportDefaults['input_label'],
+                'output_label' => $reportDefaults['output_label'],
+                'show_summary' => true,
+                'show_daily_register' => true,
+                'show_department_totals' => true,
+                'show_stock_register' => true,
+                'show_guidance' => false,
+                'attributes' => $reportDefaults['attributes'],
+                'unit_examples' => $reportDefaults['unit_examples'],
+            ],
+        ];
+
+        return [
+            ...$defaults,
+            ...$settings,
+            'report' => [
+                ...$defaults['report'],
+                ...($settings['report'] ?? []),
+            ],
+        ];
     }
 }

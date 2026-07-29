@@ -50,9 +50,18 @@ class FactoryManagerAccessTest extends TestCase
                 'working_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
                 'production_order_prefix' => 'PROD', 'low_stock_alert_level' => 25,
                 'require_production_approval' => true, 'require_quality_release' => true, 'allow_negative_stock' => false,
+                'report' => [
+                    'title' => 'Daily metal production report', 'default_period' => 'day', 'orientation' => 'landscape',
+                    'input_label' => 'Metal issued', 'output_label' => 'Finished parts',
+                    'show_summary' => true, 'show_daily_register' => true, 'show_department_totals' => true,
+                    'show_stock_register' => true, 'show_guidance' => false,
+                    'attributes' => ['Product', 'Metal grade'], 'unit_examples' => ['kg', 'pcs'],
+                ],
             ],
         ])->assertOk()->assertJsonPath('factory.name', 'Controlled Manufacturing Ltd')
-            ->assertJsonPath('settings.production_order_prefix', 'PROD');
+            ->assertJsonPath('settings.production_order_prefix', 'PROD')
+            ->assertJsonPath('settings.report.title', 'Daily metal production report')
+            ->assertJsonPath('settings.report.output_label', 'Finished parts');
         $this->assertDatabaseHas('factories', ['id' => $manager->current_factory_id, 'name' => 'Controlled Manufacturing Ltd']);
         $this->assertDatabaseHas('audit_logs', ['factory_id' => $manager->current_factory_id, 'event' => 'factory.settings_updated']);
 
@@ -94,8 +103,9 @@ class FactoryManagerAccessTest extends TestCase
         $this->getJson('/api/reports?period=week&type=all')->assertOk()
             ->assertJsonPath('factory.name', 'Controlled Manufacturing Ltd')
             ->assertJsonPath('report.type', 'all')
-            ->assertJsonPath('standard.title', 'Daily production and stock report')
-            ->assertJsonPath('standard.input_label', 'Metal received')
+            ->assertJsonPath('standard.title', 'Daily metal production report')
+            ->assertJsonPath('standard.input_label', 'Metal issued')
+            ->assertJsonPath('standard.output_label', 'Finished parts')
             ->assertJsonStructure(['summary', 'department_activity', 'daily_activity', 'stock_register', 'production', 'inventory'])
             ->assertJsonPath('activities', [])
             ->assertJsonFragment(['name' => 'Research and Development', 'work_records' => 0, 'completed_quantity' => 0, 'damaged_quantity' => 0]);
