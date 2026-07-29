@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\WorkflowTemplate;
 use App\Models\Workstation;
 use App\Support\IndustryFlowCatalog;
+use App\Services\DepartmentDeduplicationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class FactoryFlowController extends Controller
         $template = IndustryFlowCatalog::for($factory->industry_type);
         try {
             $workflow = DB::transaction(function () use ($factory, $template) {
+                app(DepartmentDeduplicationService::class)->mergeForFactory($factory->id);
                 $workflow = WorkflowTemplate::updateOrCreate(['factory_id' => $factory->id, 'code' => 'INDUSTRY-DEFAULT'], ['name' => $template['name'], 'description' => 'Industry-based workflow. Factory managers can extend it.', 'status' => 'active', 'is_default' => true]);
 
                 // Move existing stages to a temporary sequence range first. This avoids
@@ -37,8 +39,22 @@ class FactoryFlowController extends Controller
 
                 $stageIds = [];
                 foreach ($template['departments'] as $index => $entry) {
-                    $department = Department::updateOrCreate(['factory_id' => $factory->id, 'code' => $entry['code']], ['name' => $entry['name'], 'is_active' => true]);
-                    $workstation = Workstation::updateOrCreate(['factory_id' => $factory->id, 'code' => $entry['code'].'-MAIN'], ['department_id' => $department->id, 'name' => $entry['name'].' Main Station', 'type' => $entry['workstation_type'], 'is_active' => true]);
+                    $department = Department::where('factory_id', $factory->id)
+                        ->where(fn ($query) => $query->where('code', $entry['code'])->orWhereRaw('LOWER(TRIM(name)) = ?', [Str::lower(trim($entry['name']))]))
+                        ->first();
+                    if ($department) {
+                        $department->update(['name' => $entry['name'], 'is_active' => true]);
+                    } else {
+                        $department = Department::create(['factory_id' => $factory->id, 'code' => $entry['code'], 'name' => $entry['name'], 'is_active' => true]);
+                    }
+                    $workstation = Workstation::where('factory_id', $factory->id)
+                        ->where(fn ($query) => $query->where('code', $entry['code'].'-MAIN')->orWhere('name', $entry['name'].' Main Station'))
+                        ->first();
+                    if ($workstation) {
+                        $workstation->update(['department_id' => $department->id, 'name' => $entry['name'].' Main Station', 'type' => $entry['workstation_type'], 'is_active' => true]);
+                    } else {
+                        $workstation = Workstation::create(['factory_id' => $factory->id, 'code' => $entry['code'].'-MAIN', 'department_id' => $department->id, 'name' => $entry['name'].' Main Station', 'type' => $entry['workstation_type'], 'is_active' => true]);
+                    }
                     $stage = $workflow->stages()->updateOrCreate(['code' => Str::slug($entry['name'], '_')], ['department_id' => $department->id, 'workstation_id' => $workstation->id, 'name' => $entry['name'], 'sequence' => $index + 1, 'required_workers' => 1, 'quality_required' => str_contains(strtolower($entry['name']), 'quality'), 'approval_required' => str_contains(strtolower($entry['name']), 'quality')]);
                     $stageIds[] = $stage->id;
                 }

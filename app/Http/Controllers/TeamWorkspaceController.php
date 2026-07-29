@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\WorkAssignment;
 use App\Models\Workstation;
+use App\Services\DepartmentDeduplicationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,14 +24,19 @@ class TeamWorkspaceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
+        app(DepartmentDeduplicationService::class)->mergeForFactory($factoryId);
         $memberships = DB::table('factory_user')->where('factory_id', $factoryId);
         $totalUsers = (clone $memberships)->count();
         $activeUsers = (clone $memberships)->where('is_active', true)->count();
         $assignedUsers = EmployeeProfile::where('factory_id', $factoryId)->whereNotNull('department_id')->count();
-        Department::firstOrCreate(
-            ['factory_id' => $factoryId, 'code' => 'PRODUCTION'],
-            ['name' => 'Production', 'is_active' => true],
-        );
+        $productionDepartment = Department::where('factory_id', $factoryId)
+            ->where(fn ($query) => $query->where('code', 'PRODUCTION')->orWhereRaw('LOWER(TRIM(name)) = ?', ['production']))
+            ->first();
+        if ($productionDepartment) {
+            $productionDepartment->update(['name' => 'Production', 'is_active' => true]);
+        } else {
+            Department::create(['factory_id' => $factoryId, 'code' => 'PRODUCTION', 'name' => 'Production', 'is_active' => true]);
+        }
         $roles = Role::where('factory_id', $factoryId);
         $isManagerOnly = $request->user()->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'factory-manager')->exists()
             && ! $request->user()->roles()->wherePivot('factory_id', $factoryId)->whereIn('slug', ['factory-owner', 'factory-administrator'])->exists();
@@ -48,7 +54,8 @@ class TeamWorkspaceController extends Controller
             'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
             'roles' => $roles->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
             'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
-            'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get(),
+            'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get()
+                ->unique(fn (Department $department) => Str::lower(trim($department->name)))->values(),
             'workstations' => Workstation::where('is_active', true)->get(),
         ]);
     }
