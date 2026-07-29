@@ -58,6 +58,60 @@ class PlatformAdministrationTest extends TestCase
         $this->assertDatabaseCount('subscription_plans', 3);
     }
 
+    public function test_platform_admin_updates_own_account_and_is_hidden_from_user_pages(): void
+    {
+        $factory = Factory::create([
+            'uuid' => 'b62fe4da-54f2-4c30-bc2c-b498e36e26c5',
+            'name' => 'Account Test Factory',
+            'slug' => 'account-test-factory',
+            'industry_type' => 'general_manufacturing',
+        ]);
+        $admin = User::factory()->create([
+            'current_factory_id' => $factory->id,
+            'is_platform_admin' => true,
+            'name' => 'Old Administrator',
+            'email' => 'old-admin@test.local',
+        ]);
+        $admin->factories()->attach($factory->id, [
+            'is_active' => true,
+            'is_owner' => false,
+            'joined_at' => now(),
+        ]);
+        $employee = User::factory()->create(['current_factory_id' => $factory->id, 'is_platform_admin' => false]);
+        $employee->factories()->attach($factory->id, [
+            'is_active' => true,
+            'is_owner' => false,
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->putJson('/api/platform/settings', [
+                'account_name' => 'Steven IMANZI',
+                'account_email' => 'stivenimanzi1@gmail.com',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $admin->id,
+            'name' => 'Steven IMANZI',
+            'email' => 'stivenimanzi1@gmail.com',
+            'is_platform_admin' => true,
+        ]);
+        $this->getJson('/api/platform/settings')
+            ->assertOk()
+            ->assertJsonPath('account_name', 'Steven IMANZI')
+            ->assertJsonPath('account_email', 'stivenimanzi1@gmail.com');
+        $this->getJson('/api/platform/users')
+            ->assertOk()
+            ->assertJsonMissing(['email' => 'stivenimanzi1@gmail.com'])
+            ->assertJsonFragment(['email' => $employee->email]);
+        $this->getJson('/api/team/workspaces')
+            ->assertOk()
+            ->assertJsonPath('statistics.total_users', 1)
+            ->assertJsonMissing(['email' => 'stivenimanzi1@gmail.com'])
+            ->assertJsonFragment(['email' => $employee->email]);
+    }
+
     public function test_only_super_admin_can_control_factories_subscriptions_maintenance_and_backups(): void
     {
         $admin = User::factory()->create(['current_factory_id' => null, 'is_platform_admin' => true, 'is_active' => true]);

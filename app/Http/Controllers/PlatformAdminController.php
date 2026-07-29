@@ -87,7 +87,7 @@ class PlatformAdminController extends Controller
 
     public function users(Request $request): JsonResponse
     {
-        return response()->json(['users' => User::with('factories:id,name')->when($request->string('search')->value(), fn ($q, $search) => $q->where(fn ($builder) => $builder->where('name', 'like', "%$search%")->orWhere('email', 'like', "%$search%")))->latest()->paginate(25), 'factories' => Factory::with(['roles:id,factory_id,name,slug'])->orderBy('name')->get(['id', 'name'])]);
+        return response()->json(['users' => User::where('is_platform_admin', false)->with('factories:id,name')->when($request->string('search')->value(), fn ($q, $search) => $q->where(fn ($builder) => $builder->where('name', 'like', "%$search%")->orWhere('email', 'like', "%$search%")))->latest()->paginate(25), 'factories' => Factory::with(['roles:id,factory_id,name,slug'])->orderBy('name')->get(['id', 'name'])]);
     }
 
     public function storeFactoryUser(Request $request): JsonResponse
@@ -195,7 +195,17 @@ class PlatformAdminController extends Controller
             'registration_enabled' => ['nullable', 'boolean'],
             'maintenance_enabled' => ['nullable', 'boolean'],
             'maintenance_message' => ['nullable', 'string', 'max:1000'],
+            'account_name' => ['nullable', 'string', 'max:120'],
+            'account_email' => ['nullable', 'email:rfc', 'max:190', Rule::unique('users', 'email')->ignore($request->user()->id)],
         ]);
+        $account = array_filter([
+            'name' => $data['account_name'] ?? null,
+            'email' => isset($data['account_email']) ? Str::lower($data['account_email']) : null,
+        ], fn ($value) => $value !== null);
+        unset($data['account_name'], $data['account_email']);
+        if ($account) {
+            $request->user()->update($account);
+        }
         foreach ($data as $key => $value) {
             $type = is_bool($value) ? 'boolean' : (is_int($value) ? 'integer' : 'string');
             SystemSetting::updateOrCreate(['key' => $key], ['value' => is_bool($value) ? ($value ? '1' : '0') : $value, 'type' => $type, 'is_public' => in_array($key, ['system_name', 'system_tagline', 'logo_url', 'support_email', 'support_phone', 'default_locale', 'currency_code', 'timezone', 'maintenance_enabled', 'maintenance_message'])]);
@@ -204,9 +214,12 @@ class PlatformAdminController extends Controller
         return response()->json(['message' => 'System settings updated.']);
     }
 
-    public function getSettings(): JsonResponse
+    public function getSettings(Request $request): JsonResponse
     {
-        return response()->json(SystemSetting::pluck('value', 'key'));
+        return response()->json(SystemSetting::pluck('value', 'key')->merge([
+            'account_name' => $request->user()->name,
+            'account_email' => $request->user()->email,
+        ]));
     }
 
     public function uploadLogo(Request $request): JsonResponse

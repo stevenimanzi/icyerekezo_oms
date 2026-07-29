@@ -25,7 +25,11 @@ class TeamWorkspaceController extends Controller
     {
         $factoryId = $request->user()->current_factory_id;
         app(DepartmentDeduplicationService::class)->mergeForFactory($factoryId);
-        $memberships = DB::table('factory_user')->where('factory_id', $factoryId)->where('is_owner', false);
+        $platformUserIds = User::where('is_platform_admin', true)->pluck('id');
+        $memberships = DB::table('factory_user')
+            ->where('factory_id', $factoryId)
+            ->where('is_owner', false)
+            ->whereNotIn('user_id', $platformUserIds);
         $employeeUserIds = (clone $memberships)->pluck('user_id');
         $totalUsers = (clone $memberships)->count();
         $activeUsers = (clone $memberships)->where('is_active', true)->count();
@@ -52,7 +56,7 @@ class TeamWorkspaceController extends Controller
                 'assigned_users' => $assignedUsers,
                 'unassigned_users' => max(0, $totalUsers - $assignedUsers),
             ],
-            'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_owner', false))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
+            'users' => User::where('is_platform_admin', false)->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_owner', false))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
             'roles' => $roles->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
             'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
             'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get()
@@ -64,6 +68,9 @@ class TeamWorkspaceController extends Controller
     public function storeUser(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
+        if (User::where('email', Str::lower((string) $request->input('email')))->where('is_platform_admin', true)->exists()) {
+            throw ValidationException::withMessages(['email' => 'This email belongs to a system administrator and cannot be added as a factory employee.']);
+        }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email:rfc', 'max:190'],
             'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()->symbols()],
