@@ -502,3 +502,127 @@
         min-height: 54px;
     }
 }
+
+/* Keep the complete sign-in experience inside common laptop and desktop viewports. */
+@media (min-width: 861px) and (max-height: 940px) {
+    .auth-story {
+        padding-block: 34px;
+    }
+
+    .auth-story .brand-mark {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+    }
+
+    .auth-story h1 {
+        margin-block: 18px 14px;
+        font-size: clamp(42px, 4.5vw, 66px);
+    }
+
+    .auth-story p {
+        font-size: 16px;
+        line-height: 1.55;
+    }
+
+    .auth-points {
+        margin-top: 24px;
+    }
+
+    .auth-points span {
+        padding: 10px;
+    }
+
+    .auth-story-foot {
+        padding-top: 14px;
+    }
+
+    .auth-form-side {
+        padding-block: 62px 28px;
+    }
+
+    .auth-topbar {
+        top: 18px;
+    }
+
+    .auth-card {
+        padding: 28px 36px;
+        border-radius: 26px;
+    }
+
+    .auth-card-mark {
+        width: 42px;
+        height: 42px;
+        margin-bottom: 14px;
+        border-radius: 13px;
+    }
+
+    .auth-card h2 {
+        font-size: 36px;
+    }
+
+    .auth-card > .auth-heading > p {
+        margin: 8px 0 20px;
+    }
+
+    .auth-field {
+        margin-bottom: 13px;
+    }
+
+    .auth-card .auth-field > span {
+        margin-bottom: 6px;
+    }
+
+    .auth-card .auth-field input,
+    .auth-card .auth-field select {
+        min-height: 51px;
+    }
+
+    .check-row {
+        margin-bottom: 14px;
+    }
+
+    .auth-submit {
+        min-height: 52px;
+    }
+
+    .auth-submit i {
+        width: 36px;
+        height: 36px;
+    }
+
+    .auth-switch {
+        margin-top: 15px;
+    }
+
+    .auth-assurance {
+        margin-top: 16px !important;
+    }
+}
+
+@media (min-width: 861px) and (max-height: 760px) {
+    .auth-card-mark,
+    .auth-assurance {
+        display: none;
+    }
+
+    .auth-form-side {
+        padding-block: 52px 20px;
+    }
+
+    .auth-card {
+        padding-block: 22px;
+    }
+
+    .auth-card > .auth-heading > p {
+        margin-bottom: 15px;
+    }
+
+    .auth-story h1 {
+        font-size: clamp(38px, 4vw, 56px);
+    }
+
+    .auth-points {
+        margin-top: 16px;
+    }
+}

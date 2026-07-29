@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 @import './production-ux.css';
-@import './auth-premium.css';
 @source '../views/*.blade.php';
 @source '../js/**/*.{ts,tsx}';
 
