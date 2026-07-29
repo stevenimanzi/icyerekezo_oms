@@ -68,7 +68,7 @@ function DepartmentMatrix({data}: any) {
         ['Waste', (row: any) => quantity(row.waste_quantity, row.unit)],
     ];
     return <Table
-        title="Department activity matrix"
+        title="Work totals by department"
         headers={['Recorded work', ...departments.map((row: any) => row.name)]}
         rows={metrics.map(([label, value]: any) => [label, ...departments.map((row: any) => value(row))])}
     />;
@@ -172,7 +172,7 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
                     <span><FileText/></span>
                     <div>
                         <div className="eyebrow"><i/>LIVE FACTORY WORK</div>
-                        <h1>{productionOnly ? 'Production daily reports' : 'Factory daily reports'}</h1>
+                        <h1>{productionOnly ? 'Daily production report' : 'Daily factory report'}</h1>
                         <p>Follow work from material received through every department to finished stock.</p>
                     </div>
                 </div>

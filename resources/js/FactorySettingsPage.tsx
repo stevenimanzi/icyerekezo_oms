@@ -16,7 +16,7 @@ async function api(url: string, options: RequestInit = {}) {
 }
 
 const Field = ({label, note, children}: any) => <label>{label}{children}{note && <small>{note}</small>}</label>;
-const Card = ({icon: Icon, title, note, children}: any) => <section className="panel factory-setting-card"><header><span><Icon/></span><div><h2>{title}</h2><p>{note}</p></div></header>{children}</section>;
+const Card = ({title, note, children}: any) => <section className="panel factory-setting-card"><header><div><h2>{title}</h2><p>{note}</p></div></header>{children}</section>;
 const Check = ({label, note, checked, change}: any) => <label className="switch-line"><span><b>{label}</b><small>{note}</small></span><input type="checkbox" checked={!!checked} onChange={event => change(event.target.checked)}/></label>;
 
 const tabs = [
