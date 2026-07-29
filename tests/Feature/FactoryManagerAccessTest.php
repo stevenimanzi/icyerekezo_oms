@@ -38,6 +38,23 @@ class FactoryManagerAccessTest extends TestCase
         foreach (['inventory.view', 'procurement.view', 'quality.inspect', 'sales.create', 'finance.view', 'logistics.dispatch'] as $permission) {
             $this->assertNotContains($permission, $permissions);
         }
+        $this->getJson('/api/factory/settings')->assertOk()
+            ->assertJsonPath('factory.name', 'Controlled Factory')
+            ->assertJsonPath('settings.opening_time', '08:00');
+        $this->putJson('/api/factory/settings', [
+            'name' => 'Controlled Manufacturing Ltd', 'email' => 'factory@controlled.test', 'phone' => '+250788000000',
+            'country_code' => 'RW', 'currency_code' => 'RWF', 'timezone' => 'Africa/Kigali', 'default_locale' => 'en',
+            'settings' => [
+                'address' => 'Kigali Industrial Park', 'city' => 'Kigali', 'registration_number' => 'REG-100',
+                'tax_number' => 'TIN-200', 'opening_time' => '07:30', 'closing_time' => '18:00',
+                'working_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+                'production_order_prefix' => 'PROD', 'low_stock_alert_level' => 25,
+                'require_production_approval' => true, 'require_quality_release' => true, 'allow_negative_stock' => false,
+            ],
+        ])->assertOk()->assertJsonPath('factory.name', 'Controlled Manufacturing Ltd')
+            ->assertJsonPath('settings.production_order_prefix', 'PROD');
+        $this->assertDatabaseHas('factories', ['id' => $manager->current_factory_id, 'name' => 'Controlled Manufacturing Ltd']);
+        $this->assertDatabaseHas('audit_logs', ['factory_id' => $manager->current_factory_id, 'event' => 'factory.settings_updated']);
 
         $this->getJson('/api/team/workspaces')->assertOk()
             ->assertJsonPath('statistics.total_users', 2)
@@ -75,7 +92,7 @@ class FactoryManagerAccessTest extends TestCase
         $this->assertDatabaseHas('employee_profiles', ['user_id' => $manager->id, 'department_id' => $welding->id]);
         $this->postJson('/api/team/departments', ['name' => 'Research and Development', 'code' => 'RND'])->assertCreated();
         $this->getJson('/api/reports?period=week&type=all')->assertOk()
-            ->assertJsonPath('factory.name', 'Controlled Factory')
+            ->assertJsonPath('factory.name', 'Controlled Manufacturing Ltd')
             ->assertJsonPath('report.type', 'all')
             ->assertJsonStructure(['summary', 'department_activity', 'production', 'inventory', 'activities'])
             ->assertJsonFragment(['name' => 'Research and Development', 'stages_processed' => 0, 'output_quantity' => 0]);

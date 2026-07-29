@@ -5,6 +5,7 @@ use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\DepartmentDashboardController;
 use App\Http\Controllers\FactoryContextController;
 use App\Http\Controllers\FactoryFlowController;
+use App\Http\Controllers\FactorySettingsController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManufacturingController;
 use App\Http\Controllers\MachineController;
@@ -64,6 +65,8 @@ Route::prefix('api')->group(function () {
             Route::get('/department/dashboard', DepartmentDashboardController::class);
             Route::get('/factory/flow-suggestion', [FactoryFlowController::class, 'suggestion'])->middleware('permission:factory.manage');
             Route::post('/factory/flow-suggestion/apply', [FactoryFlowController::class, 'apply'])->middleware('permission:factory.manage');
+            Route::get('/factory/settings', [FactorySettingsController::class, 'show'])->middleware('permission:factory.manage');
+            Route::put('/factory/settings', [FactorySettingsController::class, 'update'])->middleware('permission:factory.manage');
             Route::get('/reports', ReportController::class)->middleware('permission:reports.view');
             Route::get('/inventory/overview', [InventoryController::class, 'overview'])->middleware('permission:inventory.view');
             Route::get('/inventory/items', [InventoryController::class, 'items'])->middleware('permission:products.view');
