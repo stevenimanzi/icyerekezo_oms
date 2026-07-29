@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
 use App\Models\Department;
-use App\Models\EmployeeProfile;
 use App\Models\ProductionStageExecution;
 use App\Models\StockTransaction;
 use Carbon\Carbon;
@@ -54,14 +52,6 @@ class ReportController extends Controller
             ->select('production_stage_executions.id', 'production_stage_executions.status', 'production_stage_executions.input_quantity', 'production_stage_executions.output_quantity', 'production_stage_executions.waste_quantity', 'production_stage_executions.rejected_quantity', 'production_stage_executions.updated_at', 'workflow_stages.department_id', 'workflow_stages.name as stage_name', 'production_orders.id as production_order_id', 'production_orders.order_number', 'items.name as product_name', 'units.name as unit_name', 'units.symbol as unit_symbol')
             ->latest('production_stage_executions.updated_at')->get();
 
-        $operationalEvents = ['production.%', 'inventory.%', 'quality.%', 'work.%', 'procurement.%', 'logistics.%', 'sales.%', 'maintenance.%'];
-        $activitiesQuery = AuditLog::where('factory_id', $factory->id)->whereBetween('created_at', [$from, $to])
-            ->where(fn ($query) => collect($operationalEvents)->each(fn ($pattern) => $query->orWhere('event', 'like', $pattern)));
-        if ($departmentId) {
-            $userIds = EmployeeProfile::withoutGlobalScopes()->where('factory_id', $factory->id)->where('department_id', $departmentId)->pluck('user_id');
-            $activitiesQuery->whereIn('user_id', $userIds);
-        }
-        $activities = $productionOnly ? collect() : $activitiesQuery->with('user:id,name')->latest()->get(['id', 'user_id', 'event', 'description', 'created_at']);
         $departmentActivity = $departments->map(function ($department) use ($executions) {
             $records = $executions->where('department_id', $department->id);
 
@@ -90,7 +80,7 @@ class ReportController extends Controller
             'department_activity' => $departmentActivity,
             'production' => in_array($type, ['all', 'departments', 'production'], true) ? $executions : [],
             'inventory' => $inventory,
-            'activities' => ! $productionOnly && in_array($type, ['all', 'departments', 'activity'], true) ? $activities : [],
+            'activities' => [],
         ]);
     }
 
