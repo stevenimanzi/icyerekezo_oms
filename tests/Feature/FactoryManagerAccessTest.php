@@ -69,8 +69,14 @@ class FactoryManagerAccessTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['factory_id' => $manager->current_factory_id, 'event' => 'factory.settings_updated']);
 
         $this->getJson('/api/team/workspaces')->assertOk()
-            ->assertJsonPath('statistics.total_users', 2)
-            ->assertJsonPath('statistics.active_users', 2);
+            ->assertJsonPath('statistics.total_users', 1)
+            ->assertJsonPath('statistics.active_users', 1)
+            ->assertJsonCount(1, 'users.data')
+            ->assertJsonMissing(['email' => 'owner@roles.test']);
+        $owner = User::where('email', 'owner@roles.test')->firstOrFail();
+        $this->patchJson('/api/team/users/'.$owner->id, ['is_active' => false])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'The factory owner account cannot be changed here.');
         $this->assertDatabaseHas('departments', ['factory_id' => $manager->current_factory_id, 'name' => 'Production', 'code' => 'PRODUCTION']);
         $productionManagerRole = Role::where('slug', 'production-manager')->firstOrFail();
         $this->postJson('/api/team/users', [
@@ -78,10 +84,10 @@ class FactoryManagerAccessTest extends TestCase
             'role_id' => $productionManagerRole->id,
         ])->assertCreated();
         $this->getJson('/api/team/workspaces')->assertOk()
-            ->assertJsonPath('statistics.total_users', 3)
-            ->assertJsonPath('statistics.active_users', 3)
+            ->assertJsonPath('statistics.total_users', 2)
+            ->assertJsonPath('statistics.active_users', 2)
             ->assertJsonPath('statistics.assigned_users', 0)
-            ->assertJsonPath('statistics.unassigned_users', 3);
+            ->assertJsonPath('statistics.unassigned_users', 2);
         $this->getJson('/api/factory/flow-suggestion')->assertOk()
             ->assertJsonPath('industry', 'steel_metals')
             ->assertJsonFragment(['name' => 'Production'])

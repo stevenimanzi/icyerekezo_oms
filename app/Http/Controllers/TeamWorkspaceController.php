@@ -25,10 +25,11 @@ class TeamWorkspaceController extends Controller
     {
         $factoryId = $request->user()->current_factory_id;
         app(DepartmentDeduplicationService::class)->mergeForFactory($factoryId);
-        $memberships = DB::table('factory_user')->where('factory_id', $factoryId);
+        $memberships = DB::table('factory_user')->where('factory_id', $factoryId)->where('is_owner', false);
+        $employeeUserIds = (clone $memberships)->pluck('user_id');
         $totalUsers = (clone $memberships)->count();
         $activeUsers = (clone $memberships)->where('is_active', true)->count();
-        $assignedUsers = EmployeeProfile::where('factory_id', $factoryId)->whereNotNull('department_id')->count();
+        $assignedUsers = EmployeeProfile::where('factory_id', $factoryId)->whereIn('user_id', $employeeUserIds)->whereNotNull('department_id')->count();
         $productionDepartment = Department::where('factory_id', $factoryId)
             ->where(fn ($query) => $query->where('code', 'PRODUCTION')->orWhereRaw('LOWER(TRIM(name)) = ?', ['production']))
             ->first();
@@ -51,7 +52,7 @@ class TeamWorkspaceController extends Controller
                 'assigned_users' => $assignedUsers,
                 'unassigned_users' => max(0, $totalUsers - $assignedUsers),
             ],
-            'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
+            'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_owner', false))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
             'roles' => $roles->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
             'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
             'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get()
@@ -219,6 +220,9 @@ class TeamWorkspaceController extends Controller
 
     private function assertCanGrantRole(User $actor, Role $role): void
     {
+        if ($role->slug === 'factory-owner') {
+            throw ValidationException::withMessages(['role_id' => 'The factory owner account is protected and cannot be assigned or changed from Team & Shifts.']);
+        }
         $isFactoryManager = $actor->roles()->wherePivot('factory_id', $actor->current_factory_id)->where('slug', 'factory-manager')->exists();
         if ($isFactoryManager && ! in_array($role->slug, ['factory-owner', 'factory-administrator', 'factory-manager'], true)) {
             return;
