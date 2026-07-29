@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../css/auth-premium.css';
 import {
-    Activity, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CreditCard, Database,
+    Activity, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleAlert, CircleDollarSign, ClipboardCheck, CreditCard, Database,
     Eye, EyeOff, Factory, Gauge, HelpCircle, Languages, LayoutDashboard, LockKeyhole, Mail, Megaphone, Menu, MessageSquare, Moon, PackageCheck,
     PackageOpen, RefreshCw, Search, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Warehouse,
     UserRound, Wrench, X, Zap,
@@ -95,11 +95,19 @@ function pathForPage(user: AuthUser, page: string): string {
     const workspace = user.workspace || 'operations'; return page === 'dashboard' ? `/${workspace}` : `/${workspace}/${page}`;
 }
 
-class PageBoundary extends React.Component<{resetKey:string;children:React.ReactNode},{failed:boolean}> {
-    state={failed:false};
+class PageBoundary extends React.Component<{resetKey:string;children:React.ReactNode},{failed:boolean;attempts:number}> {
+    state={failed:false,attempts:0};
+    private recoveryTimer?: number;
     static getDerivedStateFromError(){return {failed:true}}
-    componentDidUpdate(previous:{resetKey:string}){if(previous.resetKey!==this.props.resetKey&&this.state.failed)this.setState({failed:false})}
-    render(){return this.state.failed?<div className="panel page-recovery"><Activity size={28}/><h2>This page could not finish loading</h2><p>The application is still running. Try opening the page again.</p><button className="primary-btn" onClick={()=>this.setState({failed:false})}>Try again</button></div>:this.props.children}
+    componentDidCatch(error:Error){console.error('Page render failed',error);if(this.state.attempts<2){this.recoveryTimer=window.setTimeout(()=>this.setState(state=>({failed:false,attempts:state.attempts+1})),350)}}
+    componentDidUpdate(previous:{resetKey:string}){if(previous.resetKey!==this.props.resetKey){window.clearTimeout(this.recoveryTimer);if(this.state.failed||this.state.attempts)this.setState({failed:false,attempts:0})}}
+    componentWillUnmount(){window.clearTimeout(this.recoveryTimer)}
+    retry=()=>{window.clearTimeout(this.recoveryTimer);this.setState(state=>({failed:false,attempts:state.attempts+1}))};
+    render(){
+        if(!this.state.failed)return this.props.children;
+        if(this.state.attempts<2)return <div className="panel page-recovery page-reconnecting" role="status"><RefreshCw size={30}/><h2>Loading your page</h2><p>Connecting to the latest factory data…</p></div>;
+        return <div className="panel page-recovery" role="alert"><span className="recovery-warning"><CircleAlert size={30}/></span><h2>We could not load this page</h2><p>Please check your connection, then try again. Your data is safe.</p><button className="primary-btn" onClick={this.retry}><RefreshCw size={17}/>Try again</button></div>
+    }
 }
 
 function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout: () => void; onMaintenance: (message:string) => void }) {
