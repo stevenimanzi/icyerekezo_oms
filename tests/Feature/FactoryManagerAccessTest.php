@@ -39,13 +39,20 @@ class FactoryManagerAccessTest extends TestCase
             $this->assertNotContains($permission, $permissions);
         }
 
-        $this->getJson('/api/team/workspaces')->assertOk();
+        $this->getJson('/api/team/workspaces')->assertOk()
+            ->assertJsonPath('statistics.total_users', 2)
+            ->assertJsonPath('statistics.active_users', 2);
         $this->assertDatabaseHas('departments', ['factory_id' => $manager->current_factory_id, 'name' => 'Production', 'code' => 'PRODUCTION']);
         $productionManagerRole = Role::where('slug', 'production-manager')->firstOrFail();
         $this->postJson('/api/team/users', [
             'name' => 'Production Lead', 'email' => 'production.lead@roles.test', 'password' => 'Production@12345', 'password_confirmation' => 'Production@12345',
             'role_id' => $productionManagerRole->id,
         ])->assertCreated();
+        $this->getJson('/api/team/workspaces')->assertOk()
+            ->assertJsonPath('statistics.total_users', 3)
+            ->assertJsonPath('statistics.active_users', 3)
+            ->assertJsonPath('statistics.assigned_users', 0)
+            ->assertJsonPath('statistics.unassigned_users', 3);
         $this->getJson('/api/factory/flow-suggestion')->assertOk()
             ->assertJsonPath('industry', 'steel_metals')
             ->assertJsonFragment(['name' => 'Production'])

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, ArrowDown, ArrowUp, Edit3, Factory, FileText, Plus, Printer, RefreshCw, Save, Settings, Trash2, Users, X } from 'lucide-react';
+import { Activity, ArrowDown, ArrowUp, Edit3, Factory, FileText, Plus, Printer, RefreshCw, Save, Settings, Trash2, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 
 const csrf=()=>document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content??'';
 async function api(url:string,options:RequestInit={}){const response=await fetch(url,{...options,headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf(),...(options.headers||{})}});const text=await response.text();let payload:any;try{payload=text?JSON.parse(text):{}}catch{throw new Error('The server returned an invalid response.')}if(!response.ok)throw new Error(payload.message||Object.values(payload.errors||{}).flat().join(' ')||'Request failed.');return payload}
@@ -65,12 +65,59 @@ export function ProductionFlowPage(){
 
 export function TeamManagementPage(){
     const emptyUser={name:'',email:'',role_id:'',department_id:'',password:'',password_confirmation:''};
-    const [data,setData]=useState<any>(null);const [newUser,setNewUser]=useState<any>(emptyUser);const [editing,setEditing]=useState<Record<number,any>>({});const [managerEdits,setManagerEdits]=useState<Record<number,string>>({});const [error,setError]=useState('');const [success,setSuccess]=useState('');const [creating,setCreating]=useState(false);
-    const load=()=>api('/api/team/workspaces').then(setData).catch(reason=>setError(reason.message));useEffect(load,[]);
-    const create=async(e:React.FormEvent)=>{e.preventDefault();setCreating(true);setError('');setSuccess('');try{await api('/api/team/users',{method:'POST',body:JSON.stringify({...newUser,department_id:newUser.department_id||null,workstation_id:newUser.workstation_id||null})});setNewUser(emptyUser);setSuccess('Employee account created and assigned successfully.');await load()}catch(reason:any){setError(reason.message)}finally{setCreating(false)}};
-    const save=async(user:any)=>{const values=editing[user.id]||{};try{await api('/api/team/users/'+user.id,{method:'PATCH',body:JSON.stringify(values)});setSuccess('Employee assignment updated.');await load()}catch(reason:any){setError(reason.message)}};
-    const saveManager=async(item:any)=>{setError('');setSuccess('');try{await api('/api/team/departments/'+item.id,{method:'PATCH',body:JSON.stringify({manager_id:managerEdits[item.id]??item.manager_id??null})});setSuccess('Department manager assigned successfully.');await load()}catch(reason:any){setError(reason.message)}};
-    const users=data?.users?.data||[];return <section className="module-page"><Heading icon={Users} title="Employee accounts and department assignments" description="Create employees, assign department managers and place everyone in the production team where they work."/><Alert error={error} success={success}/><div className="admin-table-wrap department-table"><table className="admin-table"><thead><tr><th>Code</th><th>Department</th><th>Employees</th><th>Department manager</th><th>Action</th></tr></thead><tbody>{(data?.departments||[]).map((item:any)=><tr key={item.id}><td><b className="department-code">{item.code}</b></td><td><b>{item.name}</b></td><td>{item.employees_count} employee{item.employees_count===1?'':'s'}</td><td><select value={managerEdits[item.id]??item.manager_id??''} onChange={e=>setManagerEdits({...managerEdits,[item.id]:e.target.value})}><option value="">No manager assigned</option>{users.map((user:any)=><option key={user.id} value={user.id}>{user.name} — {user.roles?.[0]?.name||'Employee'}</option>)}</select></td><td><button className="table-action" onClick={()=>saveManager(item)}><Save size={15}/>Save manager</button></td></tr>)}</tbody></table></div><form className="panel admin-form employee-create-form" onSubmit={create}><h2>Create employee account</h2><p>Create login access and assign the employee to a production department immediately.</p><div className="form-grid employee-form-grid"><label>Full name<input required value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})}/></label><label>Email address<input required type="email" value={newUser.email} onChange={e=>setNewUser({...newUser,email:e.target.value})}/></label><label>Role<select required value={newUser.role_id} onChange={e=>setNewUser({...newUser,role_id:e.target.value})}><option value="">Choose role</option>{(data?.roles||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Department<select value={newUser.department_id} onChange={e=>setNewUser({...newUser,department_id:e.target.value,workstation_id:''})}><option value="">Not assigned</option>{(data?.departments||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Temporary password<input required minLength={10} type="password" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})}/><small>Use uppercase, lowercase, number and symbol.</small></label><label>Confirm password<input required minLength={10} type="password" value={newUser.password_confirmation} onChange={e=>setNewUser({...newUser,password_confirmation:e.target.value})}/></label></div><button className="primary-btn" disabled={creating}><Plus size={16}/>{creating?'Creating account...':'Create employee'}</button></form><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Employee</th><th>Role</th><th>Department</th><th>Action</th></tr></thead><tbody>{users.map((user:any)=>{const current=editing[user.id]||{};const selectedDepartment=current.department_id??user.employee_profile?.department_id??'';return <tr key={user.id}><td><b>{user.name}</b><br/><small>{user.email}</small></td><td><select value={current.role_id||user.roles?.[0]?.id||''} onChange={e=>setEditing({...editing,[user.id]:{...current,role_id:e.target.value}})}>{(data?.roles||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td><td><select value={selectedDepartment} onChange={e=>setEditing({...editing,[user.id]:{...current,department_id:e.target.value||null}})}><option value="">Not assigned</option>{(data?.departments||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td><td><button className="table-action" onClick={()=>save(user)}>Save assignment</button></td></tr>})}</tbody></table></div></section>
+    const [data,setData]=useState<any>(null);
+    const [newUser,setNewUser]=useState<any>(emptyUser);
+    const [editing,setEditing]=useState<Record<number,any>>({});
+    const [error,setError]=useState('');
+    const [success,setSuccess]=useState('');
+    const [creating,setCreating]=useState(false);
+    const [showCreate,setShowCreate]=useState(false);
+    const load=()=>api('/api/team/workspaces').then(setData).catch(reason=>setError(reason.message));
+    useEffect(load,[]);
+    const create=async(e:React.FormEvent)=>{
+        e.preventDefault();setCreating(true);setError('');setSuccess('');
+        try{
+            await api('/api/team/users',{method:'POST',body:JSON.stringify({...newUser,department_id:newUser.department_id||null})});
+            setNewUser(emptyUser);setShowCreate(false);setSuccess('Employee account created and assigned successfully.');await load();
+        }catch(reason:any){setError(reason.message)}finally{setCreating(false)}
+    };
+    const save=async(user:any)=>{
+        const values=editing[user.id]||{};setError('');setSuccess('');
+        try{await api('/api/team/users/'+user.id,{method:'PATCH',body:JSON.stringify(values)});setSuccess('Employee access and assignment updated.');setEditing(current=>{const next={...current};delete next[user.id];return next});await load()}
+        catch(reason:any){setError(reason.message)}
+    };
+    const users=data?.users?.data||[];
+    const isActive=(user:any)=>Boolean(Number(user.factories?.[0]?.pivot?.is_active??1));
+    const statistics=data?.statistics||{};
+    const metrics=[
+        {label:'Total users',value:statistics.total_users||0,detail:'People with factory access',icon:<Users/>},
+        {label:'Active users',value:statistics.active_users||0,detail:'Can sign in and work',icon:<UserCheck/>,tone:'green'},
+        {label:'Assigned users',value:statistics.assigned_users||0,detail:'Placed in a department',icon:<UserPlus/>,tone:'blue'},
+        {label:'Not assigned',value:statistics.unassigned_users||0,detail:'Need a department',icon:<UserMinus/>,tone:'amber'},
+    ];
+    return <section className="module-page team-management-page">
+        <Heading icon={Users} title="Factory users" description="Create user accounts and control each employee's role, department and access." action={<button className="primary-btn" onClick={()=>{setError('');setShowCreate(true)}}><Plus size={17}/>Add new user</button>}/>
+        <Alert error={error} success={success}/>
+        <section className="team-user-metrics">{metrics.map(item=><article className="panel" key={item.label}><span className={item.tone||''}>{item.icon}</span><div><small>{item.label}</small><strong>{item.value}</strong><p>{item.detail}</p></div></article>)}</section>
+        <div className="admin-table-wrap team-users-table"><table className="admin-table"><thead><tr><th>Employee</th><th>Status</th><th>Role</th><th>Department</th><th>Action</th></tr></thead><tbody>{users.length?users.map((user:any)=>{
+            const current=editing[user.id]||{};
+            const selectedDepartment=current.department_id??user.employee_profile?.department_id??'';
+            const active=current.is_active??isActive(user);
+            return <tr key={user.id}>
+                <td><div className="team-user-cell"><span>{String(user.name||'U').split(' ').map((part:string)=>part[0]).join('').slice(0,2).toUpperCase()}</span><div><b>{user.name}</b><small>{user.email}</small></div></div></td>
+                <td><select value={active?'1':'0'} onChange={e=>setEditing({...editing,[user.id]:{...current,is_active:e.target.value==='1'}})}><option value="1">Active</option><option value="0">Inactive</option></select></td>
+                <td><select value={current.role_id||user.roles?.[0]?.id||''} onChange={e=>setEditing({...editing,[user.id]:{...current,role_id:e.target.value}})}><option value="">Choose role</option>{(data?.roles||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td>
+                <td><select value={selectedDepartment} onChange={e=>setEditing({...editing,[user.id]:{...current,department_id:e.target.value||null}})}><option value="">Not assigned</option>{(data?.departments||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td>
+                <td><button className="table-action" disabled={!editing[user.id]} onClick={()=>save(user)}><Save size={15}/>Save changes</button></td>
+            </tr>
+        }):<tr><td className="empty-cell" colSpan={5}>No users have been created yet.</td></tr>}</tbody></table></div>
+        {showCreate&&<div className="team-modal-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setShowCreate(false)}}>
+            <section className="team-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
+                <header><div><span><UserPlus size={20}/></span><div><h2 id="create-user-title">Create employee account</h2><p>Add login access and assign the employee to the correct team.</p></div></div><button type="button" aria-label="Close" onClick={()=>setShowCreate(false)}><X size={19}/></button></header>
+                <form className="admin-form employee-create-form" onSubmit={create}><div className="form-grid employee-form-grid"><label>Full name<input autoFocus required placeholder="Enter employee name" value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})}/></label><label>Email address<input required type="email" placeholder="name@company.com" value={newUser.email} onChange={e=>setNewUser({...newUser,email:e.target.value})}/></label><label>Role<select required value={newUser.role_id} onChange={e=>setNewUser({...newUser,role_id:e.target.value})}><option value="">Choose role</option>{(data?.roles||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Department<select value={newUser.department_id} onChange={e=>setNewUser({...newUser,department_id:e.target.value})}><option value="">Not assigned</option>{(data?.departments||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Temporary password<input required minLength={10} type="password" placeholder="Create a secure password" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})}/><small>Use uppercase, lowercase, number and symbol.</small></label><label>Confirm password<input required minLength={10} type="password" placeholder="Enter the password again" value={newUser.password_confirmation} onChange={e=>setNewUser({...newUser,password_confirmation:e.target.value})}/></label></div><footer><button type="button" className="secondary-btn" onClick={()=>setShowCreate(false)}>Cancel</button><button className="primary-btn" disabled={creating}><UserPlus size={16}/>{creating?'Creating account...':'Create employee'}</button></footer></form>
+            </section>
+        </div>}
+    </section>
 }
 
 export function ReportsPage({canExport,productionOnly=false}:{canExport:boolean;productionOnly?:boolean}){

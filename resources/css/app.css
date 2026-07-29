@@ -211,10 +211,36 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .department-card label { display:flex; min-width:0; flex-direction:column; gap:6px; color:var(--muted); font-size:12px; font-weight:700; }
 .department-card select { width:100%; min-width:0; min-height:42px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--text); }
 .department-card .table-action { min-height:42px; display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
-.employee-create-form { order:-1; }
-.employee-form-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.team-user-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+.team-user-metrics article { display:flex; align-items:center; gap:13px; padding:18px; }
+.team-user-metrics article>span { display:grid; width:44px; height:44px; flex:0 0 44px; place-items:center; border-radius:13px; background:#eef4ff; color:#2563eb; }
+.team-user-metrics article>span.green { background:#e8f8ef; color:#159b66; }
+.team-user-metrics article>span.amber { background:#fff3df; color:#d97706; }
+.team-user-metrics small,.team-user-metrics strong,.team-user-metrics p { display:block; margin:0; }
+.team-user-metrics small { color:var(--muted); font-size:12px; }
+.team-user-metrics strong { margin-top:2px; font-size:25px; }
+.team-user-metrics p { margin-top:2px; color:var(--muted); font-size:12px; }
+.team-users-table select { min-width:150px; min-height:42px; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--panel); color:var(--text); }
+.team-users-table .table-action { display:inline-flex; min-height:40px; align-items:center; gap:6px; white-space:nowrap; }
+.team-users-table .table-action:disabled { opacity:.45; cursor:not-allowed; }
+.team-user-cell { display:flex; min-width:220px; align-items:center; gap:11px; }
+.team-user-cell>span { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border-radius:12px; background:#eaf1ff; color:#2563eb; font-size:12px; font-weight:800; }
+.team-user-cell b,.team-user-cell small { display:block; }
+.team-user-cell small { margin-top:2px; color:var(--muted); }
+.team-modal-backdrop { position:fixed; z-index:100; inset:0; display:grid; place-items:center; padding:24px; overflow:auto; background:rgba(8,18,38,.62); backdrop-filter:blur(6px); }
+.team-modal { width:min(760px,100%); max-height:calc(100vh - 48px); overflow:auto; border:1px solid var(--line); border-radius:20px; background:var(--panel); box-shadow:0 30px 90px rgba(4,15,38,.3); animation:team-modal-in .2s ease; }
+@keyframes team-modal-in { from { opacity:0; transform:translateY(12px) scale(.98); } }
+.team-modal>header { position:sticky; z-index:1; top:0; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:20px 22px; border-bottom:1px solid var(--line); background:var(--panel); }
+.team-modal>header>div { display:flex; align-items:center; gap:12px; }
+.team-modal>header>div>span { display:grid; width:42px; height:42px; place-items:center; border-radius:12px; background:#eaf1ff; color:#2563eb; }
+.team-modal h2,.team-modal header p { margin:0; }
+.team-modal header p { margin-top:3px; color:var(--muted); font-size:13px; }
+.team-modal>header>button { display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--line); border-radius:10px; background:var(--panel); cursor:pointer; }
+.employee-create-form { padding:22px; }
+.employee-form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .employee-create-form label small { color:var(--muted); font-size:11px; font-weight:400; }
-@media(max-width:1050px){.employee-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.employee-form-grid{grid-template-columns:1fr}}
+.employee-create-form footer { display:flex; justify-content:flex-end; gap:10px; padding-top:5px; }
+@media(max-width:1050px){.team-user-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.team-user-metrics,.employee-form-grid{grid-template-columns:1fr}.team-modal-backdrop{padding:10px}.team-modal{max-height:calc(100vh - 20px);border-radius:16px}.employee-create-form footer{flex-direction:column-reverse}.employee-create-form footer button{width:100%;justify-content:center}}
 @media(max-width:1050px){.department-card{grid-template-columns:minmax(0,1fr) minmax(180px,1fr)}.department-card .table-action{grid-column:2}}@media(max-width:620px){.department-card{grid-template-columns:1fr}.department-card .table-action{grid-column:auto;width:100%}}
 
 /* Department cards must remain readable inside the sidebar layout. */

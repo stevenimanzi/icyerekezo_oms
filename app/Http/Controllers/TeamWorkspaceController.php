@@ -23,6 +23,10 @@ class TeamWorkspaceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
+        $memberships = DB::table('factory_user')->where('factory_id', $factoryId);
+        $totalUsers = (clone $memberships)->count();
+        $activeUsers = (clone $memberships)->where('is_active', true)->count();
+        $assignedUsers = EmployeeProfile::where('factory_id', $factoryId)->whereNotNull('department_id')->count();
         Department::firstOrCreate(
             ['factory_id' => $factoryId, 'code' => 'PRODUCTION'],
             ['name' => 'Production', 'is_active' => true],
@@ -35,6 +39,12 @@ class TeamWorkspaceController extends Controller
         }
 
         return response()->json([
+            'statistics' => [
+                'total_users' => $totalUsers,
+                'active_users' => $activeUsers,
+                'assigned_users' => $assignedUsers,
+                'unassigned_users' => max(0, $totalUsers - $assignedUsers),
+            ],
             'users' => User::whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
             'roles' => $roles->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
             'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
