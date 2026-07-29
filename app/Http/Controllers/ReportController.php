@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\ProductionStageExecution;
 use App\Models\StockTransaction;
+use App\Support\IndustryDailyReportCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,12 +73,57 @@ class ReportController extends Controller
             ->join('items', 'items.id', '=', 'stock_transactions.item_id')->join('warehouses', 'warehouses.id', '=', 'stock_transactions.warehouse_id')
             ->select('stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.unit_cost', 'stock_transactions.balance_after', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as item_name', 'items.sku', 'warehouses.name as warehouse_name')->latest('occurred_at')->get() : collect();
 
+        $dailyActivity = $executions->groupBy(fn ($record) => $record->updated_at->toDateString())
+            ->sortKeys()
+            ->map(function ($dayRecords, $date) {
+                return [
+                    'date' => $date,
+                    'departments' => $dayRecords->groupBy('department_id')->map(function ($departmentRecords) {
+                        return [
+                            'department_id' => (int) $departmentRecords->first()->department_id,
+                            'department' => Department::withoutGlobalScopes()->find($departmentRecords->first()->department_id)?->name ?? 'Unassigned',
+                            'records' => $departmentRecords->groupBy(fn ($record) => implode('|', [$record->production_order_id, $record->stage_name, $record->product_name, $record->unit_symbol]))
+                                ->map(fn ($records) => [
+                                    'order_number' => $records->first()->order_number,
+                                    'product' => $records->first()->product_name ?? 'Unspecified product',
+                                    'work_step' => $records->first()->stage_name,
+                                    'received' => (float) $records->sum('input_quantity'),
+                                    'completed' => (float) $records->sum('output_quantity'),
+                                    'damaged' => (float) $records->sum('rejected_quantity'),
+                                    'waste' => (float) $records->sum('waste_quantity'),
+                                    'unit' => $records->first()->unit_symbol ?: 'unit',
+                                ])->values(),
+                        ];
+                    })->values(),
+                ];
+            })->values();
+
+        $stockRegister = $inventory->groupBy(fn ($record) => implode('|', [$record->item_name, $record->sku, $record->warehouse_name]))
+            ->map(function ($records) {
+                $ordered = $records->sortBy('occurred_at')->values();
+                $first = $ordered->first();
+                $last = $ordered->last();
+
+                return [
+                    'item' => $first->item_name,
+                    'sku' => $first->sku,
+                    'warehouse' => $first->warehouse_name,
+                    'opening_balance' => (float) $first->balance_after - (float) $first->quantity_delta,
+                    'quantity_in' => (float) $ordered->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+                    'quantity_out' => abs((float) $ordered->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+                    'closing_balance' => (float) $last->balance_after,
+                ];
+            })->values();
+
         return response()->json([
             'factory' => $factory->only(['name', 'industry_type', 'email', 'phone', 'currency_code', 'timezone']),
+            'standard' => IndustryDailyReportCatalog::for($factory->industry_type),
             'filters' => ['departments' => Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($productionOnly, fn ($query) => $query->whereIn('id', $flowDepartmentIds))->orderBy('name')->get(['id', 'name'])],
             'report' => ['scope' => $productionOnly ? 'production_flow' : 'factory', 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
             'summary' => array_filter([($productionOnly ? 'flow_categories' : 'departments') => $departmentActivity->count(), 'production_orders' => $executions->pluck('production_order_id')->unique()->count(), 'work_records' => $executions->count(), 'completed_records' => $executions->where('status', 'completed')->count(), 'quantity_received' => (float) $executions->sum('input_quantity'), 'quantity_completed' => (float) $executions->sum('output_quantity'), 'damaged_quantity' => (float) $executions->sum('rejected_quantity'), 'waste_quantity' => (float) $executions->sum('waste_quantity'), 'stock_movements' => $productionOnly ? null : $inventory->count()], fn ($value) => $value !== null),
             'department_activity' => $departmentActivity,
+            'daily_activity' => $dailyActivity,
+            'stock_register' => $stockRegister,
             'production' => in_array($type, ['all', 'departments', 'production'], true) ? $executions : [],
             'inventory' => $inventory,
             'activities' => [],

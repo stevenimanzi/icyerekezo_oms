@@ -94,7 +94,9 @@ class FactoryManagerAccessTest extends TestCase
         $this->getJson('/api/reports?period=week&type=all')->assertOk()
             ->assertJsonPath('factory.name', 'Controlled Manufacturing Ltd')
             ->assertJsonPath('report.type', 'all')
-            ->assertJsonStructure(['summary', 'department_activity', 'production', 'inventory'])
+            ->assertJsonPath('standard.title', 'Daily production and stock report')
+            ->assertJsonPath('standard.input_label', 'Metal received')
+            ->assertJsonStructure(['summary', 'department_activity', 'daily_activity', 'stock_register', 'production', 'inventory'])
             ->assertJsonPath('activities', [])
             ->assertJsonFragment(['name' => 'Research and Development', 'work_records' => 0, 'completed_quantity' => 0, 'damaged_quantity' => 0]);
         $productionDepartment = Department::where('code', 'PRODUCTION')->firstOrFail();
