@@ -4,7 +4,7 @@ import { Activity, ArrowDown, ArrowUp, Edit3, Factory, FileText, Plus, Printer, 
 const csrf=()=>document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content??'';
 async function api(url:string,options:RequestInit={}){const response=await fetch(url,{...options,headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf(),...(options.headers||{})}});const text=await response.text();let payload:any;try{payload=text?JSON.parse(text):{}}catch{throw new Error('The server returned an invalid response.')}if(!response.ok)throw new Error(payload.message||Object.values(payload.errors||{}).flat().join(' ')||'Request failed.');return payload}
 function Alert({error,success}:{error:string;success:string}){return <>{error&&<div className="admin-alert error">{error}</div>}{success&&<div className="admin-alert success">{success}</div>}</>}
-function Heading({icon:Icon,title,description,action}:any){return <div className="module-hero"><div className="module-title"><span><Icon size={22}/></span><div><div className="eyebrow"><i></i>LIVE FACTORY MODULE</div><h1>{title}</h1><p>{description}</p></div></div>{action}</div>}
+function Heading({icon:Icon,title,description,action}:any){return <div className="module-hero"><div className="module-title">{title!=='Production workflows'&&<span><Icon size={22}/></span>}<div><div className="eyebrow"><i></i>LIVE FACTORY MODULE</div><h1>{title}</h1><p>{description}</p></div></div>{action}</div>}
 
 export function FlowSetupPage(){
     const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [success,setSuccess]=useState('');
