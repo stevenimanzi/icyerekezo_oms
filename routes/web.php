@@ -13,6 +13,7 @@ use App\Http\Controllers\PlatformAdminController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\QualityControlController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
@@ -87,6 +88,7 @@ Route::prefix('api')->group(function () {
             Route::post('/team/assignments', [TeamWorkspaceController::class, 'assign'])->middleware('permission:users.update');
             Route::patch('/team/assignments/{assignment}', [TeamWorkspaceController::class, 'updateAssignment']);
             Route::get('/manufacturing/overview', [ManufacturingController::class, 'overview'])->middleware('permission:production.view');
+            Route::get('/sales/overview', [SalesController::class, 'overview'])->middleware('permission:sales.view');
             Route::post('/manufacturing/boms', [ManufacturingController::class, 'storeBom'])->middleware('permission:production.plan');
             Route::post('/manufacturing/workflows', [ManufacturingController::class, 'storeWorkflow'])->middleware('permission:factory.manage');
             Route::put('/manufacturing/workflows/{workflow}', [ManufacturingController::class, 'updateWorkflow'])->middleware('permission:factory.manage');
