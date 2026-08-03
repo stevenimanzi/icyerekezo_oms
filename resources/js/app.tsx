@@ -176,6 +176,11 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : (allowed[0]||'notifications'));
     }, [activePage, nav, user.is_platform_admin]);
 
+    useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        document.querySelector('.page')?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, [activePage]);
+
     const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(null), 2600); };
 
     return <div className="app-shell">

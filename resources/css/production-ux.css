@@ -1,3 +1,9 @@
+.production-operations {
+    min-width: 0;
+    padding-bottom: 24px;
+    scroll-margin-top: 96px;
+}
+
 .production-quick-actions {
     display: flex;
     flex-wrap: wrap;
@@ -95,7 +101,10 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 18px;
+    min-height: 92px;
+    margin: 0;
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--line);
 }
 
 .production-section-head h3,
@@ -216,8 +225,24 @@
 }
 
 .production-empty {
-    padding: 44px 20px;
+    display: flex;
+    min-height: 250px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 44px 24px;
     text-align: center;
+}
+
+.production-empty > svg {
+    display: block;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 18px;
+    padding: 13px;
+    border-radius: 15px;
+    background: color-mix(in srgb, var(--brand) 10%, var(--panel));
+    color: var(--brand);
 }
 
 .production-empty b {
@@ -227,8 +252,19 @@
 
 .production-empty span {
     display: block;
+    max-width: 620px;
     margin: 0;
     color: var(--muted);
+}
+
+.production-section .admin-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+}
+
+.production-section .admin-table {
+    margin: 0;
 }
 
 .spin {
@@ -256,6 +292,8 @@
 
     .production-section-head {
         flex-direction: column;
+        min-height: 0;
+        padding: 18px;
     }
 
     .production-hero,
