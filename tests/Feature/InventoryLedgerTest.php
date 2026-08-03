@@ -47,5 +47,6 @@ class InventoryLedgerTest extends TestCase
     private function registerOwner(): void
     {
         $this->postJson('/api/auth/register', ['name' => 'Inventory Owner', 'email' => fake()->unique()->safeEmail(), 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Ledger Factory', 'industry_type' => 'manufacturing'])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
     }
 }

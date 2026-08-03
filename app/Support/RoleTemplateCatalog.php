@@ -8,6 +8,18 @@ use App\Models\Role;
 
 final class RoleTemplateCatalog
 {
+    public const FACTORY_OWNER_PERMISSIONS = [
+        'factory.view', 'procurement.view', 'inventory.view', 'products.view',
+        'production.view', 'quality.view', 'sales.view', 'finance.view',
+        'logistics.view', 'maintenance.view', 'reports.view', 'reports.export',
+        'audit.view',
+    ];
+
+    public static function ownerPermissionIds()
+    {
+        return Permission::whereIn('slug', self::FACTORY_OWNER_PERMISSIONS)->pluck('id');
+    }
+
     public const TEMPLATES = [
         'factory-administrator' => ['Factory Administrator', 'executive', ['*']],
         'factory-manager' => ['Factory Manager', 'executive', ['factory.*', 'users.*', 'production.view', 'production.plan', 'reports.*', 'audit.view']],

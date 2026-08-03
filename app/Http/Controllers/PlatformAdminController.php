@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Support\PermissionCatalog;
 use App\Support\RoleTemplateCatalog;
+use App\Support\SubscriptionFeatureCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,35 @@ class PlatformAdminController extends Controller
 {
     public function overview(): JsonResponse
     {
-        return response()->json(['statistics' => ['factories' => Factory::count(), 'active_factories' => Factory::where('status', 'active')->count(), 'users' => User::count(), 'active_subscriptions' => FactorySubscription::whereIn('status', ['trial', 'active'])->where('ends_at', '>', now())->count(), 'open_tickets' => SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count()], 'factories' => Factory::withCount('users')->latest()->limit(10)->get(), 'subscriptions' => FactorySubscription::with(['factory:id,name,status', 'plan:id,name'])->latest()->limit(10)->get(), 'tickets' => SupportTicket::with('messages')->latest()->limit(10)->get(), 'backups' => DatabaseBackup::latest()->limit(10)->get(), 'activities' => AuditLog::with('user:id,name,email')->latest()->limit(15)->get(), 'settings' => SystemSetting::pluck('value', 'key')]);
+        $start = now()->subDays(13)->startOfDay();
+        $models = ['factories' => Factory::class, 'users' => User::class, 'subscriptions' => FactorySubscription::class];
+        $totals = [];
+        $daily = [];
+
+        foreach ($models as $key => $model) {
+            $totals[$key] = $model::where('created_at', '<', $start)->count();
+            $daily[$key] = $model::where('created_at', '>=', $start)->get(['created_at'])->countBy(fn ($record) => $record->created_at->toDateString());
+        }
+
+        $growth = [];
+        for ($day = $start->copy(); $day->lte(now()); $day->addDay()) {
+            $date = $day->toDateString();
+            foreach (array_keys($models) as $key) {
+                $totals[$key] += $daily[$key]->get($date, 0);
+            }
+            $growth[] = ['date' => $date, 'label' => $day->format('M j'), ...$totals];
+        }
+
+        return response()->json([
+            'statistics' => ['factories' => Factory::count(), 'active_factories' => Factory::where('status', 'active')->count(), 'users' => User::count(), 'active_subscriptions' => FactorySubscription::whereIn('status', ['trial', 'active'])->where('ends_at', '>', now())->count(), 'open_tickets' => SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count()],
+            'growth' => $growth,
+            'factories' => Factory::withCount('users')->latest()->limit(10)->get(),
+            'subscriptions' => FactorySubscription::with(['factory:id,name,status', 'plan:id,name'])->latest()->limit(10)->get(),
+            'tickets' => SupportTicket::with('messages')->latest()->limit(10)->get(),
+            'backups' => DatabaseBackup::latest()->limit(10)->get(),
+            'activities' => AuditLog::with('user:id,name,email')->latest()->limit(15)->get(),
+            'settings' => SystemSetting::pluck('value', 'key'),
+        ]);
     }
 
     public function factories(Request $request): JsonResponse
@@ -54,7 +83,7 @@ class PlatformAdminController extends Controller
             $owner = User::create(['current_factory_id' => $factory->id, 'name' => $data['owner_name'], 'email' => Str::lower($data['owner_email']), 'password' => $data['owner_password']]);
             $factory->users()->attach($owner->id, ['is_owner' => true, 'is_active' => true, 'joined_at' => now(), 'job_title' => 'Factory owner']);
             $role = Role::create(['factory_id' => $factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner', 'dashboard_key' => 'executive', 'is_system' => true]);
-            $role->permissions()->sync(Permission::pluck('id'));
+            $role->permissions()->sync(RoleTemplateCatalog::ownerPermissionIds());
             $owner->roles()->attach($role->id, ['factory_id' => $factory->id]);
             RoleTemplateCatalog::createFor($factory);
             $manager = null;
@@ -127,7 +156,8 @@ class PlatformAdminController extends Controller
 
     public function storePlan(Request $request): JsonResponse
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:100'], 'code' => ['required', 'string', 'max:40'], 'monthly_price' => ['required', 'numeric', 'min:0'], 'currency_code' => ['required', 'string', 'size:3'], 'limits' => ['nullable', 'array'], 'features' => ['nullable', 'array']]);
+        $data = $this->validatePlan($request);
+        $data['features'] ??= [];
         $code = strtoupper($data['code']);
         $plan = SubscriptionPlan::updateOrCreate(['code' => $code], array_merge($data, ['code' => $code, 'is_active' => true]));
 
@@ -136,7 +166,40 @@ class PlatformAdminController extends Controller
 
     public function subscriptions(): JsonResponse
     {
-        return response()->json(['plans' => SubscriptionPlan::orderBy('monthly_price')->get(), 'factories' => Factory::orderBy('name')->get(['id', 'name', 'status']), 'subscriptions' => FactorySubscription::with(['factory:id,name,status', 'plan:id,name,code'])->latest()->paginate(25)]);
+        return response()->json(['feature_catalog' => SubscriptionFeatureCatalog::all(), 'plans' => SubscriptionPlan::orderBy('monthly_price')->get(), 'factories' => Factory::orderBy('name')->get(['id', 'name', 'status']), 'subscriptions' => FactorySubscription::with(['factory:id,name,status', 'plan:id,name,code,features'])->latest()->paginate(25)]);
+    }
+
+    public function updatePlan(Request $request, SubscriptionPlan $plan): JsonResponse
+    {
+        $data = $this->validatePlan($request, $plan);
+        $data['code'] = strtoupper($data['code']);
+        $plan->update($data);
+        AuditLog::record('platform.subscription_plan_updated', "Updated subscription plan {$plan->name}", $plan);
+
+        return response()->json($plan->fresh());
+    }
+
+    public function updateSubscription(Request $request, FactorySubscription $subscription): JsonResponse
+    {
+        $data = $request->validate(['subscription_plan_id' => ['required', 'exists:subscription_plans,id'], 'status' => ['sometimes', Rule::in(['trial', 'active', 'past_due', 'suspended', 'cancelled'])]]);
+        $subscription->update($data);
+        AuditLog::record('platform.subscription_changed', "Changed subscription for {$subscription->factory->name}", $subscription);
+
+        return response()->json($subscription->fresh()->load('plan'));
+    }
+
+    private function validatePlan(Request $request, ?SubscriptionPlan $plan = null): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'code' => ['required', 'string', 'max:40', Rule::unique('subscription_plans', 'code')->ignore($plan?->id)],
+            'monthly_price' => ['required', 'numeric', 'min:0'],
+            'currency_code' => ['required', 'string', 'size:3'],
+            'limits' => ['nullable', 'array'],
+            'features' => ['sometimes', 'array'],
+            'features.*' => ['string', Rule::in(SubscriptionFeatureCatalog::keys())],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
     }
 
     public function subscribe(Request $request, Factory $factory): JsonResponse

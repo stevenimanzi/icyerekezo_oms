@@ -19,6 +19,7 @@ class DepartmentDashboardAccessTest extends TestCase
             'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345',
             'factory_name' => 'Department Factory', 'industry_type' => 'steel_metals',
         ])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
 
         $this->postJson('/api/factory/flow-suggestion/apply')->assertCreated();
         $production = Department::where('name', 'Production')->firstOrFail();

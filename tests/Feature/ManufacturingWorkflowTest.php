@@ -61,5 +61,6 @@ class ManufacturingWorkflowTest extends TestCase
     private function registerOwner(): void
     {
         $this->postJson('/api/auth/register', ['name' => 'Production Owner', 'email' => fake()->unique()->safeEmail(), 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Flour Factory', 'industry_type' => 'maize_grain_flour'])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
     }
 }

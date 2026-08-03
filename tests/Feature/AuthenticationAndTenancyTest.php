@@ -29,6 +29,17 @@ class AuthenticationAndTenancyTest extends TestCase
         $this->assertDatabaseCount('permissions', 49);
         $this->assertDatabaseHas('factory_user', ['is_owner' => true, 'is_active' => true]);
         $this->assertDatabaseHas('audit_logs', ['event' => 'auth.registered']);
+        $permissions = $this->getJson('/api/auth/me')->assertOk()->json('user.permissions');
+        $this->assertContains('production.view', $permissions);
+        $this->assertContains('reports.view', $permissions);
+        $this->assertContains('reports.export', $permissions);
+        $this->assertNotContains('production.plan', $permissions);
+        $this->assertNotContains('inventory.adjust', $permissions);
+        $this->assertNotContains('users.create', $permissions);
+        $this->assertNotContains('factory.manage', $permissions);
+        $this->getJson('/api/reports')->assertOk();
+        $this->getJson('/api/factory/settings')->assertForbidden();
+        $this->postJson('/api/inventory/items', [])->assertForbidden();
     }
 
     public function test_inactive_user_cannot_sign_in(): void

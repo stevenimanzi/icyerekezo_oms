@@ -10,7 +10,7 @@ export default function SystemSettingsPanel({settings,editing,submit,busy,upload
     const update=(key:string,value:any)=>setValues((current:any)=>({...current,[key]:value}));
     useEffect(()=>setValues({
         system_name:settings.system_name||'ICYEREKEZO OMS',system_tagline:settings.system_tagline||'Factory operations made clear.',
-        logo_url:settings.logo_url||'',support_email:settings.support_email||'',support_phone:settings.support_phone||'',
+        logo_url:settings.logo_url||'/assets/images/icyerekezo_oms_logo.svg',support_email:settings.support_email||'',support_phone:settings.support_phone||'',
         default_locale:settings.default_locale||'en',currency_code:settings.currency_code||'RWF',timezone:settings.timezone||'Africa/Kigali',
         backup_retention_days:Number(settings.backup_retention_days||30),registration_enabled:settings.registration_enabled!=='0',
         maintenance_enabled:settings.maintenance_enabled==='1',maintenance_message:settings.maintenance_message||'Scheduled maintenance in progress.',

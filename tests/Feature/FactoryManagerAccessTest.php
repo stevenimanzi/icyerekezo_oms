@@ -19,6 +19,7 @@ class FactoryManagerAccessTest extends TestCase
             'name' => 'Factory Owner', 'email' => 'owner@roles.test', 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345',
             'factory_name' => 'Controlled Factory', 'industry_type' => 'steel_metals',
         ])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
 
         $managerRole = Role::where('slug', 'factory-manager')->firstOrFail();
         $administratorRole = Role::where('slug', 'factory-administrator')->firstOrFail();

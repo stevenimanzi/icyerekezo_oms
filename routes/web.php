@@ -48,8 +48,10 @@ Route::prefix('api')->group(function () {
             Route::patch('/users/{user}', [PlatformAdminController::class, 'updateUser']);
             Route::put('/users/{user}/password', [PlatformAdminController::class, 'resetPassword']);
             Route::post('/plans', [PlatformAdminController::class, 'storePlan']);
+            Route::put('/plans/{plan}', [PlatformAdminController::class, 'updatePlan']);
             Route::get('/subscriptions', [PlatformAdminController::class, 'subscriptions']);
             Route::post('/factories/{factory}/subscriptions', [PlatformAdminController::class, 'subscribe']);
+            Route::patch('/subscriptions/{subscription}', [PlatformAdminController::class, 'updateSubscription']);
             Route::post('/announcements', [PlatformAdminController::class, 'announce']);
             Route::get('/announcements', [PlatformAdminController::class, 'announcements']);
             Route::get('/tickets', [PlatformAdminController::class, 'tickets']);

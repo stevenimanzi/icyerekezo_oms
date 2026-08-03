@@ -22,6 +22,7 @@ class RoleWorkspaceTest extends TestCase
             'industry_type' => 'maize_grain_flour',
             'locale' => 'en',
         ])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
 
         $this->assertDatabaseCount('roles', 12);
         $warehouseRole = Role::where('slug', 'warehouse-keeper')->firstOrFail();

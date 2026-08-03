@@ -58,5 +58,6 @@ class QualityAndMaintenanceTest extends TestCase
             'name' => 'Factory Owner', 'email' => fake()->unique()->safeEmail(), 'password' => 'Secure@12345',
             'password_confirmation' => 'Secure@12345', 'factory_name' => 'Controlled Operations', 'industry_type' => 'maize_grain_flour',
         ])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
     }
 }

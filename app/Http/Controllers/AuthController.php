@@ -61,7 +61,7 @@ class AuthController extends Controller
             ]);
             $factory->users()->attach($user->id, ['is_owner' => true, 'is_active' => true, 'joined_at' => now(), 'job_title' => 'Factory owner']);
             $role = Role::create(['factory_id' => $factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner', 'dashboard_key' => 'executive', 'is_system' => true]);
-            $role->permissions()->sync(Permission::pluck('id'));
+            $role->permissions()->sync(RoleTemplateCatalog::ownerPermissionIds());
             $user->roles()->attach($role->id, ['factory_id' => $factory->id]);
             RoleTemplateCatalog::createFor($factory);
             foreach ([['Piece', 'pc', 'count', 0], ['Kilogram', 'kg', 'mass', 3], ['Litre', 'L', 'volume', 3], ['Metre', 'm', 'length', 3]] as [$name, $symbol, $dimension, $precision]) {
@@ -117,6 +117,7 @@ class AuthController extends Controller
         $user->load('currentFactory:id,uuid,name,slug,industry_type,currency_code,timezone,default_locale', 'factories:id,uuid,name,slug', 'employeeProfile.department:id,name,code', 'employeeProfile.workstation:id,name,code,type');
         $roles = $user->roles()->wherePivot('factory_id', $user->current_factory_id)->with('permissions:id,slug')->get();
         $permissions = $user->is_platform_admin ? collect(['*']) : $roles->pluck('permissions')->flatten()->pluck('slug')->unique()->values();
+        $subscription = $user->current_factory_id ? \App\Models\FactorySubscription::with('plan:id,name,code,features')->where('factory_id', $user->current_factory_id)->latest('ends_at')->first() : null;
 
         return [
             'id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'locale' => $user->locale,
@@ -124,11 +125,12 @@ class AuthController extends Controller
             'current_factory' => $user->currentFactory, 'factories' => $user->factories,
             'roles' => $roles->map->only(['id', 'name', 'slug', 'dashboard_key']),
             'permissions' => $permissions,
+            'subscription' => $subscription ? ['id' => $subscription->id, 'status' => $subscription->status, 'plan' => $subscription->plan] : null,
             'workspace' => $user->is_platform_admin && ! $user->current_factory_id ? 'platform_admin' : ($roles->first()?->dashboard_key ?? 'operations'),
             'employee_profile' => $user->employeeProfile,
             'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
             'announcements' => PlatformAnnouncement::whereNotNull('published_at')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->latest('published_at')->limit(10)->get(['id', 'title', 'message', 'severity', 'published_at']),
-            'system' => ['name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'), 'tagline' => SystemSetting::valueFor('system_tagline', 'Factory operations made clear.'), 'logo_url' => SystemSetting::valueFor('logo_url'), 'support_email' => SystemSetting::valueFor('support_email'), 'support_phone' => SystemSetting::valueFor('support_phone'), 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'), 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali')],
+            'system' => ['name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'), 'tagline' => SystemSetting::valueFor('system_tagline', 'Factory operations made clear.'), 'logo_url' => SystemSetting::valueFor('logo_url', '/assets/images/icyerekezo_oms_logo.svg'), 'support_email' => SystemSetting::valueFor('support_email'), 'support_phone' => SystemSetting::valueFor('support_phone'), 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'), 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali')],
         ];
     }
 

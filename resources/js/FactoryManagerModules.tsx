@@ -42,7 +42,7 @@ export function ProductionFlowPage(){
         catch(reason:any){setError(reason.message)}finally{setBusy(false)}
     };
     return <section className="module-page">
-        <Heading title="Production steps" description="Set the order of work, required employees and quality checks used by your factory." action={<div className="workflow-actions"><button className="secondary-btn" onClick={load}><RefreshCw size={16}/>Refresh</button><button className="secondary-btn" disabled={busy} onClick={applyRecommended}><Factory size={16}/>Use recommended steps</button><button className="primary-btn" onClick={create}><Plus size={16}/>Create work steps</button></div>}/>
+        <Heading title="Production steps" description="Set the order of work, required employees and quality checks used by your factory." action={<div className="workflow-actions production-step-actions"><button className="secondary-btn" onClick={load}><RefreshCw size={16}/>Refresh</button><button className="secondary-btn" disabled={busy} onClick={applyRecommended}><Factory size={16}/>Use recommended steps</button><button className="primary-btn" onClick={create}><Plus size={16}/>Create work steps</button></div>}/>
         <Alert error={error} success={success}/>
         {editing&&<form className="panel admin-form workflow-editor" onSubmit={save}>
             <header><div><small>FACTORY FLOW CONFIGURATION</small><h2>{editing.id?'Edit working flow':'Create working flow'}</h2></div><button type="button" className="icon-button" onClick={()=>setEditing(null)}><X size={18}/></button></header>

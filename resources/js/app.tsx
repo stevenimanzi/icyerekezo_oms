@@ -19,6 +19,7 @@ import ReportsPage from './ClearReportsPage';
 import { FlowSetupPage, ProductionFlowPage, TeamManagementPage } from './FactoryManagerModules';
 
 type Locale = 'en' | 'fr';
+const DEFAULT_SYSTEM_LOGO = '/assets/images/icyerekezo_oms_logo.svg';
 type AuthUser = {
     id: number; name: string; email: string; locale: Locale;
     current_factory: { id: number; name: string; slug: string; industry_type?: string } | null;
@@ -27,6 +28,7 @@ type AuthUser = {
     employee_profile?: { job_title?: string; department?: { name: string }; workstation?: { name: string; type: string } } | null;
     active_assignments: { id: number; assignment_type: string; title: string; priority: string; status: string; due_at?: string }[];
     announcements?: { id: number; title: string; message: string; severity: string; published_at: string }[];
+    subscription?: { id: number; status: string; plan?: { id: number; name: string; code: string; features: string[] } } | null;
     system?: { name: string; tagline?: string; logo_url?: string; support_email?: string; support_phone?: string; currency_code?: string; timezone?: string };
 };
 
@@ -80,9 +82,9 @@ const productionOrders = [
     { id: 'PO-2026-0411', product: 'Whole milk 1L', detail: 'Batch ML-0720 · 1,200 units', stage: 'Packaging', progress: 92, due: 'Today', color: '#0ea5e9' },
 ];
 
-function Logo({ name = 'ICYEREKEZO OMS', logoUrl }: { name?: string; logoUrl?: string } = {}) {
+function Logo({ name = 'ICYEREKEZO OMS', logoUrl = DEFAULT_SYSTEM_LOGO }: { name?: string; logoUrl?: string } = {}) {
     const words = name.split(' '); const suffix = words.length > 1 ? words.pop() : 'OMS';
-    return <div className="brand"><div className="brand-mark">{logoUrl ? <img src={logoUrl} alt=""/> : <Factory size={20}/>}</div><div><strong>{words.join(' ')}</strong><span>{suffix}</span></div></div>;
+    return <div className="brand">{logoUrl === DEFAULT_SYSTEM_LOGO ? <img className="brand-logo" src={logoUrl} alt={name}/> : <><div className="brand-mark"><img src={logoUrl} alt=""/></div><div><strong>{words.join(' ')}</strong><span>{suffix}</span></div></>}</div>;
 }
 
 const adminPagePaths: Record<string, string> = { 'platform-dashboard': '/admin', factories: '/admin/factories', 'platform-users': '/admin/users', subscriptions: '/admin/subscriptions', announcements: '/admin/announcements', notifications: '/admin/notifications', 'support-center': '/admin/support', backups: '/admin/backups', 'system-settings': '/admin/settings' };
@@ -128,6 +130,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const t = copy[locale];
     const can = (permission: string) => user.permissions.includes('*') || user.permissions.includes(permission);
     const isExecutiveUser = user.is_platform_admin || user.workspace === 'executive' || user.roles.some(role => ['factory-owner', 'factory-administrator', 'factory-manager'].includes(role.slug));
+    const isFactoryOwner = user.roles.some(role => role.slug === 'factory-owner');
     const workspaceName = ({ platform_admin: 'Platform administration', executive: t.overview, production: locale === 'en' ? 'Production command centre' : 'Centre de production', warehouse: locale === 'en' ? 'Warehouse workspace' : 'Espace entrepot', procurement: locale === 'en' ? 'Procurement workspace' : 'Espace achats', quality: locale === 'en' ? 'Quality control workspace' : 'Espace controle qualite', cutting: locale === 'en' ? 'Cutting workstation' : 'Poste de coupe', workstation: locale === 'en' ? 'Operator workstation' : 'Poste operateur', logistics: locale === 'en' ? 'Logistics workspace' : 'Espace logistique', sales: locale === 'en' ? 'Sales workspace' : 'Espace ventes', finance: locale === 'en' ? 'Finance workspace' : 'Espace finances' } as Record<string,string>)[user.workspace] || t.overview;
     useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('icy_theme', dark ? 'dark' : 'light'); }, [dark]);
     useEffect(() => { document.documentElement.lang = locale; localStorage.setItem('icy_locale', locale); }, [locale]);
@@ -149,29 +152,41 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         window.addEventListener('keydown', shortcut); return () => window.removeEventListener('keydown', shortcut);
     }, []);
 
+    const subscribedFeatures = user.subscription?.plan?.features;
+    const featureForPage:Record<string,string>={dashboard:'dashboard',procurement:'procurement',inventory:'inventory',products:'products',production:'production',quality:'quality',sales:'sales',logistics:'logistics',team:'team',machines:'maintenance',reports:'reports'};
+    const hasFeature=(page:string)=>!subscribedFeatures||subscribedFeatures.includes(featureForPage[page]||page);
     const nav = useMemo(() => (user.is_platform_admin ? [
         ['platform-dashboard', LayoutDashboard, locale === 'en' ? 'Platform overview' : 'Vue plateforme', '*'], ['factories', Building2, locale === 'en' ? 'Factories' : 'Usines', '*'], ['platform-users', Users, locale === 'en' ? 'All users' : 'Tous les utilisateurs', '*'], ['subscriptions', CreditCard, locale === 'en' ? 'Subscriptions' : 'Abonnements', '*'], ['announcements', Megaphone, locale === 'en' ? 'Announcements' : 'Annonces', '*'], ['notifications', Bell, locale === 'en' ? 'Notifications' : 'Notifications', '*'], ['support-center', MessageSquare, locale === 'en' ? 'Support centre' : 'Centre de support', '*'], ['backups', Database, locale === 'en' ? 'Database backups' : 'Sauvegardes', '*'], ['system-settings', Settings, locale === 'en' ? 'System settings' : 'Paramètres système', '*'],
+    ] as const : isFactoryOwner ? [
+        ['dashboard', LayoutDashboard, locale === 'en' ? 'Factory performance' : 'Performance de l\u2019usine', '*'],
+        ['procurement', ShoppingCart, locale === 'en' ? 'Purchasing overview' : 'Vue des achats', 'procurement.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Stock overview' : 'Vue du stock', 'inventory.view'],
+        ['production', Gauge, locale === 'en' ? 'Production performance' : 'Performance de production', 'production.view'],
+        ['quality', ClipboardCheck, locale === 'en' ? 'Quality results' : 'R\u00e9sultats qualit\u00e9', 'quality.view'],
+        ['sales', PackageOpen, locale === 'en' ? 'Sales overview' : 'Vue des ventes', 'sales.view'],
+        ['logistics', Truck, locale === 'en' ? 'Delivery overview' : 'Vue des livraisons', 'logistics.view'],
+        ['reports', Activity, locale === 'en' ? 'Factory reports' : 'Rapports de l\u2019usine', 'reports.view'],
     ] as const : [
         ['dashboard', LayoutDashboard, t.dashboard, '*'], ['procurement', ShoppingCart, t.procurement, 'procurement.view'], ['inventory', Warehouse, t.warehouse, 'inventory.view'], ['products', Boxes, t.products, 'products.view'],
-        ['production', Gauge, t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
+        ['production', Gauge, user.roles.some(role => role.slug === 'factory-manager') ? (locale === 'en' ? 'Production Configuration' : 'Configuration de production') : t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
         ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
-    ] as const).filter(([, , , permission]) => permission === '*' || can(permission)), [t, locale, user.is_platform_admin, user.permissions]);
+    ] as const).filter(([page, , , permission]) => (permission === '*' || can(permission)) && (user.is_platform_admin || hasFeature(page))), [t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner]);
     useEffect(() => {
-        const allowed = nav.map(([key]) => key as string); if (!user.is_platform_admin) { allowed.push('support','notifications'); if (can('factory.manage')) allowed.push('settings'); }
-        if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : 'dashboard');
+        const allowed = nav.map(([key]) => key as string); if (!user.is_platform_admin) { if(hasFeature('support'))allowed.push('support');allowed.push('notifications'); if (can('factory.manage')) allowed.push('settings'); }
+        if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : (allowed[0]||'notifications'));
     }, [activePage, nav, user.is_platform_admin]);
 
     const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(null), 2600); };
 
     return <div className="app-shell">
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-            <div className="sidebar-head"><Logo name={user.system?.name} logoUrl={user.system?.logo_url}/><button className="icon-btn mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20}/></button></div>
+            <div className="sidebar-head"><Logo/><button className="icon-btn mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20}/></button></div>
             <nav>
                 <p className="nav-label">{t.general}</p>
                 {nav.map(([key, Icon, label]) => <button key={key} className={`nav-item ${activePage === key ? 'active' : ''}`} onClick={() => { setActivePage(key); setSidebarOpen(false); }}><Icon size={18}/><span>{label}</span>{label === t.warehouse && <i>3</i>}</button>)}
-                {!user.is_platform_admin && <><p className="nav-label">{t.management}</p>{can('factory.manage') && <button className={`nav-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}><Settings size={18}/><span>{t.settings}</span></button>}<button className={`nav-item ${activePage === 'support' ? 'active' : ''}`} onClick={() => { setActivePage('support'); setSidebarOpen(false); }}><HelpCircle size={18}/><span>{t.support}</span></button></>}
+                {!user.is_platform_admin && <><p className="nav-label">{isFactoryOwner ? 'ASSISTANCE' : t.management}</p>{!isFactoryOwner && can('factory.manage') && <button className={`nav-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}><Settings size={18}/><span>{t.settings}</span></button>}{hasFeature('support')&&<button className={`nav-item ${activePage === 'support' ? 'active' : ''}`} onClick={() => { setActivePage('support'); setSidebarOpen(false); }}><HelpCircle size={18}/><span>{t.support}</span></button>}</>}
             </nav>
-            <button className="factory-card" onClick={() => setActivePage(user.is_platform_admin ? 'system-settings' : 'settings')}><div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}</div><div><strong>{user.current_factory?.name || user.system?.name || 'ICYEREKEZO OMS'}</strong><span>{user.is_platform_admin ? (locale === 'en' ? 'System administration' : 'Administration système') : (locale === 'en' ? 'Factory workspace' : 'Espace usine')}</span></div><ChevronRight size={17}/></button>
+            <button className="factory-card" onClick={() => setActivePage(user.is_platform_admin ? 'system-settings' : isFactoryOwner ? 'dashboard' : 'settings')}><div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}</div><div><strong>{user.current_factory?.name || user.system?.name || 'ICYEREKEZO OMS'}</strong><span>{user.is_platform_admin ? (locale === 'en' ? 'System administration' : 'Administration système') : isFactoryOwner ? (locale === 'en' ? 'Performance overview' : 'Vue des performances') : (locale === 'en' ? 'Factory workspace' : 'Espace usine')}</span></div><ChevronRight size={17}/></button>
         </aside>
         {sidebarOpen && <button className="backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)}/>} 
         <main className="main-area">
@@ -277,7 +292,7 @@ function App() {
         api<{ user: AuthUser }>('/api/auth/me').then(data => setUser(data.user)).catch((reason:any) => {setUser(null);if(reason?.status===503)setMaintenance(reason.message)}).finally(() => setLoading(false));
     }, []);
 
-    if (loading) return <div className="boot-screen"><div className="brand-mark"><Factory size={20}/></div><span>ICYEREKEZO OMS</span></div>;
+    if (loading) return <div className="boot-screen"><Logo/></div>;
     if (maintenance) return <MaintenanceScreen message={maintenance} onRetry={()=>window.location.reload()} onAdmin={()=>setMaintenance('')}/>;
     if (!user) return <AuthScreen onAuthenticated={setUser} onMaintenance={setMaintenance}/>;
 
@@ -296,7 +311,7 @@ function App() {
     return <Dashboard user={user} onLogout={logout} onMaintenance={setMaintenance}/>;
 }
 
-function MaintenanceScreen({message,onRetry,onAdmin}:{message:string;onRetry:()=>void;onAdmin:()=>void}){return <main className="maintenance-screen"><div className="brand-mark"><Wrench size={24}/></div><span>ICYEREKEZO OMS</span><h1>Scheduled maintenance</h1><p>{message}</p><div><button className="primary-btn" onClick={onRetry}>Check again</button><button className="secondary-btn" onClick={onAdmin}>Administrator sign in</button></div><small>Platform administrators retain access to manage the system.</small></main>}
+function MaintenanceScreen({message,onRetry,onAdmin}:{message:string;onRetry:()=>void;onAdmin:()=>void}){return <main className="maintenance-screen"><Logo/><h1>Scheduled maintenance</h1><p>{message}</p><div><button className="primary-btn" onClick={onRetry}>Check again</button><button className="secondary-btn" onClick={onAdmin}>Administrator sign in</button></div><small>Platform administrators retain access to manage the system.</small></main>}
 
 function AuthScreen({ onAuthenticated,onMaintenance }: { onAuthenticated: (user: AuthUser) => void;onMaintenance:(message:string)=>void }) {
     const [mode, setMode] = useState<'login' | 'register'>('login');
