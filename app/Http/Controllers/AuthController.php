@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -112,6 +113,75 @@ class AuthController extends Controller
         return response()->json(['user' => $this->userPayload($request->user())]);
     }
 
+    public function profile(Request $request): JsonResponse
+    {
+        return response()->json(['profile' => $this->profilePayload($request->user(), $request)]);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email,'.$user->id],
+            'locale' => ['required', 'in:en,fr'],
+            'timezone' => ['required', 'timezone:all'],
+        ]);
+
+        $user->update([
+            'name' => trim($data['name']),
+            'email' => Str::lower(trim($data['email'])),
+            'locale' => $data['locale'],
+            'timezone' => $data['timezone'],
+        ]);
+        AuditLog::record('account.profile_updated', 'Updated personal profile and preferences', $user);
+
+        return response()->json([
+            'message' => 'Your profile has been updated.',
+            'profile' => $this->profilePayload($user->fresh(), $request),
+            'user' => $this->userPayload($user->fresh()),
+        ]);
+    }
+
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $passwordRule = Password::min(10)->mixedCase()->numbers()->symbols();
+        if (app()->isProduction()) {
+            $passwordRule->uncompromised();
+        }
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'confirmed', $passwordRule],
+        ]);
+        $user = $request->user();
+        if (! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages(['current_password' => ['The current password is incorrect.']]);
+        }
+        if (Hash::check($data['password'], $user->password)) {
+            throw ValidationException::withMessages(['password' => ['Choose a new password.']]);
+        }
+
+        $user->update(['password' => $data['password']]);
+        $request->session()->regenerate();
+        AuditLog::record('account.password_updated', 'Changed account password', $user);
+
+        return response()->json(['message' => 'Your password has been changed securely.']);
+    }
+
+    private function profilePayload(User $user, Request $request): array
+    {
+        $user->loadMissing('currentFactory:id,name,industry_type,timezone');
+
+        return [
+            'id' => $user->id, 'name' => $user->name, 'email' => $user->email,
+            'locale' => $user->locale ?: 'en',
+            'timezone' => $user->timezone ?: $user->currentFactory?->timezone ?: SystemSetting::valueFor('timezone', 'Africa/Kigali'),
+            'last_login_at' => $user->last_login_at, 'last_login_ip' => $user->last_login_ip,
+            'current_ip' => $request->ip(), 'created_at' => $user->created_at,
+            'factory' => $user->currentFactory,
+        ];
+    }
+
     private function userPayload(User $user): array
     {
         $user->load('currentFactory:id,uuid,name,slug,industry_type,currency_code,timezone,default_locale', 'factories:id,uuid,name,slug', 'employeeProfile.department:id,name,code', 'employeeProfile.workstation:id,name,code,type');
@@ -120,7 +190,7 @@ class AuthController extends Controller
         $subscription = $user->current_factory_id ? \App\Models\FactorySubscription::with('plan:id,name,code,features')->where('factory_id', $user->current_factory_id)->latest('ends_at')->first() : null;
 
         return [
-            'id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'locale' => $user->locale,
+            'id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'locale' => $user->locale, 'timezone' => $user->timezone,
             'is_platform_admin' => $user->is_platform_admin,
             'current_factory' => $user->currentFactory, 'factories' => $user->factories,
             'roles' => $roles->map->only(['id', 'name', 'slug', 'dashboard_key']),

@@ -36,6 +36,9 @@ Route::prefix('api')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::get('/profile', [AuthController::class, 'profile']);
+        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::put('/profile/password', [AuthController::class, 'updatePassword'])->middleware('throttle:6,1');
         Route::post('/factories/switch', [FactoryContextController::class, 'switch']);
         Route::get('/search', SearchController::class);
         Route::get('/support/tickets', [SupportController::class, 'index']);

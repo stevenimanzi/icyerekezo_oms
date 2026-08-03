@@ -19,12 +19,13 @@ import ReportsPage from './ClearReportsPage';
 import SalesOverviewPage from './SalesOverviewPage';
 import LogisticsOverviewPage from './LogisticsOverviewPage';
 import ProcurementOverviewPage from './ProcurementOverviewPage';
+import ProfileSettingsPage from './ProfileSettingsPage';
 import { FlowSetupPage, ProductionFlowPage, TeamManagementPage } from './FactoryManagerModules';
 
 type Locale = 'en' | 'fr';
 const DEFAULT_SYSTEM_LOGO = '/assets/images/icyerekezo_oms_logo.svg';
 type AuthUser = {
-    id: number; name: string; email: string; locale: Locale;
+    id: number; name: string; email: string; locale: Locale; timezone?: string;
     current_factory: { id: number; name: string; slug: string; industry_type?: string; currency_code?: string } | null;
     is_platform_admin: boolean; permissions: string[]; workspace: string;
     roles: { id: number; name: string; slug: string; dashboard_key: string }[];
@@ -94,11 +95,11 @@ const adminPagePaths: Record<string, string> = { 'platform-dashboard': '/admin',
 const adminPathPages = Object.fromEntries(Object.entries(adminPagePaths).map(([page, path]) => [path, page]));
 function pageFromLocation(user: AuthUser): string {
     const path = window.location.pathname.replace(/\/$/, '') || '/';
-    if (user.is_platform_admin) return adminPathPages[path] || 'platform-dashboard';
+    if (user.is_platform_admin) return path === '/admin/profile' ? 'profile' : (adminPathPages[path] || 'platform-dashboard');
     const parts = path.split('/').filter(Boolean); const page = parts.length > 1 ? parts[1] : 'dashboard'; return ({ report: 'reports', users: 'team', products_bom: 'products' } as Record<string,string>)[page] || page;
 }
 function pathForPage(user: AuthUser, page: string): string {
-    if (user.is_platform_admin) return adminPagePaths[page] || '/admin';
+    if (user.is_platform_admin) return page === 'profile' ? '/admin/profile' : (adminPagePaths[page] || '/admin');
     const workspace = user.workspace || 'operations'; return page === 'dashboard' ? `/${workspace}` : `/${workspace}/${page}`;
 }
 
@@ -175,7 +176,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
     ] as const).filter(([page, , , permission]) => (permission === '*' || can(permission)) && (user.is_platform_admin || hasFeature(page))), [t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner]);
     useEffect(() => {
-        const allowed = nav.map(([key]) => key as string); if (!user.is_platform_admin) { if(hasFeature('support'))allowed.push('support');allowed.push('notifications'); if (can('factory.manage')) allowed.push('settings'); }
+        const allowed = nav.map(([key]) => key as string); allowed.push('profile'); if (!user.is_platform_admin) { if(hasFeature('support'))allowed.push('support');allowed.push('notifications'); if (can('factory.manage')) allowed.push('settings'); }
         if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : (allowed[0]||'notifications'));
     }, [activePage, nav, user.is_platform_admin]);
 
@@ -205,11 +206,11 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                     <button className="locale-btn" onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}><Languages size={17}/><span>{locale === 'en' ? 'FR' : 'EN'}</span></button>
                     <button className="icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={19}/> : <Moon size={19}/>}</button>
                     <div className="popover-anchor"><button className="icon-btn notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={19}/><b>{liveAnnouncements.length}</b></button>{notificationsOpen && <div className="top-popover notification-menu"><strong>{locale === 'en' ? 'Notifications' : 'Notifications'}</strong>{liveAnnouncements.length ? liveAnnouncements.slice(0,4).map(item => <span key={item.id}><b>{item.title}</b>{item.message}</span>) : <span>{locale === 'en' ? 'No new announcements' : 'Aucune nouvelle annonce'}</span>}<button onClick={() => { setNotificationsOpen(false); setActivePage('notifications'); }}>{locale==='en'?'View all notifications':'Voir toutes les notifications'}</button></div>}</div>
-                    <div className="popover-anchor"><button className="user-menu" onClick={() => setProfileOpen(!profileOpen)}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>{profileOpen && <div className="top-popover profile-menu"><button onClick={() => { setActivePage(user.is_platform_admin ? 'system-settings' : 'settings'); setProfileOpen(false); }}>{locale === 'en' ? 'Profile & settings' : 'Profil et paramètres'}</button><button onClick={onLogout}>{locale === 'en' ? 'Sign out' : 'Se déconnecter'}</button></div>}</div>
+                    <div className="popover-anchor"><button className="user-menu" onClick={() => setProfileOpen(!profileOpen)}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>{profileOpen && <div className="top-popover profile-menu"><button onClick={() => { setActivePage('profile'); setProfileOpen(false); }}>{locale === 'en' ? 'Profile & settings' : 'Profil et paramètres'}</button><button onClick={onLogout}>{locale === 'en' ? 'Sign out' : 'Se déconnecter'}</button></div>}</div>
                 </div>
             </header>
             <div className="page">
-                <PageBoundary resetKey={activePage}>{activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage === 'dashboard' ? (isExecutiveUser?<ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/>:<DepartmentDashboard user={user} locale={locale} onNavigate={setActivePage}/>) : activePage === 'inventory' ? <InventoryOverviewPage user={user} locale={locale}/> : activePage === 'procurement' ? <ProcurementOverviewPage/> : activePage === 'sales' ? <SalesOverviewPage/> : activePage === 'logistics' ? <LogisticsOverviewPage/> : activePage === 'settings' ? <FactorySettingsPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')} productionOnly={user.workspace==='production'&&!isExecutiveUser}/> : activePage === 'quality' ? <QualityControlPage can={can}/> : activePage === 'machines' ? <MachinesPage can={can}/> : activePage === 'production' ? (can('factory.manage')?<ProductionFlowPage/>:<ProductionOperations can={can}/>) : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
+                <PageBoundary resetKey={activePage}>{activePage==='profile'?<ProfileSettingsPage user={user} locale={locale} dark={dark} onLocaleChange={setLocale} onThemeChange={setDark}/>:activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage === 'dashboard' ? (isExecutiveUser?<ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/>:<DepartmentDashboard user={user} locale={locale} onNavigate={setActivePage}/>) : activePage === 'inventory' ? <InventoryOverviewPage user={user} locale={locale}/> : activePage === 'procurement' ? <ProcurementOverviewPage/> : activePage === 'sales' ? <SalesOverviewPage/> : activePage === 'logistics' ? <LogisticsOverviewPage/> : activePage === 'settings' ? <FactorySettingsPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')} productionOnly={user.workspace==='production'&&!isExecutiveUser}/> : activePage === 'quality' ? <QualityControlPage can={can}/> : activePage === 'machines' ? <MachinesPage can={can}/> : activePage === 'production' ? (can('factory.manage')?<ProductionFlowPage/>:<ProductionOperations can={can}/>) : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
                 <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => setActivePage('production')}><Zap size={17}/>{t.newOrder}</button></div>
                 <section className="workspace-banner"><div><span>{locale === 'en' ? 'Your workspace' : 'Votre espace'}</span><strong>{workspaceName}</strong><small>{user.employee_profile?.workstation ? `${user.employee_profile.department?.name || ''} / ${user.employee_profile.workstation.name}` : (user.roles[0]?.name || 'ICYEREKEZO OMS')}</small></div>{user.active_assignments?.length > 0 && <div className="assignment-preview"><b>{user.active_assignments.length} {locale === 'en' ? 'active assignments' : 'taches actives'}</b>{user.active_assignments.slice(0, 2).map(task => <span key={task.id}>{task.title} · {task.status.replace('_', ' ')}</span>)}</div>}</section>
                 <section className="metric-grid">
