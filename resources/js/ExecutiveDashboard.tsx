@@ -7,12 +7,13 @@ const number=(value:any)=>Number(value||0).toLocaleString(undefined,{maximumFrac
 
 export default function ExecutiveDashboard({user,locale,onNavigate}:any){
     const [data,setData]=useState<any>(null);const [error,setError]=useState('');const [updatedAt,setUpdatedAt]=useState<Date|null>(null);
+    const isOwner=user.roles?.some((role:any)=>role.slug==='factory-owner');
     const load=()=>loadDashboard().then(result=>{setData(result);setError('');setUpdatedAt(new Date())}).catch(reason=>setError(reason.message));
     useEffect(()=>{load();const timer=window.setInterval(load,5000);return()=>window.clearInterval(timer)},[]);
     const metrics=data?.metrics||{};const orders=data?.orders||[];
-    const greeting=locale==='fr'?'Bonjour, '+user.name+'. Voici les travaux importants de votre usine.':'Welcome, '+user.name+'. Here is the work that needs your attention.';
+    const greeting=isOwner?(locale==='fr'?'Bonjour, '+user.name+'. Voici les performances actuelles de votre usine.':'Welcome, '+user.name+'. Here is your factory’s current performance.'):(locale==='fr'?'Bonjour, '+user.name+'. Voici les travaux importants de votre usine.':'Welcome, '+user.name+'. Here is the work that needs your attention.');
     return <section className="executive-live">
-        <div className="page-heading"><div><div className="eyebrow"><span></span>{locale==='fr'?'OPÉRATIONS EN DIRECT':'LIVE OPERATIONS'}</div><h1>{locale==='fr'?"Opérations de l'usine":'Factory operations'}</h1><p>{greeting}</p></div><button className="primary-btn" onClick={()=>onNavigate('production')}><Zap size={17}/>{locale==='fr'?'Nouvel ordre de production':'New production order'}</button></div>
+        <div className="page-heading"><div><div className="eyebrow"><span></span>{locale==='fr'?'DONNÉES EN DIRECT':'LIVE FACTORY DATA'}</div><h1>{isOwner?(locale==='fr'?"Performances de l'usine":'Factory performance'):(locale==='fr'?"Opérations de l'usine":'Factory operations')}</h1><p>{greeting}</p></div>{!isOwner&&<button className="primary-btn" onClick={()=>onNavigate('production')}><Zap size={17}/>{locale==='fr'?'Nouvel ordre de production':'New production order'}</button>}</div>
         {error&&<div className="admin-alert error">{error}</div>}
         <div className="live-report-status"><i></i><span>{updatedAt?(locale==='fr'?'Données actualisées à ':'Data updated at ')+updatedAt.toLocaleTimeString():(locale==='fr'?'Connexion aux données…':'Connecting to live data…')}</span></div>
         <section className="metric-grid">
