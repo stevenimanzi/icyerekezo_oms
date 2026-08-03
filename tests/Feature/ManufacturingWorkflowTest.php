@@ -56,6 +56,17 @@ class ManufacturingWorkflowTest extends TestCase
         $this->assertSame('completed', $order->status);
         $this->assertEquals(47, (float) $order->completed_quantity);
         $this->assertDatabaseCount('production_stage_executions', 2);
+
+        $this->getJson('/api/manufacturing/overview')
+            ->assertOk()
+            ->assertJsonPath('summary.total_orders', 1)
+            ->assertJsonPath('summary.completed_orders', 1)
+            ->assertJsonPath('summary.planned_quantity', 50)
+            ->assertJsonPath('summary.completed_quantity', 47)
+            ->assertJsonPath('summary.stage_output_quantity', 95)
+            ->assertJsonPath('summary.rejected_quantity', 1)
+            ->assertJsonPath('summary.waste_quantity', 2)
+            ->assertJsonCount(1, 'orders.data');
     }
 
     private function registerOwner(): void

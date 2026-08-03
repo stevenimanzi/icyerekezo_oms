@@ -18,7 +18,29 @@ class ManufacturingController extends Controller
 {
     public function overview(): JsonResponse
     {
-        return response()->json(['orders' => ProductionOrder::with(['item:id,name,sku', 'executions.stage'])->latest()->paginate(20), 'boms' => BillOfMaterial::with(['item:id,name,sku', 'components.item'])->latest()->get(), 'workflows' => WorkflowTemplate::with('stages')->latest()->get()]);
+        $orders = ProductionOrder::query();
+        $executions = ProductionStageExecution::query();
+
+        return response()->json([
+            'summary' => [
+                'total_orders' => (clone $orders)->count(),
+                'needs_approval' => (clone $orders)->where('status', 'draft')->count(),
+                'active_orders' => (clone $orders)->whereIn('status', ['approved', 'in_progress', 'paused'])->count(),
+                'completed_orders' => (clone $orders)->where('status', 'completed')->count(),
+                'past_due' => (clone $orders)->whereNotIn('status', ['completed', 'cancelled'])->whereDate('planned_end', '<', today())->count(),
+                'planned_quantity' => (float) (clone $orders)->sum('planned_quantity'),
+                'completed_quantity' => (float) (clone $orders)->sum('completed_quantity'),
+                'stage_output_quantity' => (float) (clone $executions)->sum('output_quantity'),
+                'rejected_quantity' => (float) (clone $executions)->sum('rejected_quantity'),
+                'waste_quantity' => (float) (clone $executions)->sum('waste_quantity'),
+                'downtime_minutes' => (int) (clone $executions)->sum('downtime_minutes'),
+                'completed_stages' => (clone $executions)->where('status', 'completed')->count(),
+                'total_stages' => (clone $executions)->count(),
+            ],
+            'orders' => ProductionOrder::with(['item:id,name,sku', 'executions.stage'])->latest()->paginate(20),
+            'boms' => BillOfMaterial::with(['item:id,name,sku', 'components.item'])->latest()->get(),
+            'workflows' => WorkflowTemplate::with('stages')->latest()->get(),
+        ]);
     }
 
     public function storeBom(Request $request): JsonResponse

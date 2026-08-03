@@ -20,7 +20,8 @@
 
 .production-summary-card {
     min-width: 0;
-    padding: 20px;
+    min-height: 132px;
+    padding: 22px 24px;
     border: 1px solid var(--line);
     border-radius: 14px;
     background: var(--panel);
@@ -36,6 +37,44 @@
     display: block;
     margin: 6px 0 3px;
     font-size: clamp(24px, 3vw, 34px);
+}
+
+.production-hero {
+    align-items: flex-start;
+    padding-top: 6px;
+}
+
+.production-hero .module-title {
+    min-width: 0;
+}
+
+.production-hero .workflow-actions {
+    flex: none;
+    align-self: flex-start;
+}
+
+.production-updated {
+    display: block;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.production-orders-table,
+.production-results-table {
+    min-width: 900px;
+}
+
+.production-orders-table th,
+.production-orders-table td,
+.production-results-table th,
+.production-results-table td {
+    vertical-align: middle;
+    font-size: 15px;
+}
+
+.production-orders-table td:nth-child(4) {
+    min-width: 210px;
 }
 
 .production-summary-card.danger b {
@@ -217,6 +256,16 @@
 
     .production-section-head {
         flex-direction: column;
+    }
+
+    .production-hero,
+    .production-hero .workflow-actions {
+        width: 100%;
+    }
+
+    .production-hero .workflow-actions button {
+        width: 100%;
+        justify-content: center;
     }
 
     .production-result-fields {
