@@ -9,6 +9,7 @@ use App\Http\Controllers\FactorySettingsController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManufacturingController;
 use App\Http\Controllers\MachineController;
+use App\Http\Controllers\LogisticsController;
 use App\Http\Controllers\PlatformAdminController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\QualityControlController;
@@ -89,6 +90,7 @@ Route::prefix('api')->group(function () {
             Route::patch('/team/assignments/{assignment}', [TeamWorkspaceController::class, 'updateAssignment']);
             Route::get('/manufacturing/overview', [ManufacturingController::class, 'overview'])->middleware('permission:production.view');
             Route::get('/sales/overview', [SalesController::class, 'overview'])->middleware('permission:sales.view');
+            Route::get('/logistics/overview', [LogisticsController::class, 'overview'])->middleware('permission:logistics.view');
             Route::post('/manufacturing/boms', [ManufacturingController::class, 'storeBom'])->middleware('permission:production.plan');
             Route::post('/manufacturing/workflows', [ManufacturingController::class, 'storeWorkflow'])->middleware('permission:factory.manage');
             Route::put('/manufacturing/workflows/{workflow}', [ManufacturingController::class, 'updateWorkflow'])->middleware('permission:factory.manage');
