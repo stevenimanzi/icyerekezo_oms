@@ -27,6 +27,15 @@ class InventoryLedgerTest extends TestCase
         $this->postJson('/api/inventory/transactions', ['item_id' => $item['id'], 'warehouse_id' => $warehouse->id, 'type' => 'receipt', 'quantity' => 100, 'reason' => 'Opening stock'])->assertCreated();
         $this->postJson('/api/inventory/transactions', ['item_id' => $item['id'], 'warehouse_id' => $warehouse->id, 'type' => 'issue', 'quantity' => 25, 'reason' => 'Production order'])->assertCreated();
 
+        $this->getJson('/api/inventory/overview')->assertOk()
+            ->assertJsonPath('items', 1)
+            ->assertJsonPath('warehouses', 1)
+            ->assertJsonPath('stock.0.item_name', 'Cotton fabric')
+            ->assertJsonPath('stock.0.warehouse_name', 'Main Warehouse')
+            ->assertJsonPath('stock.0.quantity_on_hand', 75)
+            ->assertJsonPath('recent_transactions.0.type', 'issue')
+            ->assertJsonPath('recent_transactions.0.item_name', 'Cotton fabric');
+
         $this->assertEquals(75.0, (float) StockBalance::firstOrFail()->quantity_on_hand);
         $this->assertDatabaseCount('stock_transactions', 2);
         $this->expectException(LogicException::class);

@@ -16,11 +16,44 @@ class InventoryController extends Controller
 {
     public function overview(): JsonResponse
     {
+        $stock = StockBalance::query()
+            ->join('items', 'items.id', '=', 'stock_balances.item_id')
+            ->join('warehouses', 'warehouses.id', '=', 'stock_balances.warehouse_id')
+            ->leftJoin('units', 'units.id', '=', 'items.unit_id')
+            ->orderBy('items.name')
+            ->get([
+                'stock_balances.id', 'items.id as item_id', 'items.name as item_name', 'items.sku', 'items.type as item_type',
+                'warehouses.id as warehouse_id', 'warehouses.name as warehouse_name', 'warehouses.code as warehouse_code',
+                'units.symbol as unit', 'stock_balances.quantity_on_hand', 'stock_balances.quantity_reserved',
+                'stock_balances.quantity_quarantined', 'items.reorder_level', 'items.standard_cost',
+            ])->map(function ($row) {
+                $row->available_quantity = (float) $row->quantity_on_hand - (float) $row->quantity_reserved - (float) $row->quantity_quarantined;
+                $row->stock_value = (float) $row->quantity_on_hand * (float) $row->standard_cost;
+                $row->is_low_stock = (float) $row->quantity_on_hand <= (float) $row->reorder_level;
+                return $row;
+            });
+
+        $transactions = StockTransaction::query()
+            ->join('items', 'items.id', '=', 'stock_transactions.item_id')
+            ->join('warehouses', 'warehouses.id', '=', 'stock_transactions.warehouse_id')
+            ->leftJoin('units', 'units.id', '=', 'items.unit_id')
+            ->latest('stock_transactions.occurred_at')
+            ->latest('stock_transactions.id')
+            ->limit(25)
+            ->get([
+                'stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta',
+                'stock_transactions.balance_after', 'stock_transactions.unit_cost', 'stock_transactions.reason',
+                'stock_transactions.occurred_at', 'items.name as item_name', 'items.sku',
+                'warehouses.name as warehouse_name', 'units.symbol as unit',
+            ]);
+
         return response()->json([
             'items' => Item::count(), 'warehouses' => Warehouse::where('is_active', true)->count(),
             'low_stock' => StockBalance::join('items', 'items.id', '=', 'stock_balances.item_id')->whereColumn('stock_balances.quantity_on_hand', '<=', 'items.reorder_level')->count(),
             'total_value' => StockBalance::join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost),0) as value')->value('value'),
-            'recent_transactions' => StockTransaction::latest('occurred_at')->limit(10)->get(),
+            'stock' => $stock,
+            'warehouse_list' => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
+            'recent_transactions' => $transactions,
         ]);
     }
 
