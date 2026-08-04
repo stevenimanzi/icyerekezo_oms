@@ -11,6 +11,7 @@ use App\Http\Controllers\ManufacturingController;
 use App\Http\Controllers\MachineController;
 use App\Http\Controllers\LogisticsController;
 use App\Http\Controllers\PlatformAdminController;
+use App\Http\Controllers\ProductCatalogController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\QualityControlController;
@@ -78,6 +79,7 @@ Route::prefix('api')->group(function () {
             Route::get('/reports', ReportController::class)->middleware('permission:reports.view');
             Route::get('/inventory/overview', [InventoryController::class, 'overview'])->middleware('permission:inventory.view');
             Route::get('/inventory/items', [InventoryController::class, 'items'])->middleware('permission:products.view');
+            Route::get('/products/overview', ProductCatalogController::class)->middleware('permission:products.view');
             Route::get('/inventory/tools', [InventoryController::class, 'tools'])->middleware('permission:inventory.view');
             Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->middleware('permission:inventory.receive');
             Route::patch('/inventory/items/{item}', [InventoryController::class, 'updateItem'])->middleware('permission:inventory.receive');
