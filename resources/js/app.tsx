@@ -129,6 +129,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const [searchOpen, setSearchOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [liveAnnouncements,setLiveAnnouncements]=useState(user.announcements||[]);
+    const [lowStockCount,setLowStockCount]=useState(0);
     const [searchQuery,setSearchQuery]=useState('');
     const [searchResults,setSearchResults]=useState<any[]>([]);
     const [profileOpen, setProfileOpen] = useState(false);
@@ -146,6 +147,11 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     }, [activePage, user]);
     useEffect(() => { const back = () => { skipHistory.current = true; setActivePage(pageFromLocation(user)); }; window.addEventListener('popstate', back); return () => window.removeEventListener('popstate', back); }, [user]);
     useEffect(()=>{const refresh=()=>api<{user:AuthUser}>('/api/auth/me').then(result=>setLiveAnnouncements(result.user.announcements||[])).catch((reason:any)=>{if(reason?.status===503)onMaintenance(reason.message)});const timer=window.setInterval(refresh,5000);return()=>window.clearInterval(timer)},[onMaintenance]);
+    useEffect(()=>{
+        if(user.is_platform_admin||!can('inventory.view')){setLowStockCount(0);return;}
+        const refresh=()=>api<{low_stock:number}>('/api/inventory/overview').then(result=>setLowStockCount(Number(result.low_stock)||0)).catch(()=>setLowStockCount(0));
+        refresh(); const timer=window.setInterval(refresh,15000); return()=>window.clearInterval(timer);
+    },[user.is_platform_admin,user.permissions]);
     useEffect(()=>{if(searchQuery.trim().length<2){setSearchResults([]);return}const timer=window.setTimeout(()=>api<{data:any[]}>(`/api/search?q=${encodeURIComponent(searchQuery)}`).then(result=>setSearchResults(result.data)).catch(()=>setSearchResults([])),250);return()=>window.clearTimeout(timer)},[searchQuery]);
     useEffect(() => {
         const shortcut = (event: KeyboardEvent) => {
@@ -193,7 +199,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
             <div className="sidebar-head"><Logo/><button className="icon-btn mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20}/></button></div>
             <nav>
                 <p className="nav-label">{t.general}</p>
-                {nav.map(([key, Icon, label]) => <button key={key} className={`nav-item ${activePage === key ? 'active' : ''}`} onClick={() => { setActivePage(key); setSidebarOpen(false); }}><Icon size={18}/><span>{label}</span>{label === t.warehouse && <i>3</i>}</button>)}
+                {nav.map(([key, Icon, label]) => <button key={key} className={`nav-item ${activePage === key ? 'active' : ''}`} onClick={() => { setActivePage(key); setSidebarOpen(false); }}><Icon size={18}/><span>{label}</span>{key === 'inventory' && lowStockCount > 0 && <i title={locale==='en'?'Low-stock items that need attention':'Articles en stock faible nécessitant une attention'}>{lowStockCount}</i>}</button>)}
                 {!user.is_platform_admin && <><p className="nav-label">{isFactoryOwner ? 'ASSISTANCE' : t.management}</p>{!isFactoryOwner && can('factory.manage') && <button className={`nav-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}><Settings size={18}/><span>{t.settings}</span></button>}{hasFeature('support')&&<button className={`nav-item ${activePage === 'support' ? 'active' : ''}`} onClick={() => { setActivePage('support'); setSidebarOpen(false); }}><HelpCircle size={18}/><span>{t.support}</span></button>}</>}
             </nav>
             <button className="factory-card" onClick={() => setActivePage(user.is_platform_admin ? 'system-settings' : isFactoryOwner ? 'dashboard' : 'settings')}><div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}</div><div><strong>{user.current_factory?.name || user.system?.name || 'ICYEREKEZO OMS'}</strong><span>{user.is_platform_admin ? (locale === 'en' ? 'System administration' : 'Administration système') : isFactoryOwner ? (locale === 'en' ? 'Performance overview' : 'Vue des performances') : (locale === 'en' ? 'Factory workspace' : 'Espace usine')}</span></div><ChevronRight size={17}/></button>
