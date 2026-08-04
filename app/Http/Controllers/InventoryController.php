@@ -10,6 +10,7 @@ use App\Models\Warehouse;
 use App\Services\InventoryLedger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -23,7 +24,7 @@ class InventoryController extends Controller
             'items' => Item::with('unit:id,name,symbol')->where('is_active', true)->orderBy('name')->get(['id', 'unit_id', 'name', 'sku', 'type', 'standard_cost', 'reorder_level']),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(['id', 'name', 'symbol']),
             'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
-            'transaction_types' => ['receipt', 'issue', 'return_in', 'adjustment_in', 'adjustment_out', 'waste'],
+            'transaction_types' => ['receipt', 'issue', 'return_in', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'],
         ]);
     }
 
@@ -60,11 +61,22 @@ class InventoryController extends Controller
                 'warehouses.name as warehouse_name', 'units.symbol as unit',
             ]);
 
+        $catalogTotals = StockBalance::selectRaw('item_id, COALESCE(SUM(quantity_on_hand), 0) as quantity_on_hand')
+            ->groupBy('item_id')->pluck('quantity_on_hand', 'item_id');
+        $catalog = Item::with('unit:id,name,symbol')->orderBy('name')
+            ->get(['id', 'unit_id', 'name', 'sku', 'type', 'standard_cost', 'reorder_level', 'is_active'])
+            ->map(function (Item $item) use ($catalogTotals) {
+                $item->total_quantity = (float) ($catalogTotals[$item->id] ?? 0);
+                $item->stock_value = $item->total_quantity * (float) $item->standard_cost;
+                return $item;
+            });
+
         return response()->json([
             'items' => Item::count(), 'warehouses' => Warehouse::where('is_active', true)->count(),
             'low_stock' => StockBalance::join('items', 'items.id', '=', 'stock_balances.item_id')->whereColumn('stock_balances.quantity_on_hand', '<=', 'items.reorder_level')->count(),
             'total_value' => StockBalance::join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost),0) as value')->value('value'),
             'stock' => $stock,
+            'catalog' => $catalog,
             'warehouse_list' => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
             'recent_transactions' => $transactions,
         ]);
@@ -108,9 +120,58 @@ class InventoryController extends Controller
     public function postTransaction(Request $request, InventoryLedger $ledger): JsonResponse
     {
         $this->ensureWarehouseKeeper($request);
-        $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'type' => ['required', Rule::in(['receipt', 'issue', 'return_in', 'adjustment_in', 'adjustment_out', 'waste'])], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['required', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
+        $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'type' => ['required', Rule::in(['receipt', 'issue', 'return_in', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'])], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['required', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
 
         return response()->json($ledger->post($data), 201);
+    }
+
+    public function transfer(Request $request, InventoryLedger $ledger): JsonResponse
+    {
+        $this->ensureWarehouseKeeper($request);
+        $data = $request->validate([
+            'item_id' => ['required', 'integer', 'exists:items,id'],
+            'from_warehouse_id' => ['required', 'integer', 'exists:warehouses,id', 'different:to_warehouse_id'],
+            'to_warehouse_id' => ['required', 'integer', 'exists:warehouses,id'],
+            'quantity' => ['required', 'numeric', 'gt:0'],
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+        $reference = 'TRANSFER-'.Str::upper(Str::random(10));
+        $entries = DB::transaction(function () use ($data, $ledger, $reference) {
+            $out = $ledger->post(['item_id' => $data['item_id'], 'warehouse_id' => $data['from_warehouse_id'], 'type' => 'issue', 'quantity' => $data['quantity'], 'reason' => $reference.' | '.$data['reason']]);
+            $in = $ledger->post(['item_id' => $data['item_id'], 'warehouse_id' => $data['to_warehouse_id'], 'type' => 'receipt', 'quantity' => $data['quantity'], 'reason' => $reference.' | '.$data['reason']]);
+            return [$out, $in];
+        });
+
+        return response()->json(['message' => 'Stock transferred successfully.', 'reference' => $reference, 'transactions' => $entries], 201);
+    }
+
+    public function stockCount(Request $request, InventoryLedger $ledger): JsonResponse
+    {
+        $this->ensureWarehouseKeeper($request);
+        $data = $request->validate([
+            'item_id' => ['required', 'integer', 'exists:items,id'],
+            'warehouse_id' => ['required', 'integer', 'exists:warehouses,id'],
+            'counted_quantity' => ['required', 'numeric', 'min:0'],
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+        $recorded = (float) StockBalance::where('item_id', $data['item_id'])->where('warehouse_id', $data['warehouse_id'])->sum('quantity_on_hand');
+        $difference = (float) $data['counted_quantity'] - $recorded;
+        if (abs($difference) < 0.000001) {
+            return response()->json(['message' => 'Stock count confirmed. No adjustment was needed.', 'recorded_quantity' => $recorded, 'counted_quantity' => (float) $data['counted_quantity']]);
+        }
+        $transaction = $ledger->post(['item_id' => $data['item_id'], 'warehouse_id' => $data['warehouse_id'], 'type' => $difference > 0 ? 'adjustment_in' : 'adjustment_out', 'quantity' => abs($difference), 'reason' => 'STOCK COUNT | '.$data['reason']]);
+
+        return response()->json(['message' => 'Stock count saved and balance adjusted.', 'transaction' => $transaction], 201);
+    }
+
+    public function updateItemStatus(Request $request, Item $item): JsonResponse
+    {
+        $this->ensureWarehouseKeeper($request);
+        abort_unless((int) $item->factory_id === (int) $request->user()->current_factory_id, 404);
+        $data = $request->validate(['is_active' => ['required', 'boolean']]);
+        $item->update($data);
+
+        return response()->json(['message' => $item->is_active ? 'Stock item activated.' : 'Stock item deactivated.', 'item' => $item]);
     }
 
     private function ensureWarehouseKeeper(Request $request): void

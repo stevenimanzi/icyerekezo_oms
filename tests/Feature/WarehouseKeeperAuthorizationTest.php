@@ -33,7 +33,15 @@ class WarehouseKeeperAuthorizationTest extends TestCase
         $this->assertNotSame($itemPayload['sku'], $item['sku']);
         $this->patchJson('/api/inventory/items/'.$item['id'], [...$itemPayload, 'sku' => 'USER-CANNOT-CHANGE', 'name' => 'Cotton Fabric'])->assertOk()->assertJsonPath('item.name', 'Cotton Fabric')->assertJsonPath('item.sku', $item['sku']);
         $this->postJson('/api/inventory/transactions', ['item_id' => $item['id'], 'warehouse_id' => $warehouse->id, 'type' => 'receipt', 'quantity' => 25, 'reason' => 'Delivery DN-001'])->assertCreated();
+        $destination = Warehouse::create(['factory_id' => $user->current_factory_id, 'name' => 'Production Store', 'code' => 'PROD-STORE', 'type' => 'general', 'is_active' => true]);
+        $this->postJson('/api/inventory/transfers', ['item_id' => $item['id'], 'from_warehouse_id' => $warehouse->id, 'to_warehouse_id' => $destination->id, 'quantity' => 5, 'reason' => 'Move materials to production'])->assertCreated()->assertJsonStructure(['reference', 'transactions']);
+        $this->postJson('/api/inventory/stock-counts', ['item_id' => $item['id'], 'warehouse_id' => $destination->id, 'counted_quantity' => 7, 'reason' => 'Weekly physical count'])->assertCreated()->assertJsonPath('transaction.balance_after', 7);
+        $this->patchJson('/api/inventory/items/'.$item['id'].'/status', ['is_active' => false])->assertOk()->assertJsonPath('item.is_active', false);
+        $this->getJson('/api/inventory/overview')->assertOk()->assertJsonPath('catalog.0.name', 'Cotton Fabric')->assertJsonPath('catalog.0.is_active', false)->assertJsonCount(2, 'stock');
+        $this->patchJson('/api/inventory/items/'.$item['id'].'/status', ['is_active' => true])->assertOk()->assertJsonPath('item.is_active', true);
         $this->getJson('/api/inventory/tools')->assertOk()->assertJsonPath('items.0.name', 'Cotton Fabric');
-        $this->getJson('/api/procurement/overview')->assertOk()->assertJsonPath('summary.receipts', 1)->assertJsonPath('stock_receipts.0.reason', 'Delivery DN-001');
+        $overview = $this->getJson('/api/procurement/overview')->assertOk();
+        $this->assertGreaterThanOrEqual(1, $overview->json('summary.receipts'));
+        $this->assertTrue(collect($overview->json('stock_receipts'))->contains(fn (array $receipt) => $receipt['reason'] === 'Delivery DN-001'));
     }
 }

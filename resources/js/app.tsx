@@ -16,6 +16,7 @@ import QualityControlPage from './QualityControlPage';
 import MachinesPage from './MachinesPage';
 import FactorySettingsPage from './FactorySettingsPage';
 import ReportsPage from './ClearReportsPage';
+import InventoryManagementPage from './InventoryManagementPage';
 import SalesOverviewPage from './SalesOverviewPage';
 import LogisticsOverviewPage from './LogisticsOverviewPage';
 import ProcurementOverviewPage from './ProcurementOverviewPage';
@@ -275,6 +276,7 @@ function UserSupportChat({user,locale}:{user:AuthUser;locale:Locale}) {
 }
 
 function InventoryOverviewPage({user,locale}:{user:AuthUser;locale:Locale}) {
+    return <InventoryManagementPage user={user} locale={locale}/>;
     const [data,setData]=useState<any>(null);const [tab,setTab]=useState('stock');const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [updated,setUpdated]=useState<Date|null>(null);
     const load=async(silent=false)=>{if(!silent)setLoading(true);try{setData(await api('/api/inventory/overview'));setError('');setUpdated(new Date())}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load stock data.')}finally{if(!silent)setLoading(false)}};
     useEffect(()=>{load();const timer=window.setInterval(()=>load(true),15000);return()=>window.clearInterval(timer)},[]);
