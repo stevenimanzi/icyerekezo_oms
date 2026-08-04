@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\EmployeeProfile;
+use App\Models\Item;
 use App\Models\ProductionStageExecution;
+use App\Models\StockBalance;
+use App\Models\StockTransaction;
+use App\Models\Warehouse;
 use App\Models\WorkAssignment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +26,11 @@ class DepartmentDashboardController extends Controller
             ->first();
         $department = $profile?->department;
         $isManager = $department && (int) $department->manager_id === (int) $user->id;
+        $isWarehouse = $profile?->workstation?->type === 'warehouse'
+            || str_contains(strtolower((string) $profile?->job_title), 'warehouse')
+            || str_contains(strtolower((string) $profile?->job_title), 'store keeper')
+            || str_contains(strtolower((string) $department?->name), 'raw material')
+            || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'warehouse-keeper')->exists();
 
         $employeeIds = $department
             ? EmployeeProfile::withoutGlobalScopes()->where('factory_id', $factoryId)->where('department_id', $department->id)->pluck('user_id')
@@ -38,6 +47,23 @@ class DepartmentDashboardController extends Controller
             ->when($department, fn ($query) => $query->whereHas('stage', fn ($stage) => $stage->where('department_id', $department->id)))
             ->when(! $department, fn ($query) => $query->where('assigned_user_id', $user->id));
 
+        $stockBalances = StockBalance::withoutGlobalScopes()->where('stock_balances.factory_id', $factoryId);
+        $stockTransactions = StockTransaction::withoutGlobalScopes()->where('stock_transactions.factory_id', $factoryId);
+        $warehouseMetrics = [
+            'stock_items' => Item::withoutGlobalScopes()->where('factory_id', $factoryId)->where('is_active', true)->count(),
+            'warehouses' => Warehouse::withoutGlobalScopes()->where('factory_id', $factoryId)->where('is_active', true)->count(),
+            'low_stock' => (clone $stockBalances)->join('items', 'items.id', '=', 'stock_balances.item_id')->whereColumn('stock_balances.quantity_on_hand', '<=', 'items.reorder_level')->count(),
+            'stock_value' => (float) (clone $stockBalances)->join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost), 0) AS value')->value('value'),
+            'received_today' => (float) (clone $stockTransactions)->whereDate('occurred_at', today())->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+            'issued_today' => abs((float) (clone $stockTransactions)->whereDate('occurred_at', today())->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+        ];
+        $recentStock = (clone $stockTransactions)
+            ->join('items', 'items.id', '=', 'stock_transactions.item_id')
+            ->join('warehouses', 'warehouses.id', '=', 'stock_transactions.warehouse_id')
+            ->leftJoin('units', 'units.id', '=', 'items.unit_id')
+            ->latest('stock_transactions.occurred_at')->limit(15)
+            ->get(['stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.balance_after', 'stock_transactions.occurred_at', 'items.name as item_name', 'items.sku', 'warehouses.name as warehouse_name', 'units.symbol as unit']);
+
         return response()->json([
             'department' => $department ? [
                 'id' => $department->id,
@@ -52,6 +78,7 @@ class DepartmentDashboardController extends Controller
                 'workstation' => $profile->workstation,
             ] : null,
             'is_department_manager' => (bool) $isManager,
+            'dashboard_type' => $isWarehouse ? 'warehouse' : 'production',
             'metrics' => [
                 'assigned_work' => (clone $assignments)->whereIn('status', ['assigned', 'ready'])->count(),
                 'work_in_progress' => (clone $assignments)->where('status', 'in_progress')->count(),
@@ -62,6 +89,8 @@ class DepartmentDashboardController extends Controller
             ],
             'assignments' => $assignments->limit(20)->get(['id', 'user_id', 'title', 'instructions', 'priority', 'status', 'starts_at', 'due_at', 'updated_at']),
             'stage_activity' => $stageExecutions->with(['stage:id,name,code,sequence', 'order:id,order_number,item_id'])->latest('updated_at')->limit(15)->get(['id', 'production_order_id', 'workflow_stage_id', 'assigned_user_id', 'status', 'input_quantity', 'output_quantity', 'waste_quantity', 'rejected_quantity', 'started_at', 'completed_at', 'updated_at']),
+            'warehouse_metrics' => $warehouseMetrics,
+            'recent_stock' => $recentStock,
         ]);
     }
 }
