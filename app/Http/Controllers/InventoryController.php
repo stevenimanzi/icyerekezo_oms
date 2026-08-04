@@ -96,7 +96,7 @@ class InventoryController extends Controller
     {
         $this->ensureWarehouseKeeper($request);
         $factoryId = $request->user()->current_factory_id;
-        $data = $request->validate(['name' => ['required', 'string', 'max:160'], 'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product', 'service'])], 'unit_id' => ['required', 'integer', 'exists:units,id'], 'standard_cost' => ['nullable', 'numeric', 'min:0'], 'selling_price' => ['nullable', 'numeric', 'min:0'], 'minimum_stock' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'], 'batch_tracked' => ['nullable', 'boolean'], 'expiry_tracked' => ['nullable', 'boolean']]);
+        $data = $request->validate(['name' => ['required', 'string', 'max:160', Rule::unique('items')->where('factory_id', $factoryId)], 'category_id' => ['nullable', Rule::exists('item_categories', 'id')->where('factory_id', $factoryId)], 'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product', 'service'])], 'unit_id' => ['required', Rule::exists('units', 'id')->where('factory_id', $factoryId)], 'standard_cost' => ['nullable', 'numeric', 'min:0'], 'selling_price' => ['nullable', 'numeric', 'min:0'], 'minimum_stock' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'], 'batch_tracked' => ['nullable', 'boolean'], 'expiry_tracked' => ['nullable', 'boolean']]);
         $data['sku'] = $this->generateStockCode($factoryId, $data['type']);
 
         return response()->json(Item::create($data), 201);
@@ -107,10 +107,12 @@ class InventoryController extends Controller
         $this->ensureWarehouseKeeper($request);
         abort_unless((int) $item->factory_id === (int) $request->user()->current_factory_id, 404);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:160'],
+            'name' => ['required', 'string', 'max:160', Rule::unique('items')->where('factory_id', $request->user()->current_factory_id)->ignore($item->id)],
+            'category_id' => ['nullable', Rule::exists('item_categories', 'id')->where('factory_id', $request->user()->current_factory_id)],
             'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product'])],
-            'unit_id' => ['required', 'integer', 'exists:units,id'],
-            'standard_cost' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'],
+            'unit_id' => ['required', Rule::exists('units', 'id')->where('factory_id', $request->user()->current_factory_id)],
+            'standard_cost' => ['nullable', 'numeric', 'min:0'], 'selling_price' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
         ]);
         $item->update($data);
 

@@ -44,4 +44,37 @@ class ProductCatalogTest extends TestCase
             ->assertJsonPath('boms.0.components.0.item.name', 'Cotton')
             ->assertJsonStructure(['items', 'categories', 'units', 'conversions', 'boms', 'updated_at']);
     }
+
+    public function test_warehouse_keeper_can_manage_unique_items_categories_and_units(): void
+    {
+        $this->postJson('/api/auth/register', [
+            'name' => 'Keeper', 'email' => 'keeper@catalog.test', 'password' => 'Secure@12345',
+            'password_confirmation' => 'Secure@12345', 'factory_name' => 'Catalog Factory', 'industry_type' => 'metals_steel',
+        ])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
+        $user = auth()->user();
+        $role = Role::where('factory_id', $user->current_factory_id)->where('slug', 'warehouse-keeper')->firstOrFail();
+        $user->roles()->detach();
+        $user->roles()->attach($role->id, ['factory_id' => $user->current_factory_id]);
+
+        $category = $this->postJson('/api/products/categories', ['name' => 'Metals', 'code' => 'MET'])
+            ->assertCreated()->json('id');
+        $this->postJson('/api/products/categories', ['name' => 'Duplicate metals', 'code' => 'MET'])
+            ->assertUnprocessable()->assertJsonValidationErrors('code');
+        $unit = $this->postJson('/api/products/units', [
+            'name' => 'Coil kilogram', 'symbol' => 'kgx', 'dimension' => 'mass', 'precision' => 3, 'is_active' => true,
+        ])->assertCreated()->json('unit.id');
+        $item = $this->postJson('/api/inventory/items', [
+            'name' => 'Steel coil', 'type' => 'raw_material', 'category_id' => $category, 'unit_id' => $unit,
+            'standard_cost' => 1200, 'selling_price' => 1500, 'reorder_level' => 10,
+        ])->assertCreated()->json();
+
+        $this->assertNotEmpty($item['sku']);
+        $this->patchJson('/api/inventory/items/'.$item['id'], [
+            'name' => 'Steel coil premium', 'type' => 'raw_material', 'category_id' => $category, 'unit_id' => $unit,
+            'standard_cost' => 1300, 'selling_price' => 1600, 'reorder_level' => 12, 'is_active' => true,
+        ])->assertOk()->assertJsonPath('item.name', 'Steel coil premium');
+        $this->getJson('/api/products/overview')->assertOk()
+            ->assertJsonPath('summary.items', 1)->assertJsonPath('items.0.category_name', 'Metals');
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\Unit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ProductCatalogController extends Controller
 {
@@ -56,5 +57,59 @@ class ProductCatalogController extends Controller
             'items' => $items, 'categories' => $categories, 'units' => $units,
             'conversions' => $conversions, 'boms' => $boms, 'updated_at' => now()->toIso8601String(),
         ]);
+    }
+
+    public function storeCategory(Request $request): JsonResponse
+    {
+        return $this->saveCategory($request);
+    }
+
+    public function updateCategory(Request $request, int $category): JsonResponse
+    {
+        return $this->saveCategory($request, $category);
+    }
+
+    private function saveCategory(Request $request, ?int $categoryId = null): JsonResponse
+    {
+        $factoryId = (int) $request->user()->current_factory_id;
+        if ($categoryId) abort_unless(DB::table('item_categories')->where('factory_id', $factoryId)->where('id', $categoryId)->exists(), 404);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:160', Rule::unique('item_categories')->where('factory_id', $factoryId)->ignore($categoryId)],
+            'code' => ['required', 'string', 'max:30', Rule::unique('item_categories')->where('factory_id', $factoryId)->ignore($categoryId)],
+            'parent_id' => ['nullable', Rule::exists('item_categories', 'id')->where('factory_id', $factoryId), Rule::notIn([$categoryId])],
+        ]);
+        if ($categoryId) {
+            DB::table('item_categories')->where('id', $categoryId)->update($data + ['updated_at' => now()]);
+            return response()->json(['message' => 'Category updated successfully.']);
+        }
+        $id = DB::table('item_categories')->insertGetId($data + ['factory_id' => $factoryId, 'created_at' => now(), 'updated_at' => now()]);
+        return response()->json(['message' => 'Category created successfully.', 'id' => $id], 201);
+    }
+
+    public function storeUnit(Request $request): JsonResponse
+    {
+        return $this->saveUnit($request);
+    }
+
+    public function updateUnit(Request $request, Unit $unit): JsonResponse
+    {
+        abort_unless((int) $unit->factory_id === (int) $request->user()->current_factory_id, 404);
+        return $this->saveUnit($request, $unit);
+    }
+
+    private function saveUnit(Request $request, ?Unit $unit = null): JsonResponse
+    {
+        $factoryId = (int) $request->user()->current_factory_id;
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:80', Rule::unique('units')->where('factory_id', $factoryId)->ignore($unit?->id)],
+            'symbol' => ['required', 'string', 'max:20', Rule::unique('units')->where('factory_id', $factoryId)->ignore($unit?->id)],
+            'dimension' => ['required', Rule::in(['count', 'mass', 'volume', 'length', 'area', 'time', 'other'])],
+            'precision' => ['required', 'integer', 'between:0,6'], 'is_active' => ['nullable', 'boolean'],
+        ]);
+        if ($unit) {
+            $unit->update($data);
+            return response()->json(['message' => 'Unit updated successfully.', 'unit' => $unit->fresh()]);
+        }
+        return response()->json(['message' => 'Unit created successfully.', 'unit' => Unit::create($data)], 201);
     }
 }
