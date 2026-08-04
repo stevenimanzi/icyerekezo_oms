@@ -1,5 +1,9 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowDownToLine, Boxes, Edit3, PackagePlus, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, Edit3, Plus, RefreshCw, X } from 'lucide-react';
+
+const PackagePlus = Plus;
+const ArrowDownToLine = Plus;
+const Boxes = Plus;
 
 const csrf=()=>document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content||'';
 async function request(url:string,options:RequestInit={}){const response=await fetch(url,{...options,headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf(),...(options.headers||{})}});const text=await response.text();let data:any;try{data=JSON.parse(text)}catch{throw new Error('Purchasing data could not be read. Please sign in again.')}if(!response.ok){const first=data.errors?Object.values(data.errors).flat()[0]:null;const error:any=new Error(String(first||data.message||'The request could not be completed.'));error.status=response.status;throw error}return data}
