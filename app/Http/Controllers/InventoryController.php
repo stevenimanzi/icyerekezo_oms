@@ -10,6 +10,7 @@ use App\Models\Warehouse;
 use App\Services\InventoryLedger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class InventoryController extends Controller
@@ -83,7 +84,8 @@ class InventoryController extends Controller
     {
         $this->ensureWarehouseKeeper($request);
         $factoryId = $request->user()->current_factory_id;
-        $data = $request->validate(['name' => ['required', 'string', 'max:160'], 'sku' => ['required', 'string', 'max:80', Rule::unique('items')->where('factory_id', $factoryId)], 'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product', 'service'])], 'unit_id' => ['required', 'integer', 'exists:units,id'], 'standard_cost' => ['nullable', 'numeric', 'min:0'], 'selling_price' => ['nullable', 'numeric', 'min:0'], 'minimum_stock' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'], 'batch_tracked' => ['nullable', 'boolean'], 'expiry_tracked' => ['nullable', 'boolean']]);
+        $data = $request->validate(['name' => ['required', 'string', 'max:160'], 'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product', 'service'])], 'unit_id' => ['required', 'integer', 'exists:units,id'], 'standard_cost' => ['nullable', 'numeric', 'min:0'], 'selling_price' => ['nullable', 'numeric', 'min:0'], 'minimum_stock' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'], 'batch_tracked' => ['nullable', 'boolean'], 'expiry_tracked' => ['nullable', 'boolean']]);
+        $data['sku'] = $this->generateStockCode($factoryId, $data['type']);
 
         return response()->json(Item::create($data), 201);
     }
@@ -94,7 +96,6 @@ class InventoryController extends Controller
         abort_unless((int) $item->factory_id === (int) $request->user()->current_factory_id, 404);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
-            'sku' => ['required', 'string', 'max:80', Rule::unique('items')->where('factory_id', $item->factory_id)->ignore($item->id)],
             'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product'])],
             'unit_id' => ['required', 'integer', 'exists:units,id'],
             'standard_cost' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'],
@@ -118,6 +119,27 @@ class InventoryController extends Controller
             ->wherePivot('factory_id', $request->user()->current_factory_id)
             ->where('slug', 'warehouse-keeper')->exists();
         abort_unless($allowed, 403, 'Only the assigned Warehouse Keeper can record or change stock.');
+    }
+
+    private function generateStockCode(int $factoryId, string $type): string
+    {
+        $prefix = match ($type) {
+            'raw_material' => 'RAW',
+            'semi_finished' => 'WIP',
+            'finished_good' => 'FIN',
+            'packaging' => 'PKG',
+            'spare_part' => 'SPR',
+            'waste' => 'WST',
+            'by_product' => 'BYP',
+            'service' => 'SRV',
+            default => 'STK',
+        };
+
+        do {
+            $code = $prefix.'-'.Str::upper(Str::random(8));
+        } while (Item::withoutGlobalScopes()->where('factory_id', $factoryId)->where('sku', $code)->exists());
+
+        return $code;
     }
 
     public function setup(): JsonResponse
