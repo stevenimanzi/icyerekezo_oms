@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Item;
+use App\Models\Role;
 use App\Models\StockBalance;
 use App\Models\StockTransaction;
 use App\Models\Unit;
@@ -18,7 +19,7 @@ class InventoryLedgerTest extends TestCase
     public function test_receipts_and_issues_create_immutable_ledger_entries(): void
     {
         $this->registerOwner();
-        $this->assertTrue(auth()->user()->hasPermission('products.create'));
+        $this->assertFalse(auth()->user()->hasPermission('products.create'));
         $this->assertTrue(auth()->user()->hasPermission('inventory.adjust'));
         $unit = Unit::firstOrFail();
         $warehouse = Warehouse::firstOrFail();
@@ -57,5 +58,9 @@ class InventoryLedgerTest extends TestCase
     {
         $this->postJson('/api/auth/register', ['name' => 'Inventory Owner', 'email' => fake()->unique()->safeEmail(), 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Ledger Factory', 'industry_type' => 'manufacturing'])->assertCreated();
         $this->grantCurrentUserFactoryAdministrator();
+        $user = auth()->user();
+        $role = Role::where('factory_id', $user->current_factory_id)->where('slug', 'warehouse-keeper')->firstOrFail();
+        $user->roles()->detach();
+        $user->roles()->attach($role->id, ['factory_id' => $user->current_factory_id]);
     }
 }

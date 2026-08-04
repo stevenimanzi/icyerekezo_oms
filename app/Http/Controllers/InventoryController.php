@@ -14,6 +14,18 @@ use Illuminate\Validation\Rule;
 
 class InventoryController extends Controller
 {
+    public function tools(Request $request): JsonResponse
+    {
+        $this->ensureWarehouseKeeper($request);
+
+        return response()->json([
+            'items' => Item::with('unit:id,name,symbol')->where('is_active', true)->orderBy('name')->get(['id', 'unit_id', 'name', 'sku', 'type', 'standard_cost', 'reorder_level']),
+            'units' => Unit::where('is_active', true)->orderBy('name')->get(['id', 'name', 'symbol']),
+            'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
+            'transaction_types' => ['receipt', 'issue', 'return_in', 'adjustment_in', 'adjustment_out', 'waste'],
+        ]);
+    }
+
     public function overview(): JsonResponse
     {
         $stock = StockBalance::query()
@@ -69,17 +81,43 @@ class InventoryController extends Controller
 
     public function storeItem(Request $request): JsonResponse
     {
+        $this->ensureWarehouseKeeper($request);
         $factoryId = $request->user()->current_factory_id;
         $data = $request->validate(['name' => ['required', 'string', 'max:160'], 'sku' => ['required', 'string', 'max:80', Rule::unique('items')->where('factory_id', $factoryId)], 'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product', 'service'])], 'unit_id' => ['required', 'integer', 'exists:units,id'], 'standard_cost' => ['nullable', 'numeric', 'min:0'], 'selling_price' => ['nullable', 'numeric', 'min:0'], 'minimum_stock' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'], 'batch_tracked' => ['nullable', 'boolean'], 'expiry_tracked' => ['nullable', 'boolean']]);
 
         return response()->json(Item::create($data), 201);
     }
 
+    public function updateItem(Request $request, Item $item): JsonResponse
+    {
+        $this->ensureWarehouseKeeper($request);
+        abort_unless((int) $item->factory_id === (int) $request->user()->current_factory_id, 404);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:160'],
+            'sku' => ['required', 'string', 'max:80', Rule::unique('items')->where('factory_id', $item->factory_id)->ignore($item->id)],
+            'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product'])],
+            'unit_id' => ['required', 'integer', 'exists:units,id'],
+            'standard_cost' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'],
+        ]);
+        $item->update($data);
+
+        return response()->json(['message' => 'Stock item updated.', 'item' => $item->fresh('unit:id,name,symbol')]);
+    }
+
     public function postTransaction(Request $request, InventoryLedger $ledger): JsonResponse
     {
-        $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'type' => ['required', 'string'], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['nullable', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
+        $this->ensureWarehouseKeeper($request);
+        $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'type' => ['required', Rule::in(['receipt', 'issue', 'return_in', 'adjustment_in', 'adjustment_out', 'waste'])], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['required', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
 
         return response()->json($ledger->post($data), 201);
+    }
+
+    private function ensureWarehouseKeeper(Request $request): void
+    {
+        $allowed = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->where('slug', 'warehouse-keeper')->exists();
+        abort_unless($allowed, 403, 'Only the assigned Warehouse Keeper can record or change stock.');
     }
 
     public function setup(): JsonResponse

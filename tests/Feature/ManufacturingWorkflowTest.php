@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Item;
 use App\Models\ProductionOrder;
+use App\Models\Role;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +21,7 @@ class ManufacturingWorkflowTest extends TestCase
         $warehouse = Warehouse::firstOrFail();
         $material = Item::create(['name' => 'Maize grain', 'sku' => 'RAW-MAIZE', 'type' => 'raw_material', 'unit_id' => $unit->id]);
         $product = Item::create(['name' => 'Maize flour', 'sku' => 'FIN-FLOUR', 'type' => 'finished_good', 'unit_id' => $unit->id]);
-        $this->postJson('/api/inventory/transactions', ['item_id' => $material->id, 'warehouse_id' => $warehouse->id, 'type' => 'receipt', 'quantity' => 200])->assertCreated();
+        $this->postJson('/api/inventory/transactions', ['item_id' => $material->id, 'warehouse_id' => $warehouse->id, 'type' => 'receipt', 'quantity' => 200, 'reason' => 'Opening stock for workflow test'])->assertCreated();
 
         $bom = $this->postJson('/api/manufacturing/boms', [
             'item_id' => $product->id, 'name' => 'Standard maize flour', 'version' => '1.0', 'output_quantity' => 10,
@@ -73,5 +74,8 @@ class ManufacturingWorkflowTest extends TestCase
     {
         $this->postJson('/api/auth/register', ['name' => 'Production Owner', 'email' => fake()->unique()->safeEmail(), 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Flour Factory', 'industry_type' => 'maize_grain_flour'])->assertCreated();
         $this->grantCurrentUserFactoryAdministrator();
+        $user = auth()->user();
+        $warehouseRole = Role::where('factory_id', $user->current_factory_id)->where('slug', 'warehouse-keeper')->firstOrFail();
+        $user->roles()->attach($warehouseRole->id, ['factory_id' => $user->current_factory_id]);
     }
 }

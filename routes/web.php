@@ -78,7 +78,9 @@ Route::prefix('api')->group(function () {
             Route::get('/reports', ReportController::class)->middleware('permission:reports.view');
             Route::get('/inventory/overview', [InventoryController::class, 'overview'])->middleware('permission:inventory.view');
             Route::get('/inventory/items', [InventoryController::class, 'items'])->middleware('permission:products.view');
-            Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->middleware('permission:products.create');
+            Route::get('/inventory/tools', [InventoryController::class, 'tools'])->middleware('permission:inventory.view');
+            Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->middleware('permission:inventory.receive');
+            Route::patch('/inventory/items/{item}', [InventoryController::class, 'updateItem'])->middleware('permission:inventory.receive');
             Route::post('/inventory/transactions', [InventoryController::class, 'postTransaction'])->middleware('permission:inventory.adjust');
             Route::get('/factory/setup-options', [InventoryController::class, 'setup'])->middleware('permission:factory.view');
             Route::post('/factory/units', [InventoryController::class, 'storeUnit'])->middleware('permission:factory.manage');
