@@ -80,7 +80,7 @@ export default function InventoryManagementPage({
 }) {
   const [data, setData] = useState<any>(null),
     [tools, setTools] = useState<any>({ items: [], units: [], warehouses: [] }),
-    [tab, setTab] = useState("items"),
+    [tab, setTab] = useState(user?.workspace === "logistics" ? "stock" : "items"),
     [modal, setModal] = useState<
       "item" | "movement" | "transfer" | "count" | null
     >(null),
@@ -89,6 +89,8 @@ export default function InventoryManagementPage({
     [error, setError] = useState(""),
     [success, setSuccess] = useState(""),
     [updated, setUpdated] = useState<Date | null>(null);
+  const canManageStock = user?.workspace === "warehouse";
+  const isLogisticsView = user?.workspace === "logistics";
   const [item, setItem] = useState<any>(emptyItem),
     [movement, setMovement] = useState<any>(emptyMovement),
     [transfer, setTransfer] = useState<any>(emptyTransfer),
@@ -96,10 +98,10 @@ export default function InventoryManagementPage({
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [overview, control] = await Promise.all([
-        request("/api/inventory/overview"),
-        request("/api/inventory/tools"),
-      ]);
+      const overview = await request("/api/inventory/overview");
+      const control = canManageStock
+        ? await request("/api/inventory/tools")
+        : { items: [], units: [], warehouses: [] };
       setData(overview);
       setTools(control);
       setUpdated(new Date());
@@ -186,13 +188,19 @@ export default function InventoryManagementPage({
       ),
     [transactions, tab],
   );
-  const tabs = [
+  const managementTabs = [
     ["items", locale === "fr" ? "Articles" : "Stock items"],
     ["stock", locale === "fr" ? "Stock actuel" : "Current stock"],
     ["movements", locale === "fr" ? "Mouvements" : "Stock movements"],
     ["transfers", locale === "fr" ? "Transferts" : "Transfers"],
     ["counts", locale === "fr" ? "Comptages" : "Stock counts"],
   ];
+  const tabs = isLogisticsView
+    ? [["stock", locale === "fr" ? "Produits disponibles" : "Available goods"]]
+    : managementTabs;
+  const dispatchStock = (data?.stock || []).filter((entry:any) => entry.item_type === "finished_good" || entry.item_type === "semi_finished");
+  const dispatchReady = dispatchStock.reduce((sum:number, entry:any) => sum + Number(entry.available_quantity || 0), 0);
+  const dispatchReserved = dispatchStock.reduce((sum:number, entry:any) => sum + Number(entry.quantity_reserved || 0), 0);
   return (
     <section className="module-page inventory-live-page inventory-management-page">
       <div className="module-hero inventory-management-hero">
@@ -200,11 +208,13 @@ export default function InventoryManagementPage({
           <div>
             <div className="eyebrow">
               <i></i>
-              {locale === "fr" ? "STOCK EN DIRECT" : "LIVE STOCK DATA"}
+              {isLogisticsView ? (locale === "fr" ? "DISPONIBILITÉ EN DIRECT" : "LIVE GOODS AVAILABILITY") : (locale === "fr" ? "STOCK EN DIRECT" : "LIVE STOCK DATA")}
             </div>
-            <h1>{locale === "fr" ? "Gestion du stock" : "Stock management"}</h1>
+            <h1>{isLogisticsView ? (locale === "fr" ? "Produits disponibles" : "Available goods") : (locale === "fr" ? "Gestion du stock" : "Stock management")}</h1>
             <p>
-              {locale === "fr"
+              {isLogisticsView
+                ? (locale === "fr" ? "Vérifiez les produits prêts ou réservés avant de planifier une livraison." : "Check goods ready or reserved for customer deliveries before planning dispatch.")
+                : locale === "fr"
                 ? "Contrôlez les articles, quantités, transferts et comptages de votre usine."
                 : "Control every item, quantity, transfer and stock count in your factory."}
             </p>
@@ -219,6 +229,7 @@ export default function InventoryManagementPage({
           </div>
         </div>
         <div className="inventory-control-actions">
+          {canManageStock && <>
           <button
             className="secondary-btn"
             onClick={() => {
@@ -260,6 +271,7 @@ export default function InventoryManagementPage({
             <ClipboardCheck />
             Stock count
           </button>
+          </>}
           <button
             className="secondary-btn"
             disabled={loading}
@@ -273,6 +285,28 @@ export default function InventoryManagementPage({
       {error && <div className="admin-alert error">{error}</div>}
       {success && <div className="admin-alert success">{success}</div>}
       <div className="inventory-metrics">
+        {isLogisticsView ? <>
+        <article>
+          <small>Goods ready</small>
+          <strong>{quantity(dispatchReady)}</strong>
+          <p>Available for dispatch</p>
+        </article>
+        <article>
+          <small>Reserved goods</small>
+          <strong>{quantity(dispatchReserved)}</strong>
+          <p>Held for customer orders</p>
+        </article>
+        <article>
+          <small>Storage locations</small>
+          <strong>{Number(data?.warehouses || 0).toLocaleString()}</strong>
+          <p>Warehouses holding goods</p>
+        </article>
+        <article>
+          <small>Goods requiring attention</small>
+          <strong>{dispatchStock.filter((entry:any)=>Number(entry.available_quantity||0)<=0).length}</strong>
+          <p>Unavailable or fully reserved</p>
+        </article>
+        </> : <>
         <article>
           <small>Stock items</small>
           <strong>{Number(data?.items || 0).toLocaleString()}</strong>
@@ -293,6 +327,7 @@ export default function InventoryManagementPage({
           <strong>{money(data?.total_value)}</strong>
           <p>Based on recorded costs</p>
         </article>
+        </>}
       </div>
       <div className="module-tabs inventory-tabs">
         {tabs.map(([key, label]) => (
@@ -319,7 +354,7 @@ export default function InventoryManagementPage({
           />
         ) : tab === "stock" ? (
           <Balances
-            rows={data?.stock || []}
+            rows={isLogisticsView ? dispatchStock : (data?.stock || [])}
             money={money}
             quantity={quantity}
           />

@@ -4,10 +4,11 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 async function api(){const response=await fetch('/api/logistics/overview',{headers:{Accept:'application/json'}});const text=await response.text();let data:any;try{data=JSON.parse(text)}catch{throw new Error('Delivery data could not be read. Please sign in again.')}if(!response.ok)throw new Error(data.message||'Delivery data could not be loaded.');return data}
 const statusLabel:Record<string,string>={planned:'Planned',ready:'Ready for dispatch',in_transit:'In transit',delivered:'Delivered',delayed:'Delayed',cancelled:'Cancelled',available:'Available',assigned:'Assigned',maintenance:'Under maintenance',inactive:'Inactive'};
 
-export default function LogisticsOverviewPage(){
-    const [data,setData]=useState<any>(null);const [tab,setTab]=useState('shipments');const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [updated,setUpdated]=useState<Date|null>(null);
+export default function LogisticsOverviewPage({initialTab='shipments'}:{initialTab?:string}){
+    const [data,setData]=useState<any>(null);const [tab,setTab]=useState(initialTab);const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [updated,setUpdated]=useState<Date|null>(null);
     const load=async(silent=false)=>{if(!silent)setLoading(true);try{setData(await api());setUpdated(new Date());setError('')}catch(reason:any){if(!silent)setError(reason.message)}finally{if(!silent)setLoading(false)}};
     useEffect(()=>{load();const timer=window.setInterval(()=>load(true),15000);return()=>window.clearInterval(timer)},[]);
+    useEffect(()=>setTab(initialTab),[initialTab]);
     const summary=data?.summary||{};const shipments=data?.shipments?.data||[];const rows=useMemo(()=>tab==='dispatch'?shipments.filter((item:any)=>['planned','ready','in_transit'].includes(item.status)):tab==='proof'?shipments.filter((item:any)=>item.delivered_at||item.proof_reference):shipments,[shipments,tab]);
     return <section className="module-page logistics-live-page">
         <div className="module-hero"><div className="module-title"><div><div className="eyebrow"><i></i>LIVE DELIVERY DATA</div><h1>Delivery overview</h1><p>Monitor shipments, dispatch progress, vehicles, drivers and delivery confirmation recorded by your logistics team.</p><small className="sales-updated">{updated?'Last updated '+updated.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'Connecting to delivery records…'}</small></div></div><button className="secondary-btn" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'spin':''} size={16}/>{loading?'Refreshing…':'Refresh data'}</button></div>
