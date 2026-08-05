@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\DeliveryVehicle;
 use App\Models\EmployeeProfile;
 use App\Models\Item;
 use App\Models\ProductionStageExecution;
+use App\Models\SalesDocument;
+use App\Models\Shipment;
 use App\Models\StockBalance;
 use App\Models\StockTransaction;
 use App\Models\Warehouse;
@@ -31,6 +34,12 @@ class DepartmentDashboardController extends Controller
             || str_contains(strtolower((string) $profile?->job_title), 'store keeper')
             || str_contains(strtolower((string) $department?->name), 'raw material')
             || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'warehouse-keeper')->exists();
+        $isLogistics = str_contains(strtolower((string) $profile?->job_title), 'logistic')
+            || str_contains(strtolower((string) $profile?->job_title), 'dispatch')
+            || str_contains(strtolower((string) $profile?->job_title), 'delivery')
+            || str_contains(strtolower((string) $department?->name), 'logistic')
+            || str_contains(strtolower((string) $department?->name), 'dispatch')
+            || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'logistics-officer')->exists();
 
         $employeeIds = $department
             ? EmployeeProfile::withoutGlobalScopes()->where('factory_id', $factoryId)->where('department_id', $department->id)->pluck('user_id')
@@ -64,6 +73,28 @@ class DepartmentDashboardController extends Controller
             ->latest('stock_transactions.occurred_at')->limit(15)
             ->get(['stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.balance_after', 'stock_transactions.occurred_at', 'items.name as item_name', 'items.sku', 'warehouses.name as warehouse_name', 'units.symbol as unit']);
 
+        $activeOrderStatuses = ['draft', 'pending', 'confirmed', 'approved', 'processing', 'ready'];
+        $incomingOrdersQuery = SalesDocument::withoutGlobalScopes()
+            ->where('factory_id', $factoryId)
+            ->where('document_type', 'customer_order')
+            ->whereIn('status', $activeOrderStatuses);
+        $shipmentsQuery = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
+        $logisticsMetrics = [
+            'incoming_orders' => (clone $incomingOrdersQuery)->count(),
+            'ready_to_dispatch' => (clone $shipmentsQuery)->whereIn('status', ['planned', 'ready'])->count(),
+            'in_transit' => (clone $shipmentsQuery)->whereIn('status', ['dispatched', 'in_transit'])->count(),
+            'delivered_today' => (clone $shipmentsQuery)->where('status', 'delivered')->whereDate('delivered_at', today())->count(),
+            'delayed' => (clone $shipmentsQuery)->whereNotIn('status', ['delivered', 'cancelled'])->whereNotNull('planned_dispatch_at')->where('planned_dispatch_at', '<', now())->count(),
+            'available_vehicles' => DeliveryVehicle::withoutGlobalScopes()->where('factory_id', $factoryId)->where('status', 'available')->count(),
+        ];
+        $incomingOrders = (clone $incomingOrdersQuery)
+            ->latest('document_date')->latest('id')->limit(12)
+            ->get(['id', 'document_number', 'customer_name', 'status', 'currency_code', 'total_amount', 'item_count', 'document_date', 'due_date']);
+        $deliveryActivity = (clone $shipmentsQuery)
+            ->with(['vehicle:id,registration_number,driver_name,status', 'salesDocument:id,document_number'])
+            ->latest('updated_at')->limit(15)
+            ->get(['id', 'shipment_number', 'sales_document_id', 'delivery_vehicle_id', 'customer_name', 'destination', 'status', 'package_count', 'planned_dispatch_at', 'dispatched_at', 'delivered_at', 'proof_reference', 'updated_at']);
+
         return response()->json([
             'department' => $department ? [
                 'id' => $department->id,
@@ -78,7 +109,7 @@ class DepartmentDashboardController extends Controller
                 'workstation' => $profile->workstation,
             ] : null,
             'is_department_manager' => (bool) $isManager,
-            'dashboard_type' => $isWarehouse ? 'warehouse' : 'production',
+            'dashboard_type' => $isLogistics ? 'logistics' : ($isWarehouse ? 'warehouse' : 'production'),
             'metrics' => [
                 'assigned_work' => (clone $assignments)->whereIn('status', ['assigned', 'ready'])->count(),
                 'work_in_progress' => (clone $assignments)->where('status', 'in_progress')->count(),
@@ -91,6 +122,9 @@ class DepartmentDashboardController extends Controller
             'stage_activity' => $stageExecutions->with(['stage:id,name,code,sequence', 'order:id,order_number,item_id'])->latest('updated_at')->limit(15)->get(['id', 'production_order_id', 'workflow_stage_id', 'assigned_user_id', 'status', 'input_quantity', 'output_quantity', 'waste_quantity', 'rejected_quantity', 'started_at', 'completed_at', 'updated_at']),
             'warehouse_metrics' => $warehouseMetrics,
             'recent_stock' => $recentStock,
+            'logistics_metrics' => $logisticsMetrics,
+            'incoming_orders' => $incomingOrders,
+            'delivery_activity' => $deliveryActivity,
         ]);
     }
 }

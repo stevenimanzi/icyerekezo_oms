@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Item;
+use App\Models\DeliveryVehicle;
 use App\Models\Role;
+use App\Models\SalesDocument;
+use App\Models\Shipment;
 use App\Models\StockBalance;
 use App\Models\StockTransaction;
 use App\Models\Unit;
@@ -48,5 +51,49 @@ class DepartmentDashboardTest extends TestCase
             ->assertJsonPath('warehouse_metrics.stock_value', 30000)
             ->assertJsonPath('warehouse_metrics.received_today', 15)
             ->assertJsonPath('recent_stock.0.item_name', 'Cotton');
+    }
+
+    public function test_logistics_dashboard_returns_orders_shipments_and_vehicle_data(): void
+    {
+        $this->postJson('/api/auth/register', [
+            'name' => 'Owner', 'email' => 'owner@logistics.test', 'password' => 'Secure@12345',
+            'password_confirmation' => 'Secure@12345', 'factory_name' => 'Logistics Factory',
+            'industry_type' => 'clothing_textiles', 'locale' => 'en',
+        ])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
+        $factoryId = auth()->user()->current_factory_id;
+        $role = Role::where('factory_id', $factoryId)->where('slug', 'logistics-officer')->firstOrFail();
+        $employee = $this->postJson('/api/team/users', [
+            'name' => 'Logistics Officer', 'email' => 'officer@logistics.test', 'password' => 'Officer@12345',
+            'password_confirmation' => 'Officer@12345', 'role_id' => $role->id,
+            'job_title' => 'Logistics Officer',
+        ])->assertCreated()->json();
+
+        $order = SalesDocument::create([
+            'factory_id' => $factoryId, 'document_type' => 'customer_order', 'document_number' => 'SO-1001',
+            'customer_name' => 'Kigali Retailer', 'status' => 'confirmed', 'currency_code' => 'RWF',
+            'total_amount' => 120000, 'paid_amount' => 0, 'item_count' => 4, 'document_date' => today(),
+            'due_date' => today()->addDay(), 'created_by' => auth()->id(),
+        ]);
+        $vehicle = DeliveryVehicle::create([
+            'factory_id' => $factoryId, 'registration_number' => 'RAB 123 A', 'vehicle_type' => 'Truck',
+            'driver_name' => 'Driver One', 'status' => 'available',
+        ]);
+        Shipment::create([
+            'factory_id' => $factoryId, 'shipment_number' => 'SHP-1001', 'sales_document_id' => $order->id,
+            'delivery_vehicle_id' => $vehicle->id, 'customer_name' => 'Kigali Retailer',
+            'destination' => 'Kigali', 'status' => 'in_transit', 'package_count' => 4,
+            'planned_dispatch_at' => now()->subHour(), 'dispatched_at' => now()->subMinutes(30),
+        ]);
+
+        $this->actingAs(User::findOrFail($employee['id']))->getJson('/api/department/dashboard')
+            ->assertOk()
+            ->assertJsonPath('dashboard_type', 'logistics')
+            ->assertJsonPath('logistics_metrics.incoming_orders', 1)
+            ->assertJsonPath('logistics_metrics.in_transit', 1)
+            ->assertJsonPath('logistics_metrics.delayed', 1)
+            ->assertJsonPath('logistics_metrics.available_vehicles', 1)
+            ->assertJsonPath('incoming_orders.0.document_number', 'SO-1001')
+            ->assertJsonPath('delivery_activity.0.shipment_number', 'SHP-1001');
     }
 }
