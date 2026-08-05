@@ -75,7 +75,7 @@ class ProcurementController extends Controller
             $document = PurchaseDocument::create([
                 'document_type' => 'purchase_request', 'document_number' => $this->nextDocumentNumber('PR'),
                 'status' => 'submitted', 'purpose' => $data['purpose'], 'currency_code' => 'RWF',
-                'document_date' => now()->toDateString(), 'expected_date' => $data['expected_date'],
+                'document_date' => now()->toDateString(), 'expected_date' => $data['expected_date'] ?? null,
                 'created_by' => $request->user()->id,
             ]);
             $this->saveLines($document, $data['lines']);
@@ -99,6 +99,15 @@ class ProcurementController extends Controller
         $order = DB::transaction(function () use ($request, $requestDocument, $supplierId) {
             $supplier = Supplier::with('items')->findOrFail($supplierId);
             $prices = $supplier->items->keyBy('id');
+            foreach ($requestDocument->lines as $requestedLine) {
+                $offer = $prices->get($requestedLine->item_id)?->pivot;
+                if (! $offer || (float) $offer->unit_price <= 0) {
+                    throw ValidationException::withMessages(['supplier_id' => 'Add a price from this supplier for every requested item before creating the order.']);
+                }
+                if ((float) $offer->minimum_order_quantity > (float) $requestedLine->quantity) {
+                    throw ValidationException::withMessages(['supplier_id' => 'The requested quantity is below this supplier’s minimum order quantity.']);
+                }
+            }
             $order = PurchaseDocument::create([
                 'document_type' => 'purchase_order', 'document_number' => $this->nextDocumentNumber('PO'),
                 'supplier_id' => $supplierId, 'status' => 'ordered', 'purpose' => $requestDocument->purpose,
@@ -118,6 +127,7 @@ class ProcurementController extends Controller
 
     public function receive(Request $request, PurchaseDocument $document, InventoryLedger $ledger): JsonResponse
     {
+        $this->ensureWarehouseKeeper($request);
         $this->assertTypeAndStatus($document, 'purchase_order', ['ordered', 'partially_received']);
         $data = $request->validate([
             'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('factory_id', $request->user()->current_factory_id)],
@@ -171,6 +181,12 @@ class ProcurementController extends Controller
     private function assertTypeAndStatus(PurchaseDocument $document, string $type, array $statuses): void
     {
         if ($document->document_type !== $type || ! in_array($document->status, $statuses, true)) abort(422, 'This action is not available for the current record.');
+    }
+
+    private function ensureWarehouseKeeper(Request $request): void
+    {
+        $allowed = $request->user()->roles()->wherePivot('factory_id', $request->user()->current_factory_id)->where('slug', 'warehouse-keeper')->exists();
+        abort_unless($allowed, 403, 'Only the assigned Warehouse Keeper can receive goods into stock.');
     }
 
     private function nextDocumentNumber(string $prefix): string { return $this->number($prefix.'-'.now()->format('Y'), PurchaseDocument::where('document_type', $prefix === 'PR' ? 'purchase_request' : 'purchase_order')->count() + 1); }

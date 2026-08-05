@@ -79,6 +79,7 @@ export default function ProcurementOverviewPage() {
     [updated, setUpdated] = useState<Date | null>(null),
     [modal, setModal] = useState<"item" | "movement" | "supplier" | "request" | "price" | "order" | "receive" | "payment" | null>(null),
     [busy, setBusy] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [itemForm, setItemForm] = useState<any>(emptyItem),
     [movement, setMovement] = useState<any>(emptyMovement);
   const [form, setForm] = useState<any>({});
@@ -104,6 +105,7 @@ export default function ProcurementOverviewPage() {
   useEffect(() => {
     load();
     loadTools();
+    request("/api/auth/me").then((result:any)=>setPermissions(result.user?.permissions||[])).catch(()=>setPermissions([]));
     const timer = window.setInterval(() => load(true), 15000);
     return () => window.clearInterval(timer);
   }, []);
@@ -128,6 +130,9 @@ export default function ProcurementOverviewPage() {
     ),
     canManage = Boolean(tools);
   const documents = data?.documents || [], suppliers = data?.suppliers || [], items = data?.items || [];
+  const allowed=(permission:string)=>permissions.includes('*')||permissions.includes(permission);
+  const canCreate=allowed('procurement.create'), canApprove=allowed('procurement.approve');
+  const canReceive=allowed('procurement.receive'), canPay=allowed('finance.receive_payment');
   const notify = (message: string) => {
     setSuccess(message);
     setError("");
@@ -242,9 +247,9 @@ export default function ProcurementOverviewPage() {
           </div>
         </div>
         <div className="warehouse-toolbar">
-          <button className="secondary-btn" onClick={() => open("supplier", {payment_terms_days:30})}><Plus/>Add supplier</button>
-          <button className="secondary-btn" onClick={() => open("price", {lead_time_days:0, minimum_order_quantity:0})}><Plus/>Add supplier price</button>
-          <button className="primary-btn" onClick={() => open("request", {expected_date:"", quantity:""})}><Plus/>New purchase request</button>
+          {canCreate&&<button className="secondary-btn" onClick={() => open("supplier", {payment_terms_days:30})}><Plus/>Add supplier</button>}
+          {canCreate&&<button className="secondary-btn" onClick={() => open("price", {lead_time_days:0, minimum_order_quantity:0})}><Plus/>Add supplier price</button>}
+          {canCreate&&<button className="primary-btn" onClick={() => open("request", {expected_date:"", quantity:""})}><Plus/>New purchase request</button>}
           <button
             className="secondary-btn"
             disabled={loading}
@@ -318,7 +323,7 @@ export default function ProcurementOverviewPage() {
       ) : tab === "receipts" ? (
         <ReceiptTable rows={documents.filter((row:any)=>row.document_type==='purchase_order' && ['partially_received','received'].includes(row.status))} />
       ) : (
-        <DocumentTable rows={rows} tab={tab} onApprove={approve} onOpen={open} />
+        <DocumentTable rows={rows} tab={tab} onApprove={approve} onOpen={open} permissions={{canCreate,canApprove,canReceive,canPay}} />
       )}
       {modal && (
         <div className="modal-backdrop" role="presentation">
@@ -579,7 +584,7 @@ function ProcurementForm({kind,form,setForm,data,busy,onSubmit}:any){
   </form>
 }
 function Select({label,value,onChange,options}:any){return <Field label={label}><select value={value||''} onChange={e=>onChange(e.target.value)} required><option value="">Choose</option>{options.map((x:any)=><option key={x[0]} value={x[0]}>{x[1]}</option>)}</select></Field>}
-function DocumentTable({ rows, tab, onApprove, onOpen }: any) {
+function DocumentTable({ rows, tab, onApprove, onOpen, permissions }: any) {
   return (
     <section className="panel sales-records">
       <header>
@@ -613,11 +618,11 @@ function DocumentTable({ rows, tab, onApprove, onOpen }: any) {
                     <b>{item.document_number}</b>
                   </td>
                   <td><div className="table-actions">
-                    {tab==='requests'&&['submitted','pending_approval'].includes(item.status)&&<button className="secondary-btn" onClick={()=>onApprove(item.id)}>Approve</button>}
-                    {tab==='requests'&&item.status==='approved'&&<button className="primary-btn" onClick={()=>onOpen('order',{document_id:item.id})}>Create order</button>}
-                    {tab==='orders'&&['ordered','partially_received'].includes(item.status)&&<button className="secondary-btn" onClick={()=>onOpen('receive',{document_id:item.id})}>Receive goods</button>}
-                    {tab==='orders'&&Number(item.paid_amount)<Number(item.total_amount)&&<button className="secondary-btn" onClick={()=>onOpen('payment',{document_id:item.id,paid_on:new Date().toISOString().slice(0,10)})}>Record payment</button>}
-                    {!((tab==='requests'&&['submitted','pending_approval','approved'].includes(item.status))||(tab==='orders'&&(['ordered','partially_received'].includes(item.status)||Number(item.paid_amount)<Number(item.total_amount))))&&<span>Complete</span>}
+                    {permissions.canApprove&&tab==='requests'&&['submitted','pending_approval'].includes(item.status)&&<button className="secondary-btn" onClick={()=>onApprove(item.id)}>Approve</button>}
+                    {permissions.canCreate&&tab==='requests'&&item.status==='approved'&&<button className="primary-btn" onClick={()=>onOpen('order',{document_id:item.id})}>Create order</button>}
+                    {permissions.canReceive&&tab==='orders'&&['ordered','partially_received'].includes(item.status)&&<button className="secondary-btn" onClick={()=>onOpen('receive',{document_id:item.id})}>Receive goods</button>}
+                    {permissions.canPay&&tab==='orders'&&Number(item.total_amount)>0&&Number(item.paid_amount)<Number(item.total_amount)&&<button className="secondary-btn" onClick={()=>onOpen('payment',{document_id:item.id,paid_on:new Date().toISOString().slice(0,10)})}>Record payment</button>}
+                    <span className="record-state">{['received','converted'].includes(item.status)?'Complete':'View record'}</span>
                   </div></td>
                   <td>
                     {item.supplier?.name || "Not assigned"}

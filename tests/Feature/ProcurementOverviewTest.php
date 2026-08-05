@@ -42,4 +42,18 @@ class ProcurementOverviewTest extends TestCase
             ->assertJsonPath('document.status', 'ordered')->assertJsonPath('document.total_amount', '25000.00');
         $this->assertDatabaseHas('purchase_documents', ['document_type' => 'purchase_request', 'status' => 'converted']);
     }
+
+    public function test_order_cannot_be_created_until_supplier_prices_are_available(): void
+    {
+        $this->postJson('/api/auth/register', ['name' => 'Owner', 'email' => fake()->unique()->safeEmail(), 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Controlled Buying', 'industry_type' => 'metal'])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
+        $unit = Unit::where('symbol', 'kg')->firstOrFail();
+        $item = Item::create(['name' => 'Steel', 'sku' => 'RAW-STEEL', 'type' => 'raw_material', 'unit_id' => $unit->id]);
+        $supplier = Supplier::create(['code' => 'SUP-TEST', 'name' => 'Steel Supplier', 'status' => 'active']);
+        $document = $this->postJson('/api/procurement/requests', ['purpose' => 'Production materials', 'lines' => [['item_id' => $item->id, 'quantity' => 20]]])->assertCreated()->json('document');
+        $this->postJson('/api/procurement/requests/'.$document['id'].'/approve')->assertOk();
+        $this->postJson('/api/procurement/requests/'.$document['id'].'/order', ['supplier_id' => $supplier->id])->assertUnprocessable()
+            ->assertJsonPath('message', 'Add a price from this supplier for every requested item before creating the order.');
+        $this->assertDatabaseMissing('purchase_documents', ['document_type' => 'purchase_order']);
+    }
 }

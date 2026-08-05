@@ -113,7 +113,7 @@ Route::prefix('api')->group(function () {
             Route::post('/procurement/requests/{document}/approve', [ProcurementController::class, 'approveRequest'])->middleware('permission:procurement.approve');
             Route::post('/procurement/requests/{document}/order', [ProcurementController::class, 'createOrder'])->middleware('permission:procurement.create');
             Route::post('/procurement/orders/{document}/receive', [ProcurementController::class, 'receive'])->middleware('permission:procurement.receive');
-            Route::post('/procurement/orders/{document}/payments', [ProcurementController::class, 'recordPayment'])->middleware('permission:procurement.approve');
+            Route::post('/procurement/orders/{document}/payments', [ProcurementController::class, 'recordPayment'])->middleware('permission:finance.receive_payment');
             Route::post('/manufacturing/boms', [ManufacturingController::class, 'storeBom'])->middleware('permission:production.plan');
             Route::post('/manufacturing/workflows', [ManufacturingController::class, 'storeWorkflow'])->middleware('permission:factory.manage');
             Route::put('/manufacturing/workflows/{workflow}', [ManufacturingController::class, 'updateWorkflow'])->middleware('permission:factory.manage');
