@@ -9,6 +9,7 @@ use App\Models\Unit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ProductCatalogController extends Controller
@@ -75,13 +76,21 @@ class ProductCatalogController extends Controller
         if ($categoryId) abort_unless(DB::table('item_categories')->where('factory_id', $factoryId)->where('id', $categoryId)->exists(), 404);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160', Rule::unique('item_categories')->where('factory_id', $factoryId)->ignore($categoryId)],
-            'code' => ['required', 'string', 'max:30', Rule::unique('item_categories')->where('factory_id', $factoryId)->ignore($categoryId)],
-            'parent_id' => ['nullable', Rule::exists('item_categories', 'id')->where('factory_id', $factoryId), Rule::notIn([$categoryId])],
         ]);
+        $data['parent_id'] = null;
         if ($categoryId) {
             DB::table('item_categories')->where('id', $categoryId)->update($data + ['updated_at' => now()]);
             return response()->json(['message' => 'Category updated successfully.']);
         }
+        $baseCode = strtoupper(Str::slug($data['name'], '-'));
+        $baseCode = substr($baseCode !== '' ? $baseCode : 'CATEGORY', 0, 24);
+        $code = $baseCode;
+        $suffix = 2;
+        while (DB::table('item_categories')->where('factory_id', $factoryId)->where('code', $code)->exists()) {
+            $number = '-'.$suffix++;
+            $code = substr($baseCode, 0, 30 - strlen($number)).$number;
+        }
+        $data['code'] = $code;
         $id = DB::table('item_categories')->insertGetId($data + ['factory_id' => $factoryId, 'created_at' => now(), 'updated_at' => now()]);
         return response()->json(['message' => 'Category created successfully.', 'id' => $id], 201);
     }

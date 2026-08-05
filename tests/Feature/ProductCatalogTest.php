@@ -57,10 +57,12 @@ class ProductCatalogTest extends TestCase
         $user->roles()->detach();
         $user->roles()->attach($role->id, ['factory_id' => $user->current_factory_id]);
 
-        $category = $this->postJson('/api/products/categories', ['name' => 'Metals', 'code' => 'MET'])
+        $category = $this->postJson('/api/products/categories', ['name' => 'Metals'])
             ->assertCreated()->json('id');
-        $this->postJson('/api/products/categories', ['name' => 'Duplicate metals', 'code' => 'MET'])
-            ->assertUnprocessable()->assertJsonValidationErrors('code');
+        $this->postJson('/api/products/categories', ['name' => 'Metal sheets', 'code' => 'USER-CODE', 'parent_id' => $category])
+            ->assertCreated();
+        $this->assertDatabaseHas('item_categories', ['id' => $category, 'code' => 'METALS', 'parent_id' => null]);
+        $this->assertDatabaseHas('item_categories', ['name' => 'Metal sheets', 'code' => 'METAL-SHEETS', 'parent_id' => null]);
         $unit = $this->postJson('/api/products/units', [
             'name' => 'Coil kilogram', 'symbol' => 'kgx', 'dimension' => 'mass', 'precision' => 3, 'is_active' => true,
         ])->assertCreated()->json('unit.id');
