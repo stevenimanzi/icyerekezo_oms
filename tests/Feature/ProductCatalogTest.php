@@ -79,4 +79,24 @@ class ProductCatalogTest extends TestCase
         $this->getJson('/api/products/overview')->assertOk()
             ->assertJsonPath('summary.items', 1)->assertJsonPath('items.0.category_name', 'Metals');
     }
+
+    public function test_category_deletion_is_safe_and_factory_scoped(): void
+    {
+        $this->postJson('/api/auth/register', [
+            'name' => 'Keeper', 'email' => 'delete-category@catalog.test', 'password' => 'Secure@12345',
+            'password_confirmation' => 'Secure@12345', 'factory_name' => 'Delete Factory', 'industry_type' => 'metals_steel',
+        ])->assertCreated();
+        $this->grantCurrentUserFactoryAdministrator();
+        $category = $this->postJson('/api/products/categories', ['name' => 'Unused'])->assertCreated()->json('id');
+
+        $this->deleteJson('/api/products/categories/'.$category)
+            ->assertOk()->assertJsonPath('message', 'Category Unused was deleted successfully.');
+        $this->assertDatabaseMissing('item_categories', ['id' => $category]);
+
+        $used = $this->postJson('/api/products/categories', ['name' => 'Used'])->assertCreated()->json('id');
+        Item::create(['name' => 'Used item', 'sku' => 'USED-001', 'type' => 'raw_material', 'unit_id' => Unit::firstOrFail()->id, 'category_id' => $used]);
+        $this->deleteJson('/api/products/categories/'.$used)
+            ->assertStatus(409)->assertJsonPath('message', 'This category cannot be deleted because it is used by 1 item. Move those items to another category first.');
+        $this->assertDatabaseHas('item_categories', ['id' => $used]);
+    }
 }

@@ -82,6 +82,7 @@ Route::prefix('api')->group(function () {
             Route::get('/products/overview', ProductCatalogController::class)->middleware('permission:products.view');
             Route::post('/products/categories', [ProductCatalogController::class, 'storeCategory'])->middleware('permission:inventory.receive');
             Route::patch('/products/categories/{category}', [ProductCatalogController::class, 'updateCategory'])->middleware('permission:inventory.receive');
+            Route::delete('/products/categories/{category}', [ProductCatalogController::class, 'destroyCategory'])->middleware('permission:inventory.receive');
             Route::post('/products/units', [ProductCatalogController::class, 'storeUnit'])->middleware('permission:inventory.receive');
             Route::patch('/products/units/{unit}', [ProductCatalogController::class, 'updateUnit'])->middleware('permission:inventory.receive');
             Route::get('/inventory/tools', [InventoryController::class, 'tools'])->middleware('permission:inventory.view');

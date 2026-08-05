@@ -70,6 +70,24 @@ class ProductCatalogController extends Controller
         return $this->saveCategory($request, $category);
     }
 
+    public function destroyCategory(Request $request, int $category): JsonResponse
+    {
+        $factoryId = (int) $request->user()->current_factory_id;
+        $record = DB::table('item_categories')->where('factory_id', $factoryId)->where('id', $category)->first();
+        abort_unless($record, 404, 'This category could not be found.');
+
+        $itemsCount = Item::query()->where('factory_id', $factoryId)->where('category_id', $category)->count();
+        if ($itemsCount > 0) {
+            return response()->json([
+                'message' => "This category cannot be deleted because it is used by {$itemsCount} ".($itemsCount === 1 ? 'item' : 'items').'. Move those items to another category first.',
+            ], 409);
+        }
+
+        DB::table('item_categories')->where('factory_id', $factoryId)->where('id', $category)->delete();
+
+        return response()->json(['message' => "Category {$record->name} was deleted successfully."]);
+    }
+
     private function saveCategory(Request $request, ?int $categoryId = null): JsonResponse
     {
         $factoryId = (int) $request->user()->current_factory_id;
