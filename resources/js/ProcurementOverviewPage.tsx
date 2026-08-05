@@ -77,10 +77,11 @@ export default function ProcurementOverviewPage() {
     [error, setError] = useState(""),
     [success, setSuccess] = useState(""),
     [updated, setUpdated] = useState<Date | null>(null),
-    [modal, setModal] = useState<"item" | "movement" | null>(null),
+    [modal, setModal] = useState<"item" | "movement" | "supplier" | "request" | "price" | "order" | "receive" | "payment" | null>(null),
     [busy, setBusy] = useState(false);
   const [itemForm, setItemForm] = useState<any>(emptyItem),
     [movement, setMovement] = useState<any>(emptyMovement);
+  const [form, setForm] = useState<any>({});
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -120,12 +121,13 @@ export default function ProcurementOverviewPage() {
   const summary = data?.summary || {},
     rows = useMemo(
       () =>
-        (data?.documents?.data || []).filter(
+        (data?.documents || []).filter(
           (item: any) => item.document_type === typeForTab[tab],
         ),
       [data, tab],
     ),
     canManage = Boolean(tools);
+  const documents = data?.documents || [], suppliers = data?.suppliers || [], items = data?.items || [];
   const notify = (message: string) => {
     setSuccess(message);
     setError("");
@@ -199,6 +201,23 @@ export default function ProcurementOverviewPage() {
       setModal("item");
     }
   };
+  const open = (name: any, values: any = {}) => { setError(""); setSuccess(""); setForm(values); setModal(name); };
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); setBusy(true); setError("");
+    try {
+      let url = "", method = "POST", body: any = form, message = "Saved successfully.";
+      if (modal === "supplier") { url = "/api/procurement/suppliers"; message = "Supplier saved."; }
+      if (modal === "price") { url = `/api/procurement/suppliers/${form.supplier_id}/prices`; method = "PUT"; message = "Supplier price saved."; }
+      if (modal === "request") { url = "/api/procurement/requests"; body = {...form, lines:[{item_id:form.item_id, quantity:form.quantity, description:form.description}]}; message = "Purchase request sent for approval."; }
+      if (modal === "order") { url = `/api/procurement/requests/${form.document_id}/order`; message = "Purchase order created."; }
+      if (modal === "receive") { url = `/api/procurement/orders/${form.document_id}/receive`; body = {...form, lines:[{line_id:form.line_id, quantity:form.quantity}]}; message = "Goods received and stock updated."; }
+      if (modal === "payment") { url = `/api/procurement/orders/${form.document_id}/payments`; message = "Payment recorded."; }
+      await request(url, {method, body:JSON.stringify(body)}); notify(message); setModal(null); setForm({}); await load();
+    } catch (reason:any) { setError(reason.message); } finally { setBusy(false); }
+  };
+  const approve = async (id:number) => {
+    setBusy(true); setError(""); try { await request(`/api/procurement/requests/${id}/approve`, {method:"POST"}); notify("Purchase request approved."); await load(); } catch(reason:any){setError(reason.message)} finally{setBusy(false)}
+  };
   return (
     <section className="module-page procurement-live-page">
       <div className="module-hero">
@@ -209,9 +228,7 @@ export default function ProcurementOverviewPage() {
             </div>
             <h1>Purchasing and stock receipts</h1>
             <p>
-              {canManage
-                ? "Record materials received and manage the factory stock catalogue."
-                : "Monitor purchase requests, supplier prices, purchase orders and received goods."}
+              Plan what is needed, compare suppliers, approve purchases, receive goods and track payments.
             </p>
             <small className="sales-updated">
               {updated
@@ -225,31 +242,9 @@ export default function ProcurementOverviewPage() {
           </div>
         </div>
         <div className="warehouse-toolbar">
-          {canManage && (
-            <>
-              <button
-                className="secondary-btn"
-                onClick={() => {
-                  setItemForm(emptyItem);
-                  setModal("item");
-                }}
-              >
-                <PackagePlus />
-                Add stock item
-              </button>
-              <button
-                className="primary-btn"
-                onClick={() => {
-                  setError("");
-                  setSuccess("");
-                  setModal("movement");
-                }}
-              >
-                <ArrowDownToLine />
-                Record stock movement
-              </button>
-            </>
-          )}
+          <button className="secondary-btn" onClick={() => open("supplier", {payment_terms_days:30})}><Plus/>Add supplier</button>
+          <button className="secondary-btn" onClick={() => open("price", {lead_time_days:0, minimum_order_quantity:0})}><Plus/>Add supplier price</button>
+          <button className="primary-btn" onClick={() => open("request", {expected_date:"", quantity:""})}><Plus/>New purchase request</button>
           <button
             className="secondary-btn"
             disabled={loading}
@@ -267,7 +262,7 @@ export default function ProcurementOverviewPage() {
         </div>
       )}
       {success && <div className="admin-alert success">{success}</div>}
-      {canManage && tools.items.length > 0 && (
+      {false && canManage && tools.items.length > 0 && (
         <div className="warehouse-edit-strip">
           <Edit3 />
           <span>
@@ -299,12 +294,12 @@ export default function ProcurementOverviewPage() {
         <Metric label="Pending requests" value={summary.pending_requests} />
         <Metric label="Open purchase orders" value={summary.open_orders} />
         <Metric label="Ordered value" value={money(summary.ordered_value)} />
-        <Metric label="Active suppliers" value={summary.active_suppliers} />
+        <Metric label="Amount still to pay" value={money(summary.unpaid_value)} />
       </div>
       <div className="module-tabs sales-tabs">
         {[
           ["requests", "Purchase requests", summary.requests],
-          ["prices", "Supplier prices", summary.suppliers],
+          ["prices", "Suppliers and prices", summary.suppliers],
           ["orders", "Purchase orders", summary.purchase_orders],
           ["receipts", "Received goods", summary.receipts],
         ].map(([key, label, count]: any) => (
@@ -319,11 +314,11 @@ export default function ProcurementOverviewPage() {
         ))}
       </div>
       {tab === "prices" ? (
-        <PriceTable suppliers={data?.supplier_prices || []} />
+        <PriceTable suppliers={suppliers} />
       ) : tab === "receipts" ? (
-        <ReceiptTable rows={data?.stock_receipts || []} />
+        <ReceiptTable rows={documents.filter((row:any)=>row.document_type==='purchase_order' && ['partially_received','received'].includes(row.status))} />
       ) : (
-        <DocumentTable rows={rows} tab={tab} />
+        <DocumentTable rows={rows} tab={tab} onApprove={approve} onOpen={open} />
       )}
       {modal && (
         <div className="modal-backdrop" role="presentation">
@@ -335,16 +330,10 @@ export default function ProcurementOverviewPage() {
             <header>
               <div>
                 <h2>
-                  {modal === "item"
-                    ? itemForm.id
-                      ? "Edit stock item"
-                      : "Add stock item"
-                    : "Record stock movement"}
+                  {({supplier:"Add supplier",price:"Add supplier price",request:"New purchase request",order:"Create purchase order",receive:"Receive ordered goods",payment:"Record supplier payment",item:"Add stock item",movement:"Record stock movement"} as any)[modal]}
                 </h2>
                 <p>
-                  {modal === "item"
-                    ? "Create or update a material kept in this factory."
-                    : "Choose what happened to the stock, enter the quantity, and explain why."}
+                  Complete the required details below. The system will keep a permanent purchasing record.
                 </p>
               </div>
               <button className="icon-btn" onClick={() => setModal(null)}>
@@ -357,7 +346,9 @@ export default function ProcurementOverviewPage() {
                 <span>{error}</span>
               </div>
             )}
-            {modal === "item" ? (
+            {["supplier","price","request","order","receive","payment"].includes(modal) ? (
+              <ProcurementForm kind={modal} form={form} setForm={setForm} data={data} busy={busy} onSubmit={submit}/>
+            ) : modal === "item" ? (
               <form className="warehouse-form" onSubmit={saveItem}>
                 <Field label="Item name">
                   <input
@@ -571,7 +562,24 @@ export default function ProcurementOverviewPage() {
     </section>
   );
 }
-function DocumentTable({ rows, tab }: any) {
+function ProcurementForm({kind,form,setForm,data,busy,onSubmit}:any){
+  const suppliers=data?.suppliers||[], items=data?.items||[], warehouses=data?.warehouses||[], documents=data?.documents||[];
+  const requests=documents.filter((d:any)=>d.document_type==='purchase_request'&&d.status==='approved');
+  const orders=documents.filter((d:any)=>d.document_type==='purchase_order'&&['ordered','partially_received','received'].includes(d.status));
+  const selectedOrder=orders.find((d:any)=>String(d.id)===String(form.document_id));
+  const set=(key:string,value:any)=>setForm({...form,[key]:value});
+  return <form className="warehouse-form" onSubmit={onSubmit}>
+    {kind==='supplier'&&<><Field label="Supplier name"><input value={form.name||''} onChange={e=>set('name',e.target.value)} placeholder="Example: Kigali Materials Ltd" required/></Field><Field label="Email"><input type="email" value={form.email||''} onChange={e=>set('email',e.target.value)} placeholder="supplier@company.com"/></Field><Field label="Phone number"><input value={form.phone||''} onChange={e=>set('phone',e.target.value)} placeholder="Example: +250 788 000 000"/></Field><Field label="Tax number"><input value={form.tax_number||''} onChange={e=>set('tax_number',e.target.value)} placeholder="Optional"/></Field><Field label="Payment due after"><input type="number" min="0" max="365" value={form.payment_terms_days??30} onChange={e=>set('payment_terms_days',e.target.value)} required/></Field><Field label="Address"><textarea value={form.address||''} onChange={e=>set('address',e.target.value)} placeholder="Supplier address"/></Field></>}
+    {kind==='price'&&<><Select label="Supplier" value={form.supplier_id} onChange={(v:any)=>set('supplier_id',v)} options={suppliers.map((x:any)=>[x.id,x.name])}/><Select label="Item" value={form.item_id} onChange={(v:any)=>set('item_id',v)} options={items.map((x:any)=>[x.id,`${x.name} (${x.sku})`])}/><Field label="Price for one unit"><input type="number" min="0" step="0.01" value={form.unit_price||''} onChange={e=>set('unit_price',e.target.value)} placeholder="Enter supplier price" required/></Field><Field label="Delivery time in days"><input type="number" min="0" value={form.lead_time_days??0} onChange={e=>set('lead_time_days',e.target.value)} required/></Field><Field label="Smallest quantity supplier accepts"><input type="number" min="0" step="any" value={form.minimum_order_quantity??0} onChange={e=>set('minimum_order_quantity',e.target.value)} required/></Field><Field label="Supplier item code"><input value={form.supplier_sku||''} onChange={e=>set('supplier_sku',e.target.value)} placeholder="Optional"/></Field></>}
+    {kind==='request'&&<><Field label="Why is this purchase needed?"><textarea value={form.purpose||''} onChange={e=>set('purpose',e.target.value)} placeholder="Explain what the factory needs and why" required/></Field><Field label="Needed by"><input type="date" value={form.expected_date||''} onChange={e=>set('expected_date',e.target.value)}/></Field><Select label="Item needed" value={form.item_id} onChange={(v:any)=>set('item_id',v)} options={items.map((x:any)=>[x.id,`${x.name} (${x.sku})`])}/><Field label="Quantity needed"><input type="number" min="0.000001" step="any" value={form.quantity||''} onChange={e=>set('quantity',e.target.value)} placeholder="Enter quantity" required/></Field><Field label="Extra details"><textarea value={form.description||''} onChange={e=>set('description',e.target.value)} placeholder="Size, grade, colour or other requirements"/></Field></>}
+    {kind==='order'&&<><Select label="Approved request" value={form.document_id} onChange={(v:any)=>set('document_id',v)} options={requests.map((x:any)=>[x.id,`${x.document_number} — ${x.purpose}`])}/><Select label="Supplier" value={form.supplier_id} onChange={(v:any)=>set('supplier_id',v)} options={suppliers.filter((x:any)=>x.status==='active').map((x:any)=>[x.id,x.name])}/><p className="form-help">Prices saved for this supplier will be used automatically. Add supplier prices before creating the order.</p></>}
+    {kind==='receive'&&<><Select label="Purchase order" value={form.document_id} onChange={(v:any)=>setForm({...form,document_id:v,line_id:'',quantity:''})} options={orders.filter((x:any)=>x.status!=='received').map((x:any)=>[x.id,`${x.document_number} — ${x.supplier?.name||''}`])}/><Select label="Item received" value={form.line_id} onChange={(v:any)=>set('line_id',v)} options={(selectedOrder?.lines||[]).filter((x:any)=>Number(x.received_quantity)<Number(x.quantity)).map((x:any)=>[x.id,`${x.item?.name} — ${Number(x.quantity)-Number(x.received_quantity)} remaining`])}/><Select label="Put goods in" value={form.warehouse_id} onChange={(v:any)=>set('warehouse_id',v)} options={warehouses.map((x:any)=>[x.id,x.name])}/><Field label="Quantity received"><input type="number" min="0.000001" step="any" value={form.quantity||''} onChange={e=>set('quantity',e.target.value)} required/></Field><Field label="Supplier delivery note"><input value={form.delivery_reference||''} onChange={e=>set('delivery_reference',e.target.value)} placeholder="Example: DN-104" required/></Field></>}
+    {kind==='payment'&&<><Select label="Purchase order" value={form.document_id} onChange={(v:any)=>set('document_id',v)} options={orders.filter((x:any)=>Number(x.paid_amount)<Number(x.total_amount)).map((x:any)=>[x.id,`${x.document_number} — ${money(Number(x.total_amount)-Number(x.paid_amount))} due`])}/><Field label="Amount paid"><input type="number" min="0.01" step="0.01" value={form.amount||''} onChange={e=>set('amount',e.target.value)} required/></Field><Select label="Payment method" value={form.method} onChange={(v:any)=>set('method',v)} options={[["bank_transfer","Bank transfer"],["mobile_money","Mobile money"],["cash","Cash"],["cheque","Cheque"],["card","Card"]]}/><Field label="Payment date"><input type="date" value={form.paid_on||''} onChange={e=>set('paid_on',e.target.value)} required/></Field><Field label="Payment reference"><input value={form.reference||''} onChange={e=>set('reference',e.target.value)} placeholder="Bank, cheque or transaction number"/></Field></>}
+    <button className="primary-btn" disabled={busy}><Plus/>{busy?'Saving...':'Save'}</button>
+  </form>
+}
+function Select({label,value,onChange,options}:any){return <Field label={label}><select value={value||''} onChange={e=>onChange(e.target.value)} required><option value="">Choose</option>{options.map((x:any)=><option key={x[0]} value={x[0]}>{x[1]}</option>)}</select></Field>}
+function DocumentTable({ rows, tab, onApprove, onOpen }: any) {
   return (
     <section className="panel sales-records">
       <header>
@@ -594,6 +602,7 @@ function DocumentTable({ rows, tab }: any) {
               <th>Total</th>
               <th>Status</th>
               <th>Expected date</th>
+              <th>Next step</th>
             </tr>
           </thead>
           <tbody>
@@ -603,6 +612,13 @@ function DocumentTable({ rows, tab }: any) {
                   <td>
                     <b>{item.document_number}</b>
                   </td>
+                  <td><div className="table-actions">
+                    {tab==='requests'&&['submitted','pending_approval'].includes(item.status)&&<button className="secondary-btn" onClick={()=>onApprove(item.id)}>Approve</button>}
+                    {tab==='requests'&&item.status==='approved'&&<button className="primary-btn" onClick={()=>onOpen('order',{document_id:item.id})}>Create order</button>}
+                    {tab==='orders'&&['ordered','partially_received'].includes(item.status)&&<button className="secondary-btn" onClick={()=>onOpen('receive',{document_id:item.id})}>Receive goods</button>}
+                    {tab==='orders'&&Number(item.paid_amount)<Number(item.total_amount)&&<button className="secondary-btn" onClick={()=>onOpen('payment',{document_id:item.id,paid_on:new Date().toISOString().slice(0,10)})}>Record payment</button>}
+                    {!((tab==='requests'&&['submitted','pending_approval','approved'].includes(item.status))||(tab==='orders'&&(['ordered','partially_received'].includes(item.status)||Number(item.paid_amount)<Number(item.total_amount))))&&<span>Complete</span>}
+                  </div></td>
                   <td>
                     {item.supplier?.name || "Not assigned"}
                     <small>{item.supplier?.code || ""}</small>
@@ -630,7 +646,7 @@ function DocumentTable({ rows, tab }: any) {
               ))
             ) : (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={8}>
                   <Empty
                     text={
                       "No " +
@@ -653,45 +669,28 @@ function ReceiptTable({ rows }: any) {
       <header>
         <div>
           <h2>Received goods</h2>
-          <p>Stock receipts recorded by the assigned Warehouse Keeper.</p>
+          <p>Purchase orders received into factory stock.</p>
         </div>
       </header>
       <div className="admin-table-wrap">
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Item</th>
-              <th>Warehouse</th>
-              <th>Quantity</th>
-              <th>Balance</th>
-              <th>Recorded by</th>
-              <th>Reference</th>
+              <th>Order</th><th>Supplier</th><th>Items</th><th>Total ordered</th><th>Received</th><th>Payment</th>
             </tr>
           </thead>
           <tbody>
             {rows.length ? (
               rows.map((item: any) => (
                 <tr key={item.id}>
-                  <td>{new Date(item.occurred_at).toLocaleString()}</td>
-                  <td>
-                    <b>{item.item_name}</b>
-                    <small>{item.sku}</small>
-                  </td>
-                  <td>{item.warehouse_name}</td>
-                  <td>
-                    {Number(item.quantity_delta).toLocaleString()} {item.unit}
-                  </td>
-                  <td>
-                    {Number(item.balance_after).toLocaleString()} {item.unit}
-                  </td>
-                  <td>{item.recorded_by || "System"}</td>
-                  <td>{item.reason}</td>
+                  <td><b>{item.document_number}</b></td><td>{item.supplier?.name}</td>
+                  <td>{(item.lines||[]).map((line:any)=><small key={line.id}>{line.item?.name}: {Number(line.received_quantity).toLocaleString()} / {Number(line.quantity).toLocaleString()}</small>)}</td>
+                  <td>{money(item.total_amount,item.currency_code)}</td><td>{item.received_at?new Date(item.received_at).toLocaleString():'Partly received'}</td><td>{String(item.payment_status).replaceAll('_',' ')}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={6}>
                   <Empty text="No goods have been received yet." />
                 </td>
               </tr>

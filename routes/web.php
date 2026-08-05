@@ -107,6 +107,13 @@ Route::prefix('api')->group(function () {
             Route::get('/sales/overview', [SalesController::class, 'overview'])->middleware('permission:sales.view');
             Route::get('/logistics/overview', [LogisticsController::class, 'overview'])->middleware('permission:logistics.view');
             Route::get('/procurement/overview', [ProcurementController::class, 'overview'])->middleware('permission:procurement.view');
+            Route::post('/procurement/suppliers', [ProcurementController::class, 'storeSupplier'])->middleware('permission:procurement.create');
+            Route::put('/procurement/suppliers/{supplier}/prices', [ProcurementController::class, 'savePrice'])->middleware('permission:procurement.create');
+            Route::post('/procurement/requests', [ProcurementController::class, 'storeRequest'])->middleware('permission:procurement.create');
+            Route::post('/procurement/requests/{document}/approve', [ProcurementController::class, 'approveRequest'])->middleware('permission:procurement.approve');
+            Route::post('/procurement/requests/{document}/order', [ProcurementController::class, 'createOrder'])->middleware('permission:procurement.create');
+            Route::post('/procurement/orders/{document}/receive', [ProcurementController::class, 'receive'])->middleware('permission:procurement.receive');
+            Route::post('/procurement/orders/{document}/payments', [ProcurementController::class, 'recordPayment'])->middleware('permission:procurement.approve');
             Route::post('/manufacturing/boms', [ManufacturingController::class, 'storeBom'])->middleware('permission:production.plan');
             Route::post('/manufacturing/workflows', [ManufacturingController::class, 'storeWorkflow'])->middleware('permission:factory.manage');
             Route::put('/manufacturing/workflows/{workflow}', [ManufacturingController::class, 'updateWorkflow'])->middleware('permission:factory.manage');
