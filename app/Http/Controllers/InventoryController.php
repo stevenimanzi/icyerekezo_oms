@@ -24,7 +24,7 @@ class InventoryController extends Controller
             'items' => Item::with('unit:id,name,symbol')->where('is_active', true)->orderBy('name')->get(['id', 'unit_id', 'name', 'sku', 'type', 'standard_cost', 'reorder_level']),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(['id', 'name', 'symbol']),
             'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
-            'transaction_types' => ['receipt', 'issue', 'return_in', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'],
+            'transaction_types' => ['receipt', 'production_output', 'return_in', 'issue', 'dispatch', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'],
         ]);
     }
 
@@ -122,7 +122,7 @@ class InventoryController extends Controller
     public function postTransaction(Request $request, InventoryLedger $ledger): JsonResponse
     {
         $this->ensureWarehouseKeeper($request);
-        $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'type' => ['required', Rule::in(['receipt', 'issue', 'return_in', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'])], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['required', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
+        $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'type' => ['required', Rule::in(['receipt', 'production_output', 'return_in', 'issue', 'dispatch', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'])], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['required', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
 
         return response()->json($ledger->post($data), 201);
     }

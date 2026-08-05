@@ -54,6 +54,25 @@ class InventoryLedgerTest extends TestCase
         $this->assertDatabaseCount('stock_transactions', 0);
     }
 
+    public function test_factory_output_and_customer_dispatch_movements_are_recorded(): void
+    {
+        $this->registerOwner();
+        $unit = Unit::firstOrFail();
+        $warehouse = Warehouse::firstOrFail();
+        $item = Item::create(['name' => 'Finished roll', 'sku' => 'FIN-ROL-001', 'type' => 'finished_good', 'unit_id' => $unit->id]);
+
+        $this->postJson('/api/inventory/transactions', [
+            'item_id' => $item->id, 'warehouse_id' => $warehouse->id, 'type' => 'production_output',
+            'quantity' => 10, 'reason' => 'Production order PO-001 completed',
+        ])->assertCreated()->assertJsonPath('balance_after', 10);
+        $this->postJson('/api/inventory/transactions', [
+            'item_id' => $item->id, 'warehouse_id' => $warehouse->id, 'type' => 'dispatch',
+            'quantity' => 4.25, 'reason' => 'Customer delivery DN-001',
+        ])->assertCreated()->assertJsonPath('balance_after', 5.75);
+
+        $this->assertEquals(5.75, (float) StockBalance::firstOrFail()->quantity_on_hand);
+    }
+
     private function registerOwner(): void
     {
         $this->postJson('/api/auth/register', ['name' => 'Inventory Owner', 'email' => fake()->unique()->safeEmail(), 'password' => 'Secure@12345', 'password_confirmation' => 'Secure@12345', 'factory_name' => 'Ledger Factory', 'industry_type' => 'manufacturing'])->assertCreated();
