@@ -163,7 +163,10 @@ export default function ProcurementOverviewPage() {
     try {
       await request("/api/inventory/transactions", {
         method: "POST",
-        body: JSON.stringify(movement),
+                body: JSON.stringify({
+                    ...movement,
+                    unit_cost: movement.type === "receipt" ? movement.unit_cost || null : null,
+                }),
       });
       notify("Stock movement recorded successfully.");
       setModal(null);
@@ -236,7 +239,11 @@ export default function ProcurementOverviewPage() {
               </button>
               <button
                 className="primary-btn"
-                onClick={() => setModal("movement")}
+                onClick={() => {
+                  setError("");
+                  setSuccess("");
+                  setModal("movement");
+                }}
               >
                 <ArrowDownToLine />
                 Record stock movement
@@ -337,13 +344,19 @@ export default function ProcurementOverviewPage() {
                 <p>
                   {modal === "item"
                     ? "Create or update a material kept in this factory."
-                    : "Every receipt, issue or correction creates a permanent audit record."}
+                    : "Choose what happened to the stock, enter the quantity, and explain why."}
                 </p>
               </div>
               <button className="icon-btn" onClick={() => setModal(null)}>
                 <X />
               </button>
             </header>
+            {error && (
+              <div className="admin-alert error warehouse-modal-error">
+                <AlertTriangle size={18} />
+                <span>{error}</span>
+              </div>
+            )}
             {modal === "item" ? (
               <form className="warehouse-form" onSubmit={saveItem}>
                 <Field label="Item name">
@@ -482,22 +495,26 @@ export default function ProcurementOverviewPage() {
                   <select
                     value={movement.type}
                     onChange={(e) =>
-                      setMovement({ ...movement, type: e.target.value })
+                      setMovement({
+                        ...movement,
+                        type: e.target.value,
+                        unit_cost: e.target.value === "receipt" ? movement.unit_cost : "",
+                      })
                     }
                   >
                     {[
-                      ["receipt", "Receive purchased or delivered stock"],
-                      ["production_output", "Receive finished production output"],
-                      ["return_in", "Receive returned stock"],
-                      ["issue", "Issue materials to production or internal use"],
-                      ["dispatch", "Dispatch stock to a customer"],
-                      ["adjustment_in", "Increase stock after a correction"],
-                      ["adjustment_out", "Reduce stock after a correction"],
+                      ["receipt", "Receive stock from a supplier"],
+                      ["production_output", "Add finished goods from production"],
+                      ["return_in", "Put returned items back in stock"],
+                      ["issue", "Send materials to production"],
+                      ["dispatch", "Send goods to a customer"],
+                      ["adjustment_in", "Add stock after a correction"],
+                      ["adjustment_out", "Remove stock after a correction"],
                       ["waste", "Record damaged, expired or wasted stock"],
-                      ["reserve", "Reserve stock for planned work"],
-                      ["release_reservation", "Release reserved stock"],
-                      ["quarantine", "Place stock in quarantine"],
-                      ["release_quarantine", "Release stock from quarantine"],
+                      ["reserve", "Hold stock for planned work"],
+                      ["release_reservation", "Stop holding reserved stock"],
+                      ["quarantine", "Hold stock for inspection"],
+                      ["release_quarantine", "Return inspected stock to use"],
                     ].map(([v, l]) => (
                       <option value={v} key={v}>
                         {l}
@@ -518,31 +535,33 @@ export default function ProcurementOverviewPage() {
                     required
                   />
                 </Field>
-                <Field label="Unit cost (optional)">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={movement.unit_cost}
-                    onChange={(e) =>
-                      setMovement({ ...movement, unit_cost: e.target.value })
-                    }
-                    placeholder="Uses item cost if blank"
-                  />
-                </Field>
-                <Field label="Reason or reference">
+                {movement.type === "receipt" && (
+                  <Field label="Purchase cost per unit (optional)">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={movement.unit_cost}
+                      onChange={(e) =>
+                        setMovement({ ...movement, unit_cost: e.target.value })
+                      }
+                      placeholder="Leave empty to use the saved item cost"
+                    />
+                  </Field>
+                )}
+                <Field label="Why are you making this change?">
                   <textarea
                     value={movement.reason}
                     onChange={(e) =>
                       setMovement({ ...movement, reason: e.target.value })
                     }
-                    placeholder="Example: Supplier delivery note DN-104"
+                    placeholder="Example: Reserved for production order PO-104"
                     required
                   />
                 </Field>
                 <button className="primary-btn" disabled={busy}>
                   <ArrowDownToLine />
-                  {busy ? "Recording…" : "Record movement"}
+                  {busy ? "Saving..." : "Save stock movement"}
                 </button>
               </form>
             )}

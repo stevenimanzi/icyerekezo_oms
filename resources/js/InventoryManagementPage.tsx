@@ -232,6 +232,7 @@ export default function InventoryManagementPage({
           <button
             className="primary-btn"
             onClick={() => {
+              setError("");
               setMovement(emptyMovement);
               setModal("movement");
             }}
@@ -361,7 +362,7 @@ export default function InventoryManagementPage({
                   {modal === "item"
                     ? "Create or update an item in the factory catalogue."
                     : modal === "movement"
-                      ? "Receive, issue, return, adjust or record wasted stock."
+                      ? "Choose what happened to the stock, enter the quantity, and explain why."
                       : modal === "transfer"
                         ? "Move stock safely between factory warehouses."
                         : "Enter the physical quantity counted in a warehouse."}
@@ -375,6 +376,7 @@ export default function InventoryManagementPage({
                 <X />
               </button>
             </header>
+            {error && <div className="admin-alert error warehouse-modal-error">{error}</div>}
             {modal === "item" ? (
               <form
                 className="warehouse-form"
@@ -496,22 +498,26 @@ export default function InventoryManagementPage({
                   <select
                     value={movement.type}
                     onChange={(e) =>
-                      setMovement({ ...movement, type: e.target.value })
+                      setMovement({
+                        ...movement,
+                        type: e.target.value,
+                        unit_cost: e.target.value === "receipt" ? movement.unit_cost : "",
+                      })
                     }
                   >
                     {[
-                      ["receipt", "Receive purchased or delivered stock"],
-                      ["production_output", "Receive finished production output"],
-                      ["return_in", "Receive returned stock"],
-                      ["issue", "Issue materials to production or internal use"],
-                      ["dispatch", "Dispatch stock to a customer"],
-                      ["adjustment_in", "Increase stock after a correction"],
-                      ["adjustment_out", "Reduce stock after a correction"],
+                      ["receipt", "Receive stock from a supplier"],
+                      ["production_output", "Add finished goods from production"],
+                      ["return_in", "Put returned items back in stock"],
+                      ["issue", "Send materials to production"],
+                      ["dispatch", "Send goods to a customer"],
+                      ["adjustment_in", "Add stock after a correction"],
+                      ["adjustment_out", "Remove stock after a correction"],
                       ["waste", "Record damaged, expired or wasted stock"],
-                      ["reserve", "Reserve for planned work"],
-                      ["release_reservation", "Release reserved stock"],
-                      ["quarantine", "Place in quarantine"],
-                      ["release_quarantine", "Release from quarantine"],
+                      ["reserve", "Hold stock for planned work"],
+                      ["release_reservation", "Stop holding reserved stock"],
+                      ["quarantine", "Hold stock for inspection"],
+                      ["release_quarantine", "Return inspected stock to use"],
                     ].map(([v, l]) => (
                       <option value={v} key={v}>
                         {l}
@@ -531,18 +537,21 @@ export default function InventoryManagementPage({
                     }
                   />
                 </Field>
-                <Field label="Unit cost (optional)">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={movement.unit_cost}
-                    onChange={(e) =>
-                      setMovement({ ...movement, unit_cost: e.target.value })
-                    }
-                  />
-                </Field>
-                <Field label="Reason or reference">
+                {movement.type === "receipt" && (
+                  <Field label="Purchase cost per unit (optional)">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={movement.unit_cost}
+                      onChange={(e) =>
+                        setMovement({ ...movement, unit_cost: e.target.value })
+                      }
+                      placeholder="Leave empty to use the saved item cost"
+                    />
+                  </Field>
+                )}
+                <Field label="Why are you making this change?">
                   <textarea
                     required
                     value={movement.reason}
@@ -551,7 +560,7 @@ export default function InventoryManagementPage({
                     }
                   />
                 </Field>
-                <Submit busy={busy} label="Record movement" icon={<Plus />} />
+                <Submit busy={busy} label="Save stock movement" icon={<Plus />} />
               </form>
             ) : modal === "transfer" ? (
               <form

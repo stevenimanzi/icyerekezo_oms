@@ -391,3 +391,4 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .products-table { min-width:1080px; }
 @media(max-width:1100px){.products-heading { align-items:flex-start; flex-direction:column; }.products-heading-actions { justify-content:flex-start; max-width:none; }}
 @media(max-width:680px){.products-heading-actions { display:grid; grid-template-columns:1fr 1fr; width:100%; }.products-heading-actions button { width:100%; }.products-modal .warehouse-form-grid { grid-template-columns:1fr; }}
+.warehouse-modal-error { margin:16px 28px 0; }

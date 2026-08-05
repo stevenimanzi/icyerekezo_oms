@@ -50,8 +50,21 @@ class InventoryLedgerTest extends TestCase
         $warehouse = Warehouse::firstOrFail();
         $item = Item::create(['name' => 'Thread', 'sku' => 'RAW-THR-001', 'type' => 'raw_material', 'unit_id' => $unit->id]);
 
-        $this->postJson('/api/inventory/transactions', ['item_id' => $item->id, 'warehouse_id' => $warehouse->id, 'type' => 'issue', 'quantity' => 1])->assertUnprocessable();
+        $this->postJson('/api/inventory/transactions', ['item_id' => $item->id, 'warehouse_id' => $warehouse->id, 'type' => 'issue', 'quantity' => 1, 'reason' => 'Production issue'])
+            ->assertUnprocessable()->assertJsonPath('errors.quantity.0', 'Not enough stock. Only 0 is currently in this warehouse.');
         $this->assertDatabaseCount('stock_transactions', 0);
+    }
+
+    public function test_reservation_error_explains_available_quantity(): void
+    {
+        $this->registerOwner();
+        $unit = Unit::firstOrFail();
+        $warehouse = Warehouse::firstOrFail();
+        $item = Item::create(['name' => 'Reserve material', 'sku' => 'RAW-RES-001', 'type' => 'raw_material', 'unit_id' => $unit->id]);
+        $this->postJson('/api/inventory/transactions', ['item_id' => $item->id, 'warehouse_id' => $warehouse->id, 'type' => 'receipt', 'quantity' => 6, 'reason' => 'Opening balance'])->assertCreated();
+
+        $this->postJson('/api/inventory/transactions', ['item_id' => $item->id, 'warehouse_id' => $warehouse->id, 'type' => 'reserve', 'quantity' => 10, 'reason' => 'Planned work'])
+            ->assertUnprocessable()->assertJsonPath('errors.quantity.0', 'Not enough available stock. You can use up to 6.');
     }
 
     public function test_factory_output_and_customer_dispatch_movements_are_recorded(): void
