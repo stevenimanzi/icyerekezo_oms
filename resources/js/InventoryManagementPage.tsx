@@ -198,7 +198,7 @@ export default function InventoryManagementPage({
   const tabs = isLogisticsView
     ? [["stock", locale === "fr" ? "Produits disponibles" : "Available goods"]]
     : managementTabs;
-  const dispatchStock = (data?.stock || []).filter((entry:any) => entry.item_type === "finished_good" || entry.item_type === "semi_finished");
+  const dispatchStock = data?.stock || [];
   const dispatchReady = dispatchStock.reduce((sum:number, entry:any) => sum + Number(entry.available_quantity || 0), 0);
   const dispatchReserved = dispatchStock.reduce((sum:number, entry:any) => sum + Number(entry.quantity_reserved || 0), 0);
   return (

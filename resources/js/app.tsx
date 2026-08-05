@@ -183,7 +183,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     ] as const : isLogisticsUser ? [
         ['dashboard', LayoutDashboard, locale === 'en' ? 'Dashboard' : 'Tableau de bord', '*'],
         ['sales', PackageOpen, locale === 'en' ? 'Incoming orders' : 'Commandes entrantes', 'sales.view'],
-        ['inventory', Warehouse, locale === 'en' ? 'Available stock' : 'Stock disponible', 'inventory.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Available goods' : 'Produits disponibles', 'inventory.view'],
         ['logistics', Truck, locale === 'en' ? 'Shipments' : 'Expéditions', 'logistics.view'],
         ['dispatch', Activity, locale === 'en' ? 'Dispatch board' : 'Planification', 'logistics.dispatch'],
         ['vehicles', Truck, locale === 'en' ? 'Vehicles & drivers' : 'Véhicules et chauffeurs', 'logistics.view'],
