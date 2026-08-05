@@ -22,6 +22,7 @@ import LogisticsOverviewPage from './LogisticsOverviewPage';
 import ProcurementOverviewPage from './ProcurementOverviewPage';
 import ProfileSettingsPage from './ProfileSettingsPage';
 import ProductCatalogPage from './ProductCatalogPage';
+import GlobalOperationToasts from './GlobalOperationToasts';
 import { FlowSetupPage, ProductionFlowPage, TeamManagementPage } from './FactoryManagerModules';
 
 type Locale = 'en' | 'fr';
@@ -416,4 +417,4 @@ function Metric({ icon, label, value, suffix, detail, trend, tone }: { icon: Rea
 function PanelTitle({ title, action }: { title: string; action: React.ReactNode }) { return <div className="panel-title"><h2>{title}</h2>{action}</div>; }
 function ActivityItem({ icon, tone, title, text, time }: { icon: React.ReactNode; tone: string; title: string; text: string; time: string }) { return <div className="activity-item"><span className={`activity-icon ${tone}`}>{icon}</span><div><strong>{title}</strong><p>{text}</p></div><time>{time}</time></div>; }
 
-createRoot(document.getElementById('app')!).render(<React.StrictMode><App/></React.StrictMode>);
+createRoot(document.getElementById('app')!).render(<React.StrictMode><GlobalOperationToasts/><App/></React.StrictMode>);
