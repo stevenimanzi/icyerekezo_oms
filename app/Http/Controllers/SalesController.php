@@ -122,13 +122,13 @@ class SalesController extends Controller
     {
         $this->ensureNoguchi($request);
         $data = $request->validate([
-            'quantity_packed' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
+            'quantity_packed' => ['nullable', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
             'quantity_delivered' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
-            'quantity_rejected' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
+            'quantity_rejected' => ['nullable', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
             'rejection_reason' => ['nullable', 'string', 'max:255'],
         ]);
-        abort_if($data['quantity_delivered'] > $data['quantity_packed'], 422, 'Delivered quantity cannot exceed packed quantity.');
-        abort_if($data['quantity_delivered'] + $data['quantity_rejected'] > $line->quantity_ordered, 422, 'Delivered and rejected quantities cannot exceed the ordered quantity.');
+        $data['quantity_packed'] = max((int) ($data['quantity_packed'] ?? $line->quantity_packed), (int) $data['quantity_delivered']);
+        $data['quantity_rejected'] ??= $line->quantity_rejected;
         $line->update($data);
         $document = $line->document()->with('lines')->firstOrFail();
         $totals = $document->lines->sum('quantity_delivered') + $document->lines->sum('quantity_rejected');

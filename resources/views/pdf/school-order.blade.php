@@ -82,12 +82,12 @@
 
 <h3 class="section">Clothes requested</h3>
 <table class="items">
-    <thead><tr><th>#</th><th>Class</th><th>Type of clothing</th><th>For</th><th>Size</th><th>Color</th><th class="number">Ordered</th><th class="number">Ready</th><th class="number">Delivered</th><th class="number">Rejected</th><th class="number">Remaining</th></tr></thead>
+    <thead><tr><th>#</th><th>Class</th><th>Type of clothing</th><th>For</th><th>Size</th><th>Color</th><th class="number">Ordered</th><th class="number">Given to school</th><th class="number">Remaining to be delivered</th></tr></thead>
     <tbody>@foreach($document->lines as $index => $line)<tr>
         <td>{{ $index + 1 }}</td><td>{{ $line->class_level ?: '-' }}</td><td><strong>{{ $line->garment_category }}</strong></td><td>{{ $line->gender ?: '-' }}</td><td>{{ $line->size ?: '-' }}</td><td>{{ $line->color ?: '-' }}</td>
-        <td class="number">{{ number_format($line->quantity_ordered) }}</td><td class="number">{{ number_format($line->quantity_packed) }}</td><td class="number">{{ number_format($line->quantity_delivered) }}</td><td class="number">{{ number_format($line->quantity_rejected) }}</td><td class="number">{{ number_format(max(0, $line->quantity_ordered - $line->quantity_delivered - $line->quantity_rejected)) }}</td>
+        <td class="number">{{ number_format($line->quantity_ordered) }}</td><td class="number">{{ number_format($line->quantity_delivered) }}</td><td class="number">{{ number_format(max(0, $line->quantity_ordered - $line->quantity_delivered)) }}</td>
     </tr>@endforeach</tbody>
-    <tfoot><tr><td colspan="6">ORDER TOTALS</td><td class="number">{{ number_format($ordered) }}</td><td class="number">{{ number_format($packed) }}</td><td class="number">{{ number_format($delivered) }}</td><td class="number">{{ number_format($rejected) }}</td><td class="number">{{ number_format($remaining) }}</td></tr></tfoot>
+    <tfoot><tr><td colspan="6">ORDER TOTALS</td><td class="number">{{ number_format($ordered) }}</td><td class="number">{{ number_format($delivered) }}</td><td class="number">{{ number_format(max(0, $ordered - $delivered)) }}</td></tr></tfoot>
 </table>
 <div class="note">This document shows the latest quantities recorded in ICYEREKEZO OMS at the time it was printed.</div>
 <div class="footer"><span>{{ $factory->name }} | Order {{ preg_replace('/^LEGACY-NOGUCHI-/i', '', $document->document_number) }}</span><span class="right">Page <span class="page-number"></span></span></div>
