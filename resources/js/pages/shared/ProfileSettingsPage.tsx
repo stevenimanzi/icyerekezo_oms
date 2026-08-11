@@ -1,6 +1,6 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import { Check, Eye, EyeOff, Languages, LockKeyhole, Mail, Moon, Save, ShieldCheck, Sun, UserRound } from 'lucide-react';
-import '../css/profile-settings.css';
+import '../../../css/profile-settings.css';
 
 type Locale = 'en' | 'fr';
 type Props = {

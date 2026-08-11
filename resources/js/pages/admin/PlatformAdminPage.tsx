@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, Building2, CheckCircle2, CreditCard, Database, Megaphone, MessageSquare, Plus, RefreshCw, Save, Settings, ShieldCheck, Users } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import SystemSettingsPanel from './SystemSettingsPanel';
+import SystemSettingsPanel from '../system/SystemSettingsPanel';
 
 type Locale = 'en' | 'fr';
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';

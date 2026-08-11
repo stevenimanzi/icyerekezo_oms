@@ -2,28 +2,30 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../css/auth-premium.css';
 import {
-    Activity, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleAlert, CircleDollarSign, ClipboardCheck, CreditCard, Database,
-    Eye, EyeOff, Factory, Gauge, HelpCircle, Languages, LayoutDashboard, LockKeyhole, Mail, Megaphone, Menu, MessageSquare, Moon, PackageCheck,
-    PackageOpen, RefreshCw, Search, Send, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Warehouse,
+    Activity, AlertTriangle, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleAlert, CircleDollarSign, ClipboardCheck, CreditCard, Database,
+    Eye, EyeOff, Factory, FileText, Gauge, HelpCircle, Inbox, Languages, LayoutDashboard, LockKeyhole, Mail, Megaphone, Menu, MessageSquare, Moon, Package, PackageCheck,
+    PackageOpen, RefreshCw, Scissors, Search, Send, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Warehouse,
     UserRound, Wrench, X, Zap,
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import PlatformAdminPage from './PlatformAdminPage';
-import ExecutiveDashboard from './ExecutiveDashboard';
-import DepartmentDashboard from './DepartmentDashboard';
-import ProductionOperations from './ProductionOperations';
-import QualityControlPage from './QualityControlPage';
-import MachinesPage from './MachinesPage';
-import FactorySettingsPage from './FactorySettingsPage';
-import ReportsPage from './ClearReportsPage';
-import InventoryManagementPage from './InventoryManagementPage';
-import SalesOverviewPage from './SalesOverviewPage';
-import LogisticsOverviewPage from './LogisticsOverviewPage';
-import ProcurementOverviewPage from './ProcurementOverviewPage';
-import ProfileSettingsPage from './ProfileSettingsPage';
-import ProductCatalogPage from './ProductCatalogPage';
-import GlobalOperationToasts from './GlobalOperationToasts';
-import { FlowSetupPage, ProductionFlowPage, TeamManagementPage } from './FactoryManagerModules';
+import PlatformAdminPage from './pages/admin/PlatformAdminPage';
+import ExecutiveDashboard from './pages/executive/ExecutiveDashboard';
+import DepartmentDashboard from './pages/shared/DepartmentDashboard';
+import ProductionOperations from './pages/production/ProductionOperations';
+import QualityControlPage from './pages/quality/QualityControlPage';
+import MachinesPage from './pages/production/MachinesPage';
+import FactorySettingsPage from './pages/executive/FactorySettingsPage';
+import ReportsPage from './pages/shared/ClearReportsPage';
+import InventoryManagementPage from './pages/warehouse/InventoryManagementPage';
+import SalesOverviewPage from './pages/sales/SalesOverviewPage';
+import LogisticsOverviewPage from './pages/logistics/LogisticsOverviewPage';
+import ProcurementOverviewPage from './pages/procurement/ProcurementOverviewPage';
+import IncomingRequestsPage from './pages/warehouse/IncomingRequestsPage';
+import ProfileSettingsPage from './pages/shared/ProfileSettingsPage';
+import ProductCatalogPage from './pages/shared/ProductCatalogPage';
+import GlobalOperationToasts from './pages/shared/GlobalOperationToasts';
+import { FlowSetupPage, ProductionFlowPage, TeamManagementPage } from './pages/production/FactoryManagerModules';
+import CuttingWorkspacePage from './pages/cutting/CuttingWorkspacePage';
 
 type Locale = 'en' | 'fr';
 const DEFAULT_SYSTEM_LOGO = '/assets/images/icyerekezo_oms_logo.svg';
@@ -72,7 +74,7 @@ const copy = {
         output: 'Production réalisée', target: 'Objectif', actual: 'Réalisé', activity: 'Activité récente',
         activeOrders: 'Ordres de production actifs', viewAll: 'Tout afficher', order: 'Ordre', product: 'Produit', stage: 'Étape actuelle', progress: 'Progression', due: 'Échéance',
         dashboard: 'Tableau de bord', procurement: 'Achats', warehouse: 'Stocks', products: 'Produits et nomenclatures', planning: 'Production', control: 'Contrôle qualité',
-        sales: 'Ventes et commandes', logistics: 'Logistique', people: 'Équipe et horaires', machines: 'Machines', reports: 'Rapports', settings: 'Paramètres', support: 'Aide et support',
+        sales: 'Ventes et commandes', logistics: 'Logistique', people: 'Équipe et horaires', machines: 'Machines', rapports: 'Rapports', settings: 'Paramètres', support: 'Aide et support',
         general: 'Opérations', management: 'Gestion', completed: 'Terminé', inProgress: 'En cours', inspection: 'Contrôle qualité', packaging: 'Emballage',
     },
 };
@@ -166,12 +168,24 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     }, []);
 
     const subscribedFeatures = user.subscription?.plan?.features;
-    const featureForPage:Record<string,string>={dashboard:'dashboard',procurement:'procurement',inventory:'inventory',products:'products',production:'production',quality:'quality',sales:'sales',logistics:'logistics',dispatch:'logistics',vehicles:'logistics','delivery-confirmation':'logistics',team:'team',machines:'maintenance',reports:'reports'};
+    const featureForPage:Record<string,string>={dashboard:'dashboard',procurement:'procurement',inventory:'inventory','incoming-requests':'inventory',products:'products',production:'production',quality:'quality',sales:'sales',logistics:'logistics',dispatch:'logistics',vehicles:'logistics','delivery-confirmation':'logistics',team:'team',machines:'maintenance',reports:'reports','cutting-workspace':'production','fabric-request':'inventory','cut-fabrics':'production','damaged-fabrics':'inventory','cutting-report':'production'};
     const hasFeature=(page:string)=>!subscribedFeatures||subscribedFeatures.includes(featureForPage[page]||page);
     const isLogisticsUser=user.workspace==='logistics'||user.roles.some(role=>role.slug==='logistics-officer');
+    const isCuttingUser = user.workspace === 'cutting' || user.roles.some(role => role.slug === 'cutting-operator');
+    const isWarehouseUser = user.workspace === 'warehouse' || user.roles.some(role => role.slug === 'warehouse-keeper');
+    const isProcurementUser = user.workspace === 'procurement' || user.roles.some(role => role.slug === 'procurement-officer');
+    const isQualityUser = user.workspace === 'quality' || user.roles.some(role => role.slug === 'quality-officer');
+    const isProductionManager = user.workspace === 'production' || user.roles.some(role => role.slug === 'production-manager');
+    const isSalesUser = user.workspace === 'sales' || user.roles.some(role => role.slug === 'sales-officer');
+    const isFinanceUser = user.workspace === 'finance' || user.roles.some(role => role.slug === 'accountant');
+    const isMachineOperator = user.workspace === 'workstation' || user.roles.some(role => role.slug === 'machine-operator');
+    const isFactoryManager = user.roles.some(role => role.slug === 'factory-manager');
+    const isFactoryAdmin = user.roles.some(role => role.slug === 'factory-administrator');
     const nav = useMemo(() => (user.is_platform_admin ? [
+        // ─── Platform Admin ───
         ['platform-dashboard', LayoutDashboard, locale === 'en' ? 'Platform overview' : 'Vue plateforme', '*'], ['factories', Building2, locale === 'en' ? 'Factories' : 'Usines', '*'], ['platform-users', Users, locale === 'en' ? 'All users' : 'Tous les utilisateurs', '*'], ['subscriptions', CreditCard, locale === 'en' ? 'Subscriptions' : 'Abonnements', '*'], ['announcements', Megaphone, locale === 'en' ? 'Announcements' : 'Annonces', '*'], ['notifications', Bell, locale === 'en' ? 'Notifications' : 'Notifications', '*'], ['support-center', MessageSquare, locale === 'en' ? 'Support centre' : 'Centre de support', '*'], ['backups', Database, locale === 'en' ? 'Database backups' : 'Sauvegardes', '*'], ['system-settings', Settings, locale === 'en' ? 'System settings' : 'Paramètres système', '*'],
     ] as const : isFactoryOwner ? [
+        // ─── Factory Owner ───
         ['dashboard', LayoutDashboard, locale === 'en' ? 'Factory performance' : 'Performance de l\u2019usine', '*'],
         ['procurement', ShoppingCart, locale === 'en' ? 'Purchasing overview' : 'Vue des achats', 'procurement.view'],
         ['inventory', Warehouse, locale === 'en' ? 'Stock overview' : 'Vue du stock', 'inventory.view'],
@@ -180,7 +194,69 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['sales', PackageOpen, locale === 'en' ? 'Sales overview' : 'Vue des ventes', 'sales.view'],
         ['logistics', Truck, locale === 'en' ? 'Delivery overview' : 'Vue des livraisons', 'logistics.view'],
         ['reports', Activity, locale === 'en' ? 'Factory reports' : 'Rapports de l\u2019usine', 'reports.view'],
+    ] as const : isFactoryAdmin ? [
+        // ─── Factory Administrator ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['procurement', ShoppingCart, t.procurement, 'procurement.view'],
+        ['inventory', Warehouse, t.warehouse, 'inventory.view'],
+        ['products', Boxes, t.products, 'products.view'],
+        ['production', Gauge, t.planning, 'production.view'],
+        ['quality', ClipboardCheck, t.control, 'quality.view'],
+        ['sales', PackageOpen, t.sales, 'sales.view'],
+        ['logistics', Truck, t.logistics, 'logistics.view'],
+        ['team', Users, t.people, 'users.view'],
+        ['machines', Wrench, t.machines, 'maintenance.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isFactoryManager ? [
+        // ─── Factory Manager ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['production', Gauge, locale === 'en' ? 'Production Configuration' : 'Configuration de production', 'production.view'],
+        ['team', Users, t.people, 'users.view'],
+        ['machines', Wrench, t.machines, 'maintenance.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isProductionManager ? [
+        // ─── Production Manager ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['production', Gauge, t.planning, 'production.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Materials' : 'Matières', 'inventory.view'],
+        ['quality', ClipboardCheck, t.control, 'quality.view'],
+        ['machines', Wrench, t.machines, 'maintenance.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isCuttingUser ? [
+        // ─── Cutting Operator / Cutting Manager ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['cutting-workspace', Scissors, locale === 'en' ? 'Cutting workspace' : 'Espace de coupe', 'production.view'],
+        ['cutting-report', FileText, locale === 'en' ? 'Report' : 'Rapport', 'production.view'],
+    ] as const : isMachineOperator ? [
+        // ─── Machine Operator ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['production', Gauge, t.planning, 'production.view'],
+        ['quality', ClipboardCheck, t.control, 'quality.view'],
+        ['machines', Wrench, t.machines, 'maintenance.view'],
+    ] as const : isWarehouseUser ? [
+        // ─── Warehouse Keeper / Storekeeper ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['incoming-requests', Inbox, locale === 'en' ? 'Incoming requests' : 'Demandes entrantes', 'inventory.view'],
+        ['inventory', Warehouse, t.warehouse, 'inventory.view'],
+        ['products', Boxes, t.products, 'products.view'],
+        ['procurement', ShoppingCart, locale === 'en' ? 'Incoming goods' : 'Réceptions', 'procurement.view'],
+    ] as const : isProcurementUser ? [
+        // ─── Procurement Officer ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['procurement', ShoppingCart, t.procurement, 'procurement.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Stock levels' : 'Niveaux de stock', 'inventory.view'],
+        ['products', Boxes, t.products, 'products.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isQualityUser ? [
+        // ─── Quality Control Officer ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['quality', ClipboardCheck, t.control, 'quality.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Materials' : 'Matières', 'inventory.view'],
+        ['products', Boxes, t.products, 'products.view'],
+        ['production', Gauge, locale === 'en' ? 'Production status' : 'État de production', 'production.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
     ] as const : isLogisticsUser ? [
+        // ─── Logistics Officer ───
         ['dashboard', LayoutDashboard, locale === 'en' ? 'Dashboard' : 'Tableau de bord', '*'],
         ['sales', PackageOpen, locale === 'en' ? 'Incoming orders' : 'Commandes entrantes', 'sales.view'],
         ['inventory', Warehouse, locale === 'en' ? 'Available goods' : 'Produits disponibles', 'inventory.view'],
@@ -188,11 +264,25 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['dispatch', Activity, locale === 'en' ? 'Dispatch board' : 'Planification', 'logistics.dispatch'],
         ['vehicles', Truck, locale === 'en' ? 'Vehicles & drivers' : 'Véhicules et chauffeurs', 'logistics.view'],
         ['delivery-confirmation', PackageCheck, locale === 'en' ? 'Delivery confirmation' : 'Confirmation de livraison', 'logistics.deliver'],
+    ] as const : isSalesUser ? [
+        // ─── Sales Officer ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['sales', PackageOpen, t.sales, 'sales.view'],
+        ['products', Boxes, t.products, 'products.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Stock availability' : 'Disponibilité du stock', 'inventory.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isFinanceUser ? [
+        // ─── Accountant / Finance ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['sales', PackageOpen, t.sales, 'sales.view'],
+        ['procurement', ShoppingCart, t.procurement, 'procurement.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
     ] as const : [
+        // ─── Default / Fallback (all items, permission-gated) ───
         ['dashboard', LayoutDashboard, t.dashboard, '*'], ['procurement', ShoppingCart, t.procurement, 'procurement.view'], ['inventory', Warehouse, t.warehouse, 'inventory.view'], ['products', Boxes, t.products, 'products.view'],
-        ['production', Gauge, user.roles.some(role => role.slug === 'factory-manager') ? (locale === 'en' ? 'Production Configuration' : 'Configuration de production') : t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
+        ['production', Gauge, t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
         ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
-    ] as const).filter(([page, , , permission]) => (permission === '*' || can(permission)) && (user.is_platform_admin || hasFeature(page))), [t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner, isLogisticsUser]);
+    ] as const).filter(([page, , , permission]) => (permission === '*' || can(permission)) && (user.is_platform_admin || hasFeature(page))), [t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner, isLogisticsUser, isCuttingUser, isWarehouseUser, isProcurementUser, isQualityUser, isProductionManager, isSalesUser, isFinanceUser, isMachineOperator, isFactoryManager, isFactoryAdmin]);
     useEffect(() => {
         const allowed = nav.map(([key]) => key as string); allowed.push('profile'); if (!user.is_platform_admin) { if(hasFeature('support'))allowed.push('support');allowed.push('notifications'); if (can('factory.manage')) allowed.push('settings'); }
         if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : (allowed[0]||'notifications'));
@@ -228,7 +318,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                 </div>
             </header>
             <div className="page">
-                <PageBoundary resetKey={activePage}>{activePage==='profile'?<ProfileSettingsPage user={user} locale={locale} dark={dark} onLocaleChange={setLocale} onThemeChange={setDark}/>:activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : activePage === 'dashboard' ? (isExecutiveUser?<ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/>:<DepartmentDashboard user={user} locale={locale} onNavigate={setActivePage}/>) : activePage === 'inventory' ? <InventoryOverviewPage user={user} locale={locale}/> : activePage === 'products' ? <ProductCatalogPage user={user} locale={locale}/> : activePage === 'procurement' ? <ProcurementOverviewPage/> : activePage === 'sales' ? <SalesOverviewPage/> : ['logistics','dispatch','vehicles','delivery-confirmation'].includes(activePage) ? <LogisticsOverviewPage initialTab={({dispatch:'dispatch',vehicles:'vehicles','delivery-confirmation':'proof'} as Record<string,string>)[activePage]||'shipments'}/> : activePage === 'settings' ? <FactorySettingsPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')} productionOnly={user.workspace==='production'&&!isExecutiveUser}/> : activePage === 'quality' ? <QualityControlPage can={can}/> : activePage === 'machines' ? <MachinesPage can={can}/> : activePage === 'production' ? (can('factory.manage')?<ProductionFlowPage/>:<ProductionOperations can={can}/>) : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
+                <PageBoundary resetKey={activePage}>{activePage==='profile'?<ProfileSettingsPage user={user} locale={locale} dark={dark} onLocaleChange={setLocale} onThemeChange={setDark}/>:activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : ['cutting-workspace','fabric-request','cut-fabrics','damaged-fabrics','cutting-report'].includes(activePage) ? <CuttingWorkspacePage user={user} locale={locale} initialTab={({'cutting-workspace':'request','fabric-request':'request','cut-fabrics':'cut','damaged-fabrics':'damaged','cutting-report':'report'} as Record<string,any>)[activePage]||'request'}/> : activePage === 'dashboard' ? (isExecutiveUser?<ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/>:<DepartmentDashboard user={user} locale={locale} onNavigate={setActivePage}/>) : activePage === 'incoming-requests' ? <IncomingRequestsPage/> : activePage === 'inventory' ? <InventoryOverviewPage user={user} locale={locale}/> : activePage === 'products' ? <ProductCatalogPage user={user} locale={locale}/> : activePage === 'procurement' ? <ProcurementOverviewPage/> : activePage === 'sales' ? <SalesOverviewPage/> : ['logistics','dispatch','vehicles','delivery-confirmation'].includes(activePage) ? <LogisticsOverviewPage initialTab={({dispatch:'dispatch',vehicles:'vehicles','delivery-confirmation':'proof'} as Record<string,string>)[activePage]||'shipments'}/> : activePage === 'settings' ? <FactorySettingsPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')} productionOnly={user.workspace==='production'&&!isExecutiveUser}/> : activePage === 'quality' ? <QualityControlPage can={can}/> : activePage === 'machines' ? <MachinesPage can={can}/> : activePage === 'production' ? (can('factory.manage')?<ProductionFlowPage/>:<ProductionOperations can={can}/>) : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
                 <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => setActivePage('production')}><Zap size={17}/>{t.newOrder}</button></div>
                 <section className="workspace-banner"><div><span>{locale === 'en' ? 'Your workspace' : 'Votre espace'}</span><strong>{workspaceName}</strong><small>{user.employee_profile?.workstation ? `${user.employee_profile.department?.name || ''} / ${user.employee_profile.workstation.name}` : (user.roles[0]?.name || 'ICYEREKEZO OMS')}</small></div>{user.active_assignments?.length > 0 && <div className="assignment-preview"><b>{user.active_assignments.length} {locale === 'en' ? 'active assignments' : 'taches actives'}</b>{user.active_assignments.slice(0, 2).map(task => <span key={task.id}>{task.title} · {task.status.replace('_', ' ')}</span>)}</div>}</section>
                 <section className="metric-grid">
@@ -308,12 +398,6 @@ function UserSupportChat({user,locale}:{user:AuthUser;locale:Locale}) {
 
 function InventoryOverviewPage({user,locale}:{user:AuthUser;locale:Locale}) {
     return <InventoryManagementPage user={user} locale={locale}/>;
-    const [data,setData]=useState<any>(null);const [tab,setTab]=useState('stock');const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [updated,setUpdated]=useState<Date|null>(null);
-    const load=async(silent=false)=>{if(!silent)setLoading(true);try{setData(await api('/api/inventory/overview'));setError('');setUpdated(new Date())}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load stock data.')}finally{if(!silent)setLoading(false)}};
-    useEffect(()=>{load();const timer=window.setInterval(()=>load(true),15000);return()=>window.clearInterval(timer)},[]);
-    const currency=user.current_factory?.currency_code||user.system?.currency_code||'RWF';
-    const money=(value:any)=>`${currency} ${Number(value||0).toLocaleString(undefined,{maximumFractionDigits:2})}`;
-    const quantity=(value:any,unit?:string)=>`${Number(value||0).toLocaleString(undefined,{maximumFractionDigits:3})}${unit?` ${unit}`:''}`;
     const transactions=(data?.recent_transactions||[]).filter((item:any)=>tab==='transfers'?String(item.type).includes('transfer'):tab==='counts'?['count','adjustment','stock_count'].some(type=>String(item.type).includes(type)):true);
     return <section className="module-page inventory-live-page">
         <div className="module-hero"><div className="module-title"><div><div className="eyebrow"><i></i>{locale==='en'?'LIVE STOCK DATA':'STOCK EN DIRECT'}</div><h1>{locale==='en'?'Stock overview':'Vue du stock'}</h1><p>{locale==='en'?'Current quantities and movements recorded in your factory.':'Quantités et mouvements enregistrés dans votre usine.'}</p></div></div><div className="inventory-live-actions"><span><i></i>{updated?(locale==='en'?'Updated ':'Mis à jour ')+updated.toLocaleTimeString():locale==='en'?'Connecting…':'Connexion…'}</span><button className="secondary-btn" disabled={loading} onClick={()=>load()}><RefreshCw size={16}/>{locale==='en'?'Refresh':'Actualiser'}</button></div></div>

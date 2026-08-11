@@ -10,7 +10,17 @@ class RequirePermission
 {
     public function handle(Request $request, Closure $next, string $permission): Response
     {
-        abort_unless($request->user()?->hasPermission($permission), 403, 'You do not have permission to perform this action.');
+        $permissions = explode('|', $permission);
+        $hasPermission = false;
+
+        foreach ($permissions as $p) {
+            if ($request->user()?->hasPermission($p)) {
+                $hasPermission = true;
+                break;
+            }
+        }
+
+        abort_unless($hasPermission, 403, 'You do not have permission to perform this action.');
 
         return $next($request);
     }

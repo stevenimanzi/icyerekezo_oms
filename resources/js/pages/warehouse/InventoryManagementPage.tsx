@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+﻿import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ArrowRightLeft,
   ClipboardCheck,
@@ -161,6 +161,28 @@ export default function InventoryManagementPage({
     });
     setModal("item");
   };
+
+  const approveRequest = async (tx: any) => {
+    if (!window.confirm(locale === "en" ? "Approve and transfer this fabric to the cutting floor?" : "Approuver et transfÃ©rer vers la salle de coupe ?")) return;
+    const cutWH = tools.warehouses?.find((w:any) => w.code === 'CUT' || /cutting/i.test(w.name))?.id || 1;
+    setBusy(true);
+    try {
+      await request('/api/inventory/transfer', {
+        method: 'POST',
+        body: JSON.stringify({ item_id: tx.item_id, from_warehouse_id: tx.warehouse_id, to_warehouse_id: cutWH, quantity: Math.abs(tx.quantity_delta), reason: `Approved Request #${tx.id}` })
+      });
+      await request('/api/inventory/transactions', {
+        method: 'POST',
+        body: JSON.stringify({ item_id: tx.item_id, warehouse_id: tx.warehouse_id, type: 'release_reservation', quantity: Math.abs(tx.quantity_delta), reason: `Released Request #${tx.id}` })
+      });
+      await load(true);
+    } catch(e:any) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const changeStatus = async (entry: any) => {
     setBusy(true);
     try {
@@ -208,23 +230,23 @@ export default function InventoryManagementPage({
           <div>
             <div className="eyebrow">
               <i></i>
-              {isLogisticsView ? (locale === "fr" ? "DISPONIBILITÉ EN DIRECT" : "LIVE GOODS AVAILABILITY") : (locale === "fr" ? "STOCK EN DIRECT" : "LIVE STOCK DATA")}
+              {isLogisticsView ? (locale === "fr" ? "DISPONIBILITÃƒâ€° EN DIRECT" : "LIVE GOODS AVAILABILITY") : (locale === "fr" ? "STOCK EN DIRECT" : "LIVE STOCK DATA")}
             </div>
             <h1>{isLogisticsView ? (locale === "fr" ? "Produits disponibles" : "Available goods") : (locale === "fr" ? "Gestion du stock" : "Stock management")}</h1>
             <p>
               {isLogisticsView
-                ? (locale === "fr" ? "Vérifiez les produits prêts ou réservés avant de planifier une livraison." : "Check goods ready or reserved for customer deliveries before planning dispatch.")
+                ? (locale === "fr" ? "VÃƒÂ©rifiez les produits prÃƒÂªts ou rÃƒÂ©servÃƒÂ©s avant de planifier une livraison." : "Check goods ready or reserved for customer deliveries before planning dispatch.")
                 : locale === "fr"
-                ? "Contrôlez les articles, quantités, transferts et comptages de votre usine."
+                ? "ContrÃƒÂ´lez les articles, quantitÃƒÂ©s, transferts et comptages de votre usine."
                 : "Control every item, quantity, transfer and stock count in your factory."}
             </p>
             <small className="sales-updated">
               {updated
-                ? (locale === "fr" ? "Mis à jour " : "Updated ") +
+                ? (locale === "fr" ? "Mis ÃƒÂ  jour " : "Updated ") +
                   updated.toLocaleTimeString()
                 : locale === "fr"
-                  ? "Connexion…"
-                  : "Connecting…"}
+                  ? "ConnexionÃ¢â‚¬Â¦"
+                  : "ConnectingÃ¢â‚¬Â¦"}
             </small>
           </div>
         </div>
@@ -342,7 +364,7 @@ export default function InventoryManagementPage({
       </div>
       <section className="panel inventory-data-panel">
         {loading && !data ? (
-          <div className="admin-loading">Loading stock records…</div>
+          <div className="admin-loading">Loading stock recordsÃ¢â‚¬Â¦</div>
         ) : tab === "items" ? (
           <Catalog
             rows={data?.catalog || []}
@@ -749,7 +771,7 @@ function Catalog({ rows, money, quantity, edit, changeStatus, busy }: any) {
           <thead>
             <tr>
               <th>Item</th>
-              <th>Code</th>
+              
               <th>Type</th>
               <th>Unit</th>
               <th>Total quantity</th>
@@ -766,9 +788,9 @@ function Catalog({ rows, money, quantity, edit, changeStatus, busy }: any) {
                   <td>
                     <b>{entry.name}</b>
                   </td>
-                  <td>{entry.sku}</td>
+                  
                   <td>{String(entry.type).replaceAll("_", " ")}</td>
-                  <td>{entry.unit?.symbol || "—"}</td>
+                  <td>{entry.unit?.symbol || "Ã¢â‚¬â€"}</td>
                   <td>{quantity(entry.total_quantity, entry.unit?.symbol)}</td>
                   <td>{money(entry.standard_cost)}</td>
                   <td>{money(entry.stock_value)}</td>
@@ -815,7 +837,7 @@ function Balances({ rows, money, quantity }: any) {
           <thead>
             <tr>
               <th>Item</th>
-              <th>Code</th>
+              
               <th>Warehouse</th>
               <th>On hand</th>
               <th>Reserved</th>
@@ -834,7 +856,7 @@ function Balances({ rows, money, quantity }: any) {
                       {String(entry.item_type).replaceAll("_", " ")}
                     </small>
                   </td>
-                  <td>{entry.sku}</td>
+                  
                   <td>{entry.warehouse_name}</td>
                   <td>{quantity(entry.quantity_on_hand, entry.unit)}</td>
                   <td>{quantity(entry.quantity_reserved, entry.unit)}</td>
@@ -886,14 +908,14 @@ function Transactions({ rows, quantity, money, title }: any) {
                   <td>{new Date(entry.occurred_at).toLocaleString()}</td>
                   <td>
                     <b>{entry.item_name}</b>
-                    <small>{entry.sku}</small>
+                    
                   </td>
                   <td>{entry.warehouse_name}</td>
                   <td>{String(entry.type).replaceAll("_", " ")}</td>
                   <td>{quantity(entry.quantity_delta, entry.unit)}</td>
                   <td>{quantity(entry.balance_after, entry.unit)}</td>
                   <td>{money(entry.unit_cost)}</td>
-                  <td>{entry.reason || "—"}</td>
+                  <td>{entry.reason || "Ã¢â‚¬â€"}</td>
                 </tr>
               ))
             ) : (
@@ -940,7 +962,7 @@ function ItemSelect({ value, change, items }: any) {
         <option value="">Choose item</option>
         {items.map((entry: any) => (
           <option value={entry.id} key={entry.id}>
-            {entry.name} ({entry.sku})
+            {entry.name}
           </option>
         ))}
       </select>
@@ -965,7 +987,10 @@ function Submit({ busy, label, icon }: any) {
   return (
     <button className="primary-btn" disabled={busy}>
       {icon}
-      {busy ? "Saving…" : label}
+      {busy ? "SavingÃ¢â‚¬Â¦" : label}
     </button>
   );
 }
+
+
+

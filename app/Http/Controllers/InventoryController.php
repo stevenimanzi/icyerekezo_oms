@@ -55,7 +55,8 @@ class InventoryController extends Controller
             ->latest('stock_transactions.id')
             ->limit(25)
             ->get([
-                'stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta',
+                'stock_transactions.id', 'stock_transactions.item_id', 'stock_transactions.warehouse_id', 
+                'stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.reserved_delta',
                 'stock_transactions.balance_after', 'stock_transactions.unit_cost', 'stock_transactions.reason',
                 'stock_transactions.occurred_at', 'items.name as item_name', 'items.sku',
                 'warehouses.name as warehouse_name', 'units.symbol as unit',
@@ -121,8 +122,18 @@ class InventoryController extends Controller
 
     public function postTransaction(Request $request, InventoryLedger $ledger): JsonResponse
     {
-        $this->ensureWarehouseKeeper($request);
         $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'type' => ['required', Rule::in(['receipt', 'production_output', 'return_in', 'issue', 'dispatch', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'])], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['required', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
+        
+        $isWarehouseKeeper = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->where('slug', 'warehouse-keeper')->exists();
+            
+        $isCuttingOperator = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->where('slug', 'cutting-operator')->exists();
+        
+        $allowed = $isWarehouseKeeper || ($isCuttingOperator && in_array($data['type'], ['reserve', 'issue', 'waste']));
+        abort_unless($allowed, 403, 'You do not have permission to post this type of transaction.');
 
         return response()->json($ledger->post($data), 201);
     }
