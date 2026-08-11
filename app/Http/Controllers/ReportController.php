@@ -17,8 +17,12 @@ class ReportController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $factory = $request->user()->currentFactory;
+        $isExecutive = $request->user()->roles()->wherePivot('factory_id', $factory->id)->whereIn('slug', ['factory-owner', 'factory-administrator', 'factory-manager'])->exists();
+        $noguchiLogistics = $factory->hasNoguchiSchoolOrders()
+            && $request->user()->roles()->wherePivot('factory_id', $factory->id)->where('dashboard_key', 'logistics')->exists()
+            && ! $isExecutive;
         $productionOnly = $request->user()->roles()->wherePivot('factory_id', $factory->id)->where('dashboard_key', 'production')->exists()
-            && ! $request->user()->roles()->wherePivot('factory_id', $factory->id)->whereIn('slug', ['factory-owner', 'factory-administrator', 'factory-manager'])->exists();
+            && ! $isExecutive;
         $data = $request->validate([
             'period' => ['nullable', Rule::in(['day', 'week', 'month', 'custom'])],
             'type' => ['nullable', Rule::in(['all', 'departments', 'production', 'inventory', 'activity'])],
@@ -122,10 +126,11 @@ class ReportController extends Controller
             'factory' => $factory->only(['name', 'industry_type', 'email', 'phone', 'currency_code', 'timezone']),
             'standard' => array_replace(
                 IndustryDailyReportCatalog::for($factory->industry_type),
-                array_filter($factory->settings['report'] ?? [], fn ($value) => $value !== '' && $value !== [])
+                array_filter($factory->settings['report'] ?? [], fn ($value) => $value !== '' && $value !== []),
+                $noguchiLogistics ? ['title' => 'NOGUCHI daily logistics report', 'orientation' => 'landscape'] : []
             ),
             'filters' => ['departments' => Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($productionOnly, fn ($query) => $query->whereIn('id', $flowDepartmentIds))->when($configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))->orderBy('name')->get(['id', 'name'])],
-            'report' => ['scope' => $productionOnly ? 'production_flow' : 'factory', 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
+            'report' => ['scope' => $noguchiLogistics ? 'noguchi_logistics' : ($productionOnly ? 'production_flow' : 'factory'), 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
             'summary' => array_filter([($productionOnly ? 'flow_categories' : 'departments') => $departmentActivity->count(), 'production_orders' => $executions->pluck('production_order_id')->unique()->count(), 'work_records' => $executions->count(), 'completed_records' => $executions->where('status', 'completed')->count(), 'quantity_received' => (float) $executions->sum('input_quantity'), 'quantity_completed' => (float) $executions->sum('output_quantity'), 'damaged_quantity' => (float) $executions->sum('rejected_quantity'), 'waste_quantity' => (float) $executions->sum('waste_quantity'), 'stock_movements' => $productionOnly ? null : $inventory->count()], fn ($value) => $value !== null),
             'department_activity' => $departmentActivity,
             'daily_activity' => $dailyActivity,

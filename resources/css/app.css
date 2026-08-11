@@ -623,3 +623,24 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
     .noguchi-school-list .school-order-row > td:nth-child(2),.noguchi-school-list .school-order-row > td:nth-child(8) { grid-column:1!important; }
     .noguchi-school-list .school-order-row > td:nth-child(4),.noguchi-school-list .school-order-row > td:nth-child(8) { padding-left:0; border-left:0; }
 }
+.noguchi-logistics-report { max-width:none; padding:25px; }
+.noguchi-logistics-report .report-summary { grid-template-columns:repeat(6,minmax(0,1fr)); margin-bottom:18px; }
+.noguchi-report-scroll { overflow:auto; border:1px solid #cbd5e1; }
+.noguchi-flow-table { min-width:1450px; table-layout:fixed; }
+.noguchi-flow-table th { padding:8px 6px; border:1px solid #cbd5e1; background:#dbeafe; color:#1e3a8a; text-align:center; }
+.noguchi-flow-table thead tr:first-child th { background:#1e40af; color:#fff; font-size:11px; }
+.noguchi-flow-table th:first-child { width:92px; }
+.noguchi-flow-table td { padding:7px; border:1px solid #dbe3ef; vertical-align:top; white-space:normal; }
+.noguchi-report-entry { margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #cbd5e1; }
+.noguchi-report-entry:last-child { margin:0; padding:0; border:0; }
+.noguchi-report-entry b,.noguchi-report-entry span,.noguchi-report-entry small { display:block; }
+.noguchi-report-entry b { font-size:10px; }
+.noguchi-report-entry span { margin-top:2px; color:#1d4ed8; font-weight:800; }
+.noguchi-report-entry small,.noguchi-report-empty { color:#64748b; font-size:8px; }
+@media print {
+    .noguchi-logistics-report { padding:0; }
+    .noguchi-logistics-report .report-summary { grid-template-columns:repeat(6,1fr); }
+    .noguchi-report-scroll { overflow:visible; }
+    .noguchi-flow-table { min-width:0; font-size:7px; }
+    .noguchi-flow-table th,.noguchi-flow-table td { padding:4px; }
+}

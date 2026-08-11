@@ -16,7 +16,7 @@ class SalesOverviewTest extends TestCase
         $this->grantCurrentUserFactoryAdministrator();
 
         SalesDocument::create(['document_type' => 'invoice', 'document_number' => 'INV-001', 'customer_name' => 'Kigali Retail', 'status' => 'partially_paid', 'total_amount' => 250000, 'paid_amount' => 100000, 'item_count' => 4, 'document_date' => today(), 'due_date' => today()->addDays(7)]);
-        SalesDocument::create(['document_type' => 'customer_order', 'document_number' => 'SO-001', 'customer_name' => 'Kigali Retail', 'status' => 'processing', 'total_amount' => 250000, 'item_count' => 4, 'document_date' => today()]);
+        SalesDocument::create(['document_type' => 'customer_order', 'document_number' => 'SO-001', 'customer_name' => 'Kigali Retail', 'status' => 'partial', 'total_amount' => 250000, 'item_count' => 4, 'document_date' => today()]);
 
         $this->getJson('/api/sales/overview')->assertOk()
             ->assertJsonPath('summary.customer_orders', 1)

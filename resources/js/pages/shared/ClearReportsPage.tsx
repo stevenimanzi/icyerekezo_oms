@@ -74,7 +74,71 @@ function DepartmentMatrix({data}: any) {
     />;
 }
 
+const reportDate = (value: string) => String(value || '').slice(0, 10);
+const stageArea = (name: string) => {
+    const value = String(name || '').toLowerCase();
+    if (value.includes('cut')) return 'cutting';
+    if (['finish', 'iron', 'press', 'quality', 'pack'].some(word => value.includes(word))) return 'finishing';
+    return 'production';
+};
+
+function FlowCell({records, input = false}: any) {
+    return <td>{records.length ? records.map((record: any, index: number) => <div className="noguchi-report-entry" key={`${record.id}-${index}`}>
+        <b>{record.item_name || record.product_name || 'Unspecified item'}</b>
+        <span>{number(input ? (record.input_quantity ?? Math.abs(record.quantity_delta)) : (record.output_quantity ?? Math.abs(record.quantity_delta)))} {record.unit_symbol || ''}</span>
+        {record.order_number && <small>Order {record.order_number}</small>}
+    </div>) : <span className="noguchi-report-empty">No activity</span>}</td>;
+}
+
+function NoguchiLogisticsDocument({data}: any) {
+    const inventory = data.inventory || [];
+    const production = data.production || [];
+    const dates = Array.from(new Set([
+        ...inventory.map((row: any) => reportDate(row.occurred_at)),
+        ...production.map((row: any) => reportDate(row.updated_at)),
+    ].filter(Boolean))).sort();
+    const reportDates = dates.length ? dates : [data.report.to];
+    const total = (rows: any[], key: string) => rows.reduce((sum: number, row: any) => sum + Math.abs(Number(row[key] || 0)), 0);
+    const warehouseIn = inventory.filter((row: any) => Number(row.quantity_delta) > 0);
+    const warehouseOut = inventory.filter((row: any) => Number(row.quantity_delta) < 0);
+    const stages = (area: string) => production.filter((row: any) => stageArea(row.stage_name) === area);
+    const flowTotals = [
+        ['Warehouse received', total(warehouseIn, 'quantity_delta')],
+        ['Warehouse issued', total(warehouseOut, 'quantity_delta')],
+        ['Cutting output', total(stages('cutting'), 'output_quantity')],
+        ['Production output', total(stages('production'), 'output_quantity')],
+        ['Finishing output', total(stages('finishing'), 'output_quantity')],
+        ['Items in stock', (data.stock_register || []).reduce((sum: number, row: any) => sum + Number(row.closing_balance || 0), 0)],
+    ];
+    const onDate = (rows: any[], field: string, date: string) => rows.filter((row: any) => reportDate(row[field]) === date);
+
+    return <article className="report-document report-landscape noguchi-logistics-report">
+        <style>{'@media print{@page{size:A4 landscape;margin:7mm}}'}</style>
+        <header><div><h1>{data.factory.name}</h1><p>School garment logistics</p></div><div><b>DAILY LOGISTICS REPORT</b><span>{data.report.from} to {data.report.to}</span></div></header>
+        <section className="report-meta"><span>Prepared by: {data.report.generated_by}</span><span>Generated: {new Date(data.report.generated_at).toLocaleString()}</span><span>Live warehouse and factory flow</span></section>
+        <div className="report-summary">{flowTotals.map(([label, value]: any) => <div key={label}><span>{label}</span><b>{number(value)}</b></div>)}</div>
+        <section className="report-section"><h2>Daily movement through factory sections</h2><div className="noguchi-report-scroll"><table className="noguchi-flow-table"><thead>
+            <tr><th rowSpan={2}>Date</th><th colSpan={2}>Warehouse</th><th colSpan={2}>Cutting</th><th colSpan={2}>Production</th><th colSpan={2}>Finishing</th><th rowSpan={2}>Warehouse quantity in stock</th></tr>
+            <tr><th>Input</th><th>Output</th><th>Input</th><th>Output</th><th>Input</th><th>Output</th><th>Input</th><th>Output</th></tr>
+        </thead><tbody>{reportDates.map((date: string, index: number) => {
+            const dayInventory = onDate(inventory, 'occurred_at', date);
+            const dayProduction = onDate(production, 'updated_at', date);
+            const area = (name: string) => dayProduction.filter((row: any) => stageArea(row.stage_name) === name);
+            return <tr key={date}><td><b>{new Date(`${date}T00:00:00`).toLocaleDateString()}</b></td>
+                <FlowCell records={dayInventory.filter((row: any) => Number(row.quantity_delta) > 0)} input/>
+                <FlowCell records={dayInventory.filter((row: any) => Number(row.quantity_delta) < 0)}/>
+                <FlowCell records={area('cutting')} input/><FlowCell records={area('cutting')}/>
+                <FlowCell records={area('production')} input/><FlowCell records={area('production')}/>
+                <FlowCell records={area('finishing')} input/><FlowCell records={area('finishing')}/>
+                <td>{index === reportDates.length - 1 ? (data.stock_register || []).map((row: any) => <div className="noguchi-report-entry" key={`${row.sku}-${row.warehouse}`}><b>{row.item}</b><span>{number(row.closing_balance)}</span><small>{row.warehouse}</small></div>) : <span className="noguchi-report-empty">See closing day</span>}</td>
+            </tr>;
+        })}</tbody></table></div></section>
+        <footer>{data.factory.name} · Logistics daily report · Generated by ICYEREKEZO OMS</footer>
+    </article>;
+}
+
 function Document({data}: any) {
+    if (data.report.scope === 'noguchi_logistics') return <NoguchiLogisticsDocument data={data}/>;
     const productionOnly = data.report.scope === 'production_flow';
     return <article className={`report-document report-${data.standard.orientation || 'landscape'}`}>
         <style>{`@media print{@page{size:A4 ${data.standard.orientation === 'portrait' ? 'portrait' : 'landscape'};margin:10mm}}`}</style>
@@ -134,6 +198,7 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
     const [loading, setLoading] = useState(false);
     const [updated, setUpdated] = useState<Date | null>(null);
     const defaultPeriodApplied = useRef(false);
+    const noguchiLogistics = data?.report?.scope === 'noguchi_logistics';
 
     useEffect(() => {
         let active = true;
@@ -172,8 +237,8 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
                     <span><FileText/></span>
                     <div>
                         <div className="eyebrow"><i/>LIVE FACTORY WORK</div>
-                        <h1>{productionOnly ? 'Daily production report' : 'Daily factory report'}</h1>
-                        <p>Follow work from material received through every department to finished stock.</p>
+                        <h1>{noguchiLogistics ? 'NOGUCHI daily logistics report' : productionOnly ? 'Daily production report' : 'Daily factory report'}</h1>
+                        <p>{noguchiLogistics ? 'Follow warehouse, cutting, production, finishing and completed stock in one report.' : 'Follow work from material received through every department to finished stock.'}</p>
                     </div>
                 </div>
                 {canExport && <button className="primary-btn" disabled={!data} onClick={() => window.print()}><Printer size={17}/>Print / Save PDF</button>}
@@ -188,12 +253,12 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
                         <option value="custom">Choose dates</option>
                     </select>
                 </label>
-                <label>Department
+                {!noguchiLogistics && <label>Department
                     <select value={filters.department_id} onChange={event => setFilters({...filters, department_id: event.target.value})}>
                         <option value="">All departments</option>
                         {(data?.filters?.departments || []).map((department: any) => <option key={department.id} value={department.id}>{department.name}</option>)}
                     </select>
-                </label>
+                </label>}
                 {filters.period === 'custom' && <>
                     <label>From<input type="date" value={filters.from} onChange={event => setFilters({...filters, from: event.target.value})}/></label>
                     <label>To<input type="date" value={filters.to} onChange={event => setFilters({...filters, to: event.target.value})}/></label>
