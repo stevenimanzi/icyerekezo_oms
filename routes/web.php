@@ -33,8 +33,10 @@ Route::get('/dashboard', function () {
 Route::prefix('api')->group(function () {
     Route::middleware('throttle:6,1')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
+        Route::post('/auth/register-school', [AuthController::class, 'registerSchool']);
         Route::post('/auth/login', [AuthController::class, 'login']);
     });
+    Route::get('/auth/school-registration-options', [AuthController::class, 'schoolRegistrationOptions']);
     Route::middleware('auth')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);

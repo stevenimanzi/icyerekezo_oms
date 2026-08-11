@@ -7,6 +7,8 @@ use App\Models\Factory;
 use App\Models\Permission;
 use App\Models\PlatformAnnouncement;
 use App\Models\Role;
+use App\Models\School;
+use App\Services\RwandaLocationService;
 use App\Models\SystemSetting;
 use App\Models\Unit;
 use App\Models\User;
@@ -20,10 +22,45 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
+    public function schoolRegistrationOptions(): JsonResponse
+    {
+        $factory = Factory::get()->first(fn (Factory $factory) => $factory->hasNoguchiSchoolOrders());
+        return response()->json(['factory' => $factory?->only(['id', 'name']), 'locations' => app(RwandaLocationService::class)->northernDistrictsAndSectors()]);
+    }
+
+    public function registerSchool(Request $request): JsonResponse
+    {
+        abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'School registration is currently closed. Please contact support.');
+        $locations = app(RwandaLocationService::class)->northernDistrictsAndSectors();
+        $passwordRule = Password::min(10)->mixedCase()->numbers()->symbols();
+        if (app()->isProduction()) $passwordRule->uncompromised();
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'], 'school_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email'], 'phone' => ['required', 'string', 'max:40'],
+            'district' => ['required', Rule::in(array_keys($locations))], 'sector' => ['required', Rule::in($locations[$request->input('district')] ?? [])],
+            'password' => ['required', 'confirmed', $passwordRule], 'locale' => ['nullable', 'in:en,fr'],
+        ]);
+        $factory = Factory::get()->first(fn (Factory $candidate) => $candidate->hasNoguchiSchoolOrders());
+        abort_unless($factory, 422, 'The school ordering factory is not available yet. Please contact NOGUCHI support.');
+        $user = DB::transaction(function () use ($data, $factory) {
+            PermissionCatalog::seed(); RoleTemplateCatalog::createFor($factory);
+            $school = School::firstOrCreate(['factory_id'=>$factory->id,'name'=>$data['school_name'],'district'=>$data['district'],'sector'=>$data['sector']], ['contact_name'=>$data['name'],'phone'=>$data['phone'],'email'=>Str::lower($data['email'])]);
+            $school->update(['contact_name'=>$data['name'],'phone'=>$data['phone'],'email'=>Str::lower($data['email'])]);
+            $user = User::create(['current_factory_id'=>$factory->id,'school_id'=>$school->id,'name'=>$data['name'],'email'=>Str::lower($data['email']),'password'=>$data['password'],'locale'=>$data['locale']??'en']);
+            $factory->users()->attach($user->id,['is_owner'=>false,'is_active'=>true,'joined_at'=>now(),'job_title'=>'School Administrator']);
+            $role=Role::where('factory_id',$factory->id)->where('slug','school-user')->firstOrFail();
+            $user->roles()->attach($role->id,['factory_id'=>$factory->id]);
+            return $user;
+        });
+        Auth::login($user); $request->session()->regenerate(); AuditLog::record('auth.school_registered','School administrator account created',$user->school);
+        return response()->json(['message'=>'School administrator account created.','user'=>$this->userPayload($user)],201);
+    }
+
     public function register(Request $request): JsonResponse
     {
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'New factory registration is currently closed. Please contact support.');

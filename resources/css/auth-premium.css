@@ -442,7 +442,9 @@
 
 @media (max-width: 860px) {
     .auth-page {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         min-height: 100svh;
         overflow: auto;
     }
@@ -625,4 +627,124 @@
     .auth-points {
         margin-top: 16px;
     }
+}
+
+/* Reference-inspired split login: familiar form first, operations visual second. */
+@media (min-width: 861px) {
+    .auth-page {
+        min-height: 100svh;
+        padding: clamp(18px, 4vw, 64px);
+        display: block;
+        gap: 0;
+        background: linear-gradient(135deg, #4357f5 0%, #5268ff 52%, #3d50e7 100%);
+    }
+
+    .auth-form-side,
+    .auth-story {
+        min-height: auto;
+    }
+
+    .auth-form-side {
+        order: 1;
+        width: min(100%, 440px);
+        margin: 0 auto;
+        padding: 58px 32px 26px;
+        border-radius: 36px;
+        background: #fff;
+        box-shadow: 0 30px 80px rgba(12,28,105,.28);
+    }
+
+    .auth-story {
+        display: none;
+    }
+
+    .auth-story-copy,
+    .auth-story-foot,
+    .auth-story .auth-orb {
+        display: none;
+    }
+
+    .auth-story .brand {
+        width: fit-content;
+        padding: 9px 13px;
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 14px;
+        background: rgba(4,18,70,.48);
+        backdrop-filter: blur(12px);
+    }
+
+    .auth-story .brand-logo {
+        max-width: 190px;
+        filter: brightness(0) invert(1);
+    }
+
+    .auth-topbar {
+        inset: 26px 30px auto;
+        justify-content: space-between;
+    }
+
+    .auth-mobile-logo {
+        display: block;
+    }
+
+    .auth-mobile-logo .brand-logo {
+        max-width: 210px;
+    }
+
+    .auth-card {
+        width: min(100%, 350px);
+        padding: 18px 0 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+    }
+
+    .auth-card-mark {
+        display: none;
+    }
+
+    .auth-heading > span {
+        color: #3d5eef;
+    }
+
+    .auth-card h2 {
+        margin-top: 10px;
+        font-size: clamp(38px, 3.3vw, 52px);
+    }
+
+    .auth-card > .auth-heading > p {
+        margin-bottom: 22px;
+        font-size: 16px;
+    }
+
+    .auth-field {
+        margin-bottom: 12px;
+    }
+
+    .auth-card .auth-field input,
+    .auth-card .auth-field select {
+        min-height: 50px;
+        border-color: #dce2ed;
+        border-radius: 999px;
+        background: #fff;
+    }
+
+    .auth-submit {
+        min-height: 50px;
+        border-radius: 999px;
+    }
+
+    .auth-assurance {
+        margin-top: 12px !important;
+    }
+}
+
+@media (min-width: 861px) and (max-height: 820px) {
+    .auth-page { padding: 16px; }
+    .auth-form-side,.auth-story { min-height: auto; }
+    .auth-story { margin: 12px 12px 12px 0; }
+    .auth-form-side { padding-top: 74px; }
+    .auth-card > .auth-heading > p { margin-bottom: 20px; }
 }
