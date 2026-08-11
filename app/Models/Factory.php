@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 #[Fillable(['uuid', 'name', 'slug', 'industry_type', 'email', 'phone', 'country_code', 'currency_code', 'timezone', 'default_locale', 'status', 'settings'])]
 class Factory extends Model
@@ -27,5 +28,11 @@ class Factory extends Model
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class);
+    }
+
+    public function hasNoguchiSchoolOrders(): bool
+    {
+        return $this->industry_type === 'clothing_textiles'
+            && Str::lower(trim($this->name)) === 'noguchi holdings ltd';
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\DeliveryVehicle;
 use App\Models\SalesDocument;
+use App\Models\SalesDocumentLine;
 use App\Models\Shipment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class LogisticsController extends Controller
     {
         $shipments = Shipment::query();
         $vehicles = DeliveryVehicle::query();
+        $schoolGarments = auth()->user()->currentFactory->hasNoguchiSchoolOrders();
 
         return response()->json([
             'summary' => [
@@ -29,13 +31,17 @@ class LogisticsController extends Controller
                 'proof_of_delivery' => (clone $shipments)->whereNotNull('proof_reference')->count(),
                 'vehicles' => (clone $vehicles)->count(),
                 'available_vehicles' => (clone $vehicles)->where('status', 'available')->count(),
-                'delivered_items' => (int) Shipment::where('shipments.status', 'delivered')->join('sales_documents', 'sales_documents.id', '=', 'shipments.sales_document_id')->sum('sales_documents.item_count'),
+                'delivered_items' => $schoolGarments
+                    ? (int) SalesDocumentLine::sum('quantity_delivered')
+                    : (int) Shipment::where('shipments.status', 'delivered')->join('sales_documents', 'sales_documents.id', '=', 'shipments.sales_document_id')->sum('sales_documents.item_count'),
                 'delivered_packages' => (int) (clone $shipments)->where('status', 'delivered')->sum('package_count'),
                 'delivered_today' => (clone $shipments)->where('status', 'delivered')->whereDate('delivered_at', today())->count(),
             ],
             'shipments' => Shipment::with(['vehicle', 'salesDocument:id,document_number'])->latest('planned_dispatch_at')->latest('id')->paginate(50),
             'vehicles' => DeliveryVehicle::latest()->get(),
             'incoming_orders' => SalesDocument::where('document_type', 'customer_order')->whereIn('status', ['confirmed', 'processing', 'ready'])->whereDoesntHave('shipments', fn ($query) => $query->whereNotIn('status', ['cancelled']))->latest('document_date')->get(),
+            'specialization' => $schoolGarments ? ['type' => 'noguchi_school_garments'] : null,
+            'capabilities' => ['plan' => auth()->user()->hasPermission('logistics.plan'), 'dispatch' => auth()->user()->hasPermission('logistics.dispatch'), 'deliver' => auth()->user()->hasPermission('logistics.deliver')],
             'updated_at' => now()->toIso8601String(),
         ]);
     }

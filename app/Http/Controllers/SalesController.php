@@ -4,17 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\SalesDocument;
+use App\Models\SalesDocumentLine;
+use App\Models\School;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SalesController extends Controller
 {
-    public function overview(): JsonResponse
+    public function overview(Request $request): JsonResponse
     {
+        $specialized = $request->user()->currentFactory->hasNoguchiSchoolOrders();
         $documents = SalesDocument::query();
         $orders = (clone $documents)->where('document_type', 'customer_order');
         $invoices = (clone $documents)->where('document_type', 'invoice');
+        $list = SalesDocument::query()->with($specialized ? ['lines', 'school'] : []);
+        if ($specialized) {
+            $list->where('document_type', 'customer_order')
+                ->when($request->string('search')->trim()->value(), fn ($query, $value) => $query->where(fn ($match) => $match->where('document_number', 'like', "%{$value}%")->orWhereHas('school', fn ($school) => $school->where('name', 'like', "%{$value}%"))))
+                ->when($request->string('district')->trim()->value(), fn ($query, $value) => $query->whereHas('school', fn ($school) => $school->where('district', $value)))
+                ->when($request->string('sector')->trim()->value(), fn ($query, $value) => $query->whereHas('school', fn ($school) => $school->where('sector', $value)))
+                ->when($request->string('status')->trim()->value(), fn ($query, $value) => $query->where('status', $value))
+                ->when($request->string('academic_year')->trim()->value(), fn ($query, $value) => $query->where('academic_year', $value));
+        }
 
         return response()->json([
             'summary' => [
@@ -29,9 +42,76 @@ class SalesController extends Controller
                 'outstanding_amount' => (float) (clone $invoices)->selectRaw('COALESCE(SUM(total_amount - paid_amount), 0) as balance')->value('balance'),
                 'past_due_invoices' => (clone $invoices)->whereNotIn('status', ['paid', 'cancelled'])->whereDate('due_date', '<', today())->count(),
             ],
-            'documents' => SalesDocument::query()->latest('document_date')->latest('id')->paginate(50),
+            'documents' => $list->latest('document_date')->latest('id')->paginate($specialized ? 25 : 50),
+            'specialization' => $specialized ? [
+                'type' => 'noguchi_school_garments',
+                'garment_categories' => ['Uniform', 'Sweater', 'T-shirt', 'Sport', 'Overall', 'Jumper', 'Polo Lacoste'],
+                'ordered_items' => (int) SalesDocumentLine::sum('quantity_ordered'),
+                'packed_items' => (int) SalesDocumentLine::sum('quantity_packed'),
+                'delivered_items' => (int) SalesDocumentLine::sum('quantity_delivered'),
+                'rejected_items' => (int) SalesDocumentLine::sum('quantity_rejected'),
+                'by_category' => SalesDocumentLine::selectRaw('garment_category, SUM(quantity_ordered) ordered, SUM(quantity_packed) packed, SUM(quantity_delivered) delivered, SUM(quantity_rejected) rejected')->groupBy('garment_category')->orderByDesc('ordered')->get(),
+                'filters' => [
+                    'districts' => School::whereNotNull('district')->distinct()->orderBy('district')->pluck('district'),
+                    'sectors' => School::whereNotNull('sector')->distinct()->orderBy('sector')->pluck('sector'),
+                    'academic_years' => (clone $orders)->whereNotNull('academic_year')->distinct()->orderByDesc('academic_year')->pluck('academic_year'),
+                    'statuses' => ['pending', 'confirmed', 'processing', 'ready', 'completed', 'rejected', 'cancelled'],
+                ],
+            ] : null,
+            'capabilities' => ['review' => $request->user()->hasPermission('sales.fulfill'), 'create' => $request->user()->hasPermission('sales.create') || $request->user()->hasPermission('sales.fulfill')],
             'updated_at' => now()->toIso8601String(),
         ]);
+    }
+
+    public function storeSchoolOrder(Request $request): JsonResponse
+    {
+        $this->ensureNoguchi($request);
+        $factoryId = (int) $request->user()->current_factory_id;
+        $data = $request->validate([
+            'document_number' => ['nullable', 'string', 'max:60', Rule::unique('sales_documents')->where('factory_id', $factoryId)->where('document_type', 'customer_order')],
+            'customer_name' => ['required', 'string', 'max:255'], 'customer_email' => ['nullable', 'email', 'max:255'],
+            'school_district' => ['nullable', 'string', 'max:80'], 'school_sector' => ['nullable', 'string', 'max:80'], 'academic_year' => ['required', 'string', 'max:20'],
+            'document_date' => ['required', 'date'], 'due_date' => ['nullable', 'date', 'after_or_equal:document_date'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'], 'currency_code' => ['nullable', 'string', 'size:3'],
+            'lines' => ['required', 'array', 'min:1'], 'lines.*.class_level' => ['required', 'string', 'max:30'],
+            'lines.*.garment_category' => ['required', Rule::in(['Uniform', 'Sweater', 'T-shirt', 'Sport', 'Overall', 'Jumper', 'Polo Lacoste'])],
+            'lines.*.gender' => ['nullable', Rule::in(['Boy', 'Girl', 'Unisex'])], 'lines.*.size' => ['nullable', 'string', 'max:20'],
+            'lines.*.color' => ['nullable', 'string', 'max:255'], 'lines.*.quantity_ordered' => ['required', 'integer', 'min:1'],
+        ]);
+        $order = DB::transaction(function () use ($data, $request) {
+            $lines = $data['lines']; unset($data['lines']);
+            $schoolData = ['name' => $data['customer_name'], 'email' => $data['customer_email'] ?? null, 'district' => $data['school_district'] ?? null, 'sector' => $data['school_sector'] ?? null];
+            unset($data['school_district'], $data['school_sector']);
+            $school = School::firstOrCreate(['name' => $schoolData['name'], 'district' => $schoolData['district'], 'sector' => $schoolData['sector']], $schoolData);
+            $data['document_number'] ??= 'SO-'.now()->format('Ymd').'-'.str_pad((string) (SalesDocument::where('document_type', 'customer_order')->count() + 1), 4, '0', STR_PAD_LEFT);
+            $order = SalesDocument::create($data + ['school_id' => $school->id, 'document_type' => 'customer_order', 'status' => 'pending', 'item_count' => collect($lines)->sum('quantity_ordered'), 'created_by' => $request->user()->id]);
+            $order->lines()->createMany($lines);
+            return $order;
+        });
+        AuditLog::record('sales.school_order_received', "Received school garment order {$order->document_number} from {$order->customer_name}", $order);
+
+        return response()->json(['message' => 'School garment order received.', 'document' => $order->load('lines')], 201);
+    }
+
+    public function updateSchoolOrderLine(Request $request, SalesDocumentLine $line): JsonResponse
+    {
+        $this->ensureNoguchi($request);
+        $data = $request->validate([
+            'quantity_packed' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
+            'quantity_delivered' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
+            'quantity_rejected' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
+            'rejection_reason' => ['nullable', 'string', 'max:255'],
+        ]);
+        abort_if($data['quantity_delivered'] > $data['quantity_packed'], 422, 'Delivered quantity cannot exceed packed quantity.');
+        abort_if($data['quantity_delivered'] + $data['quantity_rejected'] > $line->quantity_ordered, 422, 'Delivered and rejected quantities cannot exceed the ordered quantity.');
+        $line->update($data);
+        $document = $line->document()->with('lines')->firstOrFail();
+        $totals = $document->lines->sum('quantity_delivered') + $document->lines->sum('quantity_rejected');
+        if ($totals >= $document->lines->sum('quantity_ordered')) $document->update(['status' => 'completed']);
+        elseif ($document->lines->sum('quantity_packed') > 0) $document->update(['status' => 'processing']);
+        AuditLog::record('sales.school_order_line_updated', "Updated fulfilment for {$document->document_number}", $line);
+
+        return response()->json(['message' => 'Garment quantities updated.', 'line' => $line->fresh(), 'document_status' => $document->fresh()->status]);
     }
 
     public function decide(Request $request, SalesDocument $document): JsonResponse
@@ -47,5 +127,10 @@ class SalesController extends Controller
         AuditLog::record('sales.order_'.$status, ucfirst($status)." customer order {$document->document_number}".(!empty($data['reason'])?': '.$data['reason']:''), $document, ['status' => $document->getOriginal('status')], ['status' => $status]);
 
         return response()->json(['message' => "Order {$status}.", 'document' => $document->fresh()]);
+    }
+
+    private function ensureNoguchi(Request $request): void
+    {
+        abort_unless($request->user()->currentFactory->hasNoguchiSchoolOrders(), 404, 'This specialized school-order workflow is not enabled for this factory.');
     }
 }

@@ -514,3 +514,80 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
     .cutting-form-actions .primary-btn { min-width:auto; width:100%; }
 }
 .cutting-workspace .module-title > span { display:flex !important; }
+
+/* NOGUCHI school orders use compact cards instead of a wide spreadsheet. */
+.noguchi-school-list { overflow:hidden; background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 96%,#2563eb)); }
+.noguchi-school-list > header { padding:26px 28px; border-bottom:1px solid var(--line); background:linear-gradient(115deg,color-mix(in srgb,#2563eb 9%,var(--panel)),var(--panel) 62%); }
+.noguchi-school-list > header h2 { margin:0 0 7px; font-size:24px; }
+.noguchi-school-list > header p { margin:0; max-width:760px; color:var(--muted); }
+.noguchi-school-list > .admin-table-wrap { padding:20px; overflow:visible; }
+.noguchi-school-list > .admin-table-wrap > .admin-table,
+.noguchi-school-list > .admin-table-wrap > .admin-table > tbody { display:block; width:100%; min-width:0; }
+.noguchi-school-list > .admin-table-wrap > .admin-table > thead { display:none; }
+.noguchi-school-list .school-order-row { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-template-rows:auto auto; gap:12px 20px; align-items:center; margin-bottom:14px; padding:20px 22px; border:1px solid var(--line); border-radius:16px; background:var(--panel); box-shadow:0 8px 24px rgba(15,35,70,.06); transition:border-color .2s,box-shadow .2s,transform .2s; }
+.noguchi-school-list .school-order-row:hover { border-color:#93b4f8; box-shadow:0 14px 32px rgba(37,99,235,.12); transform:translateY(-1px); }
+.noguchi-school-list .school-order-row > td { display:block; padding:0; border:0; min-width:0; color:var(--text); }
+.noguchi-school-list .school-order-row > td::before { display:block; margin-bottom:5px; color:var(--muted); font-size:10px; line-height:1; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.noguchi-school-list .school-order-row > td:nth-child(1) { grid-column:1/4; grid-row:1; }
+.noguchi-school-list .school-order-row > td:nth-child(1)::before { content:'Order number'; }
+.noguchi-school-list .school-order-row > td:nth-child(1) b { color:#2563eb; font-size:13px; }
+.noguchi-school-list .school-order-row > td:nth-child(2) { grid-column:1/6; grid-row:2; }
+.noguchi-school-list .school-order-row > td:nth-child(2)::before { content:'School'; }
+.noguchi-school-list .school-order-row > td:nth-child(2) > b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:20px; }
+.noguchi-school-list .school-order-row > td:nth-child(2) small { display:block; margin-top:4px; color:var(--muted); }
+.noguchi-school-list .school-order-row > td:nth-child(3) { grid-column:4/6; grid-row:1; }
+.noguchi-school-list .school-order-row > td:nth-child(3)::before { content:'Received'; }
+.noguchi-school-list .school-order-row > td:nth-child(4) { grid-column:6/8; grid-row:2; padding-left:18px; border-left:1px solid var(--line); }
+.noguchi-school-list .school-order-row > td:nth-child(4)::before { content:'Garments ordered'; }
+.noguchi-school-list .school-order-row > td:nth-child(4) b { font-size:24px; color:#1d4ed8; }
+.noguchi-school-list .school-order-row > td:nth-child(5) { grid-column:8/10; grid-row:2; }
+.noguchi-school-list .school-order-row > td:nth-child(5)::before { content:'Order value'; }
+.noguchi-school-list .school-order-row > td:nth-child(5) { font-weight:700; }
+.noguchi-school-list .school-order-row > td:nth-child(6) { grid-column:6/8; grid-row:1; }
+.noguchi-school-list .school-order-row > td:nth-child(6)::before { content:'Status'; }
+.noguchi-school-list .school-order-row > td:nth-child(7) { grid-column:8/10; grid-row:1; }
+.noguchi-school-list .school-order-row > td:nth-child(7)::before { content:'Due date'; }
+.noguchi-school-list .school-order-row > td:nth-child(8) { grid-column:10/13; grid-row:1/3; padding-left:20px; border-left:1px solid var(--line); }
+.noguchi-school-list .school-order-row > td:nth-child(8)::before { content:'What you can do'; }
+.noguchi-school-list .school-order-row .workflow-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.noguchi-school-list .school-order-row .workflow-actions button { min-height:38px; padding:8px 13px; font-size:13px; white-space:nowrap; }
+.noguchi-school-list .school-icon-actions { flex-wrap:nowrap; align-items:center; gap:9px; }
+.noguchi-school-list .school-icon-actions .school-action-icon { display:inline-flex; align-items:center; justify-content:center; flex:0 0 40px; width:40px; height:40px; min-height:40px; padding:0; border:1px solid var(--line); border-radius:11px; background:var(--panel); color:var(--muted); cursor:pointer; transition:transform .16s,box-shadow .16s,border-color .16s,background .16s,color .16s; }
+.noguchi-school-list .school-icon-actions .school-action-icon:hover { transform:translateY(-2px); box-shadow:0 7px 16px rgba(15,23,42,.12); }
+.noguchi-school-list .school-icon-actions .school-action-icon.view:hover,.noguchi-school-list .school-icon-actions .school-action-icon.view.active { border-color:#93c5fd; background:#eff6ff; color:#2563eb; }
+.noguchi-school-list .school-icon-actions .school-action-icon.accept { border-color:#bbf7d0; background:#f0fdf4; color:#16a34a; }
+.noguchi-school-list .school-icon-actions .school-action-icon.accept:hover { border-color:#22c55e; background:#dcfce7; }
+.noguchi-school-list .school-icon-actions .school-action-icon.reject { border-color:#fecaca; background:#fff1f2; color:#dc2626; }
+.noguchi-school-list .school-icon-actions .school-action-icon.reject:hover { border-color:#ef4444; background:#fee2e2; }
+.noguchi-school-list .school-icon-actions .school-action-icon:disabled { opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+.school-filter-panel { padding:0; overflow:hidden; }
+.school-filter-panel > header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 22px; border-bottom:1px solid var(--line); background:color-mix(in srgb,#eff6ff 55%,var(--panel)); }
+.school-filter-panel > header > div { display:flex; align-items:center; gap:11px; color:#2563eb; }
+.school-filter-panel > header span { display:flex; flex-direction:column; gap:2px; color:var(--text); }
+.school-filter-panel > header small { color:var(--muted); font-weight:400; }
+.school-filter-grid { display:grid; grid-template-columns:minmax(260px,1.7fr) repeat(4,minmax(145px,1fr)); gap:14px; padding:18px 22px 22px; }
+.school-filter-grid > label:not(.school-search) { display:flex; flex-direction:column; gap:7px; color:var(--muted); font-size:12px; font-weight:700; }
+.school-filter-grid select,.school-filter-grid input { width:100%; height:44px; box-sizing:border-box; border:1px solid var(--line); border-radius:11px; background:var(--panel); color:var(--text); padding:0 12px; outline:none; }
+.school-filter-grid select:focus,.school-filter-grid input:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+.school-filter-grid .school-search { position:relative; align-self:end; }
+.school-filter-grid .school-search svg { position:absolute; z-index:1; left:13px; top:13px; color:var(--muted); }
+.school-filter-grid .school-search input { padding-left:41px; }
+.school-pagination { display:flex; align-items:center; justify-content:center; gap:18px; padding:4px 20px 24px; }
+.school-pagination span { color:var(--muted); font-size:13px; font-weight:700; }
+@media(max-width:1200px) { .school-filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.school-filter-grid .school-search { grid-column:1/3; } }
+@media(max-width:620px) { .school-filter-panel > header { align-items:flex-start; }.school-filter-grid { grid-template-columns:1fr; padding:14px; }.school-filter-grid .school-search { grid-column:1; }.school-filter-panel > header small { display:none; } }
+.noguchi-school-list .school-detail-row { display:block; margin:-5px 0 18px; }
+.noguchi-school-list .school-detail-row > td { display:block; padding:18px; border:1px solid #bfdbfe; border-radius:14px; background:color-mix(in srgb,#eff6ff 70%,var(--panel)); }
+.noguchi-school-list .school-detail-row .admin-table-wrap { max-height:460px; overflow:auto; border-radius:10px; }
+@media(max-width:1100px) {
+    .noguchi-school-list .school-order-row { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:none; }
+    .noguchi-school-list .school-order-row > td { grid-column:auto!important; grid-row:auto!important; }
+    .noguchi-school-list .school-order-row > td:nth-child(2) { grid-column:1/3!important; }
+    .noguchi-school-list .school-order-row > td:nth-child(8) { grid-column:1/3!important; padding:14px 0 0; border-left:0; border-top:1px solid var(--line); }
+}
+@media(max-width:620px) {
+    .noguchi-school-list > .admin-table-wrap { padding:12px; }
+    .noguchi-school-list .school-order-row { grid-template-columns:1fr; padding:18px; }
+    .noguchi-school-list .school-order-row > td:nth-child(2),.noguchi-school-list .school-order-row > td:nth-child(8) { grid-column:1!important; }
+    .noguchi-school-list .school-order-row > td:nth-child(4),.noguchi-school-list .school-order-row > td:nth-child(8) { padding-left:0; border-left:0; }
+}
