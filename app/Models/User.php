@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['current_factory_id', 'name', 'email', 'locale', 'timezone', 'password', 'last_login_at', 'last_login_ip', 'is_platform_admin', 'is_active'])]
+#[Fillable(['current_factory_id', 'school_id', 'name', 'email', 'locale', 'timezone', 'password', 'last_login_at', 'last_login_ip', 'is_platform_admin', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -56,6 +56,8 @@ class User extends Authenticatable
     {
         return $this->hasOne(EmployeeProfile::class);
     }
+
+    public function school(): BelongsTo { return $this->belongsTo(School::class); }
 
     public function workAssignments(): HasMany
     {

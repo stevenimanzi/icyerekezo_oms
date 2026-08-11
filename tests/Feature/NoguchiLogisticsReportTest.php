@@ -11,7 +11,7 @@ class NoguchiLogisticsReportTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_only_noguchi_logistics_users_receive_the_special_daily_report(): void
+    public function test_logistics_receives_only_logistics_data_while_management_receives_factory_report(): void
     {
         $this->postJson('/api/auth/register', [
             'name' => 'Owner', 'email' => 'owner@noguchi-report.test', 'password' => 'Secure@12345',
@@ -31,9 +31,11 @@ class NoguchiLogisticsReportTest extends TestCase
         $this->actingAs(User::findOrFail($employee['id']))
             ->getJson('/api/reports?period=day&type=all')
             ->assertOk()
-            ->assertJsonPath('report.scope', 'noguchi_logistics')
-            ->assertJsonPath('standard.title', 'NOGUCHI daily logistics report')
-            ->assertJsonPath('standard.orientation', 'landscape');
+            ->assertJsonPath('report.scope', 'logistics')
+            ->assertJsonPath('report.type', 'inventory')
+            ->assertJsonPath('standard.title', 'Daily logistics report')
+            ->assertJsonPath('production', [])
+            ->assertJsonStructure(['logistics' => ['summary' => ['orders_processed', 'items_ordered', 'items_delivered', 'items_remaining', 'items_returned', 'total_value', 'shipments', 'deliveries_completed'], 'order_statuses', 'return_reasons', 'orders', 'shipments', 'vehicles'], 'stock_register', 'filters' => ['districts']]);
 
         $this->actingAs($owner)->getJson('/api/reports?period=day&type=all')
             ->assertOk()

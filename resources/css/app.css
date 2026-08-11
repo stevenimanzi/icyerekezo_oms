@@ -644,3 +644,31 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
     .noguchi-flow-table { min-width:0; font-size:7px; }
     .noguchi-flow-table th,.noguchi-flow-table td { padding:4px; }
 }
+.legacy-order-sheet{overflow:hidden}
+.legacy-order-sheet>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px;border-bottom:1px solid #e5eaf2}
+.legacy-order-sheet>header h2{margin:0 0 5px;font-size:22px;color:#14213d}
+.legacy-order-sheet>header p{margin:0;color:#71809d}
+.legacy-live-label{display:inline-flex;align-items:center;gap:7px;color:#098b54;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.legacy-live-label i{width:8px;height:8px;border-radius:50%;background:#20bf6b;box-shadow:0 0 0 4px #dff8ea}
+.legacy-order-table{width:100%;min-width:0;table-layout:fixed;font-size:11px}
+.legacy-order-table th,.legacy-order-table td{padding:9px 5px;text-align:center;vertical-align:middle;white-space:normal}
+.legacy-order-table th{font-size:9px;line-height:1.15;letter-spacing:.035em}
+.legacy-order-table th:first-child,.legacy-order-table td:first-child{width:160px;text-align:left;padding-left:16px}
+.legacy-order-table th:nth-last-child(3),.legacy-order-table td:nth-last-child(3){width:88px}
+.legacy-order-table th:nth-last-child(2),.legacy-order-table td:nth-last-child(2){width:82px}
+.legacy-order-table th:last-child,.legacy-order-table td:last-child{width:48px}
+.legacy-school-cell b{display:block;font-size:12px;color:#15213a}
+.legacy-school-cell small{display:block;margin-top:3px;color:#7886a0}
+.legacy-sector-row td{padding:9px 16px!important;background:#edf4ff;color:#225fcb;text-align:left!important;border-top:1px solid #cfe0ff}
+.legacy-sector-row span{margin-left:8px;color:#425a7c}
+.legacy-sector-row em{float:right;color:#71809d;font-style:normal;font-weight:700}
+.legacy-progress{display:block;margin:4px auto 0;max-width:68px;color:#71809d;font-size:8px;line-height:1.2}
+.legacy-progress i{display:block;height:3px;margin-bottom:3px;border-radius:4px;background:#24b36b}
+.legacy-order-table .admin-status{font-size:9px;padding:5px 7px;white-space:nowrap}
+.legacy-order-table .school-action-icon{width:34px;height:34px}
+@media(max-width:1200px){.legacy-order-table{min-width:1180px}.legacy-order-sheet .admin-table-wrap{overflow-x:auto}}
+.logistics-report-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
+.logistics-report-pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.logistics-status-report .report-section{break-inside:avoid}
+.logistics-status-report .report-section table{font-size:11px}
+@media(max-width:900px){.logistics-report-summary,.logistics-report-pair{grid-template-columns:1fr 1fr}}
