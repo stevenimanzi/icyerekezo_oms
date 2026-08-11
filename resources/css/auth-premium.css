@@ -254,6 +254,17 @@
     line-height: 1.05;
 }
 
+.school-auth-page .auth-card h2 {
+    font-size: clamp(24px, 2vw, 30px);
+    white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+    .school-auth-page .auth-card h2 {
+        white-space: normal;
+    }
+}
+
 .auth-card > .auth-heading > p {
     margin: 11px 0 28px;
     color: #70809e;

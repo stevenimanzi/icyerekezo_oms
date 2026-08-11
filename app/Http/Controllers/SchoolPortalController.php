@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 
 class SchoolPortalController extends Controller
 {
-    private const PRICES = ['Nursery' => ['Uniform'=>6000,'Sport Uniform'=>8000,'Sweater'=>7500], 'Primary' => ['Uniform'=>7500,'Sport Uniform'=>8000,'Sweater'=>8500], 'Secondary' => ['Uniform'=>12000,'Sport Uniform'=>12000,'Sweater'=>9000]];
+    private const PRICES = ['Nursery' => ['Uniform'=>6000,'Sport Uniform'=>8000,'Sweater'=>7500], 'Primary' => ['Uniform'=>7500,'Sport Uniform'=>8000,'Sweater'=>8500], 'Secondary' => ['Uniform'=>12000,'Sport Uniform'=>12000,'Sweater'=>9000,'T-shirt'=>5000,'Overall'=>15000]];
 
     public function overview(Request $request): JsonResponse
     {
@@ -33,7 +33,8 @@ class SchoolPortalController extends Controller
     public function storeOrder(Request $request): JsonResponse
     {
         $school=$this->school($request); $factoryId=(int)$request->user()->current_factory_id;
-        $data=$request->validate(['academic_year'=>['required',Rule::in(['2025-2026','2026-2027','2027-2028','2028-2029','2029-2030','2030-2031'])],'lines'=>['required','array','min:1'],'lines.*.class_level'=>['required','string','max:30'],'lines.*.garment_category'=>['required',Rule::in(['Uniform','Sweater','Sport Uniform'])],'lines.*.gender'=>['required',Rule::in(['Boy','Girl','Unisex'])],'lines.*.size'=>['required','string','max:20'],'lines.*.color'=>['nullable','string','max:255'],'lines.*.quantity_ordered'=>['required','integer','min:1']]);
+        $data=$request->validate(['academic_year'=>['required',Rule::in(['2025-2026','2026-2027','2027-2028','2028-2029','2029-2030','2030-2031'])],'lines'=>['required','array','min:1'],'lines.*.class_level'=>['required','string','max:30'],'lines.*.garment_category'=>['required',Rule::in(['Uniform','Sweater','Sport Uniform','T-shirt','Overall'])],'lines.*.gender'=>['required',Rule::in(['Boy','Girl','Unisex'])],'lines.*.size'=>['required','string','max:20'],'lines.*.color'=>['nullable','string','max:255'],'lines.*.quantity_ordered'=>['required','integer','min:1']]);
+        foreach($data['lines'] as $line){abort_if($line['garment_category']==='T-shirt'&&!preg_match('/^S[1-6]$/',$line['class_level']),422,'T-Shirts are available only for S1 to S6.');abort_if($line['garment_category']==='Overall'&&!preg_match('/^S[4-6]$/',$line['class_level']),422,'Overalls are available only for S4 to S6.');}
         abort_if(SalesDocument::withoutGlobalScopes()->where('factory_id',$factoryId)->where('school_id',$school->id)->where('academic_year',$data['academic_year'])->where('document_type','customer_order')->where('status','!=','rejected')->exists(),422,'This school already has an active order for the selected academic year.');
         $total=collect($data['lines'])->sum(function($line){$level=str_starts_with($line['class_level'],'P')?'Primary':(str_starts_with($line['class_level'],'S')?'Secondary':'Nursery');return $line['quantity_ordered']*(self::PRICES[$level][$line['garment_category']]??0);});
         $order=DB::transaction(function()use($data,$school,$factoryId,$request,$total){$order=SalesDocument::withoutGlobalScopes()->create(['factory_id'=>$factoryId,'school_id'=>$school->id,'document_type'=>'customer_order','document_number'=>'SCH-'.now()->format('YmdHis').'-'.$school->id,'customer_name'=>$school->name,'customer_email'=>$school->email,'academic_year'=>$data['academic_year'],'status'=>'pending','currency_code'=>'RWF','total_amount'=>$total,'item_count'=>collect($data['lines'])->sum('quantity_ordered'),'document_date'=>today(),'created_by'=>$request->user()->id]);$order->lines()->createMany(array_map(fn($line)=>$line+['factory_id'=>$factoryId],$data['lines']));return $order;});
@@ -42,15 +43,27 @@ class SchoolPortalController extends Controller
 
     public function payment(Request $request, SalesDocument $document): JsonResponse
     {
-        $school=$this->school($request);$this->owns($request,$school,$document);$data=$request->validate(['amount'=>['required','numeric','min:1','max:'.$document->total_amount],'payment_method'=>['required',Rule::in(['Bank Transfer','MoMo Pay','Cheque','Cash Deposit'])],'proof_file'=>['required','file','mimes:jpg,jpeg,png,pdf','max:5120']]);
-        $path=$request->file('proof_file')->store('payment-proofs','public');DB::table('school_payment_submissions')->insert(['factory_id'=>$request->user()->current_factory_id,'school_id'=>$school->id,'sales_document_id'=>$document->id,'amount'=>$data['amount'],'payment_method'=>$data['payment_method'],'proof_path'=>$path,'status'=>'pending','created_at'=>now(),'updated_at'=>now()]);
+        $school=$this->school($request);$this->owns($request,$school,$document);
+        $pending=(float)DB::table('school_payment_submissions')->where('sales_document_id',$document->id)->where('status','pending')->sum('amount');
+        $remaining=max(0,(float)$document->total_amount-(float)$document->paid_amount-$pending);
+        abort_if($remaining<=0,422,'This order has no outstanding balance available for another payment submission.');
+        $data=$request->validate(['amount'=>['required','numeric','min:1','max:'.$remaining],'payment_method'=>['required',Rule::in(['Bank Transfer','MoMo Pay','Cheque','Cash Deposit'])],'payment_reference'=>['required','string','max:120'],'paid_at'=>['required','date','before_or_equal:today'],'proof_file'=>['required','file','mimes:jpg,jpeg,png,pdf','max:5120']]);
+        $path=$request->file('proof_file')->store('payment-proofs','public');DB::table('school_payment_submissions')->insert(['factory_id'=>$request->user()->current_factory_id,'school_id'=>$school->id,'sales_document_id'=>$document->id,'amount'=>$data['amount'],'payment_method'=>$data['payment_method'],'payment_reference'=>$data['payment_reference'],'paid_at'=>$data['paid_at'],'proof_path'=>$path,'status'=>'pending','created_at'=>now(),'updated_at'=>now()]);
         return response()->json(['message'=>'Payment proof submitted for verification.'],201);
     }
 
     public function returnItems(Request $request, SalesDocument $document): JsonResponse
     {
-        $school=$this->school($request);$this->owns($request,$school,$document);$data=$request->validate(['items'=>['required','array','min:1'],'items.*.line_id'=>['required','integer'],'items.*.quantity'=>['required','integer','min:1'],'items.*.reason'=>['required',Rule::in(['Too Small','Too Large','Damaged','Wrong Item','Other'])]]);
-        foreach($data['items'] as $item){$line=$document->lines()->findOrFail($item['line_id']);abort_if($item['quantity']>$line->quantity_delivered,422,'A return cannot be greater than the quantity delivered.');DB::table('school_returns')->insert(['factory_id'=>$request->user()->current_factory_id,'school_id'=>$school->id,'sales_document_id'=>$document->id,'sales_document_line_id'=>$line->id,'quantity'=>$item['quantity'],'reason'=>$item['reason'],'status'=>'pending','created_at'=>now(),'updated_at'=>now()]);}
+        $school=$this->school($request);$this->owns($request,$school,$document);$data=$request->validate(['items'=>['required','array','min:1'],'items.*.line_id'=>['required','integer','distinct'],'items.*.quantity'=>['required','integer','min:1'],'items.*.reason'=>['required',Rule::in(['Too Small','Too Large','Damaged','Wrong Item','Other'])]]);
+        DB::transaction(function()use($data,$document,$school,$request){
+            foreach($data['items'] as $item){
+                $line=$document->lines()->lockForUpdate()->findOrFail($item['line_id']);
+                $alreadyReturned=(int)DB::table('school_returns')->where('sales_document_line_id',$line->id)->sum('quantity');
+                $available=max(0,(int)$line->quantity_delivered-$alreadyReturned);
+                abort_if($item['quantity']>$available,422,'The return quantity is greater than the quantity still available to return.');
+                DB::table('school_returns')->insert(['factory_id'=>$request->user()->current_factory_id,'school_id'=>$school->id,'sales_document_id'=>$document->id,'sales_document_line_id'=>$line->id,'quantity'=>$item['quantity'],'reason'=>$item['reason'],'status'=>'pending','created_at'=>now(),'updated_at'=>now()]);
+            }
+        });
         return response()->json(['message'=>'Your return request was sent to the factory.'],201);
     }
 
