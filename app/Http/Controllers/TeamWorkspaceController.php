@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\EmployeeProfile;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\School;
 use App\Models\User;
 use App\Models\WorkAssignment;
 use App\Models\Workstation;
@@ -75,6 +76,7 @@ class TeamWorkspaceController extends Controller
             'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email:rfc', 'max:190'],
             'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()->symbols()],
             'role_id' => ['required', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
+            'school_id' => ['nullable', Rule::exists('schools', 'id')->where('factory_id', $factoryId)],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
             'workstation_id' => ['nullable', Rule::exists('workstations', 'id')->where('factory_id', $factoryId)],
             'employee_number' => ['nullable', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $factoryId)],
@@ -87,8 +89,13 @@ class TeamWorkspaceController extends Controller
         }
         $role = Role::where('factory_id', $factoryId)->with('permissions:id,slug')->findOrFail($data['role_id']);
         $this->assertCanGrantRole($request->user(), $role);
+        if ($role->slug === 'school-user' && empty($data['school_id'])) {
+            $data['school_id'] = School::where('factory_id', $factoryId)->where('email', Str::lower($data['email']))->value('id');
+            if (! $data['school_id']) throw ValidationException::withMessages(['email' => 'Use the email saved on the school record so this account can be linked safely.']);
+        }
         $user = DB::transaction(function () use ($data, $factoryId) {
             $user = User::firstOrCreate(['email' => strtolower($data['email'])], ['name' => $data['name'], 'password' => $data['password'], 'locale' => 'en']);
+            if (($data['school_id'] ?? null)) $user->update(['school_id' => $data['school_id']]);
             $user->factories()->syncWithoutDetaching([$factoryId => ['is_active' => true, 'is_owner' => false, 'joined_at' => now(), 'job_title' => $data['job_title'] ?? null]]);
             $user->roles()->syncWithoutDetaching([$data['role_id'] => ['factory_id' => $factoryId]]);
             EmployeeProfile::updateOrCreate(['factory_id' => $factoryId, 'user_id' => $user->id], ['department_id' => $data['department_id'] ?? null, 'workstation_id' => $data['workstation_id'] ?? null, 'employee_number' => $data['employee_number'], 'job_title' => $data['job_title'] ?? null, 'employment_status' => 'active', 'hired_at' => now()]);

@@ -184,7 +184,7 @@ class AuthController extends Controller
 
     private function userPayload(User $user): array
     {
-        $user->load('currentFactory:id,uuid,name,slug,industry_type,currency_code,timezone,default_locale', 'factories:id,uuid,name,slug', 'employeeProfile.department:id,name,code', 'employeeProfile.workstation:id,name,code,type');
+        $user->load('currentFactory:id,uuid,name,slug,industry_type,currency_code,timezone,default_locale', 'factories:id,uuid,name,slug', 'school:id,name,district,sector,contact_name,phone,email', 'employeeProfile.department:id,name,code', 'employeeProfile.workstation:id,name,code,type');
         $roles = $user->roles()->wherePivot('factory_id', $user->current_factory_id)->with('permissions:id,slug')->get();
         $permissions = $user->is_platform_admin ? collect(['*']) : $roles->pluck('permissions')->flatten()->pluck('slug')->unique()->values();
         $subscription = $user->current_factory_id ? \App\Models\FactorySubscription::with('plan:id,name,code,features')->where('factory_id', $user->current_factory_id)->latest('ends_at')->first() : null;
@@ -198,6 +198,7 @@ class AuthController extends Controller
             'subscription' => $subscription ? ['id' => $subscription->id, 'status' => $subscription->status, 'plan' => $subscription->plan] : null,
             'workspace' => $user->is_platform_admin && ! $user->current_factory_id ? 'platform_admin' : ($roles->first()?->dashboard_key ?? 'operations'),
             'employee_profile' => $user->employeeProfile,
+            'school' => $user->school,
             'access_scope' => $user->current_factory_id ? \App\Support\OperationalScope::for($user)->payload() : null,
             'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
             'announcements' => PlatformAnnouncement::whereNotNull('published_at')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->latest('published_at')->limit(10)->get(['id', 'title', 'message', 'severity', 'published_at']),

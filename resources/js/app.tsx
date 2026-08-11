@@ -5,7 +5,7 @@ import {
     Activity, AlertTriangle, Bell, Boxes, Building2, ChevronDown, ChevronRight, CircleAlert, CircleDollarSign, ClipboardCheck, CreditCard, Database,
     Eye, EyeOff, Factory, FileText, Gauge, HelpCircle, Inbox, Languages, LayoutDashboard, LockKeyhole, Mail, Megaphone, Menu, MessageSquare, Moon, Package, PackageCheck,
     PackageOpen, RefreshCw, Scissors, Search, Send, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Warehouse,
-    UserRound, Wrench, X, Zap,
+    UserRound, Wrench, X, Zap, Plus, RotateCcw,
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import PlatformAdminPage from './pages/admin/PlatformAdminPage';
@@ -26,6 +26,7 @@ import ProductCatalogPage from './pages/shared/ProductCatalogPage';
 import GlobalOperationToasts from './pages/shared/GlobalOperationToasts';
 import { FlowSetupPage, ProductionFlowPage, TeamManagementPage } from './pages/production/FactoryManagerModules';
 import CuttingWorkspacePage from './pages/cutting/CuttingWorkspacePage';
+import SchoolPortalPage from './pages/school/SchoolPortalPage';
 
 type Locale = 'en' | 'fr';
 const DEFAULT_SYSTEM_LOGO = '/assets/images/icyerekezo_oms_logo.svg';
@@ -35,6 +36,7 @@ type AuthUser = {
     is_platform_admin: boolean; permissions: string[]; workspace: string;
     roles: { id: number; name: string; slug: string; dashboard_key: string }[];
     employee_profile?: { job_title?: string; department?: { name: string }; workstation?: { name: string; type: string } } | null;
+    school?: {id:number;name:string;district?:string;sector?:string;contact_name?:string;phone?:string;email?:string}|null;
     active_assignments: { id: number; assignment_type: string; title: string; priority: string; status: string; due_at?: string }[];
     announcements?: { id: number; title: string; message: string; severity: string; published_at: string }[];
     subscription?: { id: number; status: string; plan?: { id: number; name: string; code: string; features: string[] } } | null;
@@ -170,6 +172,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const subscribedFeatures = user.subscription?.plan?.features;
     const featureForPage:Record<string,string>={dashboard:'dashboard',procurement:'procurement',inventory:'inventory','incoming-requests':'inventory',products:'products',production:'production',quality:'quality',sales:'sales',logistics:'logistics',dispatch:'logistics',vehicles:'logistics','delivery-confirmation':'logistics',team:'team',hr:'team',safety:'team',audit:'reports',machines:'maintenance',reports:'reports','cutting-workspace':'production','fabric-request':'inventory','cut-fabrics':'production','damaged-fabrics':'inventory','cutting-report':'production'};
     const hasFeature=(page:string)=>!subscribedFeatures||subscribedFeatures.includes(featureForPage[page]||page);
+    const isSchoolUser=user.workspace==='school'||user.roles.some(role=>role.slug==='school-user');
     const isLogisticsUser=user.workspace==='logistics'||user.roles.some(role=>role.slug==='logistics-officer');
     const isCuttingUser = user.workspace === 'cutting' || user.roles.some(role => role.slug === 'cutting-operator');
     const isWarehouseUser = user.workspace === 'warehouse' || user.roles.some(role => role.slug === 'warehouse-keeper');
@@ -307,6 +310,14 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['products', Boxes, t.products, 'products.view'],
         ['production', Gauge, locale === 'en' ? 'Production status' : 'État de production', 'production.view'],
         ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isSchoolUser ? [
+        ['dashboard', LayoutDashboard, 'Dashboard', '*'],
+        ['new-order', Plus, 'Place New Order', '*'],
+        ['order-history', FileText, 'Order History', '*'],
+        ['financials', CreditCard, 'Financial Records', '*'],
+        ['return-items', RotateCcw, 'Return Items', '*'],
+        ['returns-history', RefreshCw, 'Returns History', '*'],
+        ['school-profile', Building2, 'School Profile', '*'],
     ] as const : isLogisticsUser ? [
         // ─── Logistics Officer ───
         ['dashboard', LayoutDashboard, locale === 'en' ? 'Dashboard' : 'Tableau de bord', '*'],
@@ -335,7 +346,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['dashboard', LayoutDashboard, t.dashboard, '*'], ['procurement', ShoppingCart, t.procurement, 'procurement.view'], ['inventory', Warehouse, t.warehouse, 'inventory.view'], ['products', Boxes, t.products, 'products.view'],
         ['production', Gauge, t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
         ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
-    ] as const).filter(([page, , , permission]) => (permission === '*' || can(permission)) && (user.is_platform_admin || hasFeature(page))), [t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner, isLogisticsUser, isCuttingUser, isWarehouseUser, isProcurementUser, isQualityUser, isProductionManager, isSalesUser, isFinanceUser, isMachineOperator, isFactoryManager, isFactoryAdmin, isProductionPlanner, isProductionSupervisor, isMaintenanceTechnician, isQualityManager, isHrOfficer, isSafetyOfficer, isInternalAuditor]);
+    ] as const).filter(([page, , , permission]) => (permission === '*' || can(permission)) && (user.is_platform_admin || isSchoolUser || hasFeature(page))), [t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner, isSchoolUser, isLogisticsUser, isCuttingUser, isWarehouseUser, isProcurementUser, isQualityUser, isProductionManager, isSalesUser, isFinanceUser, isMachineOperator, isFactoryManager, isFactoryAdmin, isProductionPlanner, isProductionSupervisor, isMaintenanceTechnician, isQualityManager, isHrOfficer, isSafetyOfficer, isInternalAuditor]);
     useEffect(() => {
         const allowed = nav.map(([key]) => key as string); allowed.push('profile'); if (!user.is_platform_admin) { if(hasFeature('support'))allowed.push('support');allowed.push('notifications'); if (can('factory.manage')) allowed.push('settings'); }
         if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : (allowed[0]||'notifications'));
@@ -370,7 +381,8 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                     <div className="popover-anchor"><button className="user-menu" onClick={() => setProfileOpen(!profileOpen)}><span className="avatar">{user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</span><span className="user-copy"><strong>{user.name}</strong><small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small></span><ChevronDown size={16}/></button>{profileOpen && <div className="top-popover profile-menu"><button onClick={() => { setActivePage('profile'); setProfileOpen(false); }}>{locale === 'en' ? 'Profile & settings' : 'Profil et paramètres'}</button><button onClick={onLogout}>{locale === 'en' ? 'Sign out' : 'Se déconnecter'}</button></div>}</div>
                 </div>
             </header>
-            <div className="page">
+            <div className={`page ${isSchoolUser?'school-page':''}`}>
+                {isSchoolUser&&<SchoolPortalPage page={activePage} onNavigate={setActivePage}/>}
                 <PageBoundary resetKey={activePage}>{activePage==='profile'?<ProfileSettingsPage user={user} locale={locale} dark={dark} onLocaleChange={setLocale} onThemeChange={setDark}/>:activePage==='notifications'?<NotificationsPage announcements={liveAnnouncements} locale={locale}/>:user.is_platform_admin ? <PlatformAdminPage page={activePage} locale={locale}/> : activePage === 'support' ? <UserSupportChat user={user} locale={locale}/> : ['cutting-workspace','fabric-request','cut-fabrics','damaged-fabrics','cutting-report'].includes(activePage) ? <CuttingWorkspacePage user={user} locale={locale} initialTab={({'cutting-workspace':'request','fabric-request':'request','cut-fabrics':'cut','damaged-fabrics':'damaged','cutting-report':'report'} as Record<string,any>)[activePage]||'request'}/> : activePage === 'dashboard' ? (isExecutiveUser?<ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage}/>:<DepartmentDashboard user={user} locale={locale} onNavigate={setActivePage}/>) : activePage === 'incoming-requests' ? <IncomingRequestsPage/> : activePage === 'inventory' ? <InventoryOverviewPage user={user} locale={locale}/> : activePage === 'products' ? <ProductCatalogPage user={user} locale={locale}/> : activePage === 'procurement' ? <ProcurementOverviewPage/> : activePage === 'sales' ? <SalesOverviewPage/> : ['logistics','dispatch','vehicles','delivery-confirmation'].includes(activePage) ? <LogisticsOverviewPage initialTab={({dispatch:'dispatch',vehicles:'vehicles','delivery-confirmation':'proof'} as Record<string,string>)[activePage]||'shipments'}/> : activePage === 'settings' ? <FactorySettingsPage/> : activePage === 'team' ? <TeamManagementPage/> : activePage === 'reports' ? <ReportsPage canExport={can('reports.export')} productionOnly={user.workspace==='production'&&!isExecutiveUser}/> : activePage === 'quality' ? <QualityControlPage can={can}/> : activePage === 'machines' ? <MachinesPage can={can}/> : activePage === 'production' ? (can('factory.manage')?<ProductionFlowPage/>:<ProductionOperations can={can}/>) : activePage !== 'dashboard' ? <ModulePage page={activePage} locale={locale} can={can} onNavigate={setActivePage}/> : <>
                 <div className="page-heading"><div><div className="eyebrow"><span></span>{t.live}</div><h1>{t.overview}</h1><p>{t.welcome}</p></div><button className="primary-btn" onClick={() => setActivePage('production')}><Zap size={17}/>{t.newOrder}</button></div>
                 <section className="workspace-banner"><div><span>{locale === 'en' ? 'Your workspace' : 'Votre espace'}</span><strong>{workspaceName}</strong><small>{user.employee_profile?.workstation ? `${user.employee_profile.department?.name || ''} / ${user.employee_profile.workstation.name}` : (user.roles[0]?.name || 'ICYEREKEZO OMS')}</small></div>{user.active_assignments?.length > 0 && <div className="assignment-preview"><b>{user.active_assignments.length} {locale === 'en' ? 'active assignments' : 'taches actives'}</b>{user.active_assignments.slice(0, 2).map(task => <span key={task.id}>{task.title} · {task.status.replace('_', ' ')}</span>)}</div>}</section>
