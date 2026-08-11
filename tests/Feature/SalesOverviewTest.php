@@ -56,6 +56,10 @@ class SalesOverviewTest extends TestCase
             ->assertJsonPath('documents.total', 1)
             ->assertJsonPath('documents.data.0.customer_name', 'GS KAGAMBA')
             ->assertJsonPath('specialization.filters.districts.0', 'Gicumbi');
+
+        $this->get("/api/sales/orders/{$document['id']}/pdf")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_school_garment_workflow_is_hidden_from_other_clothing_factories(): void

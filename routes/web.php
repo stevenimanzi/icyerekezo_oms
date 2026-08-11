@@ -106,6 +106,7 @@ Route::prefix('api')->group(function () {
             Route::patch('/team/assignments/{assignment}', [TeamWorkspaceController::class, 'updateAssignment']);
             Route::get('/manufacturing/overview', [ManufacturingController::class, 'overview'])->middleware('permission:production.view');
             Route::get('/sales/overview', [SalesController::class, 'overview'])->middleware('permission:sales.view');
+            Route::get('/sales/orders/{document}/pdf', [SalesController::class, 'orderPdf'])->middleware('permission:sales.view');
             Route::patch('/sales/orders/{document}/decision', [SalesController::class, 'decide'])->middleware('permission:sales.fulfill');
             Route::post('/sales/school-orders', [SalesController::class, 'storeSchoolOrder'])->middleware('permission:sales.create|sales.fulfill');
             Route::patch('/sales/school-order-lines/{line}', [SalesController::class, 'updateSchoolOrderLine'])->middleware('permission:sales.fulfill');

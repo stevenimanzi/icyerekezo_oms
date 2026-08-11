@@ -6,13 +6,29 @@ use App\Models\AuditLog;
 use App\Models\SalesDocument;
 use App\Models\SalesDocumentLine;
 use App\Models\School;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SalesController extends Controller
 {
+    public function orderPdf(Request $request, SalesDocument $document): Response
+    {
+        $this->ensureNoguchi($request);
+        abort_unless($document->document_type === 'customer_order', 404);
+
+        $document->load(['school', 'lines']);
+        $factory = $request->user()->currentFactory;
+        $fileName = 'school-order-'.preg_replace('/[^A-Za-z0-9_-]+/', '-', $document->document_number).'.pdf';
+
+        return Pdf::loadView('pdf.school-order', compact('document', 'factory'))
+            ->setPaper('a4', 'landscape')
+            ->stream($fileName);
+    }
+
     public function overview(Request $request): JsonResponse
     {
         $specialized = $request->user()->currentFactory->hasNoguchiSchoolOrders();
