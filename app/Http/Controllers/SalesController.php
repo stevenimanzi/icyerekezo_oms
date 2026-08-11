@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\SalesDocument;
 use App\Models\SalesDocumentLine;
 use App\Models\School;
+use App\Services\RwandaLocationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class SalesController extends Controller
     public function overview(Request $request): JsonResponse
     {
         $specialized = $request->user()->currentFactory->hasNoguchiSchoolOrders();
+        $northernLocations = $specialized ? app(RwandaLocationService::class)->northernDistrictsAndSectors() : [];
         $documents = SalesDocument::query();
         $orders = (clone $documents)->where('document_type', 'customer_order');
         $invoices = (clone $documents)->where('document_type', 'invoice');
@@ -68,8 +70,8 @@ class SalesController extends Controller
                 'rejected_items' => (int) SalesDocumentLine::sum('quantity_rejected'),
                 'by_category' => SalesDocumentLine::selectRaw('garment_category, SUM(quantity_ordered) ordered, SUM(quantity_packed) packed, SUM(quantity_delivered) delivered, SUM(quantity_rejected) rejected')->groupBy('garment_category')->orderByDesc('ordered')->get(),
                 'filters' => [
-                    'districts' => School::whereNotNull('district')->distinct()->orderBy('district')->pluck('district'),
-                    'sectors' => School::whereNotNull('sector')->distinct()->orderBy('sector')->pluck('sector'),
+                    'districts' => array_keys($northernLocations),
+                    'sectors_by_district' => $northernLocations,
                     'academic_years' => (clone $orders)->whereNotNull('academic_year')->distinct()->orderByDesc('academic_year')->pluck('academic_year'),
                     'statuses' => ['pending', 'confirmed', 'processing', 'ready', 'completed', 'rejected', 'cancelled'],
                 ],

@@ -55,7 +55,9 @@ class SalesOverviewTest extends TestCase
         $this->getJson('/api/sales/overview?search=KAGAMBA&district=Gicumbi&sector=Kageyo&status=processing&academic_year=2026')->assertOk()
             ->assertJsonPath('documents.total', 1)
             ->assertJsonPath('documents.data.0.customer_name', 'GS KAGAMBA')
-            ->assertJsonPath('specialization.filters.districts.0', 'Gicumbi');
+            ->assertJsonCount(5, 'specialization.filters.districts')
+            ->assertJsonPath('specialization.filters.districts.2', 'Gicumbi')
+            ->assertJsonPath('specialization.filters.sectors_by_district.Gicumbi.5', 'Kageyo');
 
         $this->get("/api/sales/orders/{$document['id']}/pdf")
             ->assertOk()
