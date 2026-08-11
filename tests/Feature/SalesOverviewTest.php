@@ -52,14 +52,15 @@ class SalesOverviewTest extends TestCase
             ->assertJsonPath('specialization.rejected_items', 2)
             ->assertJsonPath('documents.data.0.lines.0.class_level', 'P1');
 
-        $this->getJson('/api/sales/overview?search=KAGAMBA&district=Gicumbi&sector=Kageyo&status=processing&academic_year=2025-2026')->assertOk()
+        $this->getJson('/api/sales/overview?search=KAGAMBA&district=Gicumbi&sector=Kageyo&status=partial&academic_year=2025-2026')->assertOk()
             ->assertJsonPath('documents.total', 1)
             ->assertJsonPath('documents.data.0.customer_name', 'GS KAGAMBA')
             ->assertJsonCount(5, 'specialization.filters.districts')
             ->assertJsonPath('specialization.filters.districts.2', 'Gicumbi')
             ->assertJsonPath('specialization.filters.sectors_by_district.Gicumbi.5', 'Kageyo')
             ->assertJsonPath('specialization.filters.academic_years.0', '2025-2026')
-            ->assertJsonPath('specialization.filters.academic_years.5', '2030-2031');
+            ->assertJsonPath('specialization.filters.academic_years.5', '2030-2031')
+            ->assertJsonPath('documents.data.0.status', 'partial');
 
         $this->get("/api/sales/orders/{$document['id']}/pdf")
             ->assertOk()

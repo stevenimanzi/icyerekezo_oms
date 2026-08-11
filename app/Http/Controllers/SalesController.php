@@ -57,8 +57,8 @@ class SalesController extends Controller
         return response()->json([
             'summary' => [
                 'customer_orders' => (clone $orders)->count(),
-                'active_orders' => (clone $orders)->whereIn('status', ['confirmed', 'processing', 'ready'])->count(),
-                'completed_orders' => (clone $orders)->where('status', 'completed')->count(),
+                'active_orders' => (clone $orders)->whereIn('status', ['accepted', 'partial'])->count(),
+                'completed_orders' => (clone $orders)->where('status', 'delivered')->count(),
                 'quotations' => (clone $documents)->where('document_type', 'quotation')->count(),
                 'invoices' => (clone $invoices)->count(),
                 'returns' => (clone $documents)->where('document_type', 'return')->count(),
@@ -80,7 +80,7 @@ class SalesController extends Controller
                     'districts' => array_keys($northernLocations),
                     'sectors_by_district' => $northernLocations,
                     'academic_years' => ['2025-2026', '2026-2027', '2027-2028', '2028-2029', '2029-2030', '2030-2031'],
-                    'statuses' => ['pending', 'confirmed', 'processing', 'ready', 'completed', 'rejected', 'cancelled'],
+                    'statuses' => ['pending', 'accepted', 'partial', 'delivered', 'rejected'],
                 ],
             ] : null,
             'capabilities' => ['review' => $request->user()->hasPermission('sales.fulfill'), 'create' => $request->user()->hasPermission('sales.create') || $request->user()->hasPermission('sales.fulfill')],
@@ -131,9 +131,11 @@ class SalesController extends Controller
         $data['quantity_rejected'] ??= $line->quantity_rejected;
         $line->update($data);
         $document = $line->document()->with('lines')->firstOrFail();
-        $totals = $document->lines->sum('quantity_delivered') + $document->lines->sum('quantity_rejected');
-        if ($totals >= $document->lines->sum('quantity_ordered')) $document->update(['status' => 'completed']);
-        elseif ($document->lines->sum('quantity_packed') > 0) $document->update(['status' => 'processing']);
+        $delivered = $document->lines->sum('quantity_delivered');
+        $ordered = $document->lines->sum('quantity_ordered');
+        if ($delivered >= $ordered) $document->update(['status' => 'delivered']);
+        elseif ($delivered > 0) $document->update(['status' => 'partial']);
+        elseif ($document->status !== 'pending') $document->update(['status' => 'accepted']);
         AuditLog::record('sales.school_order_line_updated', "Updated fulfilment for {$document->document_number}", $line);
 
         return response()->json(['message' => 'Garment quantities updated.', 'line' => $line->fresh(), 'document_status' => $document->fresh()->status]);
@@ -147,7 +149,7 @@ class SalesController extends Controller
             'decision' => ['required', Rule::in(['accept', 'reject'])],
             'reason' => ['nullable', 'string', 'max:1000', Rule::requiredIf($request->input('decision') === 'reject')],
         ]);
-        $status = $data['decision'] === 'accept' ? 'confirmed' : 'rejected';
+        $status = $data['decision'] === 'accept' ? 'accepted' : 'rejected';
         $document->update(['status' => $status]);
         AuditLog::record('sales.order_'.$status, ucfirst($status)." customer order {$document->document_number}".(!empty($data['reason'])?': '.$data['reason']:''), $document, ['status' => $document->getOriginal('status')], ['status' => $status]);
 

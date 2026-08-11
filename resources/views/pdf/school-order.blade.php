@@ -42,7 +42,7 @@
 </head>
 <body>
 @php
-    $statusLabels = ['pending' => 'Waiting for review', 'draft' => 'Waiting for review', 'submitted' => 'Waiting for review', 'confirmed' => 'Accepted', 'processing' => 'Being prepared', 'ready' => 'Ready to send', 'completed' => 'Delivered', 'rejected' => 'Rejected', 'cancelled' => 'Cancelled'];
+    $statusLabels = ['pending' => 'Pending', 'accepted' => 'Accepted', 'partial' => 'Partial delivery', 'delivered' => 'Delivered', 'rejected' => 'Rejected'];
     $ordered = (int) $document->lines->sum('quantity_ordered');
     $packed = (int) $document->lines->sum('quantity_packed');
     $delivered = (int) $document->lines->sum('quantity_delivered');
