@@ -6,7 +6,9 @@ use App\Models\Batch;
 use App\Models\Item;
 use App\Models\StockBalance;
 use App\Models\StockTransaction;
+use App\Models\StorageLocation;
 use App\Models\Warehouse;
+use App\Support\OperationalScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +20,9 @@ class InventoryLedger
         return DB::transaction(function () use ($data) {
             $item = Item::findOrFail($data['item_id']);
             $warehouse = Warehouse::findOrFail($data['warehouse_id']);
+            abort_unless(OperationalScope::for(auth()->user())->allowsWarehouse($warehouse), 403, 'This warehouse is outside your assigned branch.');
+            $location = isset($data['location_id']) ? StorageLocation::findOrFail($data['location_id']) : null;
+            abort_if($location && (int) $location->warehouse_id !== (int) $warehouse->id, 422, 'The storage location does not belong to the selected warehouse.');
             $batch = isset($data['batch_id']) ? Batch::findOrFail($data['batch_id']) : null;
             if ($item->batch_tracked && ! $batch) {
                 throw ValidationException::withMessages(['batch_id' => 'Choose a batch for this item.']);

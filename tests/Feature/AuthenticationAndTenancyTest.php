@@ -26,7 +26,7 @@ class AuthenticationAndTenancyTest extends TestCase
         $response->assertCreated()->assertJsonPath('user.current_factory.name', 'Kigali Manufacturing');
         $this->assertAuthenticated();
         $this->assertDatabaseCount('factories', 1);
-        $this->assertDatabaseCount('permissions', 49);
+        $this->assertDatabaseCount('permissions', 62);
         $this->assertDatabaseHas('factory_user', ['is_owner' => true, 'is_active' => true]);
         $this->assertDatabaseHas('audit_logs', ['event' => 'auth.registered']);
         $permissions = $this->getJson('/api/auth/me')->assertOk()->json('user.permissions');

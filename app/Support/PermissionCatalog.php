@@ -20,6 +20,8 @@ final class PermissionCatalog
         'maintenance' => ['view', 'create', 'execute', 'close'],
         'reports' => ['view', 'export'],
         'audit' => ['view'],
+        'hr' => ['view', 'manage_employees', 'manage_departments', 'manage_shifts', 'manage_attendance', 'manage_leave', 'manage_training'],
+        'safety' => ['view', 'manage_incidents', 'inspect', 'manage_equipment', 'manage_actions', 'manage_training'],
     ];
 
     public static function seed(): void

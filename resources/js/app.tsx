@@ -141,7 +141,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const can = (permission: string) => user.permissions.includes('*') || user.permissions.includes(permission);
     const isExecutiveUser = user.is_platform_admin || user.workspace === 'executive' || user.roles.some(role => ['factory-owner', 'factory-administrator', 'factory-manager'].includes(role.slug));
     const isFactoryOwner = user.roles.some(role => role.slug === 'factory-owner');
-    const workspaceName = ({ platform_admin: 'Platform administration', executive: t.overview, production: locale === 'en' ? 'Production command centre' : 'Centre de production', warehouse: locale === 'en' ? 'Warehouse workspace' : 'Espace entrepot', procurement: locale === 'en' ? 'Procurement workspace' : 'Espace achats', quality: locale === 'en' ? 'Quality control workspace' : 'Espace controle qualite', cutting: locale === 'en' ? 'Cutting workstation' : 'Poste de coupe', workstation: locale === 'en' ? 'Operator workstation' : 'Poste operateur', logistics: locale === 'en' ? 'Logistics workspace' : 'Espace logistique', sales: locale === 'en' ? 'Sales workspace' : 'Espace ventes', finance: locale === 'en' ? 'Finance workspace' : 'Espace finances' } as Record<string,string>)[user.workspace] || t.overview;
+    const workspaceName = ({ platform_admin: 'Platform administration', executive: t.overview, production: locale === 'en' ? 'Production command centre' : 'Centre de production', warehouse: locale === 'en' ? 'Warehouse workspace' : 'Espace entrepot', procurement: locale === 'en' ? 'Procurement workspace' : 'Espace achats', quality: locale === 'en' ? 'Quality control workspace' : 'Espace controle qualite', cutting: locale === 'en' ? 'Cutting workstation' : 'Poste de coupe', sewing: 'Sewing workstation', mixing: 'Mixing workstation', processing: 'Processing workstation', bottling: 'Bottling workstation', packaging: 'Packaging workstation', workstation: locale === 'en' ? 'Operator workstation' : 'Poste operateur', logistics: locale === 'en' ? 'Logistics workspace' : 'Espace logistique', sales: locale === 'en' ? 'Sales workspace' : 'Espace ventes', finance: locale === 'en' ? 'Finance workspace' : 'Espace finances', maintenance: 'Maintenance workspace', people: 'Human resources workspace', safety: 'Health and safety workspace', audit: 'Internal audit workspace' } as Record<string,string>)[user.workspace] || t.overview;
     useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('icy_theme', dark ? 'dark' : 'light'); }, [dark]);
     useEffect(() => { document.documentElement.lang = locale; localStorage.setItem('icy_locale', locale); }, [locale]);
     useEffect(() => {
@@ -168,7 +168,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     }, []);
 
     const subscribedFeatures = user.subscription?.plan?.features;
-    const featureForPage:Record<string,string>={dashboard:'dashboard',procurement:'procurement',inventory:'inventory','incoming-requests':'inventory',products:'products',production:'production',quality:'quality',sales:'sales',logistics:'logistics',dispatch:'logistics',vehicles:'logistics','delivery-confirmation':'logistics',team:'team',machines:'maintenance',reports:'reports','cutting-workspace':'production','fabric-request':'inventory','cut-fabrics':'production','damaged-fabrics':'inventory','cutting-report':'production'};
+    const featureForPage:Record<string,string>={dashboard:'dashboard',procurement:'procurement',inventory:'inventory','incoming-requests':'inventory',products:'products',production:'production',quality:'quality',sales:'sales',logistics:'logistics',dispatch:'logistics',vehicles:'logistics','delivery-confirmation':'logistics',team:'team',hr:'team',safety:'team',audit:'reports',machines:'maintenance',reports:'reports','cutting-workspace':'production','fabric-request':'inventory','cut-fabrics':'production','damaged-fabrics':'inventory','cutting-report':'production'};
     const hasFeature=(page:string)=>!subscribedFeatures||subscribedFeatures.includes(featureForPage[page]||page);
     const isLogisticsUser=user.workspace==='logistics'||user.roles.some(role=>role.slug==='logistics-officer');
     const isCuttingUser = user.workspace === 'cutting' || user.roles.some(role => role.slug === 'cutting-operator');
@@ -178,9 +178,18 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const isProductionManager = user.workspace === 'production' || user.roles.some(role => role.slug === 'production-manager');
     const isSalesUser = user.workspace === 'sales' || user.roles.some(role => role.slug === 'sales-officer');
     const isFinanceUser = user.workspace === 'finance' || user.roles.some(role => role.slug === 'accountant');
-    const isMachineOperator = user.workspace === 'workstation' || user.roles.some(role => role.slug === 'machine-operator');
+    const specializedOperatorRoles = ['sewing-operator', 'mixing-operator', 'processing-operator', 'bottling-operator', 'packaging-operator', 'machine-operator'];
+    const isMachineOperator = ['workstation', 'sewing', 'mixing', 'processing', 'bottling', 'packaging'].includes(user.workspace) || user.roles.some(role => specializedOperatorRoles.includes(role.slug));
     const isFactoryManager = user.roles.some(role => role.slug === 'factory-manager');
     const isFactoryAdmin = user.roles.some(role => role.slug === 'factory-administrator');
+    const hasRole = (slug:string) => user.roles.some(role => role.slug === slug);
+    const isProductionPlanner = hasRole('production-planner');
+    const isProductionSupervisor = hasRole('production-supervisor');
+    const isMaintenanceTechnician = hasRole('maintenance-technician');
+    const isQualityManager = hasRole('quality-manager');
+    const isHrOfficer = hasRole('hr-officer');
+    const isSafetyOfficer = hasRole('health-safety-officer');
+    const isInternalAuditor = hasRole('internal-auditor');
     const nav = useMemo(() => (user.is_platform_admin ? [
         // ─── Platform Admin ───
         ['platform-dashboard', LayoutDashboard, locale === 'en' ? 'Platform overview' : 'Vue plateforme', '*'], ['factories', Building2, locale === 'en' ? 'Factories' : 'Usines', '*'], ['platform-users', Users, locale === 'en' ? 'All users' : 'Tous les utilisateurs', '*'], ['subscriptions', CreditCard, locale === 'en' ? 'Subscriptions' : 'Abonnements', '*'], ['announcements', Megaphone, locale === 'en' ? 'Announcements' : 'Annonces', '*'], ['notifications', Bell, locale === 'en' ? 'Notifications' : 'Notifications', '*'], ['support-center', MessageSquare, locale === 'en' ? 'Support centre' : 'Centre de support', '*'], ['backups', Database, locale === 'en' ? 'Database backups' : 'Sauvegardes', '*'], ['system-settings', Settings, locale === 'en' ? 'System settings' : 'Paramètres système', '*'],
@@ -214,6 +223,49 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['team', Users, t.people, 'users.view'],
         ['machines', Wrench, t.machines, 'maintenance.view'],
         ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isProductionPlanner ? [
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['production', Gauge, locale === 'en' ? 'Production planning' : 'Planification de production', 'production.view'],
+        ['products', Boxes, t.products, 'products.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Material availability' : 'Disponibilite des matieres', 'inventory.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isProductionSupervisor ? [
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['production', Gauge, locale === 'en' ? 'Daily production control' : 'Controle quotidien de production', 'production.view'],
+        ['quality', ClipboardCheck, t.control, 'quality.view'],
+        ['machines', Wrench, t.machines, 'maintenance.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isMaintenanceTechnician ? [
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['machines', Wrench, locale === 'en' ? 'Maintenance work orders' : 'Ordres de maintenance', 'maintenance.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Spare parts' : 'Pieces de rechange', 'inventory.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isQualityManager ? [
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['quality', ClipboardCheck, locale === 'en' ? 'Quality management' : 'Gestion de la qualite', 'quality.view'],
+        ['production', Gauge, locale === 'en' ? 'Production records' : 'Dossiers de production', 'production.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Quarantined materials' : 'Matieres en quarantaine', 'inventory.view'],
+        ['products', Boxes, t.products, 'products.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isHrOfficer ? [
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['team', Users, locale === 'en' ? 'People and workforce' : 'Personnel', 'users.view'],
+        ['hr', Activity, locale === 'en' ? 'Attendance, leave and training' : 'Presence, conges et formation', 'hr.view'],
+        ['reports', FileText, t.reports, 'reports.view'],
+    ] as const : isSafetyOfficer ? [
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['safety', ShieldCheck, locale === 'en' ? 'Health and safety' : 'Sante et securite', 'safety.view'],
+        ['team', Users, locale === 'en' ? 'Workers and training' : 'Personnel et formation', 'users.view'],
+        ['machines', Wrench, locale === 'en' ? 'Equipment safety' : 'Securite des equipements', 'maintenance.view'],
+        ['reports', FileText, locale === 'en' ? 'Compliance reports' : 'Rapports de conformite', 'reports.view'],
+    ] as const : isInternalAuditor ? [
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['audit', ShieldCheck, locale === 'en' ? 'Audit logs' : 'Journaux d audit', 'audit.view'],
+        ['inventory', Warehouse, locale === 'en' ? 'Inventory movements' : 'Mouvements de stock', 'inventory.view'],
+        ['production', Gauge, locale === 'en' ? 'Production records' : 'Dossiers de production', 'production.view'],
+        ['quality', ClipboardCheck, locale === 'en' ? 'Quality records' : 'Dossiers qualite', 'quality.view'],
+        ['procurement', ShoppingCart, locale === 'en' ? 'Procurement records' : 'Dossiers achats', 'procurement.view'],
+        ['reports', FileText, locale === 'en' ? 'Financial reports' : 'Rapports financiers', 'reports.view'],
     ] as const : isProductionManager ? [
         // ─── Production Manager ───
         ['dashboard', LayoutDashboard, t.dashboard, '*'],
@@ -264,6 +316,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['dispatch', Activity, locale === 'en' ? 'Dispatch board' : 'Planification', 'logistics.dispatch'],
         ['vehicles', Truck, locale === 'en' ? 'Vehicles & drivers' : 'Véhicules et chauffeurs', 'logistics.view'],
         ['delivery-confirmation', PackageCheck, locale === 'en' ? 'Delivery confirmation' : 'Confirmation de livraison', 'logistics.deliver'],
+        ['reports', Activity, t.reports, 'reports.view'],
     ] as const : isSalesUser ? [
         // ─── Sales Officer ───
         ['dashboard', LayoutDashboard, t.dashboard, '*'],
@@ -282,7 +335,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['dashboard', LayoutDashboard, t.dashboard, '*'], ['procurement', ShoppingCart, t.procurement, 'procurement.view'], ['inventory', Warehouse, t.warehouse, 'inventory.view'], ['products', Boxes, t.products, 'products.view'],
         ['production', Gauge, t.planning, 'production.view'], ['quality', ClipboardCheck, t.control, 'quality.view'], ['sales', PackageOpen, t.sales, 'sales.view'], ['logistics', Truck, t.logistics, 'logistics.view'],
         ['team', Users, t.people, 'users.view'], ['machines', Wrench, t.machines, 'maintenance.view'], ['reports', Activity, t.reports, 'reports.view'],
-    ] as const).filter(([page, , , permission]) => (permission === '*' || can(permission)) && (user.is_platform_admin || hasFeature(page))), [t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner, isLogisticsUser, isCuttingUser, isWarehouseUser, isProcurementUser, isQualityUser, isProductionManager, isSalesUser, isFinanceUser, isMachineOperator, isFactoryManager, isFactoryAdmin]);
+    ] as const).filter(([page, , , permission]) => (permission === '*' || can(permission)) && (user.is_platform_admin || hasFeature(page))), [t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner, isLogisticsUser, isCuttingUser, isWarehouseUser, isProcurementUser, isQualityUser, isProductionManager, isSalesUser, isFinanceUser, isMachineOperator, isFactoryManager, isFactoryAdmin, isProductionPlanner, isProductionSupervisor, isMaintenanceTechnician, isQualityManager, isHrOfficer, isSafetyOfficer, isInternalAuditor]);
     useEffect(() => {
         const allowed = nav.map(([key]) => key as string); allowed.push('profile'); if (!user.is_platform_admin) { if(hasFeature('support'))allowed.push('support');allowed.push('notifications'); if (can('factory.manage')) allowed.push('settings'); }
         if (!allowed.includes(activePage)) setActivePage(user.is_platform_admin ? 'platform-dashboard' : (allowed[0]||'notifications'));
@@ -345,6 +398,9 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
 }
 
 const moduleContent = {
+    hr: { icon: Users, en: ['Human resources', 'Manage attendance, leave, training, qualifications and workforce records.', ['Attendance', 'Leave requests', 'Training', 'Worker qualifications']], fr: ['Ressources humaines', 'Gerez les presences, conges, formations et qualifications.', ['Presences', 'Conges', 'Formation', 'Qualifications']] },
+    safety: { icon: ShieldCheck, en: ['Health and safety', 'Record incidents, inspections, protective equipment and corrective actions.', ['Workplace incidents', 'Safety inspections', 'Protective equipment', 'Corrective actions']], fr: ['Sante et securite', 'Enregistrez les incidents, inspections, equipements et actions correctives.', ['Incidents', 'Inspections', 'Equipements de protection', 'Actions correctives']] },
+    audit: { icon: ShieldCheck, en: ['Internal audit', 'Review operational records and audit history without changing factory data.', ['Audit logs', 'Inventory movements', 'Production and quality', 'Procurement and finance']], fr: ['Audit interne', 'Consultez les operations et journaux sans modifier les donnees.', ['Journaux audit', 'Mouvements de stock', 'Production et qualite', 'Achats et finances']] },
     'platform-dashboard': { icon: LayoutDashboard, en: ['System overview', 'View every factory, subscription, user, support request and system service.', ['System status', 'Factory activity', 'Subscription status', 'Security alerts']], fr: ['Vue du système', 'Consultez les usines, abonnements, utilisateurs, demandes et services.', ['État du système', 'Activité des usines', 'État des abonnements', 'Alertes de sécurité']] },
     factories: { icon: Building2, en: ['Factory administration', 'Register, approve, activate, suspend and monitor every factory account.', ['All factories', 'Pending approval', 'Active factories', 'Suspended factories']], fr: ['Administration des usines', 'Enregistrez, approuvez, activez, suspendez et surveillez chaque usine.', ['Toutes les usines', 'En attente', 'Usines actives', 'Usines suspendues']] },
     'platform-users': { icon: Users, en: ['Platform users', 'Search all accounts, control status and grant trusted platform administrators.', ['All users', 'Factory owners', 'Platform administrators', 'Inactive accounts']], fr: ['Utilisateurs plateforme', 'Recherchez les comptes, contrôlez leur état et les administrateurs.', ['Tous les utilisateurs', 'Propriétaires', 'Administrateurs', 'Comptes inactifs']] },

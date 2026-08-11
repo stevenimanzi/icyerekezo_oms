@@ -8,6 +8,7 @@ use App\Models\ProductionOrder;
 use App\Models\ProductionStageExecution;
 use App\Models\WorkflowTemplate;
 use App\Services\ManufacturingService;
+use App\Support\OperationalScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +17,13 @@ use Illuminate\Validation\Rule;
 
 class ManufacturingController extends Controller
 {
-    public function overview(): JsonResponse
+    public function overview(Request $request): JsonResponse
     {
-        $orders = ProductionOrder::query();
-        $executions = ProductionStageExecution::query();
+        $scope = OperationalScope::for($request->user());
+        $executions = $scope->scopeExecutions(ProductionStageExecution::query());
+        $orders = $scope->isFactoryWide()
+            ? ProductionOrder::query()
+            : ProductionOrder::whereHas('executions', fn ($query) => $scope->scopeExecutions($query));
 
         return response()->json([
             'summary' => [
@@ -37,7 +41,7 @@ class ManufacturingController extends Controller
                 'completed_stages' => (clone $executions)->where('status', 'completed')->count(),
                 'total_stages' => (clone $executions)->count(),
             ],
-            'orders' => ProductionOrder::with(['item:id,name,sku', 'executions.stage'])->latest()->paginate(20),
+            'orders' => (clone $orders)->with(['item:id,name,sku', 'executions' => fn ($query) => $scope->scopeExecutions($query), 'executions.stage'])->latest()->paginate(20),
             'boms' => BillOfMaterial::with(['item:id,name,sku', 'components.item'])->latest()->get(),
             'workflows' => WorkflowTemplate::with('stages')->latest()->get(),
         ]);
@@ -145,6 +149,7 @@ class ManufacturingController extends Controller
     public function updateStage(Request $request, ProductionStageExecution $execution, ManufacturingService $service): JsonResponse
     {
         abort_unless($execution->factory_id === $request->user()->current_factory_id, 404);
+        abort_unless(OperationalScope::for($request->user())->allowsExecution($execution), 403, 'This production stage is outside your assigned department or workstation.');
         $data = $request->validate(['status' => ['required', Rule::in(['ready', 'in_progress', 'blocked', 'completed', 'failed', 'rework'])], 'input_quantity' => ['nullable', 'numeric', 'min:0'], 'output_quantity' => ['nullable', 'numeric', 'min:0'], 'waste_quantity' => ['nullable', 'numeric', 'min:0'], 'rejected_quantity' => ['nullable', 'numeric', 'min:0'], 'downtime_minutes' => ['nullable', 'integer', 'min:0'], 'notes' => ['nullable', 'string', 'max:3000']]);
 
         return response()->json($service->updateStage($execution, $data));

@@ -15,4 +15,6 @@ class SalesDocument extends Model
     {
         return ['document_date' => 'date', 'due_date' => 'date', 'total_amount' => 'decimal:2', 'paid_amount' => 'decimal:2'];
     }
+
+    public function shipments() { return $this->hasMany(Shipment::class); }
 }

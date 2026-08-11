@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\SalesDocument;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SalesController extends Controller
 {
@@ -29,5 +32,20 @@ class SalesController extends Controller
             'documents' => SalesDocument::query()->latest('document_date')->latest('id')->paginate(50),
             'updated_at' => now()->toIso8601String(),
         ]);
+    }
+
+    public function decide(Request $request, SalesDocument $document): JsonResponse
+    {
+        abort_unless($document->document_type === 'customer_order', 422, 'Only customer orders can be reviewed.');
+        abort_unless(in_array($document->status, ['draft', 'pending', 'submitted'], true), 409, 'This order has already been reviewed.');
+        $data = $request->validate([
+            'decision' => ['required', Rule::in(['accept', 'reject'])],
+            'reason' => ['nullable', 'string', 'max:1000', Rule::requiredIf($request->input('decision') === 'reject')],
+        ]);
+        $status = $data['decision'] === 'accept' ? 'confirmed' : 'rejected';
+        $document->update(['status' => $status]);
+        AuditLog::record('sales.order_'.$status, ucfirst($status)." customer order {$document->document_number}".(!empty($data['reason'])?': '.$data['reason']:''), $document, ['status' => $document->getOriginal('status')], ['status' => $status]);
+
+        return response()->json(['message' => "Order {$status}.", 'document' => $document->fresh()]);
     }
 }

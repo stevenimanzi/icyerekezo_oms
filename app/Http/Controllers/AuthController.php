@@ -198,6 +198,7 @@ class AuthController extends Controller
             'subscription' => $subscription ? ['id' => $subscription->id, 'status' => $subscription->status, 'plan' => $subscription->plan] : null,
             'workspace' => $user->is_platform_admin && ! $user->current_factory_id ? 'platform_admin' : ($roles->first()?->dashboard_key ?? 'operations'),
             'employee_profile' => $user->employeeProfile,
+            'access_scope' => $user->current_factory_id ? \App\Support\OperationalScope::for($user)->payload() : null,
             'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
             'announcements' => PlatformAnnouncement::whereNotNull('published_at')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->latest('published_at')->limit(10)->get(['id', 'title', 'message', 'severity', 'published_at']),
             'system' => ['name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'), 'tagline' => SystemSetting::valueFor('system_tagline', 'Factory operations made clear.'), 'logo_url' => SystemSetting::valueFor('logo_url', '/assets/images/icyerekezo_oms_logo.svg'), 'support_email' => SystemSetting::valueFor('support_email'), 'support_phone' => SystemSetting::valueFor('support_phone'), 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'), 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali')],

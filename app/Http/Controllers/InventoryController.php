@@ -8,6 +8,7 @@ use App\Models\StockTransaction;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Services\InventoryLedger;
+use App\Support\OperationalScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,14 +24,16 @@ class InventoryController extends Controller
         return response()->json([
             'items' => Item::with('unit:id,name,symbol')->where('is_active', true)->orderBy('name')->get(['id', 'unit_id', 'name', 'sku', 'type', 'standard_cost', 'reorder_level']),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(['id', 'name', 'symbol']),
-            'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
+            'warehouses' => Warehouse::whereIn('id', OperationalScope::for($request->user())->warehouseIds())->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
             'transaction_types' => ['receipt', 'production_output', 'return_in', 'issue', 'dispatch', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'],
         ]);
     }
 
-    public function overview(): JsonResponse
+    public function overview(Request $request): JsonResponse
     {
+        $warehouseIds = OperationalScope::for($request->user())->warehouseIds();
         $stock = StockBalance::query()
+            ->whereIn('stock_balances.warehouse_id', $warehouseIds)
             ->join('items', 'items.id', '=', 'stock_balances.item_id')
             ->join('warehouses', 'warehouses.id', '=', 'stock_balances.warehouse_id')
             ->leftJoin('units', 'units.id', '=', 'items.unit_id')
@@ -48,6 +51,7 @@ class InventoryController extends Controller
             });
 
         $transactions = StockTransaction::query()
+            ->whereIn('stock_transactions.warehouse_id', $warehouseIds)
             ->join('items', 'items.id', '=', 'stock_transactions.item_id')
             ->join('warehouses', 'warehouses.id', '=', 'stock_transactions.warehouse_id')
             ->leftJoin('units', 'units.id', '=', 'items.unit_id')
@@ -62,7 +66,7 @@ class InventoryController extends Controller
                 'warehouses.name as warehouse_name', 'units.symbol as unit',
             ]);
 
-        $catalogTotals = StockBalance::selectRaw('item_id, COALESCE(SUM(quantity_on_hand), 0) as quantity_on_hand')
+        $catalogTotals = StockBalance::whereIn('warehouse_id', $warehouseIds)->selectRaw('item_id, COALESCE(SUM(quantity_on_hand), 0) as quantity_on_hand')
             ->groupBy('item_id')->pluck('quantity_on_hand', 'item_id');
         $catalog = Item::with('unit:id,name,symbol')->orderBy('name')
             ->get(['id', 'unit_id', 'name', 'sku', 'type', 'standard_cost', 'reorder_level', 'is_active'])
@@ -73,12 +77,12 @@ class InventoryController extends Controller
             });
 
         return response()->json([
-            'items' => Item::count(), 'warehouses' => Warehouse::where('is_active', true)->count(),
-            'low_stock' => StockBalance::join('items', 'items.id', '=', 'stock_balances.item_id')->whereColumn('stock_balances.quantity_on_hand', '<=', 'items.reorder_level')->count(),
-            'total_value' => StockBalance::join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost),0) as value')->value('value'),
+            'items' => Item::count(), 'warehouses' => Warehouse::whereIn('id', $warehouseIds)->where('is_active', true)->count(),
+            'low_stock' => StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)->join('items', 'items.id', '=', 'stock_balances.item_id')->whereColumn('stock_balances.quantity_on_hand', '<=', 'items.reorder_level')->count(),
+            'total_value' => StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)->join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost),0) as value')->value('value'),
             'stock' => $stock,
             'catalog' => $catalog,
-            'warehouse_list' => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
+            'warehouse_list' => Warehouse::whereIn('id', $warehouseIds)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
             'recent_transactions' => $transactions,
         ]);
     }
