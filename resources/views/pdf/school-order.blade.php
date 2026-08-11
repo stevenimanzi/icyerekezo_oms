@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>School order {{ $document->document_number }}</title>
+    <title>School order {{ preg_replace('/^LEGACY-NOGUCHI-/i', '', $document->document_number) }}</title>
     <style>
         @page { margin: 25px 32px 42px; }
         * { box-sizing: border-box; }
@@ -52,7 +52,7 @@
 <table class="header"><tr>
     <td style="width:52px"><div class="brand">OMS</div></td>
     <td class="factory"><h1>{{ $factory->name }}</h1><p>{{ $factory->email }}{{ $factory->phone ? ' | '.$factory->phone : '' }}</p><p>School garment order management</p></td>
-    <td class="title"><h2>ORDER DETAILS</h2><strong>{{ $document->document_number }}</strong><p>Printed {{ now()->format('d M Y, H:i') }}</p></td>
+    <td class="title"><h2>ORDER DETAILS</h2><strong>{{ preg_replace('/^LEGACY-NOGUCHI-/i', '', $document->document_number) }}</strong><p>Printed {{ now()->format('d M Y, H:i') }}</p></td>
 </tr></table>
 
 <table class="grid"><tr>
@@ -90,6 +90,6 @@
     <tfoot><tr><td colspan="6">ORDER TOTALS</td><td class="number">{{ number_format($ordered) }}</td><td class="number">{{ number_format($packed) }}</td><td class="number">{{ number_format($delivered) }}</td><td class="number">{{ number_format($rejected) }}</td><td class="number">{{ number_format($remaining) }}</td></tr></tfoot>
 </table>
 <div class="note">This document shows the latest quantities recorded in ICYEREKEZO OMS at the time it was printed.</div>
-<div class="footer"><span>{{ $factory->name }} | {{ $document->document_number }}</span><span class="right">Page <span class="page-number"></span></span></div>
+<div class="footer"><span>{{ $factory->name }} | Order {{ preg_replace('/^LEGACY-NOGUCHI-/i', '', $document->document_number) }}</span><span class="right">Page <span class="page-number"></span></span></div>
 </body>
 </html>

@@ -47,6 +47,13 @@ class SalesController extends Controller
                 ->when($request->string('academic_year')->trim()->value(), fn ($query, $value) => $query->where('academic_year', $value));
         }
 
+        $paginatedDocuments = $list->latest('document_date')->latest('id')->paginate($specialized ? 25 : 50);
+        if ($specialized) {
+            $paginatedDocuments->getCollection()->each(function (SalesDocument $document) {
+                $document->setAttribute('document_number', preg_replace('/^LEGACY-NOGUCHI-/i', '', $document->document_number));
+            });
+        }
+
         return response()->json([
             'summary' => [
                 'customer_orders' => (clone $orders)->count(),
@@ -60,7 +67,7 @@ class SalesController extends Controller
                 'outstanding_amount' => (float) (clone $invoices)->selectRaw('COALESCE(SUM(total_amount - paid_amount), 0) as balance')->value('balance'),
                 'past_due_invoices' => (clone $invoices)->whereNotIn('status', ['paid', 'cancelled'])->whereDate('due_date', '<', today())->count(),
             ],
-            'documents' => $list->latest('document_date')->latest('id')->paginate($specialized ? 25 : 50),
+            'documents' => $paginatedDocuments,
             'specialization' => $specialized ? [
                 'type' => 'noguchi_school_garments',
                 'garment_categories' => ['Uniform', 'Sweater', 'T-shirt', 'Sport', 'Overall', 'Jumper', 'Polo Lacoste'],
@@ -72,7 +79,7 @@ class SalesController extends Controller
                 'filters' => [
                     'districts' => array_keys($northernLocations),
                     'sectors_by_district' => $northernLocations,
-                    'academic_years' => (clone $orders)->whereNotNull('academic_year')->distinct()->orderByDesc('academic_year')->pluck('academic_year'),
+                    'academic_years' => ['2025-2026', '2026-2027', '2027-2028', '2028-2029', '2029-2030', '2030-2031'],
                     'statuses' => ['pending', 'confirmed', 'processing', 'ready', 'completed', 'rejected', 'cancelled'],
                 ],
             ] : null,

@@ -34,7 +34,7 @@ class SalesOverviewTest extends TestCase
         $this->grantCurrentUserFactoryAdministrator();
 
         $document = $this->postJson('/api/sales/school-orders', [
-            'document_number' => 'SO-SCHOOL-001', 'customer_name' => 'GS KAGAMBA', 'school_district' => 'Gicumbi', 'school_sector' => 'Kageyo', 'academic_year' => '2026', 'document_date' => today()->toDateString(), 'total_amount' => 500000,
+            'document_number' => 'SO-SCHOOL-001', 'customer_name' => 'GS KAGAMBA', 'school_district' => 'Gicumbi', 'school_sector' => 'Kageyo', 'academic_year' => '2025-2026', 'document_date' => today()->toDateString(), 'total_amount' => 500000,
             'lines' => [
                 ['class_level' => 'P1', 'garment_category' => 'Uniform', 'gender' => 'Boy', 'size' => 'M', 'color' => 'Sky blue / Navy blue', 'quantity_ordered' => 20],
                 ['class_level' => 'P1', 'garment_category' => 'Sweater', 'gender' => 'Girl', 'size' => 'S', 'color' => 'Navy blue', 'quantity_ordered' => 10],
@@ -52,12 +52,14 @@ class SalesOverviewTest extends TestCase
             ->assertJsonPath('specialization.rejected_items', 2)
             ->assertJsonPath('documents.data.0.lines.0.class_level', 'P1');
 
-        $this->getJson('/api/sales/overview?search=KAGAMBA&district=Gicumbi&sector=Kageyo&status=processing&academic_year=2026')->assertOk()
+        $this->getJson('/api/sales/overview?search=KAGAMBA&district=Gicumbi&sector=Kageyo&status=processing&academic_year=2025-2026')->assertOk()
             ->assertJsonPath('documents.total', 1)
             ->assertJsonPath('documents.data.0.customer_name', 'GS KAGAMBA')
             ->assertJsonCount(5, 'specialization.filters.districts')
             ->assertJsonPath('specialization.filters.districts.2', 'Gicumbi')
-            ->assertJsonPath('specialization.filters.sectors_by_district.Gicumbi.5', 'Kageyo');
+            ->assertJsonPath('specialization.filters.sectors_by_district.Gicumbi.5', 'Kageyo')
+            ->assertJsonPath('specialization.filters.academic_years.0', '2025-2026')
+            ->assertJsonPath('specialization.filters.academic_years.5', '2030-2031');
 
         $this->get("/api/sales/orders/{$document['id']}/pdf")
             ->assertOk()

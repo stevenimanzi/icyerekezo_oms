@@ -593,7 +593,16 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .school-modal-body > p { margin:0 0 17px; color:var(--muted); }
 .school-modal-body > .admin-table-wrap { max-height:none; border:1px solid var(--line); border-radius:12px; }
 .school-print-btn { text-decoration:none; white-space:nowrap; }
-.sales-metrics.school-sales-metrics { grid-template-columns:repeat(5,minmax(180px,1fr)); overflow-x:auto; padding-bottom:4px; }
+.sales-metrics.school-sales-metrics { width:100%; min-width:0; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; overflow:hidden; padding:0; }
+.sales-metrics.school-sales-metrics article { min-width:0; min-height:88px; padding:15px 17px; border-radius:12px; overflow:hidden; }
+.sales-metrics.school-sales-metrics small { overflow:hidden; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+.sales-metrics.school-sales-metrics strong { margin-top:7px; font-size:21px; white-space:nowrap; }
+@media(max-width:760px) {
+    .sales-metrics.school-sales-metrics { gap:6px; }
+    .sales-metrics.school-sales-metrics article { min-height:76px; padding:11px 9px; }
+    .sales-metrics.school-sales-metrics small { font-size:9px; }
+    .sales-metrics.school-sales-metrics strong { font-size:16px; }
+}
 @media(max-width:800px) { .school-modal-summary { grid-template-columns:1fr 1fr; }.school-order-modal { max-height:96vh; }.school-modal-backdrop { padding:10px; } }
 @media(max-width:520px) { .school-modal-summary { grid-template-columns:1fr; }.school-order-modal > header,.school-modal-body { padding:18px; } }
 .noguchi-school-list .school-detail-row { display:block; margin:-5px 0 18px; }
