@@ -681,14 +681,14 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
  .noguchi-print-footer{display:flex;justify-content:space-between;margin-top:5mm;padding-top:3mm;border-top:1px solid #94a3b8;color:#475569;font-size:7px}
  .legacy-order-sheet{display:none!important}
  .noguchi-print-order-table{display:block;border:0;border-radius:0}
- .noguchi-print-order-table table{width:100%;border-collapse:collapse;table-layout:fixed;color:#0f172a;font-size:7.5px}
+ .noguchi-print-order-table table{width:100%;border-collapse:collapse;table-layout:fixed;color:#0f172a;font-size:9px}
  .noguchi-print-order-table thead{display:table-header-group}.noguchi-print-order-table tr{break-inside:avoid;page-break-inside:avoid}
  .noguchi-print-order-table th,.noguchi-print-order-table td{padding:4px 3px;border:1px solid #64748b;vertical-align:top;overflow-wrap:anywhere}
- .noguchi-print-order-table th{background:#dbeafe!important;color:#17366f;font-size:7px;font-weight:800;text-align:center;text-transform:uppercase}
+ .noguchi-print-order-table th{background:#dbeafe!important;color:#17366f;font-size:7.5px;font-weight:800;text-align:center;text-transform:uppercase}
  .noguchi-print-order-table th:first-child{width:3%}.noguchi-print-order-table th:nth-child(2){width:13%}.noguchi-print-order-table th:nth-last-child(4){width:5%}.noguchi-print-order-table th:nth-last-child(3){width:8%}.noguchi-print-order-table th:nth-last-child(2){width:7%}.noguchi-print-order-table th:last-child{width:7%}
- .noguchi-print-order-table td:first-child{text-align:center}.noguchi-print-order-table td:nth-child(n+3):nth-child(-n+11){text-align:left}
+ .noguchi-print-order-table td:first-child{text-align:center}.noguchi-print-order-table td:nth-child(n+3):nth-child(-n+12){text-align:center;vertical-align:middle;font-weight:700}
  .noguchi-print-order-table td>b,.noguchi-print-order-table td>small{display:block}.noguchi-print-order-table td>small{margin-top:2px;color:#475569;font-size:6.5px}
- .print-line-detail{display:block;padding:1px 0;border-bottom:1px dotted #cbd5e1;line-height:1.2}.print-line-detail:last-child{border-bottom:0}
+ .print-category-total{font-size:10px}
  .legacy-order-sheet>header{display:none}.legacy-order-sheet .admin-table-wrap{overflow:visible!important}
  .legacy-order-table{width:100%!important;min-width:0!important;border-collapse:collapse!important;table-layout:fixed!important;font-size:6.5px!important;color:#0f172a}
  .legacy-order-table thead{display:table-header-group}.legacy-order-table tr{break-inside:avoid;page-break-inside:avoid}

@@ -11,14 +11,39 @@ use App\Models\Shipment;
 use App\Models\StockTransaction;
 use App\Support\IndustryDailyReportCatalog;
 use App\Support\OperationalScope;
+use App\Support\SchoolOrderXlsxExporter;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
 {
+    public function exportOrders(Request $request): BinaryFileResponse
+    {
+        $factory = $request->user()->currentFactory;
+        abort_unless($factory->hasNoguchiSchoolOrders(), 404);
+        $data = $request->validate([
+            'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'custom'])], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'status' => ['nullable', Rule::in(['draft', 'pending', 'submitted', 'accepted', 'confirmed', 'processing', 'ready', 'partial', 'delivered', 'completed', 'rejected', 'cancelled'])],
+            'district' => ['nullable', 'string', 'max:80'], 'sector' => ['nullable', 'string', 'max:80'],
+        ]);
+        [$from, $to] = $this->range($data);
+        $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factory->id)->where('document_type', 'customer_order')
+            ->whereDate('document_date', '>=', $from->toDateString())->whereDate('document_date', '<=', $to->toDateString())
+            ->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when(($data['district'] ?? null) || ($data['sector'] ?? null), function ($query) use ($data, $factory) {
+                $ids = School::withoutGlobalScopes()->where('factory_id', $factory->id)->when($data['district'] ?? null, fn ($schools, $district) => $schools->where('district', $district))->when($data['sector'] ?? null, fn ($schools, $sector) => $schools->where('sector', $sector))->pluck('id');
+                $query->whereIn('school_id', $ids);
+            })->with(['school:id,name,phone,district,sector', 'lines'])->latest('document_date')->latest('id')->get();
+        $filters = array_merge(['period' => 'all', 'status' => '', 'district' => '', 'sector' => ''], $data);
+        $path = tempnam(sys_get_temp_dir(), 'school-orders-').'.xlsx';
+        SchoolOrderXlsxExporter::create($factory->name, $orders, $filters, $path);
+        return response()->download($path, 'school-order-report-'.now()->format('Y-m-d-His').'.xlsx', ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])->deleteFileAfterSend(true);
+    }
+
     public function __invoke(Request $request): JsonResponse
     {
         $factory = $request->user()->currentFactory;

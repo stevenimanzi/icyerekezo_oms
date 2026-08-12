@@ -54,6 +54,16 @@ class NoguchiLogisticsReportTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'logistics.orders')
             ->assertJsonPath('logistics.orders.0.document_number', 'ORDER-DELIVERED');
 
+        $export = $this->actingAs(User::findOrFail($employee['id']))->get('/api/reports/orders.xlsx?period=all&district=Burera&sector=Bungwe&status=pending');
+        $export->assertOk()->assertDownload();
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($export->baseResponse->getFile()->getPathname()) === true);
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $this->assertStringContainsString('ORDER-PENDING', $sheetXml);
+        $this->assertStringNotContainsString('ORDER-DELIVERED', $sheetXml);
+        $this->assertStringContainsString('orientation="landscape"', $sheetXml);
+        $zip->close();
+
         $this->actingAs($owner)->getJson('/api/reports?period=day&type=all')
             ->assertOk()
             ->assertJsonPath('report.scope', 'factory');
