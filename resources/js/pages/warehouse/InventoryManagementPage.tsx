@@ -539,14 +539,14 @@ export default function InventoryManagementPage({
               >
                 <ItemSelect
                   value={movement.item_id}
-                  change={(value) =>
+                  change={(value:string) =>
                     setMovement({ ...movement, item_id: value })
                   }
                   items={tools.items}
                 />
                 <WarehouseSelect
                   value={movement.warehouse_id}
-                  change={(value) =>
+                  change={(value:string) =>
                     setMovement({ ...movement, warehouse_id: value })
                   }
                   warehouses={tools.warehouses}
@@ -633,7 +633,7 @@ export default function InventoryManagementPage({
               >
                 <ItemSelect
                   value={transfer.item_id}
-                  change={(value) =>
+                  change={(value:string) =>
                     setTransfer({ ...transfer, item_id: value })
                   }
                   items={tools.items}
@@ -717,12 +717,12 @@ export default function InventoryManagementPage({
               >
                 <ItemSelect
                   value={count.item_id}
-                  change={(value) => setCount({ ...count, item_id: value })}
+                  change={(value:string) => setCount({ ...count, item_id: value })}
                   items={tools.items}
                 />
                 <WarehouseSelect
                   value={count.warehouse_id}
-                  change={(value) =>
+                  change={(value:string) =>
                     setCount({ ...count, warehouse_id: value })
                   }
                   warehouses={tools.warehouses}

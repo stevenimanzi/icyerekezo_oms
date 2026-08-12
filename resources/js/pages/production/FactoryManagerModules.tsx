@@ -9,7 +9,7 @@ function Heading({title,description,action}:any){return <div className="module-h
 export function FlowSetupPage(){
     const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [success,setSuccess]=useState('');
     const load=()=>api('/api/factory/flow-suggestion').then(setData).catch(reason=>setError(reason.message));
-    useEffect(load,[]);
+    useEffect(()=>{void load()},[]);
     const apply=async()=>{setBusy(true);setError('');setSuccess('');try{const result=await api('/api/factory/flow-suggestion/apply',{method:'POST'});setSuccess(result.message||'Recommended departments, workstations and workflow stages are ready.');await load()}catch(reason:any){setError(reason.message)}finally{setBusy(false)}};
     const suggestion=data?.suggestion;return <section className="module-page"><Heading title="Factory departments and work steps" description="Create the departments and ordered work steps used by your factory." action={<button className="primary-btn" disabled={busy||!suggestion} onClick={apply}><Save size={17}/>{busy?'Applying…':'Use recommended setup'}</button>}/><Alert error={error} success={success}/><article className="panel flow-suggestion"><div className="flow-head"><div><small>FACTORY TYPE</small><h2>{String(data?.industry||'').replaceAll('_',' ')}</h2><p>{suggestion?.name}</p></div></div><div className="flow-line">{suggestion?.departments?.map((item:any,index:number)=><div key={item.code}><span>{index+1}</span><b>{item.name}</b><small>{item.workstation_type}</small></div>)}</div></article></section>
 }
@@ -73,7 +73,7 @@ export function TeamManagementPage(){
     const [creating,setCreating]=useState(false);
     const [showCreate,setShowCreate]=useState(false);
     const load=()=>api('/api/team/workspaces').then(setData).catch(reason=>setError(reason.message));
-    useEffect(load,[]);
+    useEffect(()=>{void load()},[]);
     const create=async(e:React.FormEvent)=>{
         e.preventDefault();setCreating(true);setError('');setSuccess('');
         try{

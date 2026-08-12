@@ -669,8 +669,18 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .legacy-progress i{display:block;height:3px;margin-bottom:3px;border-radius:4px;background:#24b36b}
 .legacy-order-table .admin-status{font-size:9px;padding:5px 7px;white-space:nowrap}
 .legacy-order-table .school-action-icon{width:34px;height:34px}
+.report-pagination{margin-top:-24px;padding:18px 20px;background:#fff;border:1px solid #e5eaf2;border-top:0}
+[data-theme='dark'] .legacy-order-sheet>header h2,
+[data-theme='dark'] .legacy-school-cell b{color:var(--text)}
+[data-theme='dark'] .legacy-order-sheet>header p,
+[data-theme='dark'] .legacy-school-cell small,
+[data-theme='dark'] .legacy-progress{color:var(--muted)}
+[data-theme='dark'] .legacy-sector-row td{border-color:#315484;background:#1b3153;color:#75a7ff}
+[data-theme='dark'] .legacy-sector-row span,
+[data-theme='dark'] .legacy-sector-row em{color:#b8c7dc}
+[data-theme='dark'] .report-pagination{border-color:var(--line);background:var(--panel)}
 @media(max-width:1200px){.legacy-order-table{min-width:1180px}.legacy-order-sheet .admin-table-wrap{overflow-x:auto}}
-@media print{.legacy-order-sheet{border:0;box-shadow:none}.legacy-order-sheet .admin-table-wrap{overflow:visible}.legacy-order-table{min-width:0;font-size:7px}.legacy-order-table th,.legacy-order-table td{padding:4px 3px}.legacy-order-table th{font-size:6px;letter-spacing:0}.legacy-order-table .school-action-icon{display:none}}
+@media print{.legacy-order-sheet{border:0;box-shadow:none}.legacy-order-sheet .admin-table-wrap{overflow:visible}.legacy-order-table{min-width:0;font-size:7px}.legacy-order-table th,.legacy-order-table td{padding:4px 3px}.legacy-order-table th{font-size:6px;letter-spacing:0}.legacy-order-table .school-action-icon{display:none}.report-pagination{display:none!important}}
 .noguchi-print-header,.noguchi-print-footer,.noguchi-print-order-table{display:none}
 @media print{
  @page{size:A4 landscape;margin:9mm 7mm 12mm}

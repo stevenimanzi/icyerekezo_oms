@@ -40,7 +40,7 @@ function Header({ title, count, onRefresh, busy }: any) {
 export default function IncomingRequestsPage() {
     const locale = (window as any).Settings?.locale || 'en';
     const [busy, setBusy] = useState(false);
-    const [transactions, setTransactions] = useState([]);
+    const [transactions, setTransactions] = useState<any[]>([]);
     const [tools, setTools] = useState<any>({ warehouses: [] });
     const [confirmAction, setConfirmAction] = useState<any>(null);
     const [rejectReason, setRejectReason] = useState("");
