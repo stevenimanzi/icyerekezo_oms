@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\DeliveryVehicle;
 use App\Models\ProductionStageExecution;
 use App\Models\SalesDocument;
+use App\Models\School;
 use App\Models\Shipment;
 use App\Models\StockTransaction;
 use App\Support\IndustryDailyReportCatalog;
@@ -35,6 +36,7 @@ class ReportController extends Controller
             'to' => ['nullable', 'date', 'after_or_equal:from'],
             'status' => ['nullable', Rule::in(['draft', 'pending', 'submitted', 'accepted', 'confirmed', 'processing', 'ready', 'partial', 'delivered', 'completed', 'rejected', 'cancelled'])],
             'district' => ['nullable', 'string', 'max:80'],
+            'sector' => ['nullable', 'string', 'max:80'],
         ]);
         [$from, $to] = $this->range($data);
         $type = $departmentOnly ? 'production' : ($logisticsOnly ? 'inventory' : ($data['type'] ?? 'all'));
@@ -140,10 +142,16 @@ class ReportController extends Controller
         $logistics = null;
         if ($logisticsOnly) {
             $orderQuery = SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)
-                ->where('document_type', 'customer_order')->whereBetween('document_date', [$from->toDateString(), $to->toDateString()])
+                ->where('document_type', 'customer_order')->whereDate('document_date', '>=', $from->toDateString())->whereDate('document_date', '<=', $to->toDateString())
                 ->with(['school:id,name,phone,district,sector', 'lines:id,sales_document_id,class_level,garment_category,gender,size,color,quantity_ordered,quantity_packed,quantity_delivered,quantity_rejected,rejection_reason', 'shipments.vehicle']);
             $orderQuery->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-                ->when($data['district'] ?? null, fn ($query, $district) => $query->whereHas('school', fn ($school) => $school->where('district', $district)));
+                ->when(($data['district'] ?? null) || ($data['sector'] ?? null), function ($query) use ($data, $factory) {
+                    $schoolIds = School::withoutGlobalScopes()->where('factory_id', $factory->id)
+                        ->when($data['district'] ?? null, fn ($schools, $district) => $schools->where('district', $district))
+                        ->when($data['sector'] ?? null, fn ($schools, $sector) => $schools->where('sector', $sector))
+                        ->pluck('id');
+                    $query->whereIn('school_id', $schoolIds);
+                });
             $logisticsOrders = $orderQuery->latest('document_date')->latest('id')->get();
             $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factory->id)
                 ->where(fn ($query) => $query->whereBetween('created_at', [$from, $to])->orWhereBetween('planned_dispatch_at', [$from, $to])->orWhereBetween('delivered_at', [$from, $to]))
@@ -173,7 +181,7 @@ class ReportController extends Controller
                 array_filter($factory->settings['report'] ?? [], fn ($value) => $value !== '' && $value !== []),
                 $logisticsOnly ? ['title' => 'Daily logistics report', 'orientation' => 'landscape', 'show_department_totals' => false, 'show_daily_register' => false, 'default_period' => $factory->hasNoguchiSchoolOrders() ? 'all' : 'day'] : ($departmentOnly ? ['title' => ($departments->first()?->name ?? ucfirst($dashboardKey)).' daily report', 'show_stock_register' => false] : [])
             ),
-            'filters' => ['departments' => $isExecutive ? Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))->orderBy('name')->get(['id', 'name']) : [], 'districts' => $logisticsOnly ? SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->distinct()->orderBy('schools.district')->pluck('schools.district') : []],
+            'filters' => ['departments' => $isExecutive ? Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))->orderBy('name')->get(['id', 'name']) : [], 'districts' => $logisticsOnly ? SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->distinct()->orderBy('schools.district')->pluck('schools.district') : [], 'sectors_by_district' => $logisticsOnly ? SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->whereNotNull('schools.sector')->select(['schools.district', 'schools.sector'])->distinct()->orderBy('schools.sector')->get()->groupBy('district')->map(fn ($rows) => $rows->pluck('sector')->values()) : (object) []],
             'report' => ['scope' => $logisticsOnly ? 'logistics' : ($departmentOnly ? 'department' : 'factory'), 'scope_label' => $logisticsOnly ? 'Logistics' : ($departments->first()?->name ?? 'Whole factory'), 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
             'summary' => array_filter([($departmentOnly ? 'flow_categories' : 'departments') => $departmentActivity->count(), 'production_orders' => $executions->pluck('production_order_id')->unique()->count(), 'work_records' => $executions->count(), 'completed_records' => $executions->where('status', 'completed')->count(), 'quantity_received' => (float) $executions->sum('input_quantity'), 'quantity_completed' => (float) $executions->sum('output_quantity'), 'damaged_quantity' => (float) $executions->sum('rejected_quantity'), 'waste_quantity' => (float) $executions->sum('waste_quantity'), 'stock_movements' => $departmentOnly ? null : $inventory->count()], fn ($value) => $value !== null),
             'department_activity' => $departmentActivity,

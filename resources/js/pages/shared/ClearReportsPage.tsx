@@ -33,6 +33,10 @@ function Table({title, headers, rows}: any) {
 const number = (value: any) => Number(value || 0).toLocaleString(undefined, {maximumFractionDigits: 3});
 const quantity = (value: any, unit?: string) => `${number(value)}${unit && unit !== '—' ? ` ${unit}` : ''}`;
 
+const printCategories=['Uniform','Sweater','Sport Uniform','TVET','Tourism','Polo','T-shirt','Rain Coat','Jumper'];
+function PrintCategoryCell({order,category}:any){const aliases:Record<string,string[]>={TVET:['tvet','overall','overcoat'],'Sport Uniform':['sport','sport uniform'],'Rain Coat':['rain coat','raincoat'],'Polo':['polo','polo lacoste'],'T-shirt':['t-shirt','t shirt']};const names=aliases[category]||[category.toLowerCase()];const lines=(order.lines||[]).filter((line:any)=>names.includes(String(line.garment_category||'').toLowerCase()));return <td>{lines.length?lines.map((line:any)=><span className="print-line-detail" key={line.id}>{[line.class_level,line.gender,line.size,line.color].filter(Boolean).join(' / ')||category}: <b>{number(line.quantity_ordered)}</b></span>):'—'}</td>}
+function NoguchiPrintOrderTable({rows}:any){return <section className="noguchi-print-order-table"><table><thead><tr><th>No.</th><th>School</th>{printCategories.map(category=><th key={category}>{category}</th>)}<th>Total Qty</th><th>Total Amount</th><th>Contact</th><th>Comment / Status</th></tr></thead><tbody>{rows.map((order:any,index:number)=><tr key={order.id}><td>{index+1}</td><td><b>{order.school?.name||order.customer_name}</b><small>{order.document_number}</small></td>{printCategories.map(category=><PrintCategoryCell key={category} order={order} category={category}/>)}<td><b>{number(order.item_count)}</b></td><td>{order.currency_code||'RWF'} {number(order.total_amount)}</td><td>{order.school?.phone||order.customer_email||'—'}</td><td>{readableStatus(order.status)}{order.due_date?<small>Due {reportDate(order.due_date)}</small>:null}</td></tr>)}</tbody></table></section>}
+
 function DailyRegister({data}: any) {
     const days = data.daily_activity || [];
     return <>{days.length
@@ -198,7 +202,7 @@ function Document({data}: any) {
 
 export default function ClearReportsPage({canExport, productionOnly = false}: any) {
     const today = new Date().toISOString().slice(0, 10);
-    const [filters, setFilters] = useState({period: 'day', type: productionOnly ? 'production' : 'all', department_id: '', from: today, to: today, status:'', district:''});
+    const [filters, setFilters] = useState({period: 'day', type: productionOnly ? 'production' : 'all', department_id: '', from: today, to: today, status:'', district:'', sector:''});
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -239,7 +243,7 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
             clearTimeout(wait);
             clearInterval(timer);
         };
-    }, [filters.period, filters.type, filters.department_id, filters.from, filters.to, filters.status, filters.district]);
+    }, [filters.period, filters.type, filters.department_id, filters.from, filters.to, filters.status, filters.district, filters.sector]);
 
     return <section className="module-page report-page">
         <div className="no-print">
@@ -271,7 +275,7 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
                         {(data?.filters?.departments || []).map((department: any) => <option key={department.id} value={department.id}>{department.name}</option>)}
                     </select>
                 </label>}
-                {logisticsOnly&&<><label>Order status<select value={filters.status} onChange={event=>setFilters({...filters,status:event.target.value})}><option value="">All order statuses</option><option value="pending">Incoming / pending</option><option value="accepted">Accepted</option><option value="processing">In preparation</option><option value="ready">Ready for delivery</option><option value="partial">Partially delivered</option><option value="delivered">Delivered</option><option value="completed">Completed</option><option value="rejected">Rejected</option><option value="cancelled">Cancelled</option></select></label><label>District<select value={filters.district} onChange={event=>setFilters({...filters,district:event.target.value})}><option value="">All districts</option>{(data?.filters?.districts||[]).map((district:string)=><option key={district}>{district}</option>)}</select></label></>}
+                {logisticsOnly&&<><label>Order status<select value={filters.status} onChange={event=>setFilters({...filters,status:event.target.value})}><option value="">All order statuses</option><option value="pending">Incoming / pending</option><option value="accepted">Accepted</option><option value="processing">In preparation</option><option value="ready">Ready for delivery</option><option value="partial">Partially delivered</option><option value="delivered">Delivered</option><option value="completed">Completed</option><option value="rejected">Rejected</option><option value="cancelled">Cancelled</option></select></label><label>District<select value={filters.district} onChange={event=>setFilters({...filters,district:event.target.value,sector:''})}><option value="">All districts</option>{(data?.filters?.districts||[]).map((district:string)=><option key={district}>{district}</option>)}</select></label><label>Sector<select disabled={!filters.district} value={filters.sector} onChange={event=>setFilters({...filters,sector:event.target.value})}><option value="">{filters.district?'All sectors':'Choose district first'}</option>{(data?.filters?.sectors_by_district?.[filters.district]||[]).map((sector:string)=><option key={sector}>{sector}</option>)}</select></label></>}
                 {filters.period === 'custom' && <>
                     <label>From<input type="date" value={filters.from} onChange={event => setFilters({...filters, from: event.target.value})}/></label>
                     <label>To<input type="date" value={filters.to} onChange={event => setFilters({...filters, to: event.target.value})}/></label>
@@ -279,7 +283,10 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
                 <div className="live-report-status"><i/><span>{loading ? 'Updating…' : updated ? `Live · ${updated.toLocaleTimeString()}` : 'Connecting…'}</span></div>
             </div>
         </div>
+        {noguchiOrdersOnly&&data&&<header className="noguchi-print-header"><div><b>{data.factory.name}</b><span>ICYEREKEZO OMS · School Garment Logistics</span></div><div><h1>School Order Quantity Report</h1><p>{data.report.from} to {data.report.to}</p></div><section><span><strong>Status:</strong> {filters.status||'All order statuses'}</span><span><strong>District:</strong> {filters.district||'All districts'}</span><span><strong>Sector:</strong> {filters.sector||'All sectors'}</span><span><strong>Generated:</strong> {new Date(data.report.generated_at).toLocaleString()}</span></section></header>}
+        {noguchiOrdersOnly&&data&&<NoguchiPrintOrderTable rows={data.logistics?.orders||[]}/>}
         {logisticsOnly && data && <LegacyOrderMatrix rows={data.logistics?.orders || []} open={setSelectedOrder}/>}
+        {noguchiOrdersOnly&&data&&<footer className="noguchi-print-footer"><span>{data.factory.name} · Confidential operational report</span><span>Generated by ICYEREKEZO OMS</span></footer>}
         {data && <Document data={data}/>}
         {selectedOrder && <OrderDetailsModal order={selectedOrder} editable={false} busy={null} run={async()=>false} close={()=>setSelectedOrder(null)}/>}
     </section>;

@@ -646,16 +646,16 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
     .noguchi-flow-table { min-width:0; font-size:7px; }
     .noguchi-flow-table th,.noguchi-flow-table td { padding:4px; }
 }
-.legacy-order-sheet{overflow:hidden}
+.legacy-order-sheet{overflow:hidden;border-radius:0!important}
 .legacy-order-sheet>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px;border-bottom:1px solid #e5eaf2}
 .legacy-order-sheet>header h2{margin:0 0 5px;font-size:22px;color:#14213d}
 .legacy-order-sheet>header p{margin:0;color:#71809d}
 .legacy-live-label{display:inline-flex;align-items:center;gap:7px;color:#098b54;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
 .legacy-live-label i{width:8px;height:8px;border-radius:50%;background:#20bf6b;box-shadow:0 0 0 4px #dff8ea}
 .legacy-order-sheet .admin-table-wrap{width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
-.legacy-order-table{width:100%;min-width:1400px;table-layout:auto;font-size:11px}
+.legacy-order-table{width:100%;min-width:1400px;table-layout:auto;font-size:13px}
 .legacy-order-table th,.legacy-order-table td{padding:9px 8px;text-align:center;vertical-align:middle;white-space:nowrap}
-.legacy-order-table th{font-size:9px;line-height:1.15;letter-spacing:.035em}
+.legacy-order-table th{font-size:11px;line-height:1.15;letter-spacing:.025em}
 .legacy-order-table th:first-child,.legacy-order-table td:first-child{width:160px;text-align:left;padding-left:16px}
 .legacy-order-table th:nth-last-child(3),.legacy-order-table td:nth-last-child(3){width:88px}
 .legacy-order-table th:nth-last-child(2),.legacy-order-table td:nth-last-child(2){width:82px}
@@ -670,6 +670,37 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .legacy-order-table .admin-status{font-size:9px;padding:5px 7px;white-space:nowrap}
 .legacy-order-table .school-action-icon{width:34px;height:34px}
 @media(max-width:1200px){.legacy-order-table{min-width:1180px}.legacy-order-sheet .admin-table-wrap{overflow-x:auto}}
+@media print{.legacy-order-sheet{border:0;box-shadow:none}.legacy-order-sheet .admin-table-wrap{overflow:visible}.legacy-order-table{min-width:0;font-size:7px}.legacy-order-table th,.legacy-order-table td{padding:4px 3px}.legacy-order-table th{font-size:6px;letter-spacing:0}.legacy-order-table .school-action-icon{display:none}}
+.noguchi-print-header,.noguchi-print-footer,.noguchi-print-order-table{display:none}
+@media print{
+ @page{size:A4 landscape;margin:9mm 7mm 12mm}
+ .noguchi-print-header{display:grid;grid-template-columns:1fr 1fr;align-items:start;gap:14px;margin:0 0 7mm;padding:0 0 4mm;border-bottom:2px solid #1d4ed8;color:#0f172a}
+ .noguchi-print-header>div:first-child b,.noguchi-print-header>div:first-child span{display:block}.noguchi-print-header>div:first-child b{font-size:18px;color:#1649a3}.noguchi-print-header>div:first-child span{margin-top:3px;font-size:8px;letter-spacing:.08em;text-transform:uppercase}
+ .noguchi-print-header>div:nth-child(2){text-align:right}.noguchi-print-header h1{margin:0;font-size:17px}.noguchi-print-header p{margin:3px 0 0;font-size:9px;color:#475569}
+ .noguchi-print-header>section{grid-column:1/-1;display:flex;gap:18px;padding:3mm;background:#eff6ff;border:1px solid #bfdbfe;font-size:8px}
+ .noguchi-print-footer{display:flex;justify-content:space-between;margin-top:5mm;padding-top:3mm;border-top:1px solid #94a3b8;color:#475569;font-size:7px}
+ .legacy-order-sheet{display:none!important}
+ .noguchi-print-order-table{display:block;border:0;border-radius:0}
+ .noguchi-print-order-table table{width:100%;border-collapse:collapse;table-layout:fixed;color:#0f172a;font-size:7.5px}
+ .noguchi-print-order-table thead{display:table-header-group}.noguchi-print-order-table tr{break-inside:avoid;page-break-inside:avoid}
+ .noguchi-print-order-table th,.noguchi-print-order-table td{padding:4px 3px;border:1px solid #64748b;vertical-align:top;overflow-wrap:anywhere}
+ .noguchi-print-order-table th{background:#dbeafe!important;color:#17366f;font-size:7px;font-weight:800;text-align:center;text-transform:uppercase}
+ .noguchi-print-order-table th:first-child{width:3%}.noguchi-print-order-table th:nth-child(2){width:13%}.noguchi-print-order-table th:nth-last-child(4){width:5%}.noguchi-print-order-table th:nth-last-child(3){width:8%}.noguchi-print-order-table th:nth-last-child(2){width:7%}.noguchi-print-order-table th:last-child{width:7%}
+ .noguchi-print-order-table td:first-child{text-align:center}.noguchi-print-order-table td:nth-child(n+3):nth-child(-n+11){text-align:left}
+ .noguchi-print-order-table td>b,.noguchi-print-order-table td>small{display:block}.noguchi-print-order-table td>small{margin-top:2px;color:#475569;font-size:6.5px}
+ .print-line-detail{display:block;padding:1px 0;border-bottom:1px dotted #cbd5e1;line-height:1.2}.print-line-detail:last-child{border-bottom:0}
+ .legacy-order-sheet>header{display:none}.legacy-order-sheet .admin-table-wrap{overflow:visible!important}
+ .legacy-order-table{width:100%!important;min-width:0!important;border-collapse:collapse!important;table-layout:fixed!important;font-size:6.5px!important;color:#0f172a}
+ .legacy-order-table thead{display:table-header-group}.legacy-order-table tr{break-inside:avoid;page-break-inside:avoid}
+ .legacy-order-table th,.legacy-order-table td{padding:3.2px 2.5px!important;border:1px solid #94a3b8!important;white-space:nowrap!important;text-align:center!important}
+ .legacy-order-table th{background:#dbeafe!important;color:#17366f!important;font-size:5.5px!important;font-weight:800!important}
+ .legacy-order-table th:first-child,.legacy-order-table td:first-child{width:18%!important;text-align:left!important;padding-left:4px!important}
+ .legacy-order-table th:nth-last-child(4),.legacy-order-table td:nth-last-child(4){width:8%!important}.legacy-order-table th:nth-last-child(3),.legacy-order-table td:nth-last-child(3){width:10%!important}.legacy-order-table th:nth-last-child(2),.legacy-order-table td:nth-last-child(2){width:7%!important}
+ .legacy-order-table th:last-child,.legacy-order-table td:last-child{display:none}
+ .legacy-sector-row td{background:#e8f0ff!important;color:#1649a3!important;font-size:7px!important;font-weight:700!important;text-align:left!important}
+ .legacy-school-cell b{font-size:7px!important}.legacy-school-cell small,.legacy-progress{font-size:5.5px!important}.legacy-progress i{height:2px}
+ .legacy-order-table .admin-status{padding:2px 3px!important;border:1px solid #cbd5e1!important;background:#f8fafc!important;color:#334155!important;font-size:5.5px!important}
+}
 .logistics-report-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
 .logistics-report-pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .logistics-status-report .report-section{break-inside:avoid}

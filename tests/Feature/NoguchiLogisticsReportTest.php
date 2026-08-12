@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Role;
+use App\Models\SalesDocument;
+use App\Models\School;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,6 +29,11 @@ class NoguchiLogisticsReportTest extends TestCase
             'password' => 'Officer@12345', 'password_confirmation' => 'Officer@12345',
             'role_id' => $role->id, 'job_title' => 'Logistics Officer',
         ])->assertCreated()->json();
+        $burera = School::create(['factory_id' => $owner->current_factory_id, 'name' => 'School One', 'district' => 'Burera', 'sector' => 'Bungwe']);
+        $gicumbi = School::create(['factory_id' => $owner->current_factory_id, 'name' => 'School Two', 'district' => 'Gicumbi', 'sector' => 'Byumba']);
+        SalesDocument::create(['factory_id' => $owner->current_factory_id, 'school_id' => $burera->id, 'document_type' => 'customer_order', 'document_number' => 'ORDER-PENDING', 'customer_name' => $burera->name, 'status' => 'pending', 'total_amount' => 1000, 'item_count' => 10, 'document_date' => today()]);
+        SalesDocument::create(['factory_id' => $owner->current_factory_id, 'school_id' => $gicumbi->id, 'document_type' => 'customer_order', 'document_number' => 'ORDER-DELIVERED', 'customer_name' => $gicumbi->name, 'status' => 'delivered', 'total_amount' => 2000, 'item_count' => 20, 'document_date' => today()]);
+        $this->assertDatabaseHas('sales_documents', ['factory_id' => $owner->current_factory_id, 'document_number' => 'ORDER-PENDING', 'school_id' => $burera->id, 'status' => 'pending']);
 
         $this->actingAs(User::findOrFail($employee['id']))
             ->getJson('/api/reports?period=day&type=all')
@@ -35,7 +42,17 @@ class NoguchiLogisticsReportTest extends TestCase
             ->assertJsonPath('report.type', 'inventory')
             ->assertJsonPath('standard.title', 'Daily logistics report')
             ->assertJsonPath('production', [])
-            ->assertJsonStructure(['logistics' => ['summary' => ['orders_processed', 'items_ordered', 'items_delivered', 'items_remaining', 'items_returned', 'total_value', 'shipments', 'deliveries_completed'], 'order_statuses', 'return_reasons', 'orders', 'shipments', 'vehicles'], 'stock_register', 'filters' => ['districts']]);
+            ->assertJsonStructure(['logistics' => ['summary' => ['orders_processed', 'items_ordered', 'items_delivered', 'items_remaining', 'items_returned', 'total_value', 'shipments', 'deliveries_completed'], 'order_statuses', 'return_reasons', 'orders', 'shipments', 'vehicles'], 'stock_register', 'filters' => ['districts', 'sectors_by_district']])
+            ->assertJsonPath('filters.sectors_by_district.Burera.0', 'Bungwe');
+
+        $this->actingAs(User::findOrFail($employee['id']))
+            ->getJson('/api/reports?period=all&district=Burera&sector=Bungwe&status=pending')
+            ->assertOk()->assertJsonCount(1, 'logistics.orders')
+            ->assertJsonPath('logistics.orders.0.document_number', 'ORDER-PENDING');
+        $this->actingAs(User::findOrFail($employee['id']))
+            ->getJson('/api/reports?period=all&status=delivered')
+            ->assertOk()->assertJsonCount(1, 'logistics.orders')
+            ->assertJsonPath('logistics.orders.0.document_number', 'ORDER-DELIVERED');
 
         $this->actingAs($owner)->getJson('/api/reports?period=day&type=all')
             ->assertOk()
