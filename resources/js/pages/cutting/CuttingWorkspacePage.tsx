@@ -8,7 +8,7 @@ type Locale = 'en' | 'fr';
 type CuttingTab = 'request' | 'cut' | 'damaged' | 'report';
 type AuthUser = {
     id: number; name: string;
-    current_factory: { currency_code?: string } | null;
+    current_factory: { name?: string; currency_code?: string } | null;
     system?: { currency_code?: string };
 };
 
@@ -105,9 +105,11 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
     const [stockPopup, setStockPopup] = useState('');
     const [success, setSuccess] = useState('');
     const [busy, setBusy] = useState(false);
+    const [reportFrom, setReportFrom] = useState('');
+    const [reportTo, setReportTo] = useState('');
 
     const [requestForm, setRequestForm] = useState({ item_id: '', quantity: '', reason: '' });
-    const [cutForm, setCutForm] = useState({ item_id: '', quantity: '', output_style: '', output_size: '', output_quantity: '', notes: '' });
+    const [cutForm, setCutForm] = useState({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' });
     const [damageForm, setDamageForm] = useState({ item_id: '', quantity: '', reason: '' });
 
     useEffect(() => { setTab(initialTab); }, [initialTab]);
@@ -146,6 +148,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
         .filter((item: any) => item.available_qty > 0);
 
     const cuttingStock = stock.filter(s => s.warehouse_id === cuttingWarehouseId && s.quantity_on_hand > 0);
+    const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
     const cuttingTransactions = transactions.filter((tx: any) =>
         ['issue', 'production_output', 'waste', 'adjustment_out', 'reserve'].includes(String(tx.type || ''))
@@ -155,6 +158,26 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
         tx.warehouse_id === cuttingWarehouseId &&
         String(tx.reason || '').startsWith('[Cut Output]')
     );
+    const cutReportRows = cutOutputTransactions.map((tx: any) => {
+        const details = String(tx.reason || '').replace('[Cut Output] ', '');
+        const output = details.match(/\|\s*([\d,.]+)x\s+(.+?)(?:\s+\/\s+(.+?))?\s+\(([^)]+)\)\s+produced/i);
+        const fabricName = String(tx.item_name || '');
+        const color = fabricName.match(/\b(green|blue|red|yellow|black|white|navy|grey|gray|brown|orange|purple|pink|beige|cream)\b/i)?.[1] || '\u2014';
+        return {
+            ...tx,
+            inputColor: color,
+            outputStyle: output?.[2]?.trim() || '\u2014',
+            outputColor: color,
+            outputSize: output?.[4]?.trim() || '\u2014',
+            outputQuantity: output?.[1] ? num(Number(output[1].replaceAll(',', ''))) : '\u2014',
+        };
+    });
+    const filteredCutReportRows = cutReportRows.filter((row: any) => {
+        const date = new Date(row.occurred_at);
+        const from = reportFrom ? new Date(`${reportFrom}T00:00:00`) : null;
+        const to = reportTo ? new Date(`${reportTo}T23:59:59.999`) : null;
+        return (!from || date >= from) && (!to || date <= to);
+    });
     const todayCuts = cutOutputTransactions.filter((tx: any) => {
         const d = new Date(tx.occurred_at); const n = new Date();
         return d.toDateString() === n.toDateString();
@@ -168,7 +191,6 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
     const totalDamagedQty = todayDamage.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
     const wastePercent = totalCutQty + totalDamagedQty > 0 ? ((totalDamagedQty / (totalCutQty + totalDamagedQty)) * 100).toFixed(1) : '0.0';
     const clearMsg = () => { setError(''); setSuccess(''); };
-    const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
     const submitRequest = async () => {
         clearMsg();
@@ -198,9 +220,9 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(cutForm.item_id), warehouse_id: cuttingWarehouseId, type: 'issue', quantity: Number(cutForm.quantity), reason: `[Cut Output] ${cutForm.notes || 'Fabric cut for production'}${cutForm.output_quantity ? ` | ${cutForm.output_quantity}x ${cutForm.output_style} (${cutForm.output_size}) produced` : ''}` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(cutForm.item_id), warehouse_id: cuttingWarehouseId, type: 'issue', quantity: Number(cutForm.quantity), reason: `[Cut Output] ${cutForm.notes || 'Fabric cut for production'}${cutForm.output_quantity ? ` | ${cutForm.output_quantity}x ${cutForm.output_style}${cutForm.output_color ? ` / ${cutForm.output_color}` : ''} (${cutForm.output_size}) produced` : ''}` }) });
             setSuccess(locale === 'en' ? 'Cut record saved successfully!' : 'Enregistrement de coupe sauvegard\u00e9 !');
-            setCutForm({ item_id: '', quantity: '', output_style: '', output_size: '', output_quantity: '', notes: '' }); await load(true);
+            setCutForm({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' }); await load(true);
         } catch (r: any) {
             if (/insufficient stock|stock insuffisant/i.test(String(r.message || ''))) setStockPopup(r.message);
             else setError(r.message);
@@ -327,6 +349,9 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
                     <label><span>{t.outputQuantity}</span>
                         <input type="number" min="1" step="1" placeholder={t.outputPlaceholder} value={cutForm.output_quantity} onChange={e => setCutForm({ ...cutForm, output_quantity: e.target.value })}/>
                     </label>
+                    <label><span>{locale === 'en' ? 'Color produced' : 'Couleur produite'}</span>
+                        <input type="text" placeholder={locale === 'en' ? 'e.g., Green' : 'ex: Vert'} value={cutForm.output_color} onChange={e => setCutForm({ ...cutForm, output_color: e.target.value })} maxLength={80}/>
+                    </label>
                     <label className="cutting-full-width"><span>{t.cutNotes}</span>
                         <textarea rows={2} placeholder={t.notesPlaceholder} value={cutForm.notes} onChange={e => setCutForm({ ...cutForm, notes: e.target.value })} maxLength={500}/>
                     </label>
@@ -382,15 +407,26 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
                 <article className="panel cutting-metric"><div className="cutting-metric-icon green"><CheckCircle2 size={22}/></div><div><small>{t.wasteRate}</small><strong>{wastePercent}%</strong><p>{Number(wastePercent) < 5 ? 'Excellent' : Number(wastePercent) < 10 ? (locale === 'en' ? 'Good' : 'Bon') : (locale === 'en' ? 'Needs attention' : '\u00c0 surveiller')}</p></div></article>
                 <article className="panel cutting-metric"><div className="cutting-metric-icon violet"><Package size={22}/></div><div><small>{t.pendingReqs}</small><strong>{cuttingTransactions.filter(tx => tx.type === 'reserve').length}</strong><p>{locale === 'en' ? 'Awaiting' : 'En attente'}</p></div></article>
             </div>
-            <article className="panel">
-                <div className="panel-title"><h2>{locale === 'en' ? 'All cutting activity' : "Toute l'activit\u00e9 de coupe"}</h2><span>{cuttingTransactions.length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
-                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Type' : 'Type'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{locale === 'en' ? 'Quantity' : 'Quantit\u00e9'}</th><th>{locale === 'en' ? 'Details' : 'D\u00e9tails'}</th></tr></thead><tbody>
-                    {cuttingTransactions.length ? cuttingTransactions.map((tx: any) => {
-                        const lbl = tx.type === 'issue' ? (locale === 'en' ? 'Cut' : 'Coup\u00e9') : tx.type === 'waste' ? (locale === 'en' ? 'Damaged' : 'Endommag\u00e9') : tx.type === 'reserve' ? (locale === 'en' ? 'Requested' : 'Demand\u00e9') : tx.type === 'production_output' ? (locale === 'en' ? 'Output' : 'Produit') : String(tx.type).replaceAll('_', ' ');
-                        const tone = tx.type === 'waste' || tx.type === 'adjustment_out' ? 'warning' : tx.type === 'issue' ? 'active' : 'info';
-                        return <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><span className={`admin-status ${tone}`}>{lbl}</span></td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '\u2014').replace(/\[.*?\]\s*/, '')}</td></tr>;
-                    }) : <tr><td colSpan={5} className="empty-cell">{locale === 'en' ? 'No cutting activity recorded yet.' : "Aucune activit\u00e9 de coupe enregistr\u00e9e."}</td></tr>}
+            <section className="panel cutting-report-filters no-print">
+                <div>
+                    <label><span>{locale === 'en' ? 'From date' : 'Date de d\u00e9but'}</span><input type="date" value={reportFrom} max={reportTo || undefined} onChange={event => setReportFrom(event.target.value)}/></label>
+                    <label><span>{locale === 'en' ? 'To date' : 'Date de fin'}</span><input type="date" value={reportTo} min={reportFrom || undefined} onChange={event => setReportTo(event.target.value)}/></label>
+                    <button className="secondary-btn" onClick={() => { setReportFrom(''); setReportTo(''); }}>{locale === 'en' ? 'Clear filters' : 'Effacer les filtres'}</button>
+                </div>
+                <button className="primary-btn" onClick={() => window.print()}><FileText size={17}/>{locale === 'en' ? 'Print filtered report' : 'Imprimer le rapport filtr\u00e9'}</button>
+            </section>
+            <article className="panel noguchi-cutting-report">
+                <header>
+                    <div><small>OFFICIAL FACTORY REGISTER</small><h2>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'}</h2><p>{locale === 'en' ? 'Cutting input and output report' : 'Rapport des entr\u00e9es et sorties de coupe'}</p></div>
+                    <div><span>{locale === 'en' ? 'REPORT DATE' : 'DATE DU RAPPORT'}<b>{new Date().toLocaleDateString()}</b></span><span>{locale === 'en' ? 'PREPARED BY' : 'PR\u00c9PAR\u00c9 PAR'}<b>{user.name}</b></span></div>
+                </header>
+                <div className="noguchi-cutting-table-wrap"><table><thead>
+                    <tr><th rowSpan={2}>{locale === 'en' ? 'DATE' : 'DATE'}</th><th colSpan={3}>{locale === 'en' ? 'INPUT' : 'ENTR\u00c9E'}</th><th colSpan={4}>{locale === 'en' ? 'OUTPUT' : 'SORTIE'}</th></tr>
+                    <tr><th>{locale === 'en' ? 'FABRIC' : 'TISSU'}</th><th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th><th>{locale === 'en' ? 'METERS' : 'M\u00c8TRES'}</th><th>{locale === 'en' ? 'STYLE' : 'STYLE'}</th><th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th><th>{locale === 'en' ? 'SIZE' : 'TAILLE'}</th><th>{locale === 'en' ? 'QTY' : 'QT\u00c9'}</th></tr>
+                </thead><tbody>
+                    {filteredCutReportRows.length ? filteredCutReportRows.map((row: any) => <tr key={row.id}><td>{new Date(row.occurred_at).toLocaleDateString()}</td><td><b>{row.item_name}</b></td><td>{row.inputColor}</td><td>{num(Math.abs(row.quantity_delta))} {row.unit || 'm'}</td><td>{row.outputStyle}</td><td>{row.outputColor}</td><td>{row.outputSize}</td><td><b>{row.outputQuantity}</b></td></tr>) : <tr><td colSpan={8} className="empty-cell">{locale === 'en' ? 'No cutting records match the selected dates.' : 'Aucun enregistrement ne correspond aux dates s\u00e9lectionn\u00e9es.'}</td></tr>}
                 </tbody></table></div>
+                <footer><span>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'} \u00b7 CUTTING OPERATIONS</span><span>Generated by ICYEREKEZO OMS</span></footer>
             </article>
         </div>}
     </section>;
