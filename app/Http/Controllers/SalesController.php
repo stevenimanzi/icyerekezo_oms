@@ -47,7 +47,7 @@ class SalesController extends Controller
                 ->when($request->string('academic_year')->trim()->value(), fn ($query, $value) => $query->where('academic_year', $value));
         }
 
-        $paginatedDocuments = $list->latest('document_date')->latest('id')->paginate($specialized ? 25 : 50);
+        $paginatedDocuments = $list->latest('document_date')->latest('id')->paginate($specialized ? 5 : 50);
         if ($specialized) {
             $paginatedDocuments->getCollection()->each(function (SalesDocument $document) {
                 $document->setAttribute('document_number', preg_replace('/^LEGACY-NOGUCHI-/i', '', $document->document_number));
@@ -154,6 +154,19 @@ class SalesController extends Controller
         AuditLog::record('sales.order_'.$status, ucfirst($status)." customer order {$document->document_number}".(!empty($data['reason'])?': '.$data['reason']:''), $document, ['status' => $document->getOriginal('status')], ['status' => $status]);
 
         return response()->json(['message' => "Order {$status}.", 'document' => $document->fresh()]);
+    }
+
+    public function destroy(Request $request, SalesDocument $document): JsonResponse
+    {
+        abort_unless($document->document_type === 'customer_order', 422, 'Only customer orders can be deleted here.');
+        abort_if($document->shipments()->whereNotIn('status', ['cancelled'])->exists(), 409, 'Cancel active shipments before deleting this order.');
+
+        $number = $document->document_number;
+        $customer = $document->customer_name;
+        AuditLog::record('sales.order_deleted', "Deleted customer order {$number} for {$customer}", $document);
+        $document->delete();
+
+        return response()->json(['message' => "Order {$number} deleted."]);
     }
 
     private function ensureNoguchi(Request $request): void

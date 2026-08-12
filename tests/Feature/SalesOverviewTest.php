@@ -65,6 +65,12 @@ class SalesOverviewTest extends TestCase
         $this->get("/api/sales/orders/{$document['id']}/pdf")
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
+
+        $this->deleteJson("/api/sales/orders/{$document['id']}")
+            ->assertOk()
+            ->assertJsonPath('message', "Order {$document['document_number']} deleted.");
+        $this->assertDatabaseMissing('sales_documents', ['id' => $document['id']]);
+        $this->assertDatabaseMissing('sales_document_lines', ['sales_document_id' => $document['id']]);
     }
 
     public function test_school_garment_workflow_is_hidden_from_other_clothing_factories(): void

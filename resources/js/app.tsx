@@ -174,6 +174,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const hasFeature=(page:string)=>!subscribedFeatures||subscribedFeatures.includes(featureForPage[page]||page);
     const isSchoolUser=user.workspace==='school'||user.roles.some(role=>role.slug==='school-user');
     const isLogisticsUser=user.workspace==='logistics'||user.roles.some(role=>role.slug==='logistics-officer');
+    const isNoguchiFactory=user.current_factory?.name?.trim().toLowerCase()==='noguchi holdings ltd';
     const isCuttingUser = user.workspace === 'cutting' || user.roles.some(role => role.slug === 'cutting-operator');
     const isWarehouseUser = user.workspace === 'warehouse' || user.roles.some(role => role.slug === 'warehouse-keeper');
     const isProcurementUser = user.workspace === 'procurement' || user.roles.some(role => role.slug === 'procurement-officer');
@@ -323,9 +324,11 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['dashboard', LayoutDashboard, locale === 'en' ? 'Dashboard' : 'Tableau de bord', '*'],
         ['sales', PackageOpen, locale === 'en' ? 'Incoming orders' : 'Commandes entrantes', 'sales.view'],
         ['inventory', Warehouse, locale === 'en' ? 'Available goods' : 'Produits disponibles', 'inventory.view'],
-        ['logistics', Truck, locale === 'en' ? 'Shipments' : 'Expéditions', 'logistics.view'],
-        ['dispatch', Activity, locale === 'en' ? 'Dispatch board' : 'Planification', 'logistics.dispatch'],
-        ['vehicles', Truck, locale === 'en' ? 'Vehicles & drivers' : 'Véhicules et chauffeurs', 'logistics.view'],
+        ...(!isNoguchiFactory ? [
+            ['logistics', Truck, locale === 'en' ? 'Shipments' : 'Expéditions', 'logistics.view'],
+            ['dispatch', Activity, locale === 'en' ? 'Dispatch board' : 'Planification', 'logistics.dispatch'],
+            ['vehicles', Truck, locale === 'en' ? 'Vehicles & drivers' : 'Véhicules et chauffeurs', 'logistics.view'],
+        ] as const : []),
         ['delivery-confirmation', PackageCheck, locale === 'en' ? 'Delivery confirmation' : 'Confirmation de livraison', 'logistics.deliver'],
         ['reports', Activity, t.reports, 'reports.view'],
     ] as const : isSalesUser ? [

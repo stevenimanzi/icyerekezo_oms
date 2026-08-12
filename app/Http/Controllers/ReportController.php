@@ -28,12 +28,12 @@ class ReportController extends Controller
         $departmentOnly = ! $isExecutive && ! $logisticsOnly;
         $operationalScope = OperationalScope::for($request->user());
         $data = $request->validate([
-            'period' => ['nullable', Rule::in(['day', 'week', 'month', 'custom'])],
+            'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'custom'])],
             'type' => ['nullable', Rule::in(['all', 'departments', 'production', 'inventory', 'activity'])],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factory->id)],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
-            'status' => ['nullable', Rule::in(['pending', 'accepted', 'rejected', 'partial', 'delivered'])],
+            'status' => ['nullable', Rule::in(['draft', 'pending', 'submitted', 'accepted', 'confirmed', 'processing', 'ready', 'partial', 'delivered', 'completed', 'rejected', 'cancelled'])],
             'district' => ['nullable', 'string', 'max:80'],
         ]);
         [$from, $to] = $this->range($data);
@@ -141,7 +141,7 @@ class ReportController extends Controller
         if ($logisticsOnly) {
             $orderQuery = SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)
                 ->where('document_type', 'customer_order')->whereBetween('document_date', [$from->toDateString(), $to->toDateString()])
-                ->with(['school:id,name,district,sector', 'lines:id,sales_document_id,quantity_delivered,quantity_rejected,rejection_reason', 'shipments.vehicle']);
+                ->with(['school:id,name,phone,district,sector', 'lines:id,sales_document_id,class_level,garment_category,gender,size,color,quantity_ordered,quantity_packed,quantity_delivered,quantity_rejected,rejection_reason', 'shipments.vehicle']);
             $orderQuery->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
                 ->when($data['district'] ?? null, fn ($query, $district) => $query->whereHas('school', fn ($school) => $school->where('district', $district)));
             $logisticsOrders = $orderQuery->latest('document_date')->latest('id')->get();
@@ -171,7 +171,7 @@ class ReportController extends Controller
             'standard' => array_replace(
                 IndustryDailyReportCatalog::for($factory->industry_type),
                 array_filter($factory->settings['report'] ?? [], fn ($value) => $value !== '' && $value !== []),
-                $logisticsOnly ? ['title' => 'Daily logistics report', 'orientation' => 'landscape', 'show_department_totals' => false, 'show_daily_register' => false] : ($departmentOnly ? ['title' => ($departments->first()?->name ?? ucfirst($dashboardKey)).' daily report', 'show_stock_register' => false] : [])
+                $logisticsOnly ? ['title' => 'Daily logistics report', 'orientation' => 'landscape', 'show_department_totals' => false, 'show_daily_register' => false, 'default_period' => $factory->hasNoguchiSchoolOrders() ? 'all' : 'day'] : ($departmentOnly ? ['title' => ($departments->first()?->name ?? ucfirst($dashboardKey)).' daily report', 'show_stock_register' => false] : [])
             ),
             'filters' => ['departments' => $isExecutive ? Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))->orderBy('name')->get(['id', 'name']) : [], 'districts' => $logisticsOnly ? SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->distinct()->orderBy('schools.district')->pluck('schools.district') : []],
             'report' => ['scope' => $logisticsOnly ? 'logistics' : ($departmentOnly ? 'department' : 'factory'), 'scope_label' => $logisticsOnly ? 'Logistics' : ($departments->first()?->name ?? 'Whole factory'), 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
@@ -194,6 +194,7 @@ class ReportController extends Controller
         }
 
         return match ($period) {
+            'all' => [Carbon::create(2000, 1, 1)->startOfDay(), today()->endOfDay()],
             'day' => [today()->startOfDay(), today()->endOfDay()],
             'month' => [today()->startOfMonth(), today()->endOfDay()],
             default => [today()->subDays(6)->startOfDay(), today()->endOfDay()],

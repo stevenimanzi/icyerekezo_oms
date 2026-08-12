@@ -93,6 +93,9 @@ class DepartmentDashboardTest extends TestCase
             ->assertJsonPath('logistics_metrics.in_transit', 1)
             ->assertJsonPath('logistics_metrics.delayed', 1)
             ->assertJsonPath('logistics_metrics.available_vehicles', 1)
+            ->assertJsonCount(6, 'logistics_trends')
+            ->assertJsonPath('logistics_trends.5.orders', 1)
+            ->assertJsonPath('logistics_trends.5.dispatched', 1)
             ->assertJsonPath('incoming_orders.0.document_number', 'SO-1001')
             ->assertJsonPath('delivery_activity.0.shipment_number', 'SHP-1001');
     }

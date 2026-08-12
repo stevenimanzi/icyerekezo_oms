@@ -111,6 +111,7 @@ Route::prefix('api')->group(function () {
             Route::get('/sales/overview', [SalesController::class, 'overview'])->middleware('permission:sales.view');
             Route::get('/sales/orders/{document}/pdf', [SalesController::class, 'orderPdf'])->middleware('permission:sales.view');
             Route::patch('/sales/orders/{document}/decision', [SalesController::class, 'decide'])->middleware('permission:sales.fulfill');
+            Route::delete('/sales/orders/{document}', [SalesController::class, 'destroy'])->middleware('permission:sales.fulfill');
             Route::post('/sales/school-orders', [SalesController::class, 'storeSchoolOrder'])->middleware('permission:sales.create|sales.fulfill');
             Route::patch('/sales/school-order-lines/{line}', [SalesController::class, 'updateSchoolOrderLine'])->middleware('permission:sales.fulfill');
             Route::get('/school/overview', [SchoolPortalController::class, 'overview']);
@@ -122,6 +123,9 @@ Route::prefix('api')->group(function () {
             Route::get('/logistics/overview', [LogisticsController::class, 'overview'])->middleware('permission:logistics.view');
             Route::post('/logistics/shipments', [LogisticsController::class, 'storeShipment'])->middleware('permission:logistics.plan');
             Route::patch('/logistics/shipments/{shipment}', [LogisticsController::class, 'updateShipment'])->middleware('permission:logistics.dispatch|logistics.deliver');
+            Route::post('/logistics/vehicles', [LogisticsController::class, 'storeVehicle'])->middleware('permission:logistics.plan');
+            Route::patch('/logistics/vehicles/{vehicle}', [LogisticsController::class, 'updateVehicle'])->middleware('permission:logistics.plan');
+            Route::delete('/logistics/vehicles/{vehicle}', [LogisticsController::class, 'destroyVehicle'])->middleware('permission:logistics.plan');
             Route::get('/procurement/overview', [ProcurementController::class, 'overview'])->middleware('permission:procurement.view');
             Route::post('/procurement/suppliers', [ProcurementController::class, 'storeSupplier'])->middleware('permission:procurement.create');
             Route::put('/procurement/suppliers/{supplier}/prices', [ProcurementController::class, 'savePrice'])->middleware('permission:procurement.create');

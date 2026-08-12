@@ -87,6 +87,23 @@ class DepartmentDashboardController extends Controller
             'delayed' => (clone $shipmentsQuery)->whereNotIn('status', ['delivered', 'cancelled'])->whereNotNull('planned_dispatch_at')->where('planned_dispatch_at', '<', now())->count(),
             'available_vehicles' => DeliveryVehicle::withoutGlobalScopes()->where('factory_id', $factoryId)->where('status', 'available')->count(),
         ];
+        $logisticsTrends = collect(range(5, 0))->map(function (int $monthsAgo) use ($factoryId) {
+            $month = now()->startOfMonth()->subMonths($monthsAgo);
+            $orders = SalesDocument::withoutGlobalScopes()
+                ->where('factory_id', $factoryId)
+                ->where('document_type', 'customer_order')
+                ->whereBetween('document_date', [$month->toDateString(), $month->copy()->endOfMonth()->toDateString()]);
+            $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
+
+            return [
+                'month' => $month->format('M'),
+                'month_number' => $month->month,
+                'orders' => (clone $orders)->count(),
+                'order_value' => (float) (clone $orders)->sum('total_amount'),
+                'dispatched' => (clone $shipments)->whereBetween('dispatched_at', [$month, $month->copy()->endOfMonth()])->count(),
+                'delivered' => (clone $shipments)->whereBetween('delivered_at', [$month, $month->copy()->endOfMonth()])->count(),
+            ];
+        })->values();
         $incomingOrders = (clone $incomingOrdersQuery)
             ->latest('document_date')->latest('id')->limit(12)
             ->get(['id', 'document_number', 'customer_name', 'status', 'currency_code', 'total_amount', 'item_count', 'document_date', 'due_date']);
@@ -123,6 +140,7 @@ class DepartmentDashboardController extends Controller
             'warehouse_metrics' => $warehouseMetrics,
             'recent_stock' => $recentStock,
             'logistics_metrics' => $logisticsMetrics,
+            'logistics_trends' => $logisticsTrends,
             'incoming_orders' => $incomingOrders,
             'delivery_activity' => $deliveryActivity,
         ]);

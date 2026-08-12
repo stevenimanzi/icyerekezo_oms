@@ -437,6 +437,8 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .department-dashboard .production-quick-actions small{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.45}
 .department-dashboard .department-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch}
 .department-dashboard .department-grid>.panel{min-width:0;overflow:hidden}
+.department-dashboard .logistics-charts .chart-panel{min-height:370px}
+.department-dashboard .logistics-charts .chart-wrap{height:285px;padding:12px 10px 8px}
 .department-dashboard .department-panel-head>div,.department-dashboard .stage-activity-list>article>div,.department-dashboard .assignment-list>article>div:first-child{min-width:0}
 .department-dashboard .stage-activity-list>article>div:first-child,.department-dashboard .assignment-list>article>div:first-child{flex:1}
 .department-dashboard .stage-activity-list>article>div:last-child{flex:0 0 auto;max-width:42%}
@@ -650,8 +652,9 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .legacy-order-sheet>header p{margin:0;color:#71809d}
 .legacy-live-label{display:inline-flex;align-items:center;gap:7px;color:#098b54;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
 .legacy-live-label i{width:8px;height:8px;border-radius:50%;background:#20bf6b;box-shadow:0 0 0 4px #dff8ea}
-.legacy-order-table{width:100%;min-width:0;table-layout:fixed;font-size:11px}
-.legacy-order-table th,.legacy-order-table td{padding:9px 5px;text-align:center;vertical-align:middle;white-space:normal}
+.legacy-order-sheet .admin-table-wrap{width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.legacy-order-table{width:100%;min-width:1400px;table-layout:auto;font-size:11px}
+.legacy-order-table th,.legacy-order-table td{padding:9px 8px;text-align:center;vertical-align:middle;white-space:nowrap}
 .legacy-order-table th{font-size:9px;line-height:1.15;letter-spacing:.035em}
 .legacy-order-table th:first-child,.legacy-order-table td:first-child{width:160px;text-align:left;padding-left:16px}
 .legacy-order-table th:nth-last-child(3),.legacy-order-table td:nth-last-child(3){width:88px}
