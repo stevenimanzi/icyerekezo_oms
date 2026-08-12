@@ -10,6 +10,7 @@ use App\Models\School;
 use App\Models\Shipment;
 use App\Models\StockTransaction;
 use App\Support\IndustryDailyReportCatalog;
+use App\Support\NoguchiDailyReportXlsxExporter;
 use App\Support\OperationalScope;
 use App\Support\SchoolOrderXlsxExporter;
 use Carbon\Carbon;
@@ -21,12 +22,26 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
 {
+    public function exportDaily(Request $request): BinaryFileResponse
+    {
+        $factory = $request->user()->currentFactory;
+        abort_unless(strcasecmp(trim($factory->name), 'NOGUCHI HOLDINGS Ltd') === 0, 404);
+        $data = $this->__invoke($request)->getData(true);
+        abort_unless(($data['report']['scope'] ?? null) === 'factory', 403);
+        $path = tempnam(sys_get_temp_dir(), 'noguchi-daily-').'.xlsx';
+        NoguchiDailyReportXlsxExporter::create($data, $path);
+
+        return response()->download($path, 'noguchi-daily-report-'.now()->format('Y-m-d-His').'.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
     public function exportOrders(Request $request): BinaryFileResponse
     {
         $factory = $request->user()->currentFactory;
         abort_unless($factory->hasNoguchiSchoolOrders(), 404);
         $data = $request->validate([
-            'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'custom'])], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'year', 'custom'])], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'],
             'status' => ['nullable', Rule::in(['draft', 'pending', 'submitted', 'accepted', 'confirmed', 'processing', 'ready', 'partial', 'delivered', 'completed', 'rejected', 'cancelled'])],
             'district' => ['nullable', 'string', 'max:80'], 'sector' => ['nullable', 'string', 'max:80'],
         ]);
@@ -54,7 +69,7 @@ class ReportController extends Controller
         $departmentOnly = ! $isExecutive && ! $logisticsOnly;
         $operationalScope = OperationalScope::for($request->user());
         $data = $request->validate([
-            'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'custom'])],
+            'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'year', 'custom'])],
             'type' => ['nullable', Rule::in(['all', 'departments', 'production', 'inventory', 'activity'])],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factory->id)],
             'from' => ['nullable', 'date'],
@@ -230,6 +245,7 @@ class ReportController extends Controller
             'all' => [Carbon::create(2000, 1, 1)->startOfDay(), today()->endOfDay()],
             'day' => [today()->startOfDay(), today()->endOfDay()],
             'month' => [today()->startOfMonth(), today()->endOfDay()],
+            'year' => [today()->startOfYear(), today()->endOfDay()],
             default => [today()->subDays(6)->startOfDay(), today()->endOfDay()],
         };
     }

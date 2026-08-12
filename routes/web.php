@@ -80,6 +80,7 @@ Route::prefix('api')->group(function () {
             Route::get('/factory/settings', [FactorySettingsController::class, 'show'])->middleware('permission:factory.manage');
             Route::put('/factory/settings', [FactorySettingsController::class, 'update'])->middleware('permission:factory.manage');
             Route::get('/reports', ReportController::class)->middleware('permission:reports.view');
+            Route::get('/reports/daily.xlsx', [ReportController::class, 'exportDaily'])->middleware('permission:reports.view');
             Route::get('/reports/orders.xlsx', [ReportController::class, 'exportOrders'])->middleware('permission:reports.view');
             Route::get('/inventory/overview', [InventoryController::class, 'overview'])->middleware('permission:inventory.view');
             Route::get('/inventory/items', [InventoryController::class, 'items'])->middleware('permission:products.view');

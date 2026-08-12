@@ -67,5 +67,19 @@ class NoguchiLogisticsReportTest extends TestCase
         $this->actingAs($owner)->getJson('/api/reports?period=day&type=all')
             ->assertOk()
             ->assertJsonPath('report.scope', 'factory');
+
+        $dailyExport = $this->actingAs($owner)->get('/api/reports/daily.xlsx?period=year&type=all');
+        $dailyExport->assertOk()->assertDownload();
+        $dailyZip = new \ZipArchive();
+        $this->assertTrue($dailyZip->open($dailyExport->baseResponse->getFile()->getPathname()) === true);
+        $dailySheet = $dailyZip->getFromName('xl/worksheets/sheet1.xml');
+        $this->assertStringContainsString('NOGUCHI HOLDINGS LTD', $dailySheet);
+        $this->assertStringContainsString('WAREHOUSE', $dailySheet);
+        $this->assertStringContainsString('CUTTING', $dailySheet);
+        $this->assertStringContainsString('PRODUCTION', $dailySheet);
+        $this->assertStringContainsString('FINISHING', $dailySheet);
+        $this->assertStringContainsString('orientation="landscape"', $dailySheet);
+        $this->assertStringContainsString('freeze', str_replace('frozen', 'freeze', $dailySheet));
+        $dailyZip->close();
     }
 }

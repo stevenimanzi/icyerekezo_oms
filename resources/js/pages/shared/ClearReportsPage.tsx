@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {FileText, Printer} from 'lucide-react';
+import {ChevronLeft, ChevronRight, FileText, Printer} from 'lucide-react';
 import {LegacyOrderMatrix, OrderDetailsModal} from '../sales/SalesOverviewPage';
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
@@ -142,12 +142,89 @@ function NoguchiLogisticsDocument({data}: any) {
     </article>;
 }
 
+const noguchiFactoryName = (value: any) => String(value || '').trim().toLowerCase() === 'noguchi holdings ltd';
+const itemKind = (name: any) => /thread|zip|button|elastic|label|accessor/i.test(String(name || '')) ? 'accessory' : 'fabric';
+const splitItem = (name: any) => {
+    const text = String(name || 'Unspecified');
+    const parts = text.split(/\s[-–—|/]\s/).map(value => value.trim()).filter(Boolean);
+    return {style: parts[0] || text, color: parts[1] || '—', size: parts[2] || '—'};
+};
+function NoguchiEntry({rows, mode = 'inventory'}: any) {
+    if (!rows.length) return <span className="noguchi-daily-empty">—</span>;
+    return <>{rows.map((row: any, index: number) => {
+        const info = splitItem(row.item_name || row.product_name);
+        const qty = Math.abs(Number(mode === 'inventory' ? row.quantity_delta : row.output_quantity || row.input_quantity || 0));
+        return <span className="noguchi-daily-entry" key={`${row.id}-${index}`}><b>{info.style}</b><small>{info.color} · {info.size}</small><strong>{number(qty)}</strong></span>;
+    })}</>;
+}
+function NoguchiFieldCell({rows, field, mode = 'production'}: any) {
+    return <td>{rows.length ? rows.map((row:any,index:number) => {
+        const info = splitItem(row.item_name || row.product_name);
+        const value = field === 'quantity'
+            ? number(Math.abs(Number(mode === 'inventory' ? row.quantity_delta : row.output_quantity || row.input_quantity || 0)))
+            : info[field as 'style'|'color'|'size'];
+        return <span className={`noguchi-field-value ${field === 'quantity' ? 'quantity' : ''}`} key={`${row.id}-${field}-${index}`}>{value}</span>;
+    }) : <span className="noguchi-daily-empty">—</span>}</td>;
+}
+const printField = (rows:any[], field:string, mode='production') => rows.length ? rows.map((row:any) => {
+    const info = splitItem(row.item_name || row.product_name);
+    return field === 'quantity' ? number(Math.abs(Number(mode === 'inventory' ? row.quantity_delta : row.output_quantity || row.input_quantity || 0))) : info[field as 'style'|'color'|'size'];
+}).join('\n') : '—';
+function NoguchiPrintSection({title, headers, rows}:any) {
+    return <section className="noguchi-print-section"><h3>{title}</h3><table><thead><tr>{headers.map((header:string)=><th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row:any[],index:number)=><tr key={index}>{row.map((cell:any,cellIndex:number)=><td key={cellIndex}>{cell}</td>)}</tr>)}</tbody></table></section>;
+}
+function NoguchiDailyDocument({data}: any) {
+    const inventory = data.inventory || [], production = data.production || [], stock = data.stock_register || [];
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const dates = Array.from(new Set([...inventory.map((row: any) => reportDate(row.occurred_at)), ...production.map((row: any) => reportDate(row.updated_at))].filter(Boolean))).sort();
+    const reportDates = dates.length ? dates : [data.report.to];
+    const byDate = (rows: any[], field: string, date: string) => rows.filter(row => reportDate(row[field]) === date);
+    const stageRows = (rows: any[], area: string) => rows.filter(row => stageArea(row.stage_name) === area);
+    const inventoryRows = (rows: any[], direction: 'in'|'out', kind: 'fabric'|'accessory') => rows.filter(row => (direction === 'in' ? Number(row.quantity_delta) > 0 : Number(row.quantity_delta) < 0) && itemKind(row.item_name) === kind);
+    const fields = (rows:any[], mode = 'production', names = ['style','color','size','quantity']) => <>{names.map(field=><NoguchiFieldCell key={field} rows={rows} field={field} mode={mode}/>)}</>;
+    const sum = (rows:any[], key:string) => rows.reduce((total:number,row:any)=>total+Math.abs(Number(row[key]||0)),0);
+    const summary = [['Warehouse received',sum(inventory.filter((row:any)=>Number(row.quantity_delta)>0),'quantity_delta')],['Warehouse issued',sum(inventory.filter((row:any)=>Number(row.quantity_delta)<0),'quantity_delta')],['Factory output',sum(production,'output_quantity')],['Closing stock',stock.reduce((total:number,row:any)=>total+Number(row.closing_balance||0),0)]];
+    const dailyRows = reportDates.map((date:string,index:number) => ({date,label:new Date(`${date}T00:00:00`).toLocaleDateString(),inventory:byDate(inventory,'occurred_at',date),production:byDate(production,'updated_at',date),stock:index===reportDates.length-1?stock.map((row:any)=>({...row,id:`stock-${row.sku}-${row.warehouse}`,item_name:row.item,quantity_delta:row.closing_balance})):[]}));
+    useEffect(()=>{scrollRef.current?.scrollTo({left:0,behavior:'smooth'})},[data.report.from,data.report.to,data.report.department_id]);
+    const move = (direction:number) => scrollRef.current?.scrollBy({left:direction*Math.max(420,scrollRef.current.clientWidth*.72),behavior:'smooth'});
+    return <article className="noguchi-daily-document">
+        <style>{'@media print{@page{size:landscape;margin:8mm}}'}</style>
+        <header><div><span className="noguchi-report-kicker">OFFICIAL FACTORY REGISTER</span><h1>{data.factory.name.toUpperCase()}</h1><h2>Daily operations report</h2></div><section><span><small>Reporting period</small><b>{data.report.from} — {data.report.to}</b></span><span><small>Prepared by</small><b>{data.report.generated_by}</b></span><span><small>Generated</small><b>{new Date(data.report.generated_at).toLocaleString()}</b></span></section></header>
+        <section className="noguchi-daily-summary">{summary.map(([label,value])=><div key={String(label)}><span>{label}</span><b>{number(value)}</b></div>)}</section>
+        <div className="noguchi-table-toolbar no-print"><div><b>Daily movement register</b><span>Scroll across to review every factory section</span></div><div><button type="button" onClick={()=>move(-1)} aria-label="View previous report columns"><ChevronLeft/></button><button type="button" onClick={()=>move(1)} aria-label="View next report columns"><ChevronRight/></button></div></div>
+        <div className="noguchi-daily-scroll" ref={scrollRef}><table><thead>
+            <tr><th rowSpan={3}>DATE</th><th colSpan={8}>WAREHOUSE</th><th colSpan={6}>CUTTING</th><th colSpan={8}>PRODUCTION</th><th colSpan={8}>FINISHING</th><th colSpan={4}>WAREHOUSE</th></tr>
+            <tr><th colSpan={4}>INPUT</th><th colSpan={4}>OUTPUT</th><th colSpan={2}>INPUT</th><th colSpan={4}>OUTPUT</th><th colSpan={4}>INPUT</th><th colSpan={4}>OUTPUT</th><th colSpan={4}>INPUT</th><th colSpan={4}>OUTPUT</th><th colSpan={4}>QTY IN STOCK</th></tr>
+            <tr><th>COLOR</th><th>METERS</th><th>COLOR</th><th>QTY</th><th>COLOR</th><th>METERS</th><th>COLOR</th><th>QTY</th><th>COLOR</th><th>METERS</th><th>STYLE</th><th>COLOR</th><th>SIZE</th><th>QTY</th><th>STYLE</th><th>COLOR</th><th>SIZE</th><th>QTY</th><th>STYLE</th><th>COLOR</th><th>SIZE</th><th>QTY</th><th>STYLE</th><th>COLOR</th><th>SIZE</th><th>QTY</th><th>STYLE</th><th>COLOR</th><th>SIZE</th><th>QTY</th><th>STYLE</th><th>COLOR</th><th>SIZE</th><th>QTY</th></tr>
+        </thead><tbody>{reportDates.map((date: string, index: number) => {
+            const dayInventory = byDate(inventory, 'occurred_at', date), dayProduction = byDate(production, 'updated_at', date);
+            return <tr key={date}><td>{new Date(`${date}T00:00:00`).toLocaleDateString()}</td>
+                {fields(inventoryRows(dayInventory,'in','fabric'),'inventory',['color','quantity'])}{fields(inventoryRows(dayInventory,'in','accessory'),'inventory',['color','quantity'])}
+                {fields(inventoryRows(dayInventory,'out','fabric'),'inventory',['color','quantity'])}{fields(inventoryRows(dayInventory,'out','accessory'),'inventory',['color','quantity'])}
+                {fields(stageRows(dayProduction,'cutting'),'production',['color','quantity'])}{fields(stageRows(dayProduction,'cutting'))}
+                {fields(stageRows(dayProduction,'production'))}{fields(stageRows(dayProduction,'production'))}
+                {fields(stageRows(dayProduction,'finishing'))}{fields(stageRows(dayProduction,'finishing'))}
+                {fields(index === reportDates.length - 1 ? stock.map((row:any)=>({...row,id:`stock-${row.sku}-${row.warehouse}`,item_name:row.item,quantity_delta:row.closing_balance})) : [],'inventory')}
+            </tr>;
+        })}</tbody></table></div>
+        <div className="noguchi-print-register">
+            <NoguchiPrintSection title="Warehouse movement" headers={['Date','Input fabric color','Input metres','Input accessory color','Input qty','Output fabric color','Output metres','Output accessory color','Output qty']} rows={dailyRows.map(day=>{const inFabric=inventoryRows(day.inventory,'in','fabric'),inAccessory=inventoryRows(day.inventory,'in','accessory'),outFabric=inventoryRows(day.inventory,'out','fabric'),outAccessory=inventoryRows(day.inventory,'out','accessory');return [day.label,printField(inFabric,'color','inventory'),printField(inFabric,'quantity','inventory'),printField(inAccessory,'color','inventory'),printField(inAccessory,'quantity','inventory'),printField(outFabric,'color','inventory'),printField(outFabric,'quantity','inventory'),printField(outAccessory,'color','inventory'),printField(outAccessory,'quantity','inventory')]})}/>
+            <NoguchiPrintSection title="Cutting" headers={['Date','Input color','Input metres','Output style','Output color','Output size','Output qty']} rows={dailyRows.map(day=>{const records=stageRows(day.production,'cutting');return [day.label,printField(records,'color'),printField(records,'quantity'),printField(records,'style'),printField(records,'color'),printField(records,'size'),printField(records,'quantity')]})}/>
+            <NoguchiPrintSection title="Production" headers={['Date','Input style','Input color','Input size','Input qty','Output style','Output color','Output size','Output qty']} rows={dailyRows.map(day=>{const records=stageRows(day.production,'production');return [day.label,printField(records,'style'),printField(records,'color'),printField(records,'size'),printField(records,'quantity'),printField(records,'style'),printField(records,'color'),printField(records,'size'),printField(records,'quantity')]})}/>
+            <NoguchiPrintSection title="Finishing" headers={['Date','Input style','Input color','Input size','Input qty','Output style','Output color','Output size','Output qty']} rows={dailyRows.map(day=>{const records=stageRows(day.production,'finishing');return [day.label,printField(records,'style'),printField(records,'color'),printField(records,'size'),printField(records,'quantity'),printField(records,'style'),printField(records,'color'),printField(records,'size'),printField(records,'quantity')]})}/>
+            <NoguchiPrintSection title="Warehouse closing stock" headers={['Date','Style / item','Color','Size','Quantity']} rows={dailyRows.map(day=>[day.label,printField(day.stock,'style','inventory'),printField(day.stock,'color','inventory'),printField(day.stock,'size','inventory'),printField(day.stock,'quantity','inventory')])}/>
+        </div>
+        <footer><span>NOGUCHI HOLDINGS LTD · DAILY FACTORY OPERATIONS</span><span>Generated by ICYEREKEZO OMS</span></footer>
+    </article>;
+}
+
 const readableStatus=(value:any)=>({pending:'Pending',accepted:'Accepted',rejected:'Rejected',partial:'Partially delivered',delivered:'Delivered',planned:'Planned',ready:'Ready to dispatch',in_transit:'In transit',cancelled:'Cancelled',maintenance:'In maintenance',available:'Available',assigned:'Assigned'} as any)[value]||String(value||'Not set').replaceAll('_',' ');
 const shortOrder=(value:any)=>String(value||'').replace(/^LEGACY-NOGUCHI-/i,'');
 function LogisticsDocument({data}:any){const report=data.logistics||{},summary=report.summary||{},orders=report.orders||[],shipments=report.shipments||[],vehicles=report.vehicles||[];return <article className="report-document report-landscape logistics-status-report"><style>{'@media print{@page{size:A4 landscape;margin:7mm}}'}</style><header><div><h1>{data.factory.name}</h1><p>Logistics and dispatch operations</p></div><div><b>LOGISTICS STATUS REPORT</b><span>{data.report.from} to {data.report.to}</span></div></header><section className="report-meta"><span>Prepared by: {data.report.generated_by}</span><span>Generated: {new Date(data.report.generated_at).toLocaleString()}</span><span>Department: Logistics</span></section><div className="report-summary logistics-report-summary">{[['Orders processed',summary.orders_processed],['Items ordered',summary.items_ordered],['Items delivered',summary.items_delivered],['Remaining',summary.items_remaining],['Returned / rejected',summary.items_returned],['Order value',`RWF ${number(summary.total_value)}`],['Shipments',summary.shipments],['Deliveries completed',summary.deliveries_completed]].map(([label,value])=><div key={label}><span>{label}</span><b>{typeof value==='number'?number(value):value}</b></div>)}</div><div className="logistics-report-pair"><Table title="Order status" headers={['Status','Orders']} rows={(report.order_statuses||[]).map((row:any)=>[readableStatus(row.status),number(row.count)])}/><Table title="Returned or rejected items" headers={['Reason','Items']} rows={(report.return_reasons||[]).map((row:any)=>[row.reason,number(row.quantity)])}/></div><Table title="School and customer orders" headers={['Date','Order','School / customer','District and sector','Items','Delivered','Remaining','Value','Status']} rows={orders.map((row:any)=>{const delivered=(row.lines||[]).reduce((sum:number,line:any)=>sum+Number(line.quantity_delivered||0),0);return [reportDate(row.document_date),shortOrder(row.document_number),row.school?.name||row.customer_name,[row.school?.district,row.school?.sector].filter(Boolean).join(' / ')||'Not set',number(row.item_count),number(delivered),number(Math.max(0,Number(row.item_count)-delivered)),`${row.currency_code||'RWF'} ${number(row.total_amount)}`,readableStatus(row.status)]})}/><Table title="Shipments and delivery confirmations" headers={['Shipment','Order','Customer','Destination','Packages','Vehicle','Driver','Status','Planned','Delivered','Received by','Proof']} rows={shipments.map((row:any)=>[row.shipment_number,shortOrder(row.sales_document?.document_number),row.customer_name,row.destination,number(row.package_count),row.vehicle?.registration_number||'Not assigned',row.vehicle?.driver_name||'Not assigned',readableStatus(row.status),row.planned_dispatch_at?new Date(row.planned_dispatch_at).toLocaleString():'Not set',row.delivered_at?new Date(row.delivered_at).toLocaleString():'Not delivered',row.received_by||'Not recorded',row.proof_reference||'Not recorded'])}/><Table title="Vehicles and drivers" headers={['Registration','Vehicle type','Driver','Phone','Capacity','Status']} rows={vehicles.map((row:any)=>[row.registration_number,row.vehicle_type,row.driver_name||'Not assigned',row.driver_phone||'Not set',row.capacity?`${number(row.capacity)} ${row.capacity_unit||''}`:'Not set',readableStatus(row.status)])}/><Table title="Warehouse stock balances" headers={['Item','SKU','Warehouse','Opening','Received','Issued','Closing']} rows={(data.stock_register||[]).map((row:any)=>[row.item,row.sku,row.warehouse,number(row.opening_balance),number(row.quantity_in),number(row.quantity_out),number(row.closing_balance)])}/><footer>{data.factory.name} · Logistics and dispatch report · Generated by ICYEREKEZO OMS</footer></article>}
 
 function Document({data}: any) {
     if(data.report.scope==='logistics')return String(data.factory?.name||'').trim().toLowerCase()==='noguchi holdings ltd'?null:<LogisticsDocument data={data}/>;
+    if(data.report.scope==='factory' && noguchiFactoryName(data.factory?.name))return <NoguchiDailyDocument data={data}/>;
     const departmentOnly = data.report.scope === 'department';
     const logisticsOnly = data.report.scope === 'logistics';
     return <article className={`report-document report-${data.standard.orientation || 'landscape'}`}>
@@ -215,6 +292,7 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
     const noguchiOrdersOnly = logisticsOnly && String(data?.factory?.name||'').trim().toLowerCase()==='noguchi holdings ltd';
     const departmentOnly = reportScope === 'department';
     const factoryWide = reportScope === 'factory';
+    const noguchiFactoryWide = factoryWide && noguchiFactoryName(data?.factory?.name);
     const reportOrders = data?.logistics?.orders || [];
     const reportPageSize = 10;
     const reportLastPage = Math.max(1, Math.ceil(reportOrders.length / reportPageSize));
@@ -263,11 +341,11 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
                     <span><FileText/></span>
                     <div>
                         <div className="eyebrow"><i/>LIVE FACTORY WORK</div>
-                        <h1>{noguchiOrdersOnly?'School order reports':logisticsOnly ? 'Daily logistics report' : departmentOnly ? `${data?.report?.scope_label || 'Department'} daily report` : productionOnly ? 'Daily production report' : 'Daily factory report'}</h1>
-                        <p>{noguchiOrdersOnly?'Review school order quantities, delivery progress, values and statuses by district and sector.':logisticsOnly ? 'See only goods received, goods issued and warehouse balances handled by logistics.' : departmentOnly ? 'See only your department input, output, rejected quantity and waste.' : 'Combined factory report for management, covering every department and warehouse.'}</p>
+                        <h1>{noguchiOrdersOnly?'School order reports':noguchiFactoryWide?'NOGUCHI HOLDINGS LTD daily report':logisticsOnly ? 'Daily logistics report' : departmentOnly ? `${data?.report?.scope_label || 'Department'} daily report` : productionOnly ? 'Daily production report' : 'Daily factory report'}</h1>
+                        <p>{noguchiOrdersOnly?'Review school order quantities, delivery progress, values and statuses by district and sector.':noguchiFactoryWide?'Warehouse, cutting, production, finishing and closing stock in the official Noguchi daily register format.':logisticsOnly ? 'See only goods received, goods issued and warehouse balances handled by logistics.' : departmentOnly ? 'See only your department input, output, rejected quantity and waste.' : 'Combined factory report for management, covering every department and warehouse.'}</p>
                     </div>
                 </div>
-                {(canExport||noguchiOrdersOnly) && <div className="workflow-actions">{noguchiOrdersOnly&&<a className="secondary-btn" href={`/api/reports/orders.xlsx?${new URLSearchParams(filters)}`}>Export Excel</a>}<button className="primary-btn" disabled={!data} onClick={() => window.print()}><Printer size={17}/>Print filtered report</button></div>}
+                {(canExport||noguchiOrdersOnly||noguchiFactoryWide) && <div className="workflow-actions report-action-row">{noguchiOrdersOnly&&<a className="secondary-btn" href={`/api/reports/orders.xlsx?${new URLSearchParams(filters)}`}>Export Excel</a>}{noguchiFactoryWide&&<a className="secondary-btn" href={`/api/reports/daily.xlsx?${new URLSearchParams(filters)}`}>Export Excel</a>}<button className="primary-btn" disabled={!data} onClick={() => window.print()}><Printer size={17}/>Print filtered report</button></div>}
             </div>
             {error && <div className="admin-alert error">{error}</div>}
             <div className="panel report-filters">
@@ -277,6 +355,7 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
                         <option value="day">Today</option>
                         <option value="week">Last 7 days</option>
                         <option value="month">This month</option>
+                        <option value="year">Yearly</option>
                         <option value="custom">Choose dates</option>
                     </select>
                 </label>

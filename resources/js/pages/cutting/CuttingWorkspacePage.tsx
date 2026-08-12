@@ -102,6 +102,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
     const [loading, setLoading] = useState(true);
     const [updated, setUpdated] = useState<Date | null>(null);
     const [error, setError] = useState('');
+    const [stockPopup, setStockPopup] = useState('');
     const [success, setSuccess] = useState('');
     const [busy, setBusy] = useState(false);
 
@@ -116,7 +117,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
         try {
             const overview = await api<any>('/api/inventory/overview');
             setStock(overview.stock || []);
-            setTransactions(overview.transactions || []);
+            setTransactions(overview.recent_transactions || overview.transactions || []);
             setItems(overview.catalog || []);
             setWarehouses(overview.warehouse_list || []);
             setUpdated(new Date());
@@ -149,9 +150,14 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
     const cuttingTransactions = transactions.filter((tx: any) =>
         ['issue', 'production_output', 'waste', 'adjustment_out', 'reserve'].includes(String(tx.type || ''))
     );
-    const todayCuts = cuttingTransactions.filter((tx: any) => {
+    const cutOutputTransactions = cuttingTransactions.filter((tx: any) =>
+        tx.type === 'issue' &&
+        tx.warehouse_id === cuttingWarehouseId &&
+        String(tx.reason || '').startsWith('[Cut Output]')
+    );
+    const todayCuts = cutOutputTransactions.filter((tx: any) => {
         const d = new Date(tx.occurred_at); const n = new Date();
-        return d.toDateString() === n.toDateString() && ['issue', 'production_output'].includes(tx.type);
+        return d.toDateString() === n.toDateString();
     });
     const todayDamage = cuttingTransactions.filter((tx: any) => {
         const d = new Date(tx.occurred_at); const n = new Date();
@@ -169,7 +175,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
         if (!requestForm.item_id || !requestForm.quantity) { setError(locale === 'en' ? 'Please select a fabric and enter the quantity.' : 'Veuillez s\u00e9lectionner un tissu et entrer la quantit\u00e9.'); return; }
         const available = requestableItems.find(i => i.id === Number(requestForm.item_id))?.available_qty || 0;
         if (Number(requestForm.quantity) > available) {
-            setError(locale === 'en' ? `Insufficient stock in the main warehouse. Only ${available} available.` : `Stock insuffisant. Seulement ${available} disponible.`);
+            setError(locale === 'en' ? `Insufficient stock in the main warehouse. Only ${num(available)} available.` : `Stock insuffisant. Seulement ${num(available)} disponible.`);
             return;
         }
         setBusy(true);
@@ -186,7 +192,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
         
         const available = cuttingStock.find(s => s.item_id === Number(cutForm.item_id))?.quantity_on_hand || 0;
         if (Number(cutForm.quantity) > available) {
-            setError(locale === 'en' ? `Insufficient stock. You only have ${available} available on the cutting floor.` : `Stock insuffisant. Vous n'avez que ${available} disponible.`);
+            setStockPopup(locale === 'en' ? `Insufficient stock. You only have ${num(available)} available on the cutting floor.` : `Stock insuffisant. Vous n'avez que ${num(available)} disponible.`);
             return;
         }
 
@@ -195,7 +201,10 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
             await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(cutForm.item_id), warehouse_id: cuttingWarehouseId, type: 'issue', quantity: Number(cutForm.quantity), reason: `[Cut Output] ${cutForm.notes || 'Fabric cut for production'}${cutForm.output_quantity ? ` | ${cutForm.output_quantity}x ${cutForm.output_style} (${cutForm.output_size}) produced` : ''}` }) });
             setSuccess(locale === 'en' ? 'Cut record saved successfully!' : 'Enregistrement de coupe sauvegard\u00e9 !');
             setCutForm({ item_id: '', quantity: '', output_style: '', output_size: '', output_quantity: '', notes: '' }); await load(true);
-        } catch (r: any) { setError(r.message); } finally { setBusy(false); }
+        } catch (r: any) {
+            if (/insufficient stock|stock insuffisant/i.test(String(r.message || ''))) setStockPopup(r.message);
+            else setError(r.message);
+        } finally { setBusy(false); }
     };
 
     const submitDamage = async () => {
@@ -210,6 +219,22 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
     };
 
     return <section className="module-page cutting-workspace">
+        {stockPopup && <div className="school-modal-backdrop" role="presentation" onMouseDown={event => {
+            if (event.target === event.currentTarget) setStockPopup('');
+        }}>
+            <section className="school-small-modal cutting-stock-popup" role="alertdialog" aria-modal="true" aria-labelledby="cutting-stock-popup-title">
+                <header>
+                    <span><AlertTriangle size={24}/></span>
+                    <div>
+                        <h2 id="cutting-stock-popup-title">{locale === 'en' ? 'Insufficient stock' : 'Stock insuffisant'}</h2>
+                        <p>{stockPopup}</p>
+                    </div>
+                </header>
+                <footer>
+                    <button className="primary-btn" autoFocus onClick={() => setStockPopup('')}>{locale === 'en' ? 'OK' : 'D’accord'}</button>
+                </footer>
+            </section>
+        </div>}
         <div className="module-hero">
             <div className="module-title"><span><Scissors size={22}/></span>
                 <div><div className="eyebrow"><i></i>{t.eyebrow}</div><h1>{t.title}</h1><p>{t.subtitle}</p></div>
@@ -277,7 +302,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
                     <label><span>{t.cutItem}</span>
                         <select value={cutForm.item_id} onChange={e => setCutForm({ ...cutForm, item_id: e.target.value })}>
                             <option value="">{locale === 'en' ? '\u2014 Choose fabric in stock \u2014' : '\u2014 Choisir un tissu en stock \u2014'}</option>
-                            {cuttingStock.map((s: any) => <option key={s.item_id} value={s.item_id}>{s.item_name} ({s.quantity_on_hand} {s.unit})</option>)}
+                            {cuttingStock.map((s: any) => <option key={s.item_id} value={s.item_id}>{s.item_name} ({num(s.quantity_on_hand)} {s.unit})</option>)}
                         </select>
                     </label>
                     <label><span>{t.cutQuantity}</span>
@@ -311,9 +336,9 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
                 </div>
             </article>
             <article className="panel">
-                <div className="panel-title"><h2>{t.recentCuts}</h2><span>{cuttingTransactions.filter(tx => tx.type === 'issue').length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
+                <div className="panel-title"><h2>{t.recentCuts}</h2><span>{cutOutputTransactions.length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
                 <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{locale === 'en' ? 'Quantity used' : 'Quantit\u00e9 utilis\u00e9e'}</th><th>{locale === 'en' ? 'Details' : 'D\u00e9tails'}</th></tr></thead><tbody>
-                    {cuttingTransactions.filter(tx => tx.type === 'issue').length ? cuttingTransactions.filter(tx => tx.type === 'issue').map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Cut Output] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noCuts}</td></tr>}
+                    {cutOutputTransactions.length ? cutOutputTransactions.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Cut Output] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noCuts}</td></tr>}
                 </tbody></table></div>
             </article>
         </div>
@@ -327,7 +352,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
                     <label><span>{locale === 'en' ? 'Damaged fabric' : 'Tissu endommag\u00e9'}</span>
                         <select value={damageForm.item_id} onChange={e => setDamageForm({ ...damageForm, item_id: e.target.value })}>
                             <option value="">{locale === 'en' ? '\u2014 Choose fabric in stock \u2014' : '\u2014 Choisir un tissu en stock \u2014'}</option>
-                            {cuttingStock.map((s: any) => <option key={s.item_id} value={s.item_id}>{s.item_name} ({s.quantity_on_hand} {s.unit})</option>)}
+                            {cuttingStock.map((s: any) => <option key={s.item_id} value={s.item_id}>{s.item_name} ({num(s.quantity_on_hand)} {s.unit})</option>)}
                         </select>
                     </label>
                     <label><span>{t.damagedQuantity}</span>
