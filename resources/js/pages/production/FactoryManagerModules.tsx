@@ -73,6 +73,14 @@ export function TeamManagementPage(){
     const [creating,setCreating]=useState(false);
     const [showCreate,setShowCreate]=useState(false);
     const [activeTab,setActiveTab]=useState('employees');
+    const [resetUser,setResetUser]=useState<any>(null);
+    const [resetPassword,setResetPassword]=useState('');
+    const [resetPasswordConfirmation,setResetPasswordConfirmation]=useState('');
+    const [resetting,setResetting]=useState(false);
+    
+    const [schoolSearch,setSchoolSearch]=useState('');
+    const [schoolDistrict,setSchoolDistrict]=useState('');
+    const [schoolSector,setSchoolSector]=useState('');
     const load=()=>api('/api/team/workspaces').then(setData).catch(reason=>setError(reason.message));
     useEffect(()=>{void load()},[]);
     const create=async(e:React.FormEvent)=>{
@@ -87,8 +95,36 @@ export function TeamManagementPage(){
         try{await api('/api/team/users/'+user.id,{method:'PATCH',body:JSON.stringify(values)});setSuccess('Employee access and assignment updated.');setEditing(current=>{const next={...current};delete next[user.id];return next});await load()}
         catch(reason:any){setError(reason.message)}
     };
+    
+    const handleResetPassword = async(e:React.FormEvent) => {
+        e.preventDefault();
+        if(resetPassword !== resetPasswordConfirmation) { setError('Passwords do not match'); return; }
+        setResetting(true); setError(''); setSuccess('');
+        try {
+            await api('/api/team/users/'+resetUser.id+'/reset-password', {method:'POST',body:JSON.stringify({password:resetPassword, password_confirmation:resetPasswordConfirmation})});
+            setSuccess('Password reset successfully for ' + resetUser.name);
+            setResetUser(null);
+            setResetPassword('');
+            setResetPasswordConfirmation('');
+        } catch(reason:any) { setError(reason.message) } finally { setResetting(false) }
+    };
     const users=data?.users?.data||[];
-    const schoolUsers=data?.school_users||[];
+    const allSchoolUsers=data?.school_users||[];
+    const schoolUsers=allSchoolUsers.filter((user:any) => {
+        if (schoolSearch && !user.school?.name?.toLowerCase().includes(schoolSearch.toLowerCase()) && !user.name?.toLowerCase().includes(schoolSearch.toLowerCase())) return false;
+        if (schoolDistrict && user.school?.district !== schoolDistrict) return false;
+        if (schoolSector && user.school?.sector !== schoolSector) return false;
+        return true;
+    });
+    
+    const uniqueDistricts = ['Burera', 'Gakenke', 'Gicumbi', 'Musanze', 'Rulindo'];
+    const uniqueSectors = Array.from(new Set(
+        allSchoolUsers
+            .filter((u:any) => schoolDistrict ? u.school?.district === schoolDistrict : true)
+            .map((u:any)=>u.school?.sector)
+            .filter(Boolean)
+    )).sort() as string[];
+
     const isActive=(user:any)=>Boolean(Number(user.factories?.[0]?.pivot?.is_active??1));
     const statistics=data?.statistics||{};
     const metrics=[
@@ -118,27 +154,58 @@ export function TeamManagementPage(){
                         <td><select value={active?'1':'0'} onChange={e=>setEditing({...editing,[user.id]:{...current,is_active:e.target.value==='1'}})}><option value="1">Active</option><option value="0">Inactive</option></select></td>
                         <td><select value={current.role_id||user.roles?.[0]?.id||''} onChange={e=>setEditing({...editing,[user.id]:{...current,role_id:e.target.value}})}><option value="">Choose role</option>{(data?.roles||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td>
                         <td><select value={selectedDepartment} onChange={e=>setEditing({...editing,[user.id]:{...current,department_id:e.target.value||null}})}><option value="">Not assigned</option>{(data?.departments||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td>
-                        <td><button className="table-action" disabled={!editing[user.id]} onClick={()=>save(user)}><Save size={15}/>Save changes</button></td>
+                        <td>
+                            <div style={{display:'flex', gap:'8px'}}>
+                                <button className="table-action" disabled={!editing[user.id]} onClick={()=>save(user)}><Save size={15}/>Save</button>
+                                <button className="table-action" style={{color:'#64748b'}} onClick={()=>{setResetUser(user);setError('');setSuccess('')}}>Reset Password</button>
+                            </div>
+                        </td>
                     </tr>
                 }):<tr><td className="empty-cell" colSpan={5}>No employees have been created yet.</td></tr>}</tbody></table></div>
             </>
         )}
 
         {activeTab === 'schools' && (
-            <div className="admin-table-wrap team-users-table"><table className="admin-table"><thead><tr><th>School Account</th><th>School Details</th><th>Status</th><th>Role</th></tr></thead><tbody>{schoolUsers.length?schoolUsers.map((user:any)=>{
+            <div className="admin-table-wrap team-users-table">
+                <div style={{display:'flex', gap:'10px', padding:'15px', background:'var(--soft)', borderBottom:'1px solid var(--line)', alignItems:'center'}}>
+                    <input placeholder="Search by school or user name..." value={schoolSearch} onChange={e=>setSchoolSearch(e.target.value)} style={{flex:1, padding:'8px 12px', border:'1px solid var(--line)', borderRadius:'6px'}}/>
+                    <select value={schoolDistrict} onChange={e=>{setSchoolDistrict(e.target.value); setSchoolSector('')}} style={{padding:'8px 12px', border:'1px solid var(--line)', borderRadius:'6px'}}>
+                        <option value="">All Districts</option>
+                        {uniqueDistricts.map(d=><option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select value={schoolSector} onChange={e=>setSchoolSector(e.target.value)} style={{padding:'8px 12px', border:'1px solid var(--line)', borderRadius:'6px'}}>
+                        <option value="">All Sectors</option>
+                        {uniqueSectors.map(s=><option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
+                <table className="admin-table"><thead><tr><th>School Account</th><th>School Details</th><th>Status</th><th>Role</th><th>Action</th></tr></thead><tbody>{schoolUsers.length?schoolUsers.map((user:any)=>{
                 const active=isActive(user);
                 return <tr key={user.id}>
                     <td><div className="team-user-cell"><span>{String(user.name||'S').split(' ').map((part:string)=>part[0]).join('').slice(0,2).toUpperCase()}</span><div><b>{user.name}</b><small>{user.email}</small></div></div></td>
                     <td>{user.school ? <div><b>{user.school.name}</b><br/><small>{user.school.district}, {user.school.sector}</small></div> : <span className="muted">No school assigned</span>}</td>
                     <td><span className={active ? 'admin-status active' : 'admin-status inactive'}>{active ? 'Active' : 'Inactive'}</span></td>
                     <td><span className="admin-badge">{user.roles?.[0]?.name||'School User'}</span></td>
+                    <td><button className="table-action" style={{color:'#64748b'}} onClick={()=>{setResetUser(user);setError('');setSuccess('')}}>Reset Password</button></td>
                 </tr>
-            }):<tr><td className="empty-cell" colSpan={4}>No school accounts found for this factory.</td></tr>}</tbody></table></div>
+            }):<tr><td className="empty-cell" colSpan={5}>No school accounts match your filters.</td></tr>}</tbody></table></div>
         )}
         {showCreate&&<div className="team-modal-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setShowCreate(false)}}>
             <section className="team-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
                 <header><div><div><h2 id="create-user-title">Create employee account</h2><p>Add login access and assign the employee to the correct team.</p></div></div><button type="button" aria-label="Close" onClick={()=>setShowCreate(false)}><X size={19}/></button></header>
                 <form className="admin-form employee-create-form" onSubmit={create}><div className="form-grid employee-form-grid"><label>Full name<input autoFocus required placeholder="Enter employee name" value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})}/></label><label>Email address<input required type="email" placeholder="name@company.com" value={newUser.email} onChange={e=>setNewUser({...newUser,email:e.target.value})}/></label><label>Role<select required value={newUser.role_id} onChange={e=>setNewUser({...newUser,role_id:e.target.value})}><option value="">Choose role</option>{(data?.roles||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Department<select value={newUser.department_id} onChange={e=>setNewUser({...newUser,department_id:e.target.value})}><option value="">Not assigned</option>{(data?.departments||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Temporary password<input required minLength={10} type="password" placeholder="Create a secure password" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})}/><small>Use uppercase, lowercase, number and symbol.</small></label><label>Confirm password<input required minLength={10} type="password" placeholder="Enter the password again" value={newUser.password_confirmation} onChange={e=>setNewUser({...newUser,password_confirmation:e.target.value})}/></label></div><footer><button type="button" className="secondary-btn" onClick={()=>setShowCreate(false)}>Cancel</button><button className="primary-btn" disabled={creating}><UserPlus size={16}/>{creating?'Creating account...':'Create employee'}</button></footer></form>
+            </section>
+        </div>}
+        
+        {resetUser&&<div className="team-modal-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setResetUser(null)}}>
+            <section className="team-modal" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+                <header><div><div><h2 id="reset-password-title">Reset User Password</h2><p>Set a new password for {resetUser.name}</p></div></div><button type="button" aria-label="Close" onClick={()=>setResetUser(null)}><X size={19}/></button></header>
+                <form className="admin-form employee-create-form" onSubmit={handleResetPassword}>
+                    <div className="form-grid" style={{gridTemplateColumns:'1fr'}}>
+                        <label>New Password<input required minLength={10} type="password" placeholder="Enter a new secure password" value={resetPassword} onChange={e=>setResetPassword(e.target.value)}/><small>Use uppercase, lowercase, number and symbol.</small></label>
+                        <label>Confirm Password<input required minLength={10} type="password" placeholder="Confirm the new password" value={resetPasswordConfirmation} onChange={e=>setResetPasswordConfirmation(e.target.value)}/></label>
+                    </div>
+                    <footer><button type="button" className="secondary-btn" onClick={()=>setResetUser(null)}>Cancel</button><button className="primary-btn" disabled={resetting}>{resetting?'Resetting...':'Reset Password'}</button></footer>
+                </form>
             </section>
         </div>}
     </section>

@@ -285,6 +285,11 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['dashboard', LayoutDashboard, t.dashboard, '*'],
         ['cutting-workspace', Scissors, locale === 'en' ? 'Cutting workspace' : 'Espace de coupe', 'production.view'],
         ['cutting-report', FileText, locale === 'en' ? 'Report' : 'Rapport', 'production.view'],
+    ] as const : (isNoguchiFactory && user.workspace === 'sewing') ? [
+        // ─── Noguchi Sewing Operator ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['production', Gauge, locale === 'en' ? 'Record sewing' : 'Enregistrer la couture', 'production.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
     ] as const : isMachineOperator ? [
         // ─── Machine Operator ───
         ['dashboard', LayoutDashboard, t.dashboard, '*'],

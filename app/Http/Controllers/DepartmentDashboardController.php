@@ -134,6 +134,10 @@ class DepartmentDashboardController extends Controller
                 'stages_in_progress' => (clone $stageExecutions)->where('status', 'in_progress')->count(),
                 'output_today' => (float) (clone $stageExecutions)->whereDate('updated_at', today())->sum('output_quantity'),
                 'rejected_today' => (float) (clone $stageExecutions)->whereDate('updated_at', today())->sum('rejected_quantity'),
+                'cutting_not_sewn' => (float) ProductionStageExecution::withoutGlobalScopes()
+                    ->where('factory_id', $factoryId)->whereHas('stage', fn ($q) => $q->where('code', 'CUTTING'))->sum('output_quantity') 
+                    - (float) ProductionStageExecution::withoutGlobalScopes()
+                    ->where('factory_id', $factoryId)->whereHas('stage', fn ($q) => $q->where('code', 'SEWING'))->sum('input_quantity'),
             ],
             'assignments' => $assignments->limit(20)->get(['id', 'user_id', 'title', 'instructions', 'priority', 'status', 'starts_at', 'due_at', 'updated_at']),
             'stage_activity' => $stageExecutions->with(['stage:id,name,code,sequence', 'order:id,order_number,item_id'])->latest('updated_at')->limit(15)->get(['id', 'production_order_id', 'workflow_stage_id', 'assigned_user_id', 'status', 'input_quantity', 'output_quantity', 'waste_quantity', 'rejected_quantity', 'started_at', 'completed_at', 'updated_at']),

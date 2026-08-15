@@ -130,14 +130,12 @@ class AuthController extends Controller
         Auth::login($user, (bool) ($credentials['remember'] ?? false));
         $request->session()->regenerate();
         $user->update(['last_login_at' => now(), 'last_login_ip' => $request->ip()]);
-        AuditLog::record('auth.login', 'User signed in');
 
         return response()->json(['message' => 'Signed in.', 'user' => $this->userPayload($user)]);
     }
 
     public function logout(Request $request): JsonResponse
     {
-        AuditLog::record('auth.logout', 'User signed out');
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

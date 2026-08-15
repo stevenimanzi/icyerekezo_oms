@@ -167,7 +167,22 @@ class TeamWorkspaceController extends Controller
         }
         AuditLog::record('team.user_updated', "Updated workspace access for {$user->name}", $user);
 
-        return response()->json(['message' => 'User access updated.']);
+        return response()->json(['message' => 'User access updated']);
+    }
+
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
+        abort_if($membership->is_owner, 422, 'The factory owner account cannot be changed here.');
+        $data = $request->validate([
+            'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()->symbols()],
+        ]);
+        
+        $user->update(['password' => bcrypt($data['password'])]);
+        AuditLog::record('team.user_password_reset', "Reset password for {$user->name}", $user);
+        
+        return response()->json(['message' => 'Password reset successfully']);
     }
 
     public function storeWorkstation(Request $request): JsonResponse
