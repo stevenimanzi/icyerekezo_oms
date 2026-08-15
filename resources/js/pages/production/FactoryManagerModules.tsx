@@ -72,6 +72,7 @@ export function TeamManagementPage(){
     const [success,setSuccess]=useState('');
     const [creating,setCreating]=useState(false);
     const [showCreate,setShowCreate]=useState(false);
+    const [activeTab,setActiveTab]=useState('employees');
     const load=()=>api('/api/team/workspaces').then(setData).catch(reason=>setError(reason.message));
     useEffect(()=>{void load()},[]);
     const create=async(e:React.FormEvent)=>{
@@ -87,6 +88,7 @@ export function TeamManagementPage(){
         catch(reason:any){setError(reason.message)}
     };
     const users=data?.users?.data||[];
+    const schoolUsers=data?.school_users||[];
     const isActive=(user:any)=>Boolean(Number(user.factories?.[0]?.pivot?.is_active??1));
     const statistics=data?.statistics||{};
     const metrics=[
@@ -96,21 +98,43 @@ export function TeamManagementPage(){
         {label:'Not assigned',value:statistics.unassigned_users||0,detail:'Need a department',icon:<UserMinus/>,tone:'amber'},
     ];
     return <section className="module-page team-management-page">
-        <Heading title="Employees" description="Create employee accounts and choose each person's role, department and access." action={<button className="primary-btn" onClick={()=>{setError('');setShowCreate(true)}}><Plus size={17}/>Add employee</button>}/>
+        <Heading title="Employees" description="Manage factory employees and school accounts associated with this factory." action={activeTab === 'employees' ? <button className="primary-btn" onClick={()=>{setError('');setShowCreate(true)}}><Plus size={17}/>Add employee</button> : null}/>
         <Alert error={error} success={success}/>
-        <section className="team-user-metrics">{metrics.map(item=><article className="panel" key={item.label}><span className={item.tone||''}>{item.icon}</span><div><small>{item.label}</small><strong>{item.value}</strong><p>{item.detail}</p></div></article>)}</section>
-        <div className="admin-table-wrap team-users-table"><table className="admin-table"><thead><tr><th>Employee</th><th>Status</th><th>Role</th><th>Department</th><th>Action</th></tr></thead><tbody>{users.length?users.map((user:any)=>{
-            const current=editing[user.id]||{};
-            const selectedDepartment=current.department_id??user.employee_profile?.department_id??'';
-            const active=current.is_active??isActive(user);
-            return <tr key={user.id}>
-                <td><div className="team-user-cell"><span>{String(user.name||'U').split(' ').map((part:string)=>part[0]).join('').slice(0,2).toUpperCase()}</span><div><b>{user.name}</b><small>{user.email}</small></div></div></td>
-                <td><select value={active?'1':'0'} onChange={e=>setEditing({...editing,[user.id]:{...current,is_active:e.target.value==='1'}})}><option value="1">Active</option><option value="0">Inactive</option></select></td>
-                <td><select value={current.role_id||user.roles?.[0]?.id||''} onChange={e=>setEditing({...editing,[user.id]:{...current,role_id:e.target.value}})}><option value="">Choose role</option>{(data?.roles||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td>
-                <td><select value={selectedDepartment} onChange={e=>setEditing({...editing,[user.id]:{...current,department_id:e.target.value||null}})}><option value="">Not assigned</option>{(data?.departments||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td>
-                <td><button className="table-action" disabled={!editing[user.id]} onClick={()=>save(user)}><Save size={15}/>Save changes</button></td>
-            </tr>
-        }):<tr><td className="empty-cell" colSpan={5}>No users have been created yet.</td></tr>}</tbody></table></div>
+        
+        <div className="tab-navigation" style={{display:'flex', gap:'10px', marginBottom:'20px', borderBottom:'1px solid var(--line)', paddingBottom:'10px'}}>
+            <button className={activeTab === 'employees' ? 'active' : ''} onClick={() => setActiveTab('employees')} style={{background:activeTab==='employees'?'var(--brand)':'transparent', color:activeTab==='employees'?'white':'var(--text)', border:'none', padding:'8px 16px', borderRadius:'6px', cursor:'pointer', fontWeight:600}}>Factory Employees</button>
+            <button className={activeTab === 'schools' ? 'active' : ''} onClick={() => setActiveTab('schools')} style={{background:activeTab==='schools'?'var(--brand)':'transparent', color:activeTab==='schools'?'white':'var(--text)', border:'none', padding:'8px 16px', borderRadius:'6px', cursor:'pointer', fontWeight:600}}>School Accounts</button>
+        </div>
+
+        {activeTab === 'employees' && (
+            <>
+                <section className="team-user-metrics">{metrics.map(item=><article className="panel" key={item.label}><span className={item.tone||''}>{item.icon}</span><div><small>{item.label}</small><strong>{item.value}</strong><p>{item.detail}</p></div></article>)}</section>
+                <div className="admin-table-wrap team-users-table"><table className="admin-table"><thead><tr><th>Employee</th><th>Status</th><th>Role</th><th>Department</th><th>Action</th></tr></thead><tbody>{users.length?users.map((user:any)=>{
+                    const current=editing[user.id]||{};
+                    const selectedDepartment=current.department_id??user.employee_profile?.department_id??'';
+                    const active=current.is_active??isActive(user);
+                    return <tr key={user.id}>
+                        <td><div className="team-user-cell"><span>{String(user.name||'U').split(' ').map((part:string)=>part[0]).join('').slice(0,2).toUpperCase()}</span><div><b>{user.name}</b><small>{user.email}</small></div></div></td>
+                        <td><select value={active?'1':'0'} onChange={e=>setEditing({...editing,[user.id]:{...current,is_active:e.target.value==='1'}})}><option value="1">Active</option><option value="0">Inactive</option></select></td>
+                        <td><select value={current.role_id||user.roles?.[0]?.id||''} onChange={e=>setEditing({...editing,[user.id]:{...current,role_id:e.target.value}})}><option value="">Choose role</option>{(data?.roles||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td>
+                        <td><select value={selectedDepartment} onChange={e=>setEditing({...editing,[user.id]:{...current,department_id:e.target.value||null}})}><option value="">Not assigned</option>{(data?.departments||[]).map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></td>
+                        <td><button className="table-action" disabled={!editing[user.id]} onClick={()=>save(user)}><Save size={15}/>Save changes</button></td>
+                    </tr>
+                }):<tr><td className="empty-cell" colSpan={5}>No employees have been created yet.</td></tr>}</tbody></table></div>
+            </>
+        )}
+
+        {activeTab === 'schools' && (
+            <div className="admin-table-wrap team-users-table"><table className="admin-table"><thead><tr><th>School Account</th><th>School Details</th><th>Status</th><th>Role</th></tr></thead><tbody>{schoolUsers.length?schoolUsers.map((user:any)=>{
+                const active=isActive(user);
+                return <tr key={user.id}>
+                    <td><div className="team-user-cell"><span>{String(user.name||'S').split(' ').map((part:string)=>part[0]).join('').slice(0,2).toUpperCase()}</span><div><b>{user.name}</b><small>{user.email}</small></div></div></td>
+                    <td>{user.school ? <div><b>{user.school.name}</b><br/><small>{user.school.district}, {user.school.sector}</small></div> : <span className="muted">No school assigned</span>}</td>
+                    <td><span className={active ? 'admin-status active' : 'admin-status inactive'}>{active ? 'Active' : 'Inactive'}</span></td>
+                    <td><span className="admin-badge">{user.roles?.[0]?.name||'School User'}</span></td>
+                </tr>
+            }):<tr><td className="empty-cell" colSpan={4}>No school accounts found for this factory.</td></tr>}</tbody></table></div>
+        )}
         {showCreate&&<div className="team-modal-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setShowCreate(false)}}>
             <section className="team-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
                 <header><div><div><h2 id="create-user-title">Create employee account</h2><p>Add login access and assign the employee to the correct team.</p></div></div><button type="button" aria-label="Close" onClick={()=>setShowCreate(false)}><X size={19}/></button></header>

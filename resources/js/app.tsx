@@ -139,6 +139,8 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const [searchQuery,setSearchQuery]=useState('');
     const [searchResults,setSearchResults]=useState<any[]>([]);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+    const toggleGroup = (groupKey: string) => setOpenGroups(prev => ({ ...prev, [groupKey]: !prev[groupKey] }));
     const t = copy[locale];
     const can = (permission: string) => user.permissions.includes('*') || user.permissions.includes(permission);
     const isExecutiveUser = user.is_platform_admin || user.workspace === 'executive' || user.roles.some(role => ['factory-owner', 'factory-administrator', 'factory-manager'].includes(role.slug));
@@ -362,12 +364,92 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
 
     const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(null), 2600); };
 
+    // ─── Nav Grouping Logic ───
+    const navGroupDefs: Record<string, { label: string; icon: any; children: string[] }> = useMemo(() => {
+        if (isSchoolUser) return {
+            'orders': { label: locale === 'en' ? 'Orders' : 'Commandes', icon: ShoppingCart, children: ['new-order', 'order-history'] },
+            'returns': { label: locale === 'en' ? 'Returns' : 'Retours', icon: RotateCcw, children: ['return-items', 'returns-history'] },
+        };
+        if (isWarehouseUser) return {
+            'stock': { label: locale === 'en' ? 'Stock Management' : 'Gestion de stock', icon: Warehouse, children: ['incoming-requests', 'inventory', 'products'] },
+        };
+        if (isLogisticsUser && !isNoguchiFactory) return {
+            'delivery': { label: locale === 'en' ? 'Deliveries' : 'Livraisons', icon: Truck, children: ['logistics', 'dispatch', 'vehicles', 'delivery-confirmation'] },
+        };
+        if (isFactoryAdmin || isFactoryOwner) return {
+            'supply': { label: locale === 'en' ? 'Supply Chain' : 'Chaîne d\'approvisionnement', icon: ShoppingCart, children: ['procurement', 'inventory', 'products'] },
+            'operations': { label: locale === 'en' ? 'Operations' : 'Opérations', icon: Gauge, children: ['production', 'quality', 'machines'] },
+            'commercial': { label: locale === 'en' ? 'Commercial' : 'Commercial', icon: PackageOpen, children: ['sales', 'logistics'] },
+        };
+        return {};
+    }, [locale, isSchoolUser, isWarehouseUser, isLogisticsUser, isNoguchiFactory, isFactoryAdmin, isFactoryOwner]);
+
+    // Build grouped nav structure
+    const groupedNav = useMemo(() => {
+        const assigned = new Set<string>();
+        const groups: { type: 'item' | 'group'; key: string; label?: string; icon?: any; items: typeof nav }[] = [];
+        
+        // First pass: identify grouped items
+        Object.entries(navGroupDefs).forEach(([groupKey, def]) => {
+            const groupItems = nav.filter(([key]) => def.children.includes(key as string));
+            if (groupItems.length > 0) {
+                groupItems.forEach(([key]) => assigned.add(key as string));
+                groups.push({ type: 'group', key: groupKey, label: def.label, icon: def.icon, items: groupItems as any });
+            }
+        });
+        
+        // Second pass: add ungrouped items in their original order
+        const result: typeof groups = [];
+        nav.forEach(([key]) => {
+            if (assigned.has(key as string)) {
+                // Check if a group should be inserted here (insert at position of first child)
+                const group = groups.find(g => g.items[0]?.[0] === key);
+                if (group) result.push(group);
+            } else {
+                result.push({ type: 'item', key: key as string, items: [nav.find(n => n[0] === key)!] as any });
+            }
+        });
+        return result;
+    }, [nav, navGroupDefs]);
+
+    // Auto-expand group that contains the active page
+    useEffect(() => {
+        Object.entries(navGroupDefs).forEach(([groupKey, def]) => {
+            if (def.children.includes(activePage)) {
+                setOpenGroups(prev => ({ ...prev, [groupKey]: true }));
+            }
+        });
+    }, [activePage, navGroupDefs]);
+
     return <div className="app-shell">
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
             <div className="sidebar-head"><Logo/><button className="icon-btn mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20}/></button></div>
             <nav>
                 <p className="nav-label">{t.general}</p>
-                {nav.map(([key, Icon, label]) => <button key={key} className={`nav-item ${activePage === key ? 'active' : ''}`} onClick={() => { setActivePage(key); setSidebarOpen(false); }}><Icon size={18}/><span>{label}</span>{key === 'inventory' && lowStockCount > 0 && <i title={locale==='en'?'Low-stock items that need attention':'Articles en stock faible nécessitant une attention'}>{lowStockCount}</i>}</button>)}
+                {groupedNav.map(group => group.type === 'item' ? (
+                    <button key={group.key} className={`nav-item ${activePage === group.key ? 'active' : ''}`} onClick={() => { setActivePage(group.key); setSidebarOpen(false); }}>
+                        {(() => { const Icon = group.items[0][1]; return <Icon size={18}/>; })()}
+                        <span>{group.items[0][2]}</span>
+                        {group.key === 'inventory' && lowStockCount > 0 && <i title={locale==='en'?'Low-stock items that need attention':'Articles en stock faible nécessitant une attention'}>{lowStockCount}</i>}
+                    </button>
+                ) : (
+                    <div key={group.key} className={`nav-group ${openGroups[group.key] ? 'expanded' : ''} ${group.items.some(([key]: any) => activePage === key) ? 'has-active' : ''}`}>
+                        <button className="nav-group-toggle" onClick={() => toggleGroup(group.key)}>
+                            {(() => { const GIcon = group.icon; return <GIcon size={18}/>; })()}
+                            <span>{group.label}</span>
+                            <ChevronDown size={14} className="nav-group-chevron" />
+                        </button>
+                        <div className="nav-group-children">
+                            {group.items.map(([key, Icon, label]: any) => (
+                                <button key={key} className={`nav-item nav-child ${activePage === key ? 'active' : ''}`} onClick={() => { setActivePage(key); setSidebarOpen(false); }}>
+                                    <Icon size={16}/>
+                                    <span>{label}</span>
+                                    {key === 'inventory' && lowStockCount > 0 && <i title={locale==='en'?'Low-stock items that need attention':'Articles en stock faible nécessitant une attention'}>{lowStockCount}</i>}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ))}
                 {!user.is_platform_admin && <><p className="nav-label">{isFactoryOwner ? 'ASSISTANCE' : t.management}</p>{!isFactoryOwner && can('factory.manage') && <button className={`nav-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}><Settings size={18}/><span>{t.settings}</span></button>}{hasFeature('support')&&<button className={`nav-item ${activePage === 'support' ? 'active' : ''}`} onClick={() => { setActivePage('support'); setSidebarOpen(false); }}><HelpCircle size={18}/><span>{t.support}</span></button>}</>}
             </nav>
             <button className="factory-card" onClick={() => setActivePage(user.is_platform_admin ? 'system-settings' : isSchoolUser ? 'school-profile' : isFactoryOwner ? 'dashboard' : 'settings')}><div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}</div><div><strong>{user.current_factory?.name || user.system?.name || 'ICYEREKEZO OMS'}</strong><span>{user.is_platform_admin ? (locale === 'en' ? 'System administration' : 'Administration système') : isSchoolUser ? (locale === 'en' ? 'School account' : 'Compte scolaire') : isFactoryOwner ? (locale === 'en' ? 'Performance overview' : 'Vue des performances') : (locale === 'en' ? 'Factory workspace' : 'Espace usine')}</span></div><ChevronRight size={17}/></button>

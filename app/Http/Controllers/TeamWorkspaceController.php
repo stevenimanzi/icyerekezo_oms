@@ -57,12 +57,14 @@ class TeamWorkspaceController extends Controller
                 'assigned_users' => $assignedUsers,
                 'unassigned_users' => max(0, $totalUsers - $assignedUsers),
             ],
-            'users' => User::where('is_platform_admin', false)->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_owner', false))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
+            'users' => User::where('is_platform_admin', false)->whereNull('school_id')->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_owner', false))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
             'roles' => $roles->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
             'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
             'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get()
                 ->unique(fn (Department $department) => Str::lower(trim($department->name)))->values(),
             'workstations' => Workstation::where('is_active', true)->get(),
+            'schools' => School::where('factory_id', $factoryId)->orderBy('name')->get(),
+            'school_users' => User::where('is_platform_admin', false)->whereNotNull('school_id')->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['school', 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId)])->get(),
         ]);
     }
 
