@@ -81,6 +81,7 @@ class InventoryController extends Controller
             'low_stock' => StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)->join('items', 'items.id', '=', 'stock_balances.item_id')->whereColumn('stock_balances.quantity_on_hand', '<=', 'items.reorder_level')->count(),
             'total_value' => StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)->join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost),0) as value')->value('value'),
             'stock' => $stock,
+            'cut_pieces' => $this->getVirtualCutPieces($warehouseIds),
             'catalog' => $catalog,
             'warehouse_list' => Warehouse::whereIn('id', $warehouseIds)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
             'recent_transactions' => $transactions,
@@ -239,5 +240,52 @@ class InventoryController extends Controller
         $data = $request->validate(['name' => ['required', 'string', 'max:120'], 'code' => ['required', 'string', 'max:30', Rule::unique('warehouses')->where('factory_id', $factoryId)], 'type' => ['required', Rule::in(['general', 'raw_material', 'finished_goods', 'cold_storage', 'quarantine', 'spare_parts'])], 'branch_id' => ['nullable', 'integer'], 'allows_negative_stock' => ['nullable', 'boolean']]);
 
         return response()->json(Warehouse::create($data), 201);
+    }
+
+    private function getVirtualCutPieces($warehouseIds): array
+    {
+        $cutTransactions = \App\Models\StockTransaction::whereIn('warehouse_id', $warehouseIds)
+            ->where('type', 'issue')
+            ->where('reason', 'LIKE', '[Cut Output]%')
+            ->join('items', 'items.id', '=', 'stock_transactions.item_id')
+            ->get(['stock_transactions.*', 'items.name as item_name']);
+
+        $sewingReceipts = \App\Models\StockTransaction::whereIn('warehouse_id', $warehouseIds)
+            ->where('type', 'receipt')
+            ->where('reason', 'LIKE', '[Sewing Receipt] CutID:%')
+            ->get();
+
+        $pieces = [];
+        foreach ($cutTransactions as $tx) {
+            $details = str_replace('[Cut Output] ', '', $tx->reason ?? '');
+            if (preg_match('/\|\s*([\d,.]+)x\s+(.+?)(?:\s+\/\s+(.+?))?\s+\(([^)]+)\)\s+produced/i', $details, $matches)) {
+                $qty = (float) str_replace(',', '', $matches[1]);
+                $style = trim($matches[2]);
+                $color = trim($matches[3] ?? '');
+                $size = trim($matches[4]);
+                $cutId = "{$tx->item_id}-{$style}-{$color}-{$size}";
+
+                if (!isset($pieces[$cutId])) {
+                    $pieces[$cutId] = [
+                        'id' => $cutId,
+                        'item_id' => $tx->item_id,
+                        'name' => "{$style}" . ($color ? " / {$color}" : "") . " ({$size}) - {$tx->item_name}",
+                        'available_qty' => 0,
+                    ];
+                }
+                $pieces[$cutId]['available_qty'] += $qty;
+            }
+        }
+
+        foreach ($sewingReceipts as $tx) {
+            if (preg_match('/CutID:\s*([^\s|]+)/i', $tx->reason ?? '', $matches)) {
+                $cutId = $matches[1];
+                if (isset($pieces[$cutId])) {
+                    $pieces[$cutId]['available_qty'] -= abs((float) $tx->quantity_delta);
+                }
+            }
+        }
+
+        return array_values(array_filter($pieces, fn($p) => $p['available_qty'] > 0));
     }
 }

@@ -112,6 +112,18 @@ class DepartmentDashboardController extends Controller
             ->latest('updated_at')->limit(15)
             ->get(['id', 'shipment_number', 'sales_document_id', 'delivery_vehicle_id', 'customer_name', 'destination', 'status', 'package_count', 'planned_dispatch_at', 'dispatched_at', 'delivered_at', 'proof_reference', 'updated_at']);
 
+        $productionTrends = collect(range(5, 0))->map(function (int $monthsAgo) use ($stageExecutions) {
+            $month = now()->startOfMonth()->subMonths($monthsAgo);
+            $executions = (clone $stageExecutions)->whereBetween('updated_at', [$month, $month->copy()->endOfMonth()]);
+            return [
+                'month' => $month->format('M'),
+                'month_number' => $month->month,
+                'output' => (float) (clone $executions)->sum('output_quantity'),
+                'rejected' => (float) (clone $executions)->sum('rejected_quantity'),
+                'waste' => (float) (clone $executions)->sum('waste_quantity'),
+            ];
+        })->values();
+
         return response()->json([
             'department' => $department ? [
                 'id' => $department->id,
@@ -145,6 +157,7 @@ class DepartmentDashboardController extends Controller
             'recent_stock' => $recentStock,
             'logistics_metrics' => $logisticsMetrics,
             'logistics_trends' => $logisticsTrends,
+            'production_trends' => $productionTrends,
             'incoming_orders' => $incomingOrders,
             'delivery_activity' => $deliveryActivity,
         ]);
