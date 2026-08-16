@@ -36,7 +36,7 @@ const copy = {
         selectItem: 'Select piece/material', quantity: 'Quantity received', reason: 'Reason / Notes',
         quantityPlaceholder: 'Enter quantity', reasonPlaceholder: 'Describe what you received...',
         sendRequest: 'Log receipt', sending: 'Logging...',
-        pendingRequests: 'Recent receipts', noRequests: 'No piece receipts logged yet.',
+        pendingRequests: 'Accepted items', noRequests: 'No items accepted yet.',
         cutTitle: 'Record sewn items',
         cutDesc: 'Log the items you have successfully sewn in this session.',
         cutItem: 'Material used', cutQuantity: 'Quantity used',
@@ -68,7 +68,7 @@ const copy = {
         selectItem: 'S\u00e9lectionner la pi\u00e8ce', quantity: 'Quantit\u00e9 re\u00e7ue', reason: 'Motif / Notes',
         quantityPlaceholder: 'Saisissez la quantit\u00e9', reasonPlaceholder: 'D\u00e9crivez ce que vous avez re\u00e7u...',
         sendRequest: 'Enregistrer', sending: 'Enregistrement...',
-        pendingRequests: 'R\u00e9ceptions r\u00e9centes', noRequests: 'Aucune r\u00e9ception enregistr\u00e9e.',
+        pendingRequests: 'Articles accept\u00e9s', noRequests: 'Aucun article accept\u00e9.',
         cutTitle: 'Enregistrer les articles cousus',
         cutDesc: 'Enregistrez les articles que vous avez cousus avec succ\u00e8s.',
         cutItem: 'Mat\u00e9riel utilis\u00e9', cutQuantity: 'Quantit\u00e9 utilis\u00e9e',
@@ -150,26 +150,74 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
         tx.warehouse_id === sewingWarehouseId &&
         String(tx.reason || '').startsWith('[Sewing Output]')
     );
-    const sewReportRows = sewOutputTransactions.map((tx: any) => {
-        const details = String(tx.reason || '').replace('[Sewing Output] ', '');
-        const output = details.match(/\|\s*([\d,.]+)x\s+(.+?)(?:\s+\/\s+(.+?))?\s+\(([^)]+)\)\s+produced/i);
-        const fabricName = String(tx.item_name || '');
-        const color = fabricName.match(/\b(green|blue|red|yellow|black|white|navy|grey|gray|brown|orange|purple|pink|beige|cream)\b/i)?.[1] || '\u2014';
-        return {
-            ...tx,
-            inputColor: color,
-            outputStyle: output?.[2]?.trim() || '\u2014',
-            outputColor: color,
-            outputSize: output?.[4]?.trim() || '\u2014',
-            outputQuantity: output?.[1] ? num(Number(output[1].replaceAll(',', ''))) : '\u2014',
-        };
-    });
-    const filteredSewReportRows = sewReportRows.filter((row: any) => {
-        const date = new Date(row.occurred_at);
+    const reportTransactions = sewingTransactions.filter((tx: any) => {
+        if (!['receipt', 'issue', 'waste'].includes(tx.type)) return false;
+        if (!String(tx.reason || '').includes('CutID:')) return false;
+        
+        const date = new Date(tx.occurred_at);
         const from = reportFrom ? new Date(`${reportFrom}T00:00:00`) : null;
         const to = reportTo ? new Date(`${reportTo}T23:59:59.999`) : null;
         return (!from || date >= from) && (!to || date <= to);
     });
+
+    const reportRowsMap = new Map();
+    reportTransactions.forEach((tx: any) => {
+        const match = String(tx.reason).match(/CutID:\s*([^\s|]+)/i);
+        if (match) {
+            const cutId = match[1];
+            const parts = cutId.split('-');
+            const dateStr = new Date(tx.occurred_at).toLocaleDateString();
+            const key = `${dateStr}-${cutId}`;
+            if (!reportRowsMap.has(key)) {
+                const fabricColor = String(tx.item_name || '').match(/\b(green|blue|red|yellow|black|white|navy|grey|gray|brown|orange|purple|pink|beige|cream)\b/i)?.[1];
+                reportRowsMap.set(key, {
+                    id: key,
+                    date: dateStr,
+                    fabric: tx.item_name,
+                    style: parts[1] || '\u2014',
+                    color: parts[2] || fabricColor || '\u2014',
+                    size: parts[3] || '\u2014',
+                    input: 0,
+                    output: 0,
+                    waste: 0
+                });
+            }
+            const row = reportRowsMap.get(key);
+            if (tx.type === 'receipt') row.input += Math.abs(tx.quantity_delta);
+            else if (tx.type === 'issue') row.output += Math.abs(tx.quantity_delta);
+            else if (tx.type === 'waste') row.waste += Math.abs(tx.quantity_delta);
+        }
+    });
+    const filteredSewReportRows = Array.from(reportRowsMap.values()).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const acceptedCutPieces = sewingTransactions.filter((tx: any) => tx.type === 'receipt' && String(tx.reason || '').includes('CutID:'));
+
+    const sewingVirtualStock = new Map();
+    acceptedCutPieces.forEach((tx: any) => {
+        const match = String(tx.reason).match(/CutID:\s*([^\s|]+)/i);
+        if (match) {
+            const cutId = match[1];
+            if (!sewingVirtualStock.has(cutId)) {
+                const parts = cutId.split('-');
+                sewingVirtualStock.set(cutId, {
+                    id: cutId,
+                    item_id: tx.item_id,
+                    name: `${parts[1] || ''}${parts[2] ? ` / ${parts[2]}` : ''} (${parts[3] || ''}) - ${tx.item_name}`,
+                    available_qty: 0
+                });
+            }
+            sewingVirtualStock.get(cutId).available_qty += Math.abs(tx.quantity_delta);
+        }
+    });
+    sewingTransactions.forEach((tx: any) => {
+        if ((tx.type === 'issue' || tx.type === 'waste') && String(tx.reason).includes('CutID:')) {
+            const match = String(tx.reason).match(/CutID:\s*([^\s|]+)/i);
+            if (match && sewingVirtualStock.has(match[1])) {
+                sewingVirtualStock.get(match[1]).available_qty -= Math.abs(tx.quantity_delta);
+            }
+        }
+    });
+    const availableSewingStock = Array.from(sewingVirtualStock.values()).filter(item => item.available_qty > 0);
 
     const todaySews = sewOutputTransactions.filter((tx: any) => {
         const d = new Date(tx.occurred_at); const n = new Date();
@@ -180,41 +228,42 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
         return d.toDateString() === n.toDateString() && ['waste', 'adjustment_out'].includes(tx.type);
     });
 
+    const todayAccepted = acceptedCutPieces.filter((tx: any) => {
+        const d = new Date(tx.occurred_at); const n = new Date();
+        return d.toDateString() === n.toDateString();
+    });
+
     const totalSewnQty = todaySews.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
     const totalDamagedQty = todayDamage.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
+    const totalAcceptedQty = todayAccepted.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
     const wastePercent = totalSewnQty + totalDamagedQty > 0 ? ((totalDamagedQty / (totalSewnQty + totalDamagedQty)) * 100).toFixed(1) : '0.0';
     const clearMsg = () => { setError(''); setSuccess(''); };
 
-    const submitRequest = async () => {
+    const acceptCutPiece = async (piece: any) => {
         clearMsg();
-        if (!requestForm.item_id || !requestForm.quantity) { setError(locale === 'en' ? 'Please select an item and enter the quantity.' : 'Veuillez s\u00e9lectionner un article et entrer la quantit\u00e9.'); return; }
-        const selectedPiece = requestableItems.find(i => i.id === requestForm.item_id);
-        if (!selectedPiece) return;
-        const available = selectedPiece.available_qty || 0;
-        if (Number(requestForm.quantity) > available) { setError(locale === 'en' ? `Cannot request more than ${available} available in stock.` : `Impossible de demander plus que ${available} disponible en stock.`); return; }
         setBusy(true);
         try {
-            const originalItemId = selectedPiece.item_id;
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(originalItemId), warehouse_id: sewingWarehouseId, type: 'receipt', quantity: Number(requestForm.quantity), reason: `[Sewing Receipt] CutID: ${selectedPiece.id} | ${requestForm.reason || 'Received cut pieces for sewing'}` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: sewingWarehouseId, type: 'receipt', quantity: Number(piece.available_qty), reason: `[Sewing Receipt] CutID: ${piece.id} | Accepted from cutting` }) });
             setSuccess(locale === 'en' ? 'Cut pieces received successfully!' : 'Pi\u00e8ces coup\u00e9es re\u00e7ues avec succ\u00e8s !');
-            setRequestForm({ item_id: '', quantity: '', reason: '' }); await load(true);
+            await load(true);
         } catch (r: any) { setError(r.message); } finally { setBusy(false); }
     };
 
     const submitSew = async () => {
         clearMsg();
-        if (!sewForm.item_id || !sewForm.quantity) { setError(locale === 'en' ? 'Please select a fabric and enter the quantity cut.' : 'Veuillez s\u00e9lectionner un tissu et entrer la quantit\u00e9 coup\u00e9e.'); return; }
+        if (!sewForm.item_id || !sewForm.quantity) { setError(locale === 'en' ? 'Please select a cut piece and enter the quantity sewn.' : 'Veuillez s\u00e9lectionner une pi\u00e8ce coup\u00e9e et entrer la quantit\u00e9 cousue.'); return; }
         
-        const available = sewingStock.find(s => s.item_id === Number(sewForm.item_id))?.quantity_on_hand || 0;
+        const selectedPiece = availableSewingStock.find(s => s.id === sewForm.item_id);
+        const available = selectedPiece?.available_qty || 0;
         if (Number(sewForm.quantity) > available) {
-            setStockPopup(locale === 'en' ? `Insufficient stock. You only have ${num(available)} available on the cutting floor.` : `Stock insuffisant. Vous n'avez que ${num(available)} disponible.`);
+            setStockPopup(locale === 'en' ? `Insufficient stock. You only have ${num(available)} available on the sewing floor.` : `Stock insuffisant. Vous n'avez que ${num(available)} disponible.`);
             return;
         }
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(sewForm.item_id), warehouse_id: sewingWarehouseId, type: 'issue', quantity: Number(sewForm.quantity), reason: `[Sewing Output] ${sewForm.notes || 'Fabric cut for production'}${sewForm.output_quantity ? ` | ${sewForm.output_quantity}x ${sewForm.output_style}${sewForm.output_color ? ` / ${sewForm.output_color}` : ''} (${sewForm.output_size}) produced` : ''}` }) });
-            setSuccess(locale === 'en' ? 'Cut record saved successfully!' : 'Enregistrement de coupe sauvegard\u00e9 !');
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: sewingWarehouseId, type: 'issue', quantity: Number(sewForm.quantity), reason: `[Sewing Output] CutID: ${selectedPiece.id} | ${sewForm.quantity} items sewn. ${sewForm.notes || ''}` }) });
+            setSuccess(locale === 'en' ? 'Sewing record saved successfully!' : 'Enregistrement de couture sauvegard\u00e9 !');
             setSewForm({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' }); await load(true);
         } catch (r: any) {
             if (/insufficient stock|stock insuffisant/i.test(String(r.message || ''))) setStockPopup(r.message);
@@ -224,13 +273,24 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
 
     const submitDamage = async () => {
         clearMsg();
-        if (!damageForm.item_id || !damageForm.quantity) { setError(locale === 'en' ? 'Please select a fabric and enter the damaged quantity.' : 'Veuillez s\u00e9lectionner un tissu et entrer la quantit\u00e9 endommag\u00e9e.'); return; }
+        if (!damageForm.item_id || !damageForm.quantity) { setError(locale === 'en' ? 'Please select a cut piece and enter the damaged quantity.' : 'Veuillez s\u00e9lectionner une pi\u00e8ce coup\u00e9e et entrer la quantit\u00e9 endommag\u00e9e.'); return; }
+        
+        const selectedPiece = availableSewingStock.find(s => s.id === damageForm.item_id);
+        const available = selectedPiece?.available_qty || 0;
+        if (Number(damageForm.quantity) > available) {
+            setStockPopup(locale === 'en' ? `Insufficient stock. You only have ${num(available)} available on the sewing floor.` : `Stock insuffisant. Vous n'avez que ${num(available)} disponible.`);
+            return;
+        }
+
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(damageForm.item_id), warehouse_id: sewingWarehouseId, type: 'waste', quantity: Number(damageForm.quantity), reason: `[Sewing Damage] ${damageForm.reason || 'Material damaged during cutting'}` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: sewingWarehouseId, type: 'waste', quantity: Number(damageForm.quantity), reason: `[Sewing Damage] CutID: ${selectedPiece.id} | ${damageForm.reason || 'Material damaged during sewing'}` }) });
             setSuccess(locale === 'en' ? 'Damage report submitted successfully!' : 'Rapport de dommage soumis avec succ\u00e8s !');
             setDamageForm({ item_id: '', quantity: '', reason: '' }); await load(true);
-        } catch (r: any) { setError(r.message); } finally { setBusy(false); }
+        } catch (r: any) {
+            if (/insufficient stock|stock insuffisant/i.test(String(r.message || ''))) setStockPopup(r.message);
+            else setError(r.message);
+        } finally { setBusy(false); }
     };
 
     return <section className="module-page cutting-workspace">
@@ -279,31 +339,24 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
 
         /* ─── Request Fabrics ─── */
         tab === 'request' ? <div className="cutting-tab-content">
-            <article className="panel cutting-form-panel">
-                <div className="panel-title"><h2>{t.requestTitle}</h2></div>
-                <p className="cutting-form-desc">{t.requestDesc}</p>
-                <div className="cutting-form-grid">
-                    <label><span>{t.selectItem}</span>
-                        <select value={requestForm.item_id} onChange={e => setRequestForm({ ...requestForm, item_id: e.target.value })}>
-                            <option value="">{locale === 'en' ? '\u2014 Choose fabric \u2014' : '\u2014 Choisir un tissu \u2014'}</option>
-                            {requestableItems.map((item: any) => <option key={item.id} value={item.id}>{item.name} ({num(item.available_qty)} {locale === 'en' ? 'in stock' : 'en stock'})</option>)}
-                        </select>
-                    </label>
-                    <label><span>{t.quantity}</span>
-                        <input type="number" min="0.001" step="any" placeholder={t.quantityPlaceholder} value={requestForm.quantity} onChange={e => setRequestForm({ ...requestForm, quantity: e.target.value })}/>
-                    </label>
-                    <label className="cutting-full-width"><span>{t.reason}</span>
-                        <textarea rows={3} placeholder={t.reasonPlaceholder} value={requestForm.reason} onChange={e => setRequestForm({ ...requestForm, reason: e.target.value })} maxLength={500}/>
-                    </label>
-                </div>
-                <div className="cutting-form-actions">
-                    <button className="primary-btn" disabled={busy} onClick={submitRequest}><Send size={17}/>{busy ? t.sending : t.sendRequest}</button>
-                </div>
+            <article className="panel">
+                <div className="panel-title"><h2>{locale === 'en' ? 'Pending Cut Pieces' : 'Pi\u00e8ces coup\u00e9es en attente'}</h2></div>
+                <p className="cutting-form-desc" style={{ padding: '0 20px' }}>{locale === 'en' ? 'Accept cut pieces from the cutting department to start sewing.' : 'Acceptez les pi\u00e8ces coup\u00e9es du d\u00e9partement de coupe pour commencer \u00e0 coudre.'}</p>
+                <div className="admin-table-wrap"><table className="admin-table">
+                    <thead><tr><th>{locale === 'en' ? 'Cut Batch Details' : 'D\u00e9tails du lot'}</th><th>{locale === 'en' ? 'Quantity' : 'Quantit\u00e9'}</th><th>{locale === 'en' ? 'Action' : 'Action'}</th></tr></thead>
+                    <tbody>
+                        {requestableItems.length ? requestableItems.map((item: any) => <tr key={item.id}>
+                            <td><b>{item.name}</b></td>
+                            <td>{num(item.available_qty)}</td>
+                            <td><button className="primary-btn" disabled={busy} onClick={() => acceptCutPiece(item)}>{locale === 'en' ? 'Accept' : 'Accepter'}</button></td>
+                        </tr>) : <tr><td colSpan={3} className="empty-cell">{locale === 'en' ? 'No pending pieces from cutting.' : 'Aucune pi\u00e8ce en attente de la coupe.'}</td></tr>}
+                    </tbody>
+                </table></div>
             </article>
             <article className="panel">
-                <div className="panel-title"><h2>{t.pendingRequests}</h2><span>{sewingTransactions.filter(tx => tx.type === 'receipt').length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
+                <div className="panel-title"><h2>{t.pendingRequests}</h2><span>{acceptedCutPieces.length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
                 <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{t.quantity}</th><th>{t.reason}</th></tr></thead><tbody>
-                    {sewingTransactions.filter(tx => tx.type === 'receipt').length ? sewingTransactions.filter(tx => tx.type === 'receipt').map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Sewing Receipt] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noRequests}</td></tr>}
+                    {acceptedCutPieces.length ? acceptedCutPieces.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Sewing Receipt] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noRequests}</td></tr>}
                 </tbody></table></div>
             </article>
         </div>
@@ -313,40 +366,18 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
             <article className="panel cutting-form-panel">
                 <div className="panel-title"><h2>{t.cutTitle}</h2></div>
                 <p className="cutting-form-desc">{t.cutDesc}</p>
-                <div className="cutting-form-grid sew-3-cols">
-                    <label><span>{t.cutItem}</span>
+                <div className="cutting-form-grid">
+                    <label><span>{locale === 'en' ? 'Material used (Accepted cut pieces)' : 'Mat\u00e9riel utilis\u00e9 (Pi\u00e8ces coup\u00e9es accept\u00e9es)'}</span>
                         <select value={sewForm.item_id} onChange={e => setSewForm({ ...sewForm, item_id: e.target.value })}>
-                            <option value="">{locale === 'en' ? '\u2014 Choose fabric in stock \u2014' : '\u2014 Choisir un tissu en stock \u2014'}</option>
-                            {sewingStock.map((s: any) => <option key={s.item_id} value={s.item_id}>{s.item_name} ({num(s.quantity_on_hand)} {s.unit})</option>)}
+                            <option value="">{locale === 'en' ? '\u2014 Choose cut piece \u2014' : '\u2014 Choisir une pi\u00e8ce coup\u00e9e \u2014'}</option>
+                            {availableSewingStock.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({num(s.available_qty)} items)</option>)}
                         </select>
                     </label>
-                    <label><span>{t.cutQuantity}</span>
-                        <input type="number" min="0.001" step="any" placeholder={t.cutPlaceholder} value={sewForm.quantity} onChange={e => setSewForm({ ...sewForm, quantity: e.target.value })}/>
+                    <label><span>{locale === 'en' ? 'Number of items sewn' : 'Nombre d\'articles cousus'}</span>
+                        <input type="number" min="1" step="1" placeholder={t.cutPlaceholder} value={sewForm.quantity} onChange={e => setSewForm({ ...sewForm, quantity: e.target.value })}/>
                     </label>
-                    <label><span>{locale === 'en' ? 'Style produced' : 'Style produit'}</span>
-                        <select value={sewForm.output_style} onChange={e => setSewForm({ ...sewForm, output_style: e.target.value })}>
-                            <option value="">{locale === 'en' ? '\u2014 Choose style \u2014' : '\u2014 Choisir un style \u2014'}</option>
-                            <option value="Shirt">Shirt / Chemise</option>
-                            <option value="Skirt">Skirt / Jupe</option>
-                            <option value="Short">Short</option>
-                            <option value="Trousers">Trousers / Pantalon</option>
-                            <option value="Dress">Dress / Robe</option>
-                        </select>
-                    </label>
-                    <label><span>{locale === 'en' ? 'Size' : 'Taille'}</span>
-                        <select value={sewForm.output_size} onChange={e => setSewForm({ ...sewForm, output_size: e.target.value })}>
-                            <option value="">{locale === 'en' ? '\u2014 Choose size \u2014' : '\u2014 Choisir la taille \u2014'}</option>
-                            {['3XS', '2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(sz => <option key={sz} value={sz}>{sz}</option>)}
-                        </select>
-                    </label>
-                    <label><span>{t.outputQuantity}</span>
-                        <input type="number" min="1" step="1" placeholder={t.outputPlaceholder} value={sewForm.output_quantity} onChange={e => setSewForm({ ...sewForm, output_quantity: e.target.value })}/>
-                    </label>
-                    <label><span>{locale === 'en' ? 'Color produced' : 'Couleur produite'}</span>
-                        <input type="text" placeholder={locale === 'en' ? 'e.g., Green' : 'ex: Vert'} value={sewForm.output_color} onChange={e => setSewForm({ ...sewForm, output_color: e.target.value })} maxLength={80}/>
-                    </label>
-                    <label className="cutting-full-width"><span>{t.cutNotes}</span>
-                        <textarea rows={2} placeholder={t.notesPlaceholder} value={sewForm.notes} onChange={e => setSewForm({ ...sewForm, notes: e.target.value })} maxLength={500}/>
+                    <label className="cutting-full-width"><span>{locale === 'en' ? 'Sewing notes' : 'Notes de couture'}</span>
+                        <textarea rows={3} placeholder={locale === 'en' ? 'Any issues or observations...' : 'Tout probl\u00e8me ou observation...'} value={sewForm.notes} onChange={e => setSewForm({ ...sewForm, notes: e.target.value })} maxLength={500}/>
                     </label>
                 </div>
                 <div className="cutting-form-actions">
@@ -354,9 +385,9 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
                 </div>
             </article>
             <article className="panel">
-                <div className="panel-title"><h2>{t.recentCuts}</h2><span>{sewOutputTransactions.length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
-                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{locale === 'en' ? 'Quantity used' : 'Quantit\u00e9 utilis\u00e9e'}</th><th>{locale === 'en' ? 'Details' : 'D\u00e9tails'}</th></tr></thead><tbody>
-                    {sewOutputTransactions.length ? sewOutputTransactions.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Sewing Output] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noCuts}</td></tr>}
+                <div className="panel-title"><h2>{t.recentCuts}</h2><span>{todaySews.length} {locale === 'en' ? 'records today' : 'enregistrements aujourd\'hui'}</span></div>
+                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Output' : 'Sortie'}</th><th>{locale === 'en' ? 'Quantity sewn' : 'Quantit\u00e9 cousue'}</th><th>{locale === 'en' ? 'Details' : 'D\u00e9tails'}</th></tr></thead><tbody>
+                    {todaySews.length ? todaySews.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))}</td><td>{String(tx.reason || '').replace('[Sewing Output] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noCuts}</td></tr>}
                 </tbody></table></div>
             </article>
         </div>
@@ -367,10 +398,10 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
                 <div className="panel-title"><h2>{t.damagedTitle}</h2></div>
                 <p className="cutting-form-desc">{t.damagedDesc}</p>
                 <div className="cutting-form-grid">
-                    <label><span>{locale === 'en' ? 'Damaged fabric' : 'Tissu endommag\u00e9'}</span>
+                    <label><span>{locale === 'en' ? 'Damaged cut piece' : 'Pi\u00e8ce coup\u00e9e endommag\u00e9e'}</span>
                         <select value={damageForm.item_id} onChange={e => setDamageForm({ ...damageForm, item_id: e.target.value })}>
-                            <option value="">{locale === 'en' ? '\u2014 Choose fabric in stock \u2014' : '\u2014 Choisir un tissu en stock \u2014'}</option>
-                            {sewingStock.map((s: any) => <option key={s.item_id} value={s.item_id}>{s.item_name} ({num(s.quantity_on_hand)} {s.unit})</option>)}
+                            <option value="">{locale === 'en' ? '\u2014 Choose cut piece \u2014' : '\u2014 Choisir une pi\u00e8ce coup\u00e9e \u2014'}</option>
+                            {availableSewingStock.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({num(s.available_qty)} items)</option>)}
                         </select>
                     </label>
                     <label><span>{t.damagedQuantity}</span>
@@ -395,10 +426,10 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
         /* ─── Report ─── */
         : <div className="cutting-tab-content">
             <div className="cutting-report-metrics">
-                <article className="panel cutting-metric"><div className="cutting-metric-icon blue"><Scissors size={22}/></div><div><small>{t.totalCut}</small><strong>{num(totalSewnQty)}</strong><p>{t.period}</p></div></article>
+                <article className="panel cutting-metric"><div className="cutting-metric-icon blue"><Package size={22}/></div><div><small>{t.pendingReqs}</small><strong>{num(totalAcceptedQty)}</strong><p>{locale === 'en' ? 'Accepted today' : 'Accept\u00e9s aujourd\'hui'}</p></div></article>
+                <article className="panel cutting-metric"><div className="cutting-metric-icon green"><Scissors size={22}/></div><div><small>{t.totalCut}</small><strong>{num(totalSewnQty)}</strong><p>{locale === 'en' ? 'Sewn today' : 'Cousus aujourd\'hui'}</p></div></article>
                 <article className="panel cutting-metric"><div className="cutting-metric-icon amber"><AlertTriangle size={22}/></div><div><small>{t.totalDamaged}</small><strong>{num(totalDamagedQty)}</strong><p>{t.period}</p></div></article>
-                <article className="panel cutting-metric"><div className="cutting-metric-icon green"><CheckCircle2 size={22}/></div><div><small>{t.wasteRate}</small><strong>{wastePercent}%</strong><p>{Number(wastePercent) < 5 ? 'Excellent' : Number(wastePercent) < 10 ? (locale === 'en' ? 'Good' : 'Bon') : (locale === 'en' ? 'Needs attention' : '\u00c0 surveiller')}</p></div></article>
-                <article className="panel cutting-metric"><div className="cutting-metric-icon violet"><Package size={22}/></div><div><small>{t.pendingReqs}</small><strong>{sewingTransactions.filter(tx => tx.type === 'receipt').length}</strong><p>{locale === 'en' ? 'Awaiting' : 'En attente'}</p></div></article>
+                <article className="panel cutting-metric"><div className="cutting-metric-icon violet"><CheckCircle2 size={22}/></div><div><small>{t.wasteRate}</small><strong>{wastePercent}%</strong><p>{Number(wastePercent) < 5 ? 'Excellent' : Number(wastePercent) < 10 ? (locale === 'en' ? 'Good' : 'Bon') : (locale === 'en' ? 'Needs attention' : '\u00c0 surveiller')}</p></div></article>
             </div>
             <section className="panel cutting-report-filters no-print">
                 <div>
@@ -410,16 +441,25 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
             </section>
             <article className="panel noguchi-cutting-report">
                 <header>
-                    <div><small>OFFICIAL FACTORY REGISTER</small><h2>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'}</h2><p>{locale === 'en' ? 'Cutting input and output report' : 'Rapport des entr\u00e9es et sorties de coupe'}</p></div>
+                    <div><small>OFFICIAL FACTORY REGISTER</small><h2>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'}</h2><p>{locale === 'en' ? 'Sewing input and output report' : 'Rapport des entr\u00e9es et sorties de couture'}</p></div>
                     <div><span>{locale === 'en' ? 'REPORT DATE' : 'DATE DU RAPPORT'}<b>{new Date().toLocaleDateString()}</b></span><span>{locale === 'en' ? 'PREPARED BY' : 'PR\u00c9PAR\u00c9 PAR'}<b>{user.name}</b></span></div>
                 </header>
                 <div className="noguchi-cutting-table-wrap"><table><thead>
-                    <tr><th rowSpan={2}>{locale === 'en' ? 'DATE' : 'DATE'}</th><th colSpan={3}>{locale === 'en' ? 'INPUT' : 'ENTR\u00c9E'}</th><th colSpan={4}>{locale === 'en' ? 'OUTPUT' : 'SORTIE'}</th></tr>
-                    <tr><th>{locale === 'en' ? 'FABRIC' : 'TISSU'}</th><th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th><th>{locale === 'en' ? 'METERS' : 'M\u00c8TRES'}</th><th>{locale === 'en' ? 'STYLE' : 'STYLE'}</th><th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th><th>{locale === 'en' ? 'SIZE' : 'TAILLE'}</th><th>{locale === 'en' ? 'QTY' : 'QT\u00c9'}</th></tr>
+                    <tr><th rowSpan={2}>{locale === 'en' ? 'DATE' : 'DATE'}</th><th colSpan={4}>{locale === 'en' ? 'CUT PIECE DETAILS' : 'D\u00c9TAILS DE LA PI\u00c8CE'}</th><th colSpan={3}>{locale === 'en' ? 'QUANTITIES' : 'QUANTIT\u00c9S'}</th></tr>
+                    <tr><th>{locale === 'en' ? 'FABRIC' : 'TISSU'}</th><th>{locale === 'en' ? 'STYLE' : 'STYLE'}</th><th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th><th>{locale === 'en' ? 'SIZE' : 'TAILLE'}</th><th>{locale === 'en' ? 'INPUT (ACCEPTED)' : 'ENTR\u00c9E (ACCEPT\u00c9)'}</th><th>{locale === 'en' ? 'OUTPUT (SEWN)' : 'SORTIE (COUSUS)'}</th><th>{locale === 'en' ? 'WASTE' : 'D\u00c9CHETS'}</th></tr>
                 </thead><tbody>
-                    {filteredSewReportRows.length ? filteredSewReportRows.map((row: any) => <tr key={row.id}><td>{new Date(row.occurred_at).toLocaleDateString()}</td><td><b>{row.item_name}</b></td><td>{row.inputColor}</td><td>{num(Math.abs(row.quantity_delta))} {row.unit || 'm'}</td><td>{row.outputStyle}</td><td>{row.outputColor}</td><td>{row.outputSize}</td><td><b>{row.outputQuantity}</b></td></tr>) : <tr><td colSpan={8} className="empty-cell">{locale === 'en' ? 'No cutting records match the selected dates.' : 'Aucun enregistrement ne correspond aux dates s\u00e9lectionn\u00e9es.'}</td></tr>}
+                    {filteredSewReportRows.length ? filteredSewReportRows.map((row: any) => <tr key={row.id}>
+                        <td>{row.date}</td>
+                        <td><b>{row.fabric}</b></td>
+                        <td>{row.style}</td>
+                        <td>{row.color}</td>
+                        <td>{row.size}</td>
+                        <td>{row.input > 0 ? <b>{num(row.input)}</b> : '\u2014'}</td>
+                        <td>{row.output > 0 ? <b style={{color: '#10b981'}}>{num(row.output)}</b> : '\u2014'}</td>
+                        <td>{row.waste > 0 ? <span className="admin-status warning">{num(row.waste)}</span> : '\u2014'}</td>
+                    </tr>) : <tr><td colSpan={8} className="empty-cell">{locale === 'en' ? 'No sewing records match the selected dates.' : 'Aucun enregistrement ne correspond aux dates s\u00e9lectionn\u00e9es.'}</td></tr>}
                 </tbody></table></div>
-                <footer><span>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'} \u00b7 CUTTING OPERATIONS</span><span>Generated by ICYEREKEZO OMS</span></footer>
+                <footer><span>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'} \u00b7 {locale === 'en' ? 'SEWING OPERATIONS' : 'OP\u00c9RATIONS DE COUTURE'}</span><span>Generated by ICYEREKEZO OMS</span></footer>
             </article>
         </div>}
     </section>;

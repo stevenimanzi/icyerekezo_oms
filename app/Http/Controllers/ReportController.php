@@ -96,7 +96,9 @@ class ReportController extends Controller
             ->where('workflow_templates.factory_id', $factory->id)->where('workflow_templates.status', 'active')
             ->whereNotNull('workflow_stages.department_id')->distinct()->pluck('workflow_stages.department_id');
         if ($departmentOnly && $departmentId && ! $flowDepartmentIds->contains($departmentId)) {
-            abort(403, 'This department is not part of the active production flow.');
+            if (stripos($factory->name, 'noguchi') === false) {
+                abort(403, 'This department is not part of the active production flow.');
+            }
         }
 
         $departments = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)

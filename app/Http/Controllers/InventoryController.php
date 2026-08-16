@@ -136,8 +136,14 @@ class InventoryController extends Controller
         $isCuttingOperator = $request->user()->roles()
             ->wherePivot('factory_id', $request->user()->current_factory_id)
             ->where('slug', 'cutting-operator')->exists();
+            
+        $isSewingOperator = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->where('slug', 'sewing-operator')->exists();
         
-        $allowed = $isWarehouseKeeper || ($isCuttingOperator && in_array($data['type'], ['reserve', 'issue', 'waste']));
+        $allowed = $isWarehouseKeeper || 
+            ($isCuttingOperator && in_array($data['type'], ['reserve', 'issue', 'waste'])) ||
+            ($isSewingOperator && in_array($data['type'], ['receipt', 'issue', 'waste']));
         abort_unless($allowed, 403, 'You do not have permission to post this type of transaction.');
 
         return response()->json($ledger->post($data), 201);
@@ -244,15 +250,15 @@ class InventoryController extends Controller
 
     private function getVirtualCutPieces($warehouseIds): array
     {
-        $cutTransactions = \App\Models\StockTransaction::whereIn('warehouse_id', $warehouseIds)
-            ->where('type', 'issue')
-            ->where('reason', 'LIKE', '[Cut Output]%')
+        $cutTransactions = \App\Models\StockTransaction::whereIn('stock_transactions.warehouse_id', $warehouseIds)
+            ->where('stock_transactions.type', 'issue')
+            ->where('stock_transactions.reason', 'LIKE', '[Cut Output]%')
             ->join('items', 'items.id', '=', 'stock_transactions.item_id')
             ->get(['stock_transactions.*', 'items.name as item_name']);
 
-        $sewingReceipts = \App\Models\StockTransaction::whereIn('warehouse_id', $warehouseIds)
-            ->where('type', 'receipt')
-            ->where('reason', 'LIKE', '[Sewing Receipt] CutID:%')
+        $sewingReceipts = \App\Models\StockTransaction::whereIn('stock_transactions.warehouse_id', $warehouseIds)
+            ->where('stock_transactions.type', 'receipt')
+            ->where('stock_transactions.reason', 'LIKE', '[Sewing Receipt] CutID:%')
             ->get();
 
         $pieces = [];
