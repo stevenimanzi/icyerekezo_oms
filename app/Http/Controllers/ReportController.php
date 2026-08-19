@@ -179,6 +179,66 @@ class ReportController extends Controller
             }
         }
 
+        $rawFinishingDept = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('name', 'like', '%finishing%')->first();
+        $isFinishingSelected = !isset($departmentId) || (isset($departmentId) && $rawFinishingDept && $departmentId == $rawFinishingDept->id);
+
+        if (stripos($factory->name, 'noguchi') !== false && $isFinishingSelected) {
+            $finishingDept = $rawFinishingDept;
+            if (!$finishingDept && !$departmentOnly) $finishingDept = $departments->first();
+            
+            if ($finishingDept) {
+                if (!$departments->contains('id', $finishingDept->id)) {
+                    $departments->push($finishingDept);
+                }
+                
+                $finishingWarehouseId = DB::table('warehouses')->where('factory_id', $factory->id)->where(fn($q) => $q->where('code', 'FIN')->orWhere('name', 'like', '%finishing%'))->value('id') ?? 1;
+                $finishingTx = StockTransaction::withoutGlobalScopes()->where('stock_transactions.factory_id', $factory->id)
+                    ->where('warehouse_id', $finishingWarehouseId)
+                    ->whereBetween('occurred_at', [$from, $to])
+                    ->where(fn($q) => $q->where('reason', 'like', '%[Finishing Output]%')->orWhere('reason', 'like', '%[Finishing Receipt]%'))
+                    ->join('items', 'items.id', '=', 'stock_transactions.item_id')
+                    ->select('stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as product_name')
+                    ->get();
+                    
+                $finishingTxGrouped = $finishingTx->groupBy(function($tx) {
+                    preg_match('/SewnID:\s*([^\s|]+)/i', $tx->reason, $match);
+                    $sewnId = $match[1] ?? 'unknown';
+                    return \Carbon\Carbon::parse($tx->occurred_at)->toDateString() . '|' . $sewnId;
+                });
+                
+                foreach ($finishingTxGrouped as $key => $txs) {
+                    $sewnId = explode('|', $key)[1];
+                    $parts = explode('-', $sewnId);
+                    $style = $parts[1] ?? '';
+                    $color = $parts[2] ?? '';
+                    $size = $parts[3] ?? '';
+                    $fabricName = $txs->first()->product_name;
+                    $formattedProduct = trim("$style - $color - $size", ' -');
+                    if (!$formattedProduct) $formattedProduct = $fabricName;
+                    
+                    $input = $txs->where('type', 'receipt')->sum(fn($t) => abs($t->quantity_delta));
+                    $output = $txs->where('type', 'issue')->sum(fn($t) => abs($t->quantity_delta));
+                    $waste = $txs->where('type', 'waste')->sum(fn($t) => abs($t->quantity_delta));
+                    
+                    $executions->push((object)[
+                        'updated_at' => \Carbon\Carbon::parse($txs->first()->occurred_at),
+                        'department_id' => $finishingDept->id,
+                        'production_order_id' => crc32($sewnId),
+                        'stage_name' => 'Finishing',
+                        'order_number' => $sewnId,
+                        'product_name' => $formattedProduct,
+                        'fabric_name' => $fabricName,
+                        'input_quantity' => $input,
+                        'output_quantity' => $output,
+                        'rejected_quantity' => 0,
+                        'waste_quantity' => $waste,
+                        'unit_symbol' => 'pcs',
+                        'status' => 'completed',
+                    ]);
+                }
+            }
+        }
+
         $departmentActivity = $departments->map(function ($department) use ($executions) {
             $records = $executions->where('department_id', $department->id);
 

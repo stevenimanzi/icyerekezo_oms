@@ -404,8 +404,13 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
             </article>
             <article className="panel">
                 <div className="panel-title"><h2>{t.pendingRequests}</h2><span>{acceptedCutPieces.length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
-                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{t.quantity}</th><th>{t.reason}</th></tr></thead><tbody>
-                    {acceptedCutPieces.length ? acceptedCutPieces.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Sewing Receipt] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noRequests}</td></tr>}
+                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Cut Piece' : 'Pi\u00e8ce coup\u00e9e'}</th><th>{t.quantity}</th><th>{t.reason}</th></tr></thead><tbody>
+                    {acceptedCutPieces.length ? acceptedCutPieces.map((tx: any) => {
+                        let productName = tx.item_name;
+                        const match = String(tx.reason || '').match(/CutID:\s*\d+-([^-]+)-([^-]*)-([^\s|]+)/);
+                        if (match) productName = `${match[1]}${match[2] ? ` / ${match[2]}` : ''} (${match[3]}) - ${tx.item_name}`;
+                        return <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{productName}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Sewing Receipt] ', '')}</td></tr>
+                    }) : <tr><td colSpan={4} className="empty-cell">{t.noRequests}</td></tr>}
                 </tbody></table></div>
             </article>
         </div>

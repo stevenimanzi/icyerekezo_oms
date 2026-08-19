@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 type Locale = 'en' | 'fr';
-type FinishingTab = 'request' | 'finish' | 'damaged' | 'report';
+type FinishingTab = 'request' | 'materials' | 'finish';
 type AuthUser = {
     id: number; name: string;
     current_factory: { name?: string; currency_code?: string } | null;
@@ -28,9 +28,12 @@ async function api<T = any>(url: string, options: RequestInit = {}): Promise<T> 
 const copy = {
     en: {
         title: 'Finishing workspace',
-        subtitle: 'Manage received pieces, record finishn output and track damaged materials.',
-        eyebrow: 'LIVE SEWING DATA',
-        tabs: { request: 'Receive pieces', finish: 'Finish pieces', damaged: 'Damaged pieces', report: 'Finishing report' },
+        subtitle: 'Manage received pieces, record finishn output.',
+        eyebrow: 'LIVE FINISHING DATA',
+        tabs: { request: 'Receive pieces', materials: 'Request materials', finish: 'Finish pieces' },
+        materialsTitle: 'Request raw materials',
+        materialsDesc: 'Request materials like buttons, thread, or labels from the main warehouse.',
+        requestMaterials: 'Submit request', requesting: 'Submitting...',
         requestTitle: 'Receive pieces from sewing',
         requestDesc: 'Log the receipt of sewn pieces needed for your finishing operations.',
         selectItem: 'Select piece/material', quantity: 'Quantity received', reason: 'Reason / Notes',
@@ -45,48 +48,30 @@ const copy = {
         notesPlaceholder: 'Any notes about this finishing session...',
         recordSewn: 'Record finishing output', recording: 'Recording...',
         recentSewns: 'Recent finishing records', noSewns: 'No finishing records yet. Record your first finish above.',
-        damagedTitle: 'Report damaged pieces',
-        damagedDesc: 'Record materials that were damaged or rejected during finishing.',
-        damagedItem: 'Damaged item', damagedQuantity: 'Quantity damaged', damagedReason: 'Damage reason',
-        damagedPlaceholder: 'Amount damaged', damagedReasonPlaceholder: 'Describe what happened (stitch error, tear...)',
-        reportDamage: 'Report damage', reporting: 'Reporting...',
-        recentDamage: 'Recent damage records', noDamage: 'No damage records. Good job keeping waste low!',
-        reportTitle: 'Finishing summary report',
-        reportDesc: 'Overview of your finishing performance, material usage, and waste tracking.',
-        totalSewn: 'Total finishn today', totalDamaged: 'Total damaged today', wasteRate: 'Rejection rate',
-        pendingReqs: 'Recent receipts',
         period: 'Today',
         refresh: 'Refresh data', updated: 'Updated', connecting: 'Connecting...', loading: 'Loading...',
     },
     fr: {
-        title: 'Espace de couture',
-        subtitle: 'G\u00e9rez les pi\u00e8ces re\u00e7ues, enregistrez la couture et suivez les rejets.',
-        eyebrow: 'DONN\u00c9ES DE COUTURE EN DIRECT',
-        tabs: { request: 'R\u00e9ceptionner', finish: 'Coudre', damaged: 'Pi\u00e8ces endommag\u00e9es', report: 'Rapport de couture' },
-        requestTitle: "R\u00e9ceptionner les pi\u00e8ces de la coupe",
-        requestDesc: 'Enregistrez la r\u00e9ception des pi\u00e8ces coup\u00e9es n\u00e9cessaires pour la couture.',
+        title: 'Espace de finition',
+        subtitle: 'G\u00e9rez les pi\u00e8ces re\u00e7ues et enregistrez la finition.',
+        eyebrow: 'DONN\u00c9ES DE FINITION EN DIRECT',
+        tabs: { request: 'R\u00e9ceptionner', materials: 'Demander mat\u00e9riels', finish: 'Finition' },
+        materialsTitle: 'Demander des mati\u00e8res premi\u00e8res',
+        materialsDesc: 'Demandez des mat\u00e9riaux (boutons, fils, etc.) de l\'entrep\u00f4t principal.',
+        requestMaterials: 'Soumettre', requesting: 'Soumission...',
+        requestTitle: "R\u00e9ceptionner les pi\u00e8ces de la couture",
+        requestDesc: 'Enregistrez la r\u00e9ception des pi\u00e8ces cousues n\u00e9cessaires pour la finition.',
         selectItem: 'S\u00e9lectionner la pi\u00e8ce', quantity: 'Quantit\u00e9 re\u00e7ue', reason: 'Motif / Notes',
         quantityPlaceholder: 'Saisissez la quantit\u00e9', reasonPlaceholder: 'D\u00e9crivez ce que vous avez re\u00e7u...',
         sendRequest: 'Enregistrer', sending: 'Enregistrement...',
         pendingRequests: 'Articles accept\u00e9s', noRequests: 'Aucun article accept\u00e9.',
-        sewnTitle: 'Enregistrer les articles cousus',
         sewnDesc: 'Enregistrez les articles que vous avez cousus avec succ\u00e8s.',
         sewnItem: 'Mat\u00e9riel utilis\u00e9', sewnQuantity: 'Quantit\u00e9 utilis\u00e9e',
-        outputQuantity: 'Nombre d\'articles', sewnNotes: 'Notes de couture',
+        outputQuantity: 'Nombre d\'articles', sewnNotes: 'Notes de finition',
         sewnPlaceholder: 'ex: 50', outputPlaceholder: 'ex: 50',
-        notesPlaceholder: 'Notes sur cette session de couture...',
-        recordSewn: 'Enregistrer la couture', recording: 'Enregistrement...',
-        recentSewns: 'Coutures r\u00e9centes', noSewns: 'Aucune couture enregistr\u00e9e.',
-        damagedTitle: 'Signaler les pi\u00e8ces endommag\u00e9es',
-        damagedDesc: 'Enregistrez les mat\u00e9riaux endommag\u00e9s ou rejet\u00e9s pendant la couture.',
-        damagedItem: 'Article endommag\u00e9', damagedQuantity: 'Quantit\u00e9', damagedReason: 'Motif du dommage',
-        damagedPlaceholder: 'Quantit\u00e9', damagedReasonPlaceholder: "D\u00e9crivez ce qui s'est pass\u00e9",
-        reportDamage: 'Signaler', reporting: 'Signalement...',
-        recentDamage: 'Dommages r\u00e9cents', noDamage: 'Aucun dommage enregistr\u00e9.',
-        reportTitle: 'Rapport de couture',
-        reportDesc: "Aper\u00e7u de vos performances de couture.",
-        totalSewn: "Cousu aujourd'hui", totalDamaged: "Rejet\u00e9 aujourd'hui", wasteRate: 'Taux de rejet',
-        pendingReqs: 'R\u00e9ceptions',
+        notesPlaceholder: 'Notes sur cette session de finition...',
+        recordSewn: 'Enregistrer la finition', recording: 'Enregistrement...',
+        recentSewns: 'Finitions r\u00e9centes', noSewns: 'Aucune finition enregistr\u00e9e.',
         period: "Aujourd'hui",
         refresh: 'Actualiser', updated: 'Mis \u00e0 jour', connecting: 'Connexion...', loading: 'Chargement...',
     },
@@ -106,12 +91,9 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
     const [stockPopup, setStockPopup] = useState('');
     const [success, setSuccess] = useState('');
     const [busy, setBusy] = useState(false);
-    const [reportFrom, setReportFrom] = useState('');
-    const [reportTo, setReportTo] = useState('');
 
     const [requestForm, setRequestForm] = useState({ item_id: '', quantity: '', reason: '' });
-    const [finishForm, setFinishForm] = useState({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' });
-    const [damageForm, setDamageForm] = useState({ item_id: '', quantity: '', reason: '' });
+    const [finishForm, setFinishForm] = useState({ item_id: '', quantity: '', notes: '' });
     const [editForm, setEditForm] = useState<{ id: string, quantity: string, reason: string } | null>(null);
 
     useEffect(() => { setTab(initialTab); }, [initialTab]);
@@ -137,10 +119,11 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 10000); return () => window.clearInterval(timer); }, []);
 
     const finishingWarehouseId = warehouses.find(w => w.code === 'SEW' || /finishing/i.test(w.name))?.id || 1;
+    const mainWarehouseId = warehouses.find(w => w.code === 'MAIN' || /main/i.test(w.name))?.id || 1;
     
     const requestableItems = sewnPieces;
+    const requestableMaterials = stock.filter((s: any) => s.warehouse_id === mainWarehouseId && s.category === 'Raw Materials' && s.quantity_on_hand > 0);
 
-    const finishingStock = stock.filter(s => s.warehouse_id === finishingWarehouseId && s.quantity_on_hand > 0);
     const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
     const finishingTransactions = transactions.filter((tx: any) =>
@@ -151,45 +134,6 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
         tx.warehouse_id === finishingWarehouseId &&
         String(tx.reason || '').startsWith('[Finishing Output]')
     );
-    const reportTransactions = finishingTransactions.filter((tx: any) => {
-        if (!['receipt', 'issue', 'waste'].includes(tx.type)) return false;
-        if (!String(tx.reason || '').includes('SewnID:')) return false;
-        
-        const date = new Date(tx.occurred_at);
-        const from = reportFrom ? new Date(`${reportFrom}T00:00:00`) : null;
-        const to = reportTo ? new Date(`${reportTo}T23:59:59.999`) : null;
-        return (!from || date >= from) && (!to || date <= to);
-    });
-
-    const reportRowsMap = new Map();
-    reportTransactions.forEach((tx: any) => {
-        const match = String(tx.reason).match(/SewnID:\s*([^\s|]+)/i);
-        if (match) {
-            const sewnId = match[1];
-            const parts = sewnId.split('-');
-            const dateStr = new Date(tx.occurred_at).toLocaleDateString();
-            const key = `${dateStr}-${sewnId}`;
-            if (!reportRowsMap.has(key)) {
-                const fabricColor = String(tx.item_name || '').match(/\b(green|blue|red|yellow|black|white|navy|grey|gray|brown|orange|purple|pink|beige|cream)\b/i)?.[1];
-                reportRowsMap.set(key, {
-                    id: key,
-                    date: dateStr,
-                    fabric: tx.item_name,
-                    style: parts[1] || '\u2014',
-                    color: parts[2] || fabricColor || '\u2014',
-                    size: parts[3] || '\u2014',
-                    input: 0,
-                    output: 0,
-                    waste: 0
-                });
-            }
-            const row = reportRowsMap.get(key);
-            if (tx.type === 'receipt') row.input += Math.abs(tx.quantity_delta);
-            else if (tx.type === 'issue') row.output += Math.abs(tx.quantity_delta);
-            else if (tx.type === 'waste') row.waste += Math.abs(tx.quantity_delta);
-        }
-    });
-    const filteredFinishReportRows = Array.from(reportRowsMap.values()).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     const acceptedSewnPieces = finishingTransactions.filter((tx: any) => tx.type === 'receipt' && String(tx.reason || '').includes('SewnID:'));
 
@@ -224,20 +168,7 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
         const d = new Date(tx.occurred_at); const n = new Date();
         return d.toDateString() === n.toDateString();
     });
-    const todayDamage = finishingTransactions.filter((tx: any) => {
-        const d = new Date(tx.occurred_at); const n = new Date();
-        return d.toDateString() === n.toDateString() && ['waste', 'adjustment_out'].includes(tx.type);
-    });
 
-    const todayAccepted = acceptedSewnPieces.filter((tx: any) => {
-        const d = new Date(tx.occurred_at); const n = new Date();
-        return d.toDateString() === n.toDateString();
-    });
-
-    const totalFinishnQty = todayFinishs.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
-    const totalDamagedQty = todayDamage.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
-    const totalAcceptedQty = todayAccepted.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
-    const wastePercent = totalFinishnQty + totalDamagedQty > 0 ? ((totalDamagedQty / (totalFinishnQty + totalDamagedQty)) * 100).toFixed(1) : '0.0';
     const clearMsg = () => { setError(''); setSuccess(''); };
 
     const acceptSewnPiece = async (piece: any) => {
@@ -245,8 +176,19 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
         setBusy(true);
         try {
             await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: finishingWarehouseId, type: 'receipt', quantity: Number(piece.available_qty), reason: `[Finishing Receipt] SewnID: ${piece.id} | Accepted from sewing` }) });
-            setSuccess(locale === 'en' ? 'Sewn pieces received successfully!' : 'Pi\u00e8ces coup\u00e9es re\u00e7ues avec succ\u00e8s !');
+            setSuccess(locale === 'en' ? 'Sewn pieces received successfully!' : 'Pi\u00e8ces cousues re\u00e7ues avec succ\u00e8s !');
             await load(true);
+        } catch (r: any) { setError(r.message); } finally { setBusy(false); }
+    };
+
+    const submitMaterialRequest = async () => {
+        clearMsg();
+        if (!requestForm.item_id || !requestForm.quantity) { setError(locale === 'en' ? 'Please select a material and enter quantity.' : 'Veuillez s\u00e9lectionner un mat\u00e9riel.'); return; }
+        setBusy(true);
+        try {
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(requestForm.item_id), warehouse_id: mainWarehouseId, type: 'reserve', quantity: Number(requestForm.quantity), reason: `[Finishing Request] ${requestForm.reason || 'Material requested for finishing'}` }) });
+            setSuccess(locale === 'en' ? 'Material request submitted successfully! Pending approval.' : 'Demande soumise avec succ\u00e8s !');
+            setRequestForm({ item_id: '', quantity: '', reason: '' }); await load(true);
         } catch (r: any) { setError(r.message); } finally { setBusy(false); }
     };
 
@@ -263,31 +205,9 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: finishingWarehouseId, type: 'issue', quantity: Number(finishForm.quantity), reason: `[Finishing Output] SewnID: ${selectedPiece.id} | ${finishForm.quantity} items finishn. ${finishForm.notes || ''}` }) });
-            setSuccess(locale === 'en' ? 'Finishing record saved successfully!' : 'Enregistrement de couture sauvegard\u00e9 !');
-            setFinishForm({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' }); await load(true);
-        } catch (r: any) {
-            if (/insufficient stock|stock insuffisant/i.test(String(r.message || ''))) setStockPopup(r.message);
-            else setError(r.message);
-        } finally { setBusy(false); }
-    };
-
-    const submitDamage = async () => {
-        clearMsg();
-        if (!damageForm.item_id || !damageForm.quantity) { setError(locale === 'en' ? 'Please select a sewn piece and enter the damaged quantity.' : 'Veuillez s\u00e9lectionner une pi\u00e8ce coup\u00e9e et entrer la quantit\u00e9 endommag\u00e9e.'); return; }
-        
-        const selectedPiece = availableFinishingStock.find(s => s.id === damageForm.item_id);
-        const available = selectedPiece?.available_qty || 0;
-        if (Number(damageForm.quantity) > available) {
-            setStockPopup(locale === 'en' ? `Insufficient stock. You only have ${num(available)} available on the finishing floor.` : `Stock insuffisant. Vous n'avez que ${num(available)} disponible.`);
-            return;
-        }
-
-        setBusy(true);
-        try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: finishingWarehouseId, type: 'waste', quantity: Number(damageForm.quantity), reason: `[Finishing Damage] SewnID: ${selectedPiece.id} | ${damageForm.reason || 'Material damaged during finishing'}` }) });
-            setSuccess(locale === 'en' ? 'Damage report submitted successfully!' : 'Rapport de dommage soumis avec succ\u00e8s !');
-            setDamageForm({ item_id: '', quantity: '', reason: '' }); await load(true);
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: finishingWarehouseId, type: 'issue', quantity: Number(finishForm.quantity), reason: `[Finishing Output] SewnID: ${selectedPiece.id} | ${finishForm.quantity} items finished. ${finishForm.notes || ''}` }) });
+            setSuccess(locale === 'en' ? 'Finishing record saved successfully!' : 'Enregistrement de finition sauvegard\u00e9 !');
+            setFinishForm({ item_id: '', quantity: '', notes: '' }); await load(true);
         } catch (r: any) {
             if (/insufficient stock|stock insuffisant/i.test(String(r.message || ''))) setStockPopup(r.message);
             else setError(r.message);
@@ -343,11 +263,11 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
                             <p>{locale === 'en' ? 'Adjust the quantity if a mistake was made.' : 'Ajuster la quantité en cas d\'erreur.'}</p>
                         </div>
                     </header>
-                    <div className="sewing-form-grid" style={{ padding: '0 24px 20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div className="cutting-form-grid" style={{ padding: '0 24px 20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <label><span>{locale === 'en' ? 'Corrected Quantity' : 'Quantit\u00e9 corrig\u00e9e'}</span>
                             <input type="number" min="0.001" step="any" style={{ width: '100%', padding: '10px' }} value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })}/>
                         </label>
-                        <label className="sewing-full-width"><span>{locale === 'en' ? 'Reason for correction' : 'Raison de la correction'}</span>
+                        <label className="cutting-full-width"><span>{locale === 'en' ? 'Reason for correction' : 'Raison de la correction'}</span>
                             <textarea rows={3} style={{ width: '100%', padding: '10px' }} value={editForm.reason} onChange={e => setEditForm({ ...editForm, reason: e.target.value })}/>
                         </label>
                     </div>
@@ -373,12 +293,11 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
         {success && <div className="admin-alert success">{success}</div>}
 
         <div className="module-tabs" role="tablist">
-            {(['request', 'finish', 'damaged'] as FinishingTab[]).map(key => (
+            {(['request', 'materials', 'finish'] as FinishingTab[]).map(key => (
                 <button key={key} className={tab === key ? 'active' : ''} onClick={() => { setTab(key); clearMsg(); }}>
                     {key === 'request' && <Package size={16}/>}
+                    {key === 'materials' && <Package size={16}/>}
                     {key === 'finish' && <Scissors size={16}/>}
-                    {key === 'damaged' && <AlertTriangle size={16}/>}
-                    {key === 'report' && <FileText size={16}/>}
                     <span>{t.tabs[key]}</span>
                 </button>
             ))}
@@ -389,8 +308,8 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
         /* ─── Request Fabrics ─── */
         tab === 'request' ? <div className="sewing-tab-content">
             <article className="panel">
-                <div className="panel-title"><h2>{locale === 'en' ? 'Pending Sewn Pieces' : 'Pi\u00e8ces coup\u00e9es en attente'}</h2></div>
-                <p className="sewing-form-desc" style={{ padding: '0 20px' }}>{locale === 'en' ? 'Accept sewn pieces from the sewing department to start finishing.' : 'Acceptez les pi\u00e8ces coup\u00e9es du d\u00e9partement de coupe pour commencer \u00e0 coudre.'}</p>
+                <div className="panel-title"><h2>{locale === 'en' ? 'Pending Sewn Pieces' : 'Pi\u00e8ces cousues en attente'}</h2></div>
+                <p className="cutting-form-desc" style={{ padding: '0 20px' }}>{locale === 'en' ? 'Accept sewn pieces from the sewing department to start finishing.' : 'Acceptez les pi\u00e8ces cousues du d\u00e9partement de couture pour commencer \u00e0 finir.'}</p>
                 <div className="admin-table-wrap"><table className="admin-table">
                     <thead><tr><th>{locale === 'en' ? 'Sewn Batch Details' : 'D\u00e9tails du lot'}</th><th>{locale === 'en' ? 'Quantity' : 'Quantit\u00e9'}</th><th>{locale === 'en' ? 'Action' : 'Action'}</th></tr></thead>
                     <tbody>
@@ -398,38 +317,68 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
                             <td><b>{item.name}</b></td>
                             <td>{num(item.available_qty)}</td>
                             <td><button className="primary-btn" disabled={busy} onClick={() => acceptSewnPiece(item)}>{locale === 'en' ? 'Accept' : 'Accepter'}</button></td>
-                        </tr>) : <tr><td colSpan={3} className="empty-cell">{locale === 'en' ? 'No pending pieces from sewing.' : 'Aucune pi\u00e8ce en attente de la coupe.'}</td></tr>}
+                        </tr>) : <tr><td colSpan={3} className="empty-cell">{locale === 'en' ? 'No pending pieces from sewing.' : 'Aucune pi\u00e8ce en attente de la couture.'}</td></tr>}
                     </tbody>
                 </table></div>
             </article>
             <article className="panel">
                 <div className="panel-title"><h2>{t.pendingRequests}</h2><span>{acceptedSewnPieces.length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
-                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{t.quantity}</th><th>{t.reason}</th></tr></thead><tbody>
-                    {acceptedSewnPieces.length ? acceptedSewnPieces.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Finishing Receipt] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noRequests}</td></tr>}
+                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Sewn Product' : 'Produit cousu'}</th><th>{t.quantity}</th><th>{t.reason}</th></tr></thead><tbody>
+                    {acceptedSewnPieces.length ? acceptedSewnPieces.map((tx: any) => {
+                        let productName = tx.item_name;
+                        const match = String(tx.reason || '').match(/SewnID:\s*\d+-([^-]+)-([^-]*)-([^\s|]+)/);
+                        if (match) productName = `${match[1]}${match[2] ? ` / ${match[2]}` : ''} (${match[3]}) - ${tx.item_name}`;
+                        return <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{productName}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Finishing Receipt] ', '')}</td></tr>
+                    }) : <tr><td colSpan={4} className="empty-cell">{t.noRequests}</td></tr>}
                 </tbody></table></div>
+            </article>
+        </div>
+
+        /* ─── Request Materials ─── */
+        : tab === 'materials' ? <div className="sewing-tab-content">
+            <article className="panel cutting-form-panel">
+                <div className="panel-title"><h2>{t.materialsTitle || 'Request raw materials'}</h2></div>
+                <p className="cutting-form-desc">{t.materialsDesc || 'Request materials like buttons, thread, or labels from the main warehouse.'}</p>
+                <div className="cutting-form-grid">
+                    <label><span>{t.selectItem}</span>
+                        <select value={requestForm.item_id} onChange={e => setRequestForm({ ...requestForm, item_id: e.target.value })}>
+                            <option value="">{locale === 'en' ? '\u2014 Choose material \u2014' : '\u2014 Choisir un mat\u00e9riel \u2014'}</option>
+                            {requestableMaterials.map((item: any) => <option key={item.id} value={item.item_id}>{item.name} ({num(item.quantity_on_hand)} {locale === 'en' ? 'in stock' : 'en stock'})</option>)}
+                        </select>
+                    </label>
+                    <label><span>{t.quantity}</span>
+                        <input type="number" min="0.001" step="any" placeholder={t.quantityPlaceholder} value={requestForm.quantity} onChange={e => setRequestForm({ ...requestForm, quantity: e.target.value })}/>
+                    </label>
+                    <label className="cutting-full-width"><span>{t.reason}</span>
+                        <input type="text" placeholder={t.reasonPlaceholder} value={requestForm.reason} onChange={e => setRequestForm({ ...requestForm, reason: e.target.value })}/>
+                    </label>
+                </div>
+                <div className="cutting-form-actions">
+                    <button className="primary-btn" disabled={busy} onClick={submitMaterialRequest}><Send size={17}/>{busy ? (t.requesting || 'Submitting...') : (t.requestMaterials || 'Submit request')}</button>
+                </div>
             </article>
         </div>
 
         /* ─── Sewn Fabrics ─── */
         : tab === 'finish' ? <div className="sewing-tab-content">
-            <article className="panel sewing-form-panel">
+            <article className="panel cutting-form-panel">
                 <div className="panel-title"><h2>{t.sewnTitle}</h2></div>
-                <p className="sewing-form-desc">{t.sewnDesc}</p>
-                <div className="sewing-form-grid">
+                <p className="cutting-form-desc">{t.sewnDesc}</p>
+                <div className="cutting-form-grid">
                     <label><span>{locale === 'en' ? 'Material used (Accepted sewn pieces)' : 'Mat\u00e9riel utilis\u00e9 (Pi\u00e8ces coup\u00e9es accept\u00e9es)'}</span>
                         <select value={finishForm.item_id} onChange={e => setFinishForm({ ...finishForm, item_id: e.target.value })}>
                             <option value="">{locale === 'en' ? '\u2014 Choose sewn piece \u2014' : '\u2014 Choisir une pi\u00e8ce coup\u00e9e \u2014'}</option>
                             {availableFinishingStock.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({num(s.available_qty)} items)</option>)}
                         </select>
                     </label>
-                    <label><span>{locale === 'en' ? 'Number of items finishn' : 'Nombre d\'articles cousus'}</span>
+                    <label><span>{locale === 'en' ? 'Number of items finished' : 'Nombre d\'articles cousus'}</span>
                         <input type="number" min="1" step="1" placeholder={t.sewnPlaceholder} value={finishForm.quantity} onChange={e => setFinishForm({ ...finishForm, quantity: e.target.value })}/>
                     </label>
-                    <label className="sewing-full-width"><span>{locale === 'en' ? 'Finishing notes' : 'Notes de couture'}</span>
+                    <label className="cutting-full-width"><span>{locale === 'en' ? 'Finishing notes' : 'Notes de finition'}</span>
                         <textarea rows={3} placeholder={locale === 'en' ? 'Any issues or observations...' : 'Tout probl\u00e8me ou observation...'} value={finishForm.notes} onChange={e => setFinishForm({ ...finishForm, notes: e.target.value })} maxLength={500}/>
                     </label>
                 </div>
-                <div className="sewing-form-actions">
+                <div className="cutting-form-actions">
                     <button className="primary-btn" disabled={busy} onClick={submitFinish}><Scissors size={17}/>{busy ? t.recording : t.recordSewn}</button>
                 </div>
             </article>
@@ -441,75 +390,6 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
             </article>
         </div>
 
-        /* ─── Damaged Fabrics ─── */
-        : tab === 'damaged' ? <div className="sewing-tab-content">
-            <article className="panel sewing-form-panel">
-                <div className="panel-title"><h2>{t.damagedTitle}</h2></div>
-                <p className="sewing-form-desc">{t.damagedDesc}</p>
-                <div className="sewing-form-grid">
-                    <label><span>{locale === 'en' ? 'Damaged sewn piece' : 'Pi\u00e8ce coup\u00e9e endommag\u00e9e'}</span>
-                        <select value={damageForm.item_id} onChange={e => setDamageForm({ ...damageForm, item_id: e.target.value })}>
-                            <option value="">{locale === 'en' ? '\u2014 Choose sewn piece \u2014' : '\u2014 Choisir une pi\u00e8ce coup\u00e9e \u2014'}</option>
-                            {availableFinishingStock.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({num(s.available_qty)} items)</option>)}
-                        </select>
-                    </label>
-                    <label><span>{t.damagedQuantity}</span>
-                        <input type="number" min="0.001" step="any" placeholder={t.damagedPlaceholder} value={damageForm.quantity} onChange={e => setDamageForm({ ...damageForm, quantity: e.target.value })}/>
-                    </label>
-                    <label className="sewing-full-width"><span>{t.damagedReason}</span>
-                        <textarea rows={3} placeholder={t.damagedReasonPlaceholder} value={damageForm.reason} onChange={e => setDamageForm({ ...damageForm, reason: e.target.value })} maxLength={500}/>
-                    </label>
-                </div>
-                <div className="sewing-form-actions">
-                    <button className="primary-btn sewing-damage-btn" disabled={busy} onClick={submitDamage}><AlertTriangle size={17}/>{busy ? t.reporting : t.reportDamage}</button>
-                </div>
-            </article>
-            <article className="panel">
-                <div className="panel-title"><h2>{t.recentDamage}</h2><span>{finishingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type)).length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
-                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{locale === 'en' ? 'Quantity wasted' : 'Quantit\u00e9 perdue'}</th><th>{locale === 'en' ? 'Reason' : 'Motif'}</th><th></th></tr></thead><tbody>
-                    {finishingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type)).length ? finishingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type)).map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td><span className="admin-status warning">{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</span></td><td>{String(tx.reason || '').replace('[Finishing Damage] ', '')}</td><td style={{textAlign: 'right'}}><button className="secondary-btn" style={{padding: '4px 8px'}} onClick={() => setEditForm({ id: tx.id, quantity: String(Math.abs(tx.quantity_delta)), reason: String(tx.reason || '') })}>{locale === 'en' ? 'Edit' : 'Modifier'}</button></td></tr>) : <tr><td colSpan={5} className="empty-cell">{t.noDamage}</td></tr>}
-                </tbody></table></div>
-            </article>
-        </div>
-
-        /* ─── Report ─── */
-        : <div className="sewing-tab-content">
-            <div className="sewing-report-metrics">
-                <article className="panel sewing-metric"><div className="sewing-metric-icon blue"><Package size={22}/></div><div><small>{t.pendingReqs}</small><strong>{num(totalAcceptedQty)}</strong><p>{locale === 'en' ? 'Accepted today' : 'Accept\u00e9s aujourd\'hui'}</p></div></article>
-                <article className="panel sewing-metric"><div className="sewing-metric-icon green"><Scissors size={22}/></div><div><small>{t.totalSewn}</small><strong>{num(totalFinishnQty)}</strong><p>{locale === 'en' ? 'Finishn today' : 'Cousus aujourd\'hui'}</p></div></article>
-                <article className="panel sewing-metric"><div className="sewing-metric-icon amber"><AlertTriangle size={22}/></div><div><small>{t.totalDamaged}</small><strong>{num(totalDamagedQty)}</strong><p>{t.period}</p></div></article>
-                <article className="panel sewing-metric"><div className="sewing-metric-icon violet"><CheckCircle2 size={22}/></div><div><small>{t.wasteRate}</small><strong>{wastePercent}%</strong><p>{Number(wastePercent) < 5 ? 'Excellent' : Number(wastePercent) < 10 ? (locale === 'en' ? 'Good' : 'Bon') : (locale === 'en' ? 'Needs attention' : '\u00c0 surveiller')}</p></div></article>
-            </div>
-            <section className="panel sewing-report-filters no-print">
-                <div>
-                    <label><span>{locale === 'en' ? 'From date' : 'Date de d\u00e9but'}</span><input type="date" value={reportFrom} max={reportTo || undefined} onChange={event => setReportFrom(event.target.value)}/></label>
-                    <label><span>{locale === 'en' ? 'To date' : 'Date de fin'}</span><input type="date" value={reportTo} min={reportFrom || undefined} onChange={event => setReportTo(event.target.value)}/></label>
-                    <button className="secondary-btn" onClick={() => { setReportFrom(''); setReportTo(''); }}>{locale === 'en' ? 'Clear filters' : 'Effacer les filtres'}</button>
-                </div>
-                <button className="primary-btn" onClick={() => window.print()}><FileText size={17}/>{locale === 'en' ? 'Print filtered report' : 'Imprimer le rapport filtr\u00e9'}</button>
-            </section>
-            <article className="panel noguchi-sewing-report">
-                <header>
-                    <div><small>OFFICIAL FACTORY REGISTER</small><h2>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'}</h2><p>{locale === 'en' ? 'Finishing input and output report' : 'Rapport des entr\u00e9es et sorties de couture'}</p></div>
-                    <div><span>{locale === 'en' ? 'REPORT DATE' : 'DATE DU RAPPORT'}<b>{new Date().toLocaleDateString()}</b></span><span>{locale === 'en' ? 'PREPARED BY' : 'PR\u00c9PAR\u00c9 PAR'}<b>{user.name}</b></span></div>
-                </header>
-                <div className="noguchi-sewing-table-wrap"><table><thead>
-                    <tr><th rowSpan={2}>{locale === 'en' ? 'DATE' : 'DATE'}</th><th colSpan={4}>{locale === 'en' ? 'CUT PIECE DETAILS' : 'D\u00c9TAILS DE LA PI\u00c8CE'}</th><th colSpan={3}>{locale === 'en' ? 'QUANTITIES' : 'QUANTIT\u00c9S'}</th></tr>
-                    <tr><th>{locale === 'en' ? 'FABRIC' : 'TISSU'}</th><th>{locale === 'en' ? 'STYLE' : 'STYLE'}</th><th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th><th>{locale === 'en' ? 'SIZE' : 'TAILLE'}</th><th>{locale === 'en' ? 'INPUT (ACCEPTED)' : 'ENTR\u00c9E (ACCEPT\u00c9)'}</th><th>{locale === 'en' ? 'OUTPUT (SEWN)' : 'SORTIE (COUSUS)'}</th><th>{locale === 'en' ? 'WASTE' : 'D\u00c9CHETS'}</th></tr>
-                </thead><tbody>
-                    {filteredFinishReportRows.length ? filteredFinishReportRows.map((row: any) => <tr key={row.id}>
-                        <td>{row.date}</td>
-                        <td><b>{row.fabric}</b></td>
-                        <td>{row.style}</td>
-                        <td>{row.color}</td>
-                        <td>{row.size}</td>
-                        <td>{row.input > 0 ? <b>{num(row.input)}</b> : '\u2014'}</td>
-                        <td>{row.output > 0 ? <b style={{color: '#10b981'}}>{num(row.output)}</b> : '\u2014'}</td>
-                        <td>{row.waste > 0 ? <span className="admin-status warning">{num(row.waste)}</span> : '\u2014'}</td>
-                    </tr>) : <tr><td colSpan={8} className="empty-cell">{locale === 'en' ? 'No finishing records match the selected dates.' : 'Aucun enregistrement ne correspond aux dates s\u00e9lectionn\u00e9es.'}</td></tr>}
-                </tbody></table></div>
-                <footer><span>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'} \u00b7 {locale === 'en' ? 'SEWING OPERATIONS' : 'OP\u00c9RATIONS DE COUTURE'}</span><span>Generated by ICYEREKEZO OMS</span></footer>
-            </article>
-        </div>}
+        : null}
     </section>;
 }
