@@ -149,6 +149,42 @@ class InventoryController extends Controller
         return response()->json($ledger->post($data), 201);
     }
 
+    public function correctTransaction(Request $request, StockTransaction $transaction, InventoryLedger $ledger): JsonResponse
+    {
+        $data = $request->validate([
+            'quantity' => ['required', 'numeric', 'gt:0'],
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $isWarehouseKeeper = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->where('slug', 'warehouse-keeper')->exists();
+
+        $isCuttingOperator = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->where('slug', 'cutting-operator')->exists();
+
+        $isSewingOperator = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->where('slug', 'sewing-operator')->exists();
+
+        $allowed = $isWarehouseKeeper || 
+            ($isCuttingOperator && in_array($transaction->type, ['reserve', 'issue', 'waste'])) ||
+            ($isSewingOperator && in_array($transaction->type, ['receipt', 'issue', 'waste']));
+        abort_unless($allowed, 403, 'You do not have permission to edit this transaction.');
+
+        abort_unless((int) $transaction->factory_id === (int) $request->user()->current_factory_id, 404);
+        
+        // Prevent editing old transactions unless warehouse keeper
+        if (!$isWarehouseKeeper && $transaction->occurred_at->diffInHours(now()) > 24) {
+            abort(403, 'You can only edit recent transactions. Please contact the warehouse keeper.');
+        }
+
+        $corrected = $ledger->correct($transaction, (float) $data['quantity'], $data['reason'] ?? null);
+
+        return response()->json(['message' => 'Transaction corrected.', 'transaction' => $corrected], 200);
+    }
+
     public function transfer(Request $request, InventoryLedger $ledger): JsonResponse
     {
         $this->ensureWarehouseKeeper($request);

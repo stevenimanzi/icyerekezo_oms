@@ -57,6 +57,45 @@ class InventoryLedger
         }, 5);
     }
 
+    public function correct(StockTransaction $original, float $newQuantity, ?string $newReason = null): StockTransaction
+    {
+        return DB::transaction(function () use ($original, $newQuantity, $newReason) {
+            $reverseType = match ($original->type) {
+                'receipt', 'production_output', 'return_in', 'adjustment_in' => 'adjustment_out',
+                'issue', 'dispatch', 'adjustment_out', 'waste' => 'adjustment_in',
+                'reserve' => 'release_reservation',
+                'release_reservation' => 'reserve',
+                'quarantine' => 'release_quarantine',
+                'release_quarantine' => 'quarantine',
+                default => throw ValidationException::withMessages(['type' => 'Cannot reverse this transaction type.']),
+            };
+
+            // Reverse original transaction
+            $this->post([
+                'item_id' => $original->item_id,
+                'warehouse_id' => $original->warehouse_id,
+                'location_id' => $original->location_id,
+                'batch_id' => $original->batch_id,
+                'type' => $reverseType,
+                'quantity' => abs((float) $original->quantity_delta ?: (float) $original->reserved_delta ?: (float) $original->quarantined_delta),
+                'unit_cost' => $original->unit_cost,
+                'reason' => 'REVERSAL of transaction ' . $original->id,
+            ]);
+
+            // Post corrected transaction
+            return $this->post([
+                'item_id' => $original->item_id,
+                'warehouse_id' => $original->warehouse_id,
+                'location_id' => $original->location_id,
+                'batch_id' => $original->batch_id,
+                'type' => $original->type,
+                'quantity' => $newQuantity,
+                'unit_cost' => $original->unit_cost,
+                'reason' => $newReason ?? ($original->reason . ' (CORRECTED)'),
+            ]);
+        }, 5);
+    }
+
     private function deltas(string $type, float $quantity): array
     {
         return match ($type) {

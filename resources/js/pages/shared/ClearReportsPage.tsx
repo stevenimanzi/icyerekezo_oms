@@ -313,14 +313,29 @@ function Document({data}: any) {
 
 export default function ClearReportsPage({canExport, productionOnly = false}: any) {
     const today = new Date().toISOString().slice(0, 10);
-    const [filters, setFilters] = useState({period: 'day', type: productionOnly ? 'production' : 'all', department_id: '', from: today, to: today, status:'', district:'', sector:''});
+    const searchParams = new URLSearchParams(window.location.search);
+    const initialFilters = {
+        period: searchParams.get('period') || 'day',
+        type: searchParams.get('type') || (productionOnly ? 'production' : 'all'),
+        department_id: searchParams.get('department_id') || '',
+        from: searchParams.get('from') || today,
+        to: searchParams.get('to') || today,
+        status: searchParams.get('status') || '',
+        district: searchParams.get('district') || '',
+        sector: searchParams.get('sector') || ''
+    };
+    const [filters, setFilters] = useState(initialFilters);
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [updated, setUpdated] = useState<Date | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [reportPage, setReportPage] = useState(1);
+    
+    // We only want to apply the default period if the user didn't specify one in the URL
+    const hasInitialPeriod = useRef(searchParams.has('period'));
     const defaultPeriodApplied = useRef(false);
+
     const reportScope = data?.report?.scope;
     const logisticsOnly = reportScope === 'logistics';
     const noguchiOrdersOnly = logisticsOnly && String(data?.factory?.name||'').trim().toLowerCase()==='noguchi holdings ltd';
@@ -343,14 +358,25 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
         const load = async (silent = false) => {
             if (!silent) setLoading(true);
             try {
-                const result = await api(`/api/reports?${new URLSearchParams(filters)}`);
+                // Only include non-empty filters in the URL
+                const activeFilters = Object.fromEntries(
+                    Object.entries(filters).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
+                );
+                const params = new URLSearchParams(activeFilters as any);
+                window.history.replaceState(null, '', `?${params.toString()}`);
+                
+                const result = await api(`/api/reports?${params.toString()}`);
                 if (active) {
                     setData(result);
                     setError('');
                     setUpdated(new Date());
-                    if (!defaultPeriodApplied.current && result.standard?.default_period && result.standard.default_period !== filters.period) {
+                    
+                    // Only apply the server's default period if we haven't already and the user didn't request a specific one
+                    if (!defaultPeriodApplied.current) {
                         defaultPeriodApplied.current = true;
-                        setFilters(current => ({...current, period: result.standard.default_period}));
+                        if (!hasInitialPeriod.current && result.standard?.default_period && result.standard.default_period !== filters.period) {
+                            setFilters(current => ({...current, period: result.standard.default_period}));
+                        }
                     }
                 }
             } catch (exception: any) {
@@ -360,11 +386,9 @@ export default function ClearReportsPage({canExport, productionOnly = false}: an
             }
         };
         const wait = setTimeout(() => load(), 200);
-        const timer = setInterval(() => load(true), 5000);
         return () => {
             active = false;
             clearTimeout(wait);
-            clearInterval(timer);
         };
     }, [filters.period, filters.type, filters.department_id, filters.from, filters.to, filters.status, filters.district, filters.sector]);
 

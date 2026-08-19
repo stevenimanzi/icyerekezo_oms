@@ -112,6 +112,7 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
     const [requestForm, setRequestForm] = useState({ item_id: '', quantity: '', reason: '' });
     const [sewForm, setSewForm] = useState({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' });
     const [damageForm, setDamageForm] = useState({ item_id: '', quantity: '', reason: '' });
+    const [editForm, setEditForm] = useState<{ id: string, quantity: string, reason: string } | null>(null);
 
     useEffect(() => { setTab(initialTab); }, [initialTab]);
 
@@ -293,6 +294,26 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
         } finally { setBusy(false); }
     };
 
+    const submitEdit = async () => {
+        if (!editForm) return;
+        clearMsg();
+        if (!editForm.quantity) { setError(locale === 'en' ? 'Please enter the corrected quantity.' : 'Veuillez entrer la quantit\u00e9 corrig\u00e9e.'); return; }
+        
+        setBusy(true);
+        try {
+            await api(`/api/inventory/transactions/${editForm.id}/correct`, { 
+                method: 'PATCH', 
+                body: JSON.stringify({ quantity: Number(editForm.quantity), reason: editForm.reason }) 
+            });
+            setSuccess(locale === 'en' ? 'Transaction corrected successfully!' : 'Transaction corrig\u00e9e avec succ\u00e8s !');
+            setEditForm(null);
+            await load(true);
+        } catch (r: any) {
+            setError(r.message);
+        } finally { setBusy(false); }
+    };
+
+
     return <section className="module-page cutting-workspace">
         {stockPopup && <div className="school-modal-backdrop" role="presentation" onMouseDown={event => {
             if (event.target === event.currentTarget) setStockPopup('');
@@ -310,6 +331,34 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
                 </footer>
             </section>
         </div>}
+
+        {editForm && (
+            <div className="school-modal-backdrop" role="presentation" onMouseDown={event => {
+                if (event.target === event.currentTarget) setEditForm(null);
+            }}>
+                <section className="school-small-modal">
+                    <header>
+                        <div>
+                            <h2>{locale === 'en' ? 'Edit Record' : 'Modifier l\'enregistrement'}</h2>
+                            <p>{locale === 'en' ? 'Adjust the quantity if a mistake was made.' : 'Ajuster la quantité en cas d\'erreur.'}</p>
+                        </div>
+                    </header>
+                    <div className="cutting-form-grid" style={{ padding: '0 24px 20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <label><span>{locale === 'en' ? 'Corrected Quantity' : 'Quantit\u00e9 corrig\u00e9e'}</span>
+                            <input type="number" min="0.001" step="any" style={{ width: '100%', padding: '10px' }} value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })}/>
+                        </label>
+                        <label className="cutting-full-width"><span>{locale === 'en' ? 'Reason for correction' : 'Raison de la correction'}</span>
+                            <textarea rows={3} style={{ width: '100%', padding: '10px' }} value={editForm.reason} onChange={e => setEditForm({ ...editForm, reason: e.target.value })}/>
+                        </label>
+                    </div>
+                    <footer style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '16px 24px', borderTop: '1px solid var(--line)', background: 'var(--soft)', borderRadius: '0 0 18px 18px' }}>
+                        <button className="secondary-btn" onClick={() => setEditForm(null)}>{locale === 'en' ? 'Cancel' : 'Annuler'}</button>
+                        <button className="primary-btn" disabled={busy} onClick={submitEdit}>{busy ? (locale === 'en' ? 'Saving...' : 'Enregistrement...') : (locale === 'en' ? 'Save Correction' : 'Enregistrer la correction')}</button>
+                    </footer>
+                </section>
+            </div>
+        )}
+
         <div className="module-hero">
             <div className="module-title"><span><Scissors size={22}/></span>
                 <div><div className="eyebrow"><i></i>{t.eyebrow}</div><h1>{t.title}</h1><p>{t.subtitle}</p></div>
@@ -324,7 +373,7 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
         {success && <div className="admin-alert success">{success}</div>}
 
         <div className="module-tabs" role="tablist">
-            {(['request', 'sew', 'damaged', 'report'] as SewingTab[]).map(key => (
+            {(['request', 'sew', 'damaged'] as SewingTab[]).map(key => (
                 <button key={key} className={tab === key ? 'active' : ''} onClick={() => { setTab(key); clearMsg(); }}>
                     {key === 'request' && <Package size={16}/>}
                     {key === 'sew' && <Scissors size={16}/>}
@@ -386,8 +435,8 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
             </article>
             <article className="panel">
                 <div className="panel-title"><h2>{t.recentCuts}</h2><span>{todaySews.length} {locale === 'en' ? 'records today' : 'enregistrements aujourd\'hui'}</span></div>
-                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Output' : 'Sortie'}</th><th>{locale === 'en' ? 'Quantity sewn' : 'Quantit\u00e9 cousue'}</th><th>{locale === 'en' ? 'Details' : 'D\u00e9tails'}</th></tr></thead><tbody>
-                    {todaySews.length ? todaySews.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))}</td><td>{String(tx.reason || '').replace('[Sewing Output] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noCuts}</td></tr>}
+                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Output' : 'Sortie'}</th><th>{locale === 'en' ? 'Quantity sewn' : 'Quantit\u00e9 cousue'}</th><th>{locale === 'en' ? 'Details' : 'D\u00e9tails'}</th><th></th></tr></thead><tbody>
+                    {todaySews.length ? todaySews.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))}</td><td>{String(tx.reason || '').replace('[Sewing Output] ', '')}</td><td style={{textAlign: 'right'}}><button className="secondary-btn" style={{padding: '4px 8px'}} onClick={() => setEditForm({ id: tx.id, quantity: String(Math.abs(tx.quantity_delta)), reason: String(tx.reason || '') })}>{locale === 'en' ? 'Edit' : 'Modifier'}</button></td></tr>) : <tr><td colSpan={5} className="empty-cell">{t.noCuts}</td></tr>}
                 </tbody></table></div>
             </article>
         </div>
@@ -417,8 +466,8 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
             </article>
             <article className="panel">
                 <div className="panel-title"><h2>{t.recentDamage}</h2><span>{sewingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type)).length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
-                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{locale === 'en' ? 'Quantity wasted' : 'Quantit\u00e9 perdue'}</th><th>{locale === 'en' ? 'Reason' : 'Motif'}</th></tr></thead><tbody>
-                    {sewingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type)).length ? sewingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type)).map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td><span className="admin-status warning">{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</span></td><td>{String(tx.reason || '').replace('[Sewing Damage] ', '')}</td></tr>) : <tr><td colSpan={4} className="empty-cell">{t.noDamage}</td></tr>}
+                <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{locale === 'en' ? 'Quantity wasted' : 'Quantit\u00e9 perdue'}</th><th>{locale === 'en' ? 'Reason' : 'Motif'}</th><th></th></tr></thead><tbody>
+                    {sewingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type)).length ? sewingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type)).map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td><span className="admin-status warning">{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</span></td><td>{String(tx.reason || '').replace('[Sewing Damage] ', '')}</td><td style={{textAlign: 'right'}}><button className="secondary-btn" style={{padding: '4px 8px'}} onClick={() => setEditForm({ id: tx.id, quantity: String(Math.abs(tx.quantity_delta)), reason: String(tx.reason || '') })}>{locale === 'en' ? 'Edit' : 'Modifier'}</button></td></tr>) : <tr><td colSpan={5} className="empty-cell">{t.noDamage}</td></tr>}
                 </tbody></table></div>
             </article>
         </div>

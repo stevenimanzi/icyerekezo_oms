@@ -94,6 +94,7 @@ Route::prefix('api')->group(function () {
             Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->middleware('permission:inventory.receive');
             Route::patch('/inventory/items/{item}', [InventoryController::class, 'updateItem'])->middleware('permission:inventory.receive');
             Route::post('/inventory/transactions', [InventoryController::class, 'postTransaction'])->middleware('permission:inventory.adjust|inventory.issue');
+            Route::patch('/inventory/transactions/{transaction}/correct', [InventoryController::class, 'correctTransaction'])->middleware('permission:inventory.adjust|inventory.issue');
             Route::post('/inventory/transfers', [InventoryController::class, 'transfer'])->middleware('permission:inventory.adjust');
             Route::post('/inventory/stock-counts', [InventoryController::class, 'stockCount'])->middleware('permission:inventory.adjust');
             Route::patch('/inventory/items/{item}/status', [InventoryController::class, 'updateItemStatus'])->middleware('permission:inventory.adjust');
