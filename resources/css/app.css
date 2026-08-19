@@ -309,6 +309,7 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
   
   .report-document,[data-theme='dark'] .report-document { 
     padding:0;border:0;border-radius:0;box-shadow:none;background:#fff!important;color:#0f172a!important; 
+    min-height: 100vh; display: flex; flex-direction: column;
   }
   .report-document > header {
     display: flex; justify-content: space-between; align-items: flex-end; 
@@ -357,7 +358,7 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
   }
   .report-section tbody tr:nth-child(even) td { background: #f8fafc!important; }
   .report-document footer { 
-    margin-top: 35px; padding-top: 15px; border-top: 2px solid #cbd5e1!important;
+    margin-top: auto; padding-top: 15px; border-top: 2px solid #cbd5e1!important;
     color:#64748b!important; text-align:center; font-size:10px; font-weight:600;
   }
 }
@@ -901,12 +902,16 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
   .cutting-workspace .noguchi-cutting-report table,.report-page .noguchi-cutting-report table{min-width:0!important;width:100%!important;border-collapse:collapse!important;color:#0f172a!important}
   
   .cutting-workspace .noguchi-cutting-report th,.report-page .noguchi-cutting-report th {
-    background:#fff!important; color:#0f172a!important; font-size:8px!important; padding:8px!important;
-    border:1px solid #cbd5e1!important; font-weight:800!important; text-transform:uppercase!important;
+    background:#f8fafc!important; color:#0f172a!important; font-size:9px!important; padding:10px 8px!important;
+    border:1px solid #94a3b8!important; font-weight:800!important; text-transform:uppercase!important;
+  }
+  .cutting-workspace .noguchi-cutting-report thead tr:first-child th,.report-page .noguchi-cutting-report thead tr:first-child th {
+    background:#e2e8f0!important; border-bottom:2px solid #475569!important;
   }
   .cutting-workspace .noguchi-cutting-report td,.report-page .noguchi-cutting-report td {
-    font-size:9px!important; padding:8px!important; border:1px solid #cbd5e1!important; color:#1e293b!important; vertical-align:top!important;
+    font-size:10px!important; padding:10px 8px!important; border:1px solid #cbd5e1!important; color:#1e293b!important; vertical-align:middle!important;
   }
+  
   .cutting-workspace .noguchi-cutting-report tbody tr:nth-child(even) td,.report-page .noguchi-cutting-report tbody tr:nth-child(even) td {
     background:#f8fafc!important;
   }
