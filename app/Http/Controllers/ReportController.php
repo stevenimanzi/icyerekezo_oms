@@ -119,6 +119,66 @@ class ReportController extends Controller
             ->select('production_stage_executions.id', 'production_stage_executions.status', 'production_stage_executions.input_quantity', 'production_stage_executions.output_quantity', 'production_stage_executions.waste_quantity', 'production_stage_executions.rejected_quantity', 'production_stage_executions.updated_at', 'workflow_stages.department_id', 'workflow_stages.name as stage_name', 'production_orders.id as production_order_id', 'production_orders.order_number', 'items.name as product_name', 'units.name as unit_name', 'units.symbol as unit_symbol')
             ->latest('production_stage_executions.updated_at')->get();
 
+        $rawSewingDept = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('name', 'like', '%sewing%')->first();
+        $isSewingSelected = !isset($departmentId) || (isset($departmentId) && $rawSewingDept && $departmentId == $rawSewingDept->id);
+
+        if (stripos($factory->name, 'noguchi') !== false && $isSewingSelected) {
+            $sewingDept = $rawSewingDept;
+            if (!$sewingDept && !$departmentOnly) $sewingDept = $departments->first();
+            
+            if ($sewingDept) {
+                if (!$departments->contains('id', $sewingDept->id)) {
+                    $departments->push($sewingDept);
+                }
+                
+                $sewingWarehouseId = DB::table('warehouses')->where('factory_id', $factory->id)->where(fn($q) => $q->where('code', 'SEW')->orWhere('name', 'like', '%sewing%'))->value('id') ?? 1;
+                $sewingTx = StockTransaction::withoutGlobalScopes()->where('stock_transactions.factory_id', $factory->id)
+                    ->where('warehouse_id', $sewingWarehouseId)
+                    ->whereBetween('occurred_at', [$from, $to])
+                    ->where('reason', 'like', '%CutID:%')
+                    ->join('items', 'items.id', '=', 'stock_transactions.item_id')
+                    ->select('stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as product_name')
+                    ->get();
+                    
+                $sewingTxGrouped = $sewingTx->groupBy(function($tx) {
+                    preg_match('/CutID:\s*([^\s|]+)/i', $tx->reason, $match);
+                    $cutId = $match[1] ?? 'unknown';
+                    return \Carbon\Carbon::parse($tx->occurred_at)->toDateString() . '|' . $cutId;
+                });
+                
+                foreach ($sewingTxGrouped as $key => $txs) {
+                    $cutId = explode('|', $key)[1];
+                    $parts = explode('-', $cutId);
+                    $style = $parts[1] ?? '';
+                    $color = $parts[2] ?? '';
+                    $size = $parts[3] ?? '';
+                    $fabricName = $txs->first()->product_name;
+                    $formattedProduct = trim("$style - $color - $size", ' -');
+                    if (!$formattedProduct) $formattedProduct = $fabricName;
+                    
+                    $input = $txs->where('type', 'receipt')->sum(fn($t) => abs($t->quantity_delta));
+                    $output = $txs->where('type', 'issue')->sum(fn($t) => abs($t->quantity_delta));
+                    $waste = $txs->where('type', 'waste')->sum(fn($t) => abs($t->quantity_delta));
+                    
+                    $executions->push((object)[
+                        'updated_at' => \Carbon\Carbon::parse($txs->first()->occurred_at),
+                        'department_id' => $sewingDept->id,
+                        'production_order_id' => crc32($cutId),
+                        'stage_name' => 'Sewing',
+                        'order_number' => $cutId,
+                        'product_name' => $formattedProduct,
+                        'fabric_name' => $fabricName,
+                        'input_quantity' => $input,
+                        'output_quantity' => $output,
+                        'rejected_quantity' => 0,
+                        'waste_quantity' => $waste,
+                        'unit_symbol' => 'pcs',
+                        'status' => 'completed',
+                    ]);
+                }
+            }
+        }
+
         $departmentActivity = $departments->map(function ($department) use ($executions) {
             $records = $executions->where('department_id', $department->id);
 
@@ -152,6 +212,7 @@ class ReportController extends Controller
                                 ->map(fn ($records) => [
                                     'order_number' => $records->first()->order_number,
                                     'product' => $records->first()->product_name ?? 'Unspecified product',
+                                    'fabric' => $records->first()->fabric_name ?? $records->first()->product_name ?? 'Unspecified product',
                                     'work_step' => $records->first()->stage_name,
                                     'received' => (float) $records->sum('input_quantity'),
                                     'completed' => (float) $records->sum('output_quantity'),
