@@ -82,6 +82,7 @@ class InventoryController extends Controller
             'total_value' => StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)->join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost),0) as value')->value('value'),
             'stock' => $stock,
             'cut_pieces' => $this->getVirtualCutPieces($warehouseIds),
+            'sewn_pieces' => $this->getVirtualSewnPieces($warehouseIds),
             'catalog' => $catalog,
             'warehouse_list' => Warehouse::whereIn('id', $warehouseIds)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
             'recent_transactions' => $transactions,
@@ -171,6 +172,9 @@ class InventoryController extends Controller
         $allowed = $isWarehouseKeeper || 
             ($isCuttingOperator && in_array($transaction->type, ['reserve', 'issue', 'waste'])) ||
             ($isSewingOperator && in_array($transaction->type, ['receipt', 'issue', 'waste']));
+        if (!$allowed) {
+            \Illuminate\Support\Facades\Log::error('InventoryController@correctTransaction blocked. wh=' . ($isWarehouseKeeper?1:0) . ' cut=' . ($isCuttingOperator?1:0) . ' sew=' . ($isSewingOperator?1:0) . ' type=' . $transaction->type);
+        }
         abort_unless($allowed, 403, 'You do not have permission to edit this transaction.');
 
         abort_unless((int) $transaction->factory_id === (int) $request->user()->current_factory_id, 404);
@@ -324,6 +328,57 @@ class InventoryController extends Controller
                 $cutId = $matches[1];
                 if (isset($pieces[$cutId])) {
                     $pieces[$cutId]['available_qty'] -= abs((float) $tx->quantity_delta);
+                }
+            }
+        }
+
+        return array_values(array_filter($pieces, fn($p) => $p['available_qty'] > 0));
+    }
+
+    private function getVirtualSewnPieces($warehouseIds): array
+    {
+        $sewTransactions = StockTransaction::query()
+            ->whereIn('stock_transactions.warehouse_id', $warehouseIds)
+            ->join('items', 'items.id', '=', 'stock_transactions.item_id')
+            ->where('stock_transactions.type', 'issue')
+            ->where('stock_transactions.reason', 'LIKE', '[Sewing Output]%')
+            ->get(['stock_transactions.*', 'items.name as item_name']);
+
+        $finishingReceipts = StockTransaction::query()
+            ->whereIn('warehouse_id', $warehouseIds)
+            ->where('type', 'receipt')
+            ->where('reason', 'LIKE', '[Finishing Receipt] SewnID:%')
+            ->get();
+
+        $pieces = [];
+        foreach ($sewTransactions as $tx) {
+            if (preg_match('/CutID:\s*([^\s|]+)\s*\|\s*([\d,.]+)\s+items\s+sewn/i', $tx->reason ?? '', $matches)) {
+                $cutId = $matches[1];
+                $qty = (float) str_replace(',', '', $matches[2]);
+                $sewnId = $cutId;
+
+                if (!isset($pieces[$sewnId])) {
+                    $parts = explode('-', $sewnId);
+                    $style = $parts[1] ?? '';
+                    $color = $parts[2] ?? '';
+                    $size = $parts[3] ?? '';
+                    
+                    $pieces[$sewnId] = [
+                        'id' => $sewnId,
+                        'item_id' => $tx->item_id,
+                        'name' => "{$style}" . ($color ? " / {$color}" : "") . " ({$size}) - {$tx->item_name}",
+                        'available_qty' => 0,
+                    ];
+                }
+                $pieces[$sewnId]['available_qty'] += $qty;
+            }
+        }
+
+        foreach ($finishingReceipts as $tx) {
+            if (preg_match('/SewnID:\s*([^\s|]+)/i', $tx->reason ?? '', $matches)) {
+                $sewnId = $matches[1];
+                if (isset($pieces[$sewnId])) {
+                    $pieces[$sewnId]['available_qty'] -= abs((float) $tx->quantity_delta);
                 }
             }
         }

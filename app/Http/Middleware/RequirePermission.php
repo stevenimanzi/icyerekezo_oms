@@ -21,6 +21,9 @@ class RequirePermission
             }
         }
 
+        if (!$hasPermission) {
+            \Illuminate\Support\Facades\Log::error('RequirePermission failed for user ' . $request->user()?->id . ' on permission ' . $permission);
+        }
         abort_unless($hasPermission, 403, 'You do not have permission to perform this action.');
 
         return $next($request);

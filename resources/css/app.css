@@ -930,3 +930,5 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 @media(max-width:600px){.school-kpis{grid-template-columns:1fr 1fr}.school-order-line{grid-template-columns:1fr;margin:12px}.school-inline-filters{display:grid}.school-inline-filters input,.school-inline-filters select{min-width:0}.school-builder-nav{gap:10px}.school-builder-nav button{flex:1}.school-heading{align-items:stretch}}
 @media(max-width:1100px){.school-size-row{grid-template-columns:minmax(180px,1.2fr) repeat(7,70px);overflow-x:auto}.school-garment-matrix{overflow-x:auto}}
 @media(max-width:600px){.school-garment-matrices{padding:8px 12px 18px}.school-size-row{grid-template-columns:180px repeat(7,64px);width:max-content}.school-size-person{position:sticky;left:0;z-index:1;padding-right:8px;background:var(--surface)}}
+
+.sewing-tab-content { display: flex; flex-direction: column; gap: 24px; }

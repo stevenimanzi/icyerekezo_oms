@@ -35,6 +35,7 @@ final class RoleTemplateCatalog
         'processing-operator' => ['Processing Operator', 'processing', ['production.view', 'production.execute', 'inventory.view', 'inventory.issue', 'quality.view', 'maintenance.view', 'maintenance.create', 'reports.view']],
         'bottling-operator' => ['Bottling Operator', 'bottling', ['production.view', 'production.execute', 'quality.view', 'maintenance.view', 'maintenance.create', 'reports.view']],
         'packaging-operator' => ['Packaging Operator', 'packaging', ['production.view', 'production.execute', 'inventory.view', 'inventory.issue', 'quality.view', 'maintenance.view', 'maintenance.create', 'reports.view']],
+        'finishing-manager' => ['Finishing Manager', 'finishing', ['production.view', 'production.execute', 'inventory.view', 'inventory.issue', 'quality.view', 'maintenance.view', 'maintenance.create', 'reports.view']],
         'machine-operator' => ['Machine Operator', 'workstation', ['production.view', 'production.execute', 'quality.view', 'maintenance.view', 'maintenance.create', 'reports.view']],
         'maintenance-technician' => ['Maintenance Technician', 'maintenance', ['maintenance.*', 'inventory.view', 'inventory.issue', 'reports.view']],
         'logistics-officer' => ['Logistics Officer', 'logistics', ['logistics.*', 'sales.view', 'sales.fulfill', 'inventory.view', 'inventory.issue', 'reports.view']],
