@@ -21,6 +21,7 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
  const description=logistics?(fr?`Bonjour ${user.name}. Suivez les commandes clients, les expéditions et les livraisons.`:`Hello ${user.name}. Track incoming customer orders, dispatches and deliveries.`):warehouse?(fr?`Bonjour ${user.name}. Voici l’état actuel du stock et les travaux à traiter.`:`Hello ${user.name}. Here is the current stock position and work that needs attention.`):(fr?`Bonjour ${user.name}. Voici les travaux importants et les résultats actuels.`:`Hello ${user.name}. Here is the work that needs attention and the latest production results.`);
  
  const isNoguchiSewing = user?.current_factory?.name?.trim().toLowerCase()==='noguchi holdings ltd' && user?.workspace === 'sewing';
+ const isFinishingManager = user?.workspace === 'finishing' || user?.roles?.some((r:any) => r.slug === 'finishing-manager');
 
  return <section className={`department-dashboard ${user.workspace==='cutting'?'cutting-dashboard':''}`}>
   <div className="page-heading"><div><div className="eyebrow"><span></span>{eyebrow}</div><h1>{title}</h1><p>{description}</p></div><button className="secondary-btn" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'spin':''} size={16}/>{loading?(fr?'Actualisation…':'Refreshing…'):(fr?'Actualiser':'Refresh')}</button></div>
@@ -28,8 +29,9 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
   {logistics?<LogisticsMetrics values={logisticsMetrics} fr={fr}/>:warehouse?<WarehouseMetrics values={warehouseMetrics} fr={fr} money={money}/>:<ProductionMetrics values={metrics} fr={fr} user={user}/>}
   {logistics&&<LogisticsCharts trends={logisticsTrends} fr={fr} money={money}/>}
   {isNoguchiSewing&&<ProductionCharts trends={data?.production_trends||[]} fr={fr}/>}
-  {!logistics&&!isNoguchiSewing&&<div className="production-quick-actions">{warehouse?<><button onClick={()=>onNavigate('inventory')}><Warehouse/><span><b>{fr?'Ouvrir le stock':'Open stock records'}</b><small>{fr?'Voir les soldes et les mouvements':'Review balances and stock movements'}</small></span></button><button onClick={()=>onNavigate('procurement')}><ShoppingCart/><span><b>{fr?'Voir les achats':'View purchasing'}</b><small>{fr?'Suivre les commandes et réceptions':'Follow orders and received goods'}</small></span></button></>:<><button onClick={()=>onNavigate('production')}><Factory/><span><b>{fr?'Gérer la production':'Manage production'}</b><small>{fr?'Créer des commandes et suivre chaque étape':'Create orders and update production steps'}</small></span></button><button onClick={()=>onNavigate('reports')}><FileText/><span><b>{fr?'Voir les rapports':'View reports'}</b><small>{fr?'Comparer les résultats par étape':'Review results for every production step'}</small></span></button></>}</div>}
-  {!logistics&&!isNoguchiSewing&&<OperationalPanels warehouse={warehouse} assignments={assignments} stock={stock} stages={stages} data={data} user={user} fr={fr} status={status} number={number} busy={busy} update={update}/>}
+  {!logistics&&!isNoguchiSewing&&!isFinishingManager&&<div className="production-quick-actions">{warehouse?<><button onClick={()=>onNavigate('inventory')}><Warehouse/><span><b>{fr?'Ouvrir le stock':'Open stock records'}</b><small>{fr?'Voir les soldes et les mouvements':'Review balances and stock movements'}</small></span></button><button onClick={()=>onNavigate('procurement')}><ShoppingCart/><span><b>{fr?'Voir les achats':'View purchasing'}</b><small>{fr?'Suivre les commandes et réceptions':'Follow orders and received goods'}</small></span></button></>:<><button onClick={()=>onNavigate('production')}><Factory/><span><b>{fr?'Gérer la production':'Manage production'}</b><small>{fr?'Créer des commandes et suivre chaque étape':'Create orders and update production steps'}</small></span></button><button onClick={()=>onNavigate('reports')}><FileText/><span><b>{fr?'Voir les rapports':'View reports'}</b><small>{fr?'Comparer les résultats par étape':'Review results for every production step'}</small></span></button></>}</div>}
+  {!logistics&&!isNoguchiSewing&&!isFinishingManager&&<OperationalPanels warehouse={warehouse} assignments={assignments} stock={stock} stages={stages} data={data} user={user} fr={fr} status={status} number={number} busy={busy} update={update}/>}
+  {isFinishingManager&&data?.finishing_progress&&<FinishingCharts data={data.finishing_progress} fr={fr} number={number}/>}
  </section>
 }
 
@@ -70,3 +72,34 @@ function ProductionMetrics({values,fr,user}:any){
 function OperationalPanels({warehouse,assignments,stock,stages,data,user,fr,status,number,busy,update}:any){return <section className="department-grid"><article className="panel"><header className="department-panel-head"><div><h2>{fr?'Travaux de l’équipe':'Team work'}</h2><p>{data?.is_department_manager?(fr?'Travail de toute votre équipe':'Work for everyone in your department'):(fr?'Travail qui vous est attribué':'Work assigned directly to you')}</p></div><Users size={20}/></header><div className="assignment-list">{assignments.length?assignments.map((item:any)=><article key={item.id}><div><span className={'priority '+item.priority}>{item.priority}</span><h3>{item.title}</h3><p>{item.instructions||(fr?'Aucune instruction supplémentaire.':'No extra instructions.')}</p><small>{item.user?.name||user.name}{item.due_at?` · ${fr?'À terminer avant':'Due'} ${new Date(item.due_at).toLocaleString()}`:''}</small></div><div className="assignment-actions"><label>{fr?'État du travail':'Work status'}<select aria-label={`Status for ${item.title}`} disabled={busy===item.id} value={item.status} onChange={event=>update(item.id,event.target.value)}><option value="assigned">{status('assigned')}</option><option value="ready">{status('ready')}</option><option value="in_progress">{status('in_progress')}</option><option value="blocked">{status('blocked')}</option><option value="completed">{status('completed')}</option></select></label></div></article>):<Empty text={fr?'Aucun travail attribué pour le moment.':'No work needs attention right now.'}/>}</div></article><article className="panel"><header className="department-panel-head"><div><h2>{warehouse?(fr?'Mouvements de stock récents':'Recent stock movements'):(fr?'Dernières étapes de production':'Latest production steps')}</h2><p>{warehouse?(fr?'Toutes les entrées et sorties enregistrées':'Recorded receipts and issues for this factory'):(fr?'Quantités enregistrées pour votre département':'Recent quantities recorded by your department')}</p></div><Activity size={20}/></header><div className="stage-activity-list">{warehouse?(stock.length?stock.map((item:any)=><article key={item.id}><div><b>{item.item_name}</b><span>{item.warehouse_name} · {String(item.type).replaceAll('_',' ')} · {new Date(item.occurred_at).toLocaleString()}</span></div><div><strong>{Number(item.quantity_delta)>0?'+':''}{number(item.quantity_delta)}</strong><small>{item.unit||(fr?'unités':'units')} · {fr?'solde':'balance'} {number(item.balance_after)}</small></div></article>):<Empty text={fr?'Aucun mouvement de stock enregistré.':'No stock movements have been recorded yet.'}/>):(stages.length?stages.map((item:any)=><article key={item.id}><div><b>{item.stage?.name||'Production step'}</b><span>{item.order?.order_number||'Order'} · {status(item.status)}</span></div><div><strong>{number(item.output_quantity)}</strong><small>{fr?'unités produites':'units produced'}</small></div></article>):<Empty text={fr?'Aucune production enregistrée pour le moment.':'No production has been recorded yet.'}/>)}</div></article></section>}
 function Metric({icon,label,value,tone}:any){return <article className="department-metric panel"><span className={'metric-icon '+tone}>{icon}</span><div><small>{label}</small><strong>{value}</strong></div></article>}
 function Empty({text}:{text:string}){return <div className="department-empty"><PackageCheck size={26}/><span>{text}</span></div>}
+function FinishingCharts({data, fr, number}:any){
+ const [filter, setFilter] = useState<'weekly'|'monthly'|'annually'>('weekly');
+ const tooltipStyle={background:'var(--panel)',border:'1px solid var(--line)',borderRadius:10,boxShadow:'0 12px 30px rgba(15,23,42,.12)',color:'var(--text)'};
+ 
+ const dataList = data && typeof data === 'object' && data[filter] ? data[filter] : [];
+ const chartData = Array.isArray(dataList) ? dataList.slice().reverse() : [];
+
+ return <section className="department-grid">
+  <article className="panel chart-panel" style={{gridColumn: '1 / -1'}}>
+   <header className="department-panel-head" style={{alignItems: 'flex-start'}}>
+    <div><h2>{fr?'Progression de la finition':'Finishing Working Progress'}</h2><p>{fr?'Quantité de finition par période':'Finishing output quantity per period'}</p></div>
+    <div style={{display:'flex',gap:10,background:'var(--background)',padding:4,borderRadius:8}}>
+     <button className={filter==='weekly'?'primary-btn':'secondary-btn'} style={{margin:0,padding:'4px 12px',minHeight:30}} onClick={()=>setFilter('weekly')}>{fr?'Hebdomadaire':'Weekly'}</button>
+     <button className={filter==='monthly'?'primary-btn':'secondary-btn'} style={{margin:0,padding:'4px 12px',minHeight:30}} onClick={()=>setFilter('monthly')}>{fr?'Mensuel':'Monthly'}</button>
+     <button className={filter==='annually'?'primary-btn':'secondary-btn'} style={{margin:0,padding:'4px 12px',minHeight:30}} onClick={()=>setFilter('annually')}>{fr?'Annuel':'Annually'}</button>
+    </div>
+   </header>
+   <div className="chart-wrap" style={{height: 300, marginTop: 15}}>
+    <ResponsiveContainer width="100%" height="100%">
+     <BarChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}>
+      <CartesianGrid vertical={false} stroke="var(--line)"/>
+      <XAxis dataKey="period" tickLine={false} axisLine={false} />
+      <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+      <Tooltip contentStyle={tooltipStyle} formatter={(value:any)=>[number(value), fr?'Produit':'Output']}/>
+      <Bar dataKey="output" name={fr?'Sortie':'Output'} fill="#8b5cf6" radius={[4,4,0,0]} barSize={filter==='monthly'?15:40}/>
+     </BarChart>
+    </ResponsiveContainer>
+   </div>
+  </article>
+ </section>
+}

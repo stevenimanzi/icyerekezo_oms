@@ -41,6 +41,10 @@ class DepartmentDashboardController extends Controller
             || str_contains(strtolower((string) $department?->name), 'dispatch')
             || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'logistics-officer')->exists();
 
+        $isFinishingUser = str_contains(strtolower((string) $profile?->job_title), 'finishing')
+            || str_contains(strtolower((string) $department?->name), 'finishing')
+            || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'finishing-manager')->exists();
+
         $employeeIds = $department
             ? EmployeeProfile::withoutGlobalScopes()->where('factory_id', $factoryId)->where('department_id', $department->id)->pluck('user_id')
             : collect([$user->id]);
@@ -124,6 +128,39 @@ class DepartmentDashboardController extends Controller
             ];
         })->values();
 
+        $finishingProgress = [];
+        if ($isFinishingUser) {
+            $finishingOutputQuery = StockTransaction::withoutGlobalScopes()
+                ->where('factory_id', $factoryId)
+                ->where('type', 'issue')
+                ->where('reason', 'LIKE', '[Finishing Output]%');
+
+            $finishingProgress = [
+                'weekly' => collect(range(6, 0))->map(function ($daysAgo) use ($finishingOutputQuery) {
+                    $date = today()->subDays($daysAgo);
+                    return [
+                        'period' => $date->format('D'),
+                        'output' => abs((float) (clone $finishingOutputQuery)->whereDate('occurred_at', $date)->sum('quantity_delta')),
+                    ];
+                })->values(),
+                'monthly' => collect(range(29, 0))->map(function ($daysAgo) use ($finishingOutputQuery) {
+                    $date = today()->subDays($daysAgo);
+                    return [
+                        'period' => $date->format('d M'),
+                        'output' => abs((float) (clone $finishingOutputQuery)->whereDate('occurred_at', $date)->sum('quantity_delta')),
+                    ];
+                })->values(),
+                'annually' => collect(range(11, 0))->map(function ($monthsAgo) use ($finishingOutputQuery) {
+                    $month = now()->startOfMonth()->subMonths($monthsAgo);
+                    return [
+                        'period' => $month->format('M'),
+                        'month_number' => $month->month,
+                        'output' => abs((float) (clone $finishingOutputQuery)->whereBetween('occurred_at', [$month, $month->copy()->endOfMonth()])->sum('quantity_delta')),
+                    ];
+                })->values(),
+            ];
+        }
+
         return response()->json([
             'department' => $department ? [
                 'id' => $department->id,
@@ -160,6 +197,8 @@ class DepartmentDashboardController extends Controller
             'production_trends' => $productionTrends,
             'incoming_orders' => $incomingOrders,
             'delivery_activity' => $deliveryActivity,
+            'finishing_progress' => $finishingProgress,
+            'is_finishing_user' => (bool) $isFinishingUser,
         ]);
     }
 }
