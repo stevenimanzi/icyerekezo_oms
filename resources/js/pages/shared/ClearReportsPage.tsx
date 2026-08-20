@@ -48,12 +48,12 @@ function DailyRegister({data}: any) {
             </header>
               <div className="noguchi-cutting-table-wrap" style={{ overflowX: 'auto' }}><table><thead>
                   <tr>
-                      <th rowSpan={2} style={{verticalAlign: 'middle', borderRight: '2px solid #000'}}>DATE</th>
-                      <th colSpan={3} style={{textAlign: 'center', padding: '8px', borderRight: '2px solid #000', backgroundColor: '#fff'}}>INPUT</th>
+                      <th rowSpan={2} style={{verticalAlign: 'middle', borderRight: '0.5px solid #000'}}>DATE</th>
+                      <th colSpan={3} style={{textAlign: 'center', padding: '8px', borderRight: '0.5px solid #000', backgroundColor: '#fff'}}>INPUT</th>
                       <th colSpan={4} style={{textAlign: 'center', padding: '8px', backgroundColor: '#fff'}}>OUTPUT</th>
                   </tr>
                   <tr>
-                      <th>STYLE</th><th>SIZE</th><th style={{borderRight: '2px solid #000'}}>QTY</th>
+                      <th>STYLE</th><th>SIZE</th><th style={{borderRight: '0.5px solid #000'}}>QTY</th>
                       <th>COLOR</th><th>STYLE</th><th>SIZE</th><th>QTY</th>
                   </tr>
               </thead><tbody>
@@ -69,12 +69,12 @@ function DailyRegister({data}: any) {
         </header>
           <div className="noguchi-cutting-table-wrap" style={{ overflowX: 'auto' }}><table><thead>
               <tr>
-                  <th rowSpan={2} style={{verticalAlign: 'middle', borderRight: '2px solid #000'}}>DATE</th>
-                  <th colSpan={3} style={{textAlign: 'center', padding: '8px', borderRight: '2px solid #000', backgroundColor: '#fff'}}>INPUT</th>
+                  <th rowSpan={2} style={{verticalAlign: 'middle', borderRight: '0.5px solid #000'}}>DATE</th>
+                  <th colSpan={3} style={{textAlign: 'center', padding: '8px', borderRight: '0.5px solid #000', backgroundColor: '#fff'}}>INPUT</th>
                   <th colSpan={4} style={{textAlign: 'center', padding: '8px', backgroundColor: '#fff'}}>OUTPUT</th>
               </tr>
               <tr>
-                  <th>STYLE</th><th>SIZE</th><th style={{borderRight: '2px solid #000'}}>QTY</th>
+                  <th>STYLE</th><th>SIZE</th><th style={{borderRight: '0.5px solid #000'}}>QTY</th>
                   <th>COLOR</th><th>STYLE</th><th>SIZE</th><th>QTY</th>
               </tr>
           </thead><tbody>
@@ -85,8 +85,8 @@ function DailyRegister({data}: any) {
                   const style = info.style !== record.product ? info.style : '\u2014';
                   
                   return <tr key={`${department.department_id}-${index}`}>
-                      <td style={{borderRight: '2px solid #000'}}>{new Date(`${day.date}T00:00:00`).toLocaleDateString()}</td>
-                      <td>{style}</td><td>{info.size}</td><td style={{borderRight: '2px solid #000'}}>{record.received > 0 ? <b>{number(record.received)}</b> : '\u2014'}</td>
+                      <td style={{borderRight: '0.5px solid #000'}}>{new Date(`${day.date}T00:00:00`).toLocaleDateString()}</td>
+                      <td>{style}</td><td>{info.size}</td><td style={{borderRight: '0.5px solid #000'}}>{record.received > 0 ? <b>{number(record.received)}</b> : '\u2014'}</td>
                       <td>{color}</td><td>{style}</td><td>{info.size}</td><td>{record.completed > 0 ? <b>{number(record.completed)}</b> : '\u2014'}</td>
                   </tr>;
               }))}

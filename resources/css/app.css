@@ -570,7 +570,7 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 .cutting-metric-icon.violet { background:rgba(139,92,246,.12); color:#8b5cf6; }
 .noguchi-cutting-report thead tr:first-child th,.noguchi-cutting-report thead tr:nth-child(2) th,[data-theme=dark] .noguchi-cutting-report thead tr:first-child th,[data-theme=dark] .noguchi-cutting-report thead tr:nth-child(2) th{background:transparent;color:var(--text)}
 .noguchi-cutting-report thead tr:first-child th{border-top:1px solid var(--line);border-bottom:2px solid #1d4ed8}
-.noguchi-cutting-report{overflow:hidden;padding:0!important;border-radius:0!important;border:none;background:#fff;box-shadow:none}.noguchi-cutting-report>header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:24px 28px;border:2px solid #000;background:#fff}.noguchi-cutting-report>header small{color:#000;font-size:10px;font-weight:850;letter-spacing:.14em}.noguchi-cutting-report>header h2{margin:7px 0 2px;font-size:24px;text-transform:uppercase;color:#000}.noguchi-cutting-report>header p{margin:0;color:#000}.noguchi-cutting-report>header>div:last-child{display:flex;gap:24px}.noguchi-cutting-report>header span{display:grid;gap:4px;padding-left:18px;border-left:1px solid #000;color:#000;font-size:9px;letter-spacing:.08em}.noguchi-cutting-report>header span b{color:#000;font-size:12px;letter-spacing:0}.noguchi-cutting-report-table-wrap{overflow-x:auto}.noguchi-cutting-report table{width:100%;min-width:900px;border-collapse:collapse;border:2px solid #000;border-top:none}.noguchi-cutting-report th,.noguchi-cutting-report td{padding:13px 14px;border:1px solid #000;text-align:center;color:#000}.noguchi-cutting-report thead tr:first-child th{background:#fff;color:#000;font-size:12px;letter-spacing:.08em}.noguchi-cutting-report thead tr:nth-child(2) th{background:#fff;color:#000;font-size:10px}.noguchi-cutting-report tbody td{font-size:13px}.noguchi-cutting-report tbody td:nth-child(2){text-align:left}.noguchi-cutting-report>footer{display:flex;justify-content:space-between;padding:12px 18px;color:#000;font-size:9px;font-weight:750;background:#fff;border-top:1px solid #000}[data-theme=dark] .noguchi-cutting-report thead tr:nth-child(2) th{background:#111;color:#fff}@media(max-width:760px){.noguchi-cutting-report>header{align-items:flex-start;flex-direction:column}.noguchi-cutting-report>header>div:last-child{width:100%}}
+.noguchi-cutting-report{overflow:hidden;padding:0!important;border-radius:0!important;border:none;background:#fff;box-shadow:none}.noguchi-cutting-report>header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:24px 28px;border:none;background:#fff}.noguchi-cutting-report>header small{color:#000;font-size:10px;font-weight:850;letter-spacing:.14em}.noguchi-cutting-report>header h2{margin:7px 0 2px;font-size:24px;text-transform:uppercase;color:#000}.noguchi-cutting-report>header p{margin:0;color:#000}.noguchi-cutting-report>header>div:last-child{display:flex;gap:24px}.noguchi-cutting-report>header span{display:grid;gap:4px;padding-left:18px;border-left:0.5px solid #000;color:#000;font-size:9px;letter-spacing:.08em}.noguchi-cutting-report>header span b{color:#000;font-size:12px;letter-spacing:0}.noguchi-cutting-report-table-wrap{overflow-x:auto}.noguchi-cutting-report table{width:100%;min-width:900px;border-collapse:collapse;border:none}.noguchi-cutting-report th,.noguchi-cutting-report td{padding:13px 14px;border:0.5px solid #000;text-align:center;color:#000}.noguchi-cutting-report thead tr:first-child th{background:#fff;color:#000;font-size:12px;letter-spacing:.08em}.noguchi-cutting-report thead tr:nth-child(2) th{background:#fff;color:#000;font-size:10px}.noguchi-cutting-report tbody td{font-size:13px}.noguchi-cutting-report tbody td:nth-child(2){text-align:left}.noguchi-cutting-report>footer{display:flex;justify-content:space-between;padding:12px 18px;color:#000;font-size:9px;font-weight:750;background:#fff;border-top:0.5px solid #000}[data-theme=dark] .noguchi-cutting-report thead tr:nth-child(2) th{background:#111;color:#fff}@media(max-width:760px){.noguchi-cutting-report>header{align-items:flex-start;flex-direction:column}.noguchi-cutting-report>header>div:last-child{width:100%}}
 
 @media(max-width:900px) {
     .cutting-form-grid { grid-template-columns:1fr; }
@@ -865,7 +865,7 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
     box-shadow:none!important; background:#fff!important; color:#000!important; margin-bottom:20px!important;
   }
   .cutting-workspace .noguchi-cutting-report>header,.report-page .noguchi-cutting-report>header {
-    background:#fff!important; padding:15px 20px!important; border:2px solid #000!important;
+    background:#fff!important; padding:15px 20px!important; border:none!important;
   }
   .cutting-workspace .noguchi-cutting-report>header h2,.report-page .noguchi-cutting-report>header h2 {
     font-size:16px!important; color:#000!important; font-weight:800!important; margin:4px 0!important;
@@ -886,17 +886,17 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
     display:block!important; color:#000!important; font-size:9px!important; text-transform:uppercase!important;
   }
   .cutting-workspace .noguchi-cutting-table-wrap,.report-page .noguchi-cutting-table-wrap{overflow:visible}
-  .cutting-workspace .noguchi-cutting-report table,.report-page .noguchi-cutting-report table{min-width:0!important;width:100%!important;border-collapse:collapse!important;border:2px solid #000!important;border-top:none!important;color:#000!important}
+  .cutting-workspace .noguchi-cutting-report table,.report-page .noguchi-cutting-report table{min-width:0!important;width:100%!important;border-collapse:collapse!important;border:none!important;color:#000!important}
   
   .cutting-workspace .noguchi-cutting-report th,.report-page .noguchi-cutting-report th {
     background:#fff!important; color:#000!important; font-size:9px!important; padding:10px 8px!important;
-    border:1px solid #000!important; font-weight:800!important; text-transform:uppercase!important;
+    border:0.5px solid #000!important; font-weight:800!important; text-transform:uppercase!important;
   }
   .cutting-workspace .noguchi-cutting-report thead tr:first-child th,.report-page .noguchi-cutting-report thead tr:first-child th {
-    background:#fff!important; border-bottom:1px solid #000!important;
+    background:#fff!important; border-bottom:0.5px solid #000!important;
   }
   .cutting-workspace .noguchi-cutting-report td,.report-page .noguchi-cutting-report td {
-    font-size:10px!important; padding:10px 8px!important; border:1px solid #000!important; color:#000!important; vertical-align:middle!important;
+    font-size:10px!important; padding:10px 8px!important; border:0.5px solid #000!important; color:#000!important; vertical-align:middle!important;
   }
   
   .cutting-workspace .noguchi-cutting-report tbody tr:nth-child(even) td,.report-page .noguchi-cutting-report tbody tr:nth-child(even) td {
@@ -907,7 +907,7 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
   .cutting-workspace .noguchi-cutting-report tr,.report-page .noguchi-cutting-report tr{break-inside:avoid; page-break-inside:avoid;}
   
   .cutting-workspace .noguchi-cutting-report>footer,.report-page .noguchi-cutting-report>footer {
-    background:#fff!important; padding:12px 20px!important; border-top:2px solid #000!important;
+    background:#fff!important; padding:12px 20px!important; border-top:0.5px solid #000!important;
     font-size:8px!important; font-weight:700!important; color:#000!important; text-transform:uppercase!important;
     display:flex!important; justify-content:space-between!important;
   }
