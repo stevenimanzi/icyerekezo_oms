@@ -83,6 +83,7 @@ class InventoryController extends Controller
             'stock' => $stock,
             'cut_pieces' => $this->getVirtualCutPieces($warehouseIds),
             'sewn_pieces' => $this->getVirtualSewnPieces($warehouseIds),
+            'finished_pieces' => $this->getVirtualFinishedPieces($warehouseIds),
             'catalog' => $catalog,
             'warehouse_list' => Warehouse::whereIn('id', $warehouseIds)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
             'recent_transactions' => $transactions,
@@ -389,6 +390,57 @@ class InventoryController extends Controller
                 $sewnId = $matches[1];
                 if (isset($pieces[$sewnId])) {
                     $pieces[$sewnId]['available_qty'] -= abs((float) $tx->quantity_delta);
+                }
+            }
+        }
+
+        return array_values(array_filter($pieces, fn($p) => $p['available_qty'] > 0));
+    }
+
+    private function getVirtualFinishedPieces($warehouseIds): array
+    {
+        $finishTransactions = StockTransaction::query()
+            ->whereIn('stock_transactions.warehouse_id', $warehouseIds)
+            ->join('items', 'items.id', '=', 'stock_transactions.item_id')
+            ->where('stock_transactions.type', 'issue')
+            ->where('stock_transactions.reason', 'LIKE', '[Finishing Output]%')
+            ->get(['stock_transactions.*', 'items.name as item_name']);
+
+        $packingReceipts = StockTransaction::query()
+            ->whereIn('warehouse_id', $warehouseIds)
+            ->where('type', 'receipt')
+            ->where('reason', 'LIKE', '[Packing Receipt] FinishedID:%')
+            ->get();
+
+        $pieces = [];
+        foreach ($finishTransactions as $tx) {
+            if (preg_match('/SewnID:\s*([^\s|]+)\s*\|\s*([\d,.]+)\s+items\s+finished/i', $tx->reason ?? '', $matches)) {
+                $sewnId = $matches[1];
+                $qty = (float) str_replace(',', '', $matches[2]);
+                $finishedId = $sewnId;
+
+                if (!isset($pieces[$finishedId])) {
+                    $parts = explode('-', $finishedId);
+                    $style = $parts[1] ?? '';
+                    $color = $parts[2] ?? '';
+                    $size = $parts[3] ?? '';
+                    
+                    $pieces[$finishedId] = [
+                        'id' => $finishedId,
+                        'item_id' => $tx->item_id,
+                        'name' => "{$style}" . ($color ? " / {$color}" : "") . " ({$size}) - {$tx->item_name}",
+                        'available_qty' => 0,
+                    ];
+                }
+                $pieces[$finishedId]['available_qty'] += $qty;
+            }
+        }
+
+        foreach ($packingReceipts as $tx) {
+            if (preg_match('/FinishedID:\s*([^\s|]+)/i', $tx->reason ?? '', $matches)) {
+                $finishedId = $matches[1];
+                if (isset($pieces[$finishedId])) {
+                    $pieces[$finishedId]['available_qty'] -= abs($tx->quantity_delta);
                 }
             }
         }

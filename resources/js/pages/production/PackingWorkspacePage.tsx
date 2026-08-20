@@ -27,12 +27,12 @@ async function api<T = any>(url: string, options: RequestInit = {}): Promise<T> 
 
 const copy = {
     en: {
-        title: 'packing workspace',
-        subtitle: 'Manage received pieces, record finishn output.',
-        eyebrow: 'LIVE packing DATA',
-        tabs: { request: 'Receive pieces', materials: 'Request materials', finish: 'Finish pieces' },
+        title: 'Packing workspace',
+        subtitle: 'Manage received pieces, record packing output.',
+        eyebrow: 'LIVE PACKING DATA',
+        tabs: { request: 'Receive pieces', materials: 'Request materials', finish: 'Pack pieces' },
         materialsTitle: 'Request raw materials',
-        materialsDesc: 'Request materials like buttons, thread, or labels from the main warehouse.',
+        materialsDesc: 'Request materials like boxes, tape, or labels from the main warehouse.',
         requestMaterials: 'Submit request', requesting: 'Submitting...',
         requestTitle: 'Receive pieces from Finishing',
         requestDesc: 'Log the receipt of finished pieces needed for your packing operations.',
@@ -40,38 +40,38 @@ const copy = {
         quantityPlaceholder: 'Enter quantity', reasonPlaceholder: 'Describe what you received...',
         sendRequest: 'Log receipt', sending: 'Logging...',
         pendingRequests: 'Accepted items', noRequests: 'No items accepted yet.',
-        finishedTitle: 'Record finishn items',
-        finishedDesc: 'Log the items you have successfully finishn in this session.',
+        finishedTitle: 'Record packed items',
+        finishedDesc: 'Log the items you have successfully packed in this session.',
         finishedItem: 'Material used', finishedQuantity: 'Quantity used',
-        outputQuantity: 'Number of items finishn', finishedNotes: 'packing notes',
+        outputQuantity: 'Number of items packed', finishedNotes: 'Packing notes',
         finishedPlaceholder: 'e.g., 50', outputPlaceholder: 'e.g., 50',
         notesPlaceholder: 'Any notes about this packing session...',
         recordfinished: 'Record packing output', recording: 'Recording...',
-        recentfinisheds: 'Recent packing records', nofinisheds: 'No packing records yet. Record your first finish above.',
+        recentfinisheds: 'Recent packing records', nofinisheds: 'No packing records yet. Record your first packing output above.',
         period: 'Today',
         refresh: 'Refresh data', updated: 'Updated', connecting: 'Connecting...', loading: 'Loading...',
     },
     fr: {
-        title: 'Espace de finition',
-        subtitle: 'G\u00e9rez les pi\u00e8ces re\u00e7ues et enregistrez la finition.',
-        eyebrow: 'DONN\u00c9ES DE FINITION EN DIRECT',
-        tabs: { request: 'R\u00e9ceptionner', materials: 'Demander mat\u00e9riels', finish: 'Finition' },
+        title: 'Espace d\'emballage',
+        subtitle: 'G\u00e9rez les pi\u00e8ces re\u00e7ues et enregistrez l\'emballage.',
+        eyebrow: 'DONN\u00c9ES D\'EMBALLAGE EN DIRECT',
+        tabs: { request: 'R\u00e9ceptionner', materials: 'Demander mat\u00e9riels', finish: 'Emballer' },
         materialsTitle: 'Demander des mati\u00e8res premi\u00e8res',
-        materialsDesc: 'Demandez des mat\u00e9riaux (boutons, fils, etc.) de l\'entrep\u00f4t principal.',
+        materialsDesc: 'Demandez des mat\u00e9riaux (bo\u00eetes, ruban adhésif, etc.) de l\'entrep\u00f4t principal.',
         requestMaterials: 'Soumettre', requesting: 'Soumission...',
-        requestTitle: "R\u00e9ceptionner les pi\u00e8ces de la couture",
-        requestDesc: 'Enregistrez la r\u00e9ception des pi\u00e8ces cousues n\u00e9cessaires pour la finition.',
+        requestTitle: "R\u00e9ceptionner les pi\u00e8ces de la finition",
+        requestDesc: 'Enregistrez la r\u00e9ception des pi\u00e8ces finies n\u00e9cessaires pour l\'emballage.',
         selectItem: 'S\u00e9lectionner la pi\u00e8ce', quantity: 'Quantit\u00e9 re\u00e7ue', reason: 'Motif / Notes',
         quantityPlaceholder: 'Saisissez la quantit\u00e9', reasonPlaceholder: 'D\u00e9crivez ce que vous avez re\u00e7u...',
         sendRequest: 'Enregistrer', sending: 'Enregistrement...',
         pendingRequests: 'Articles accept\u00e9s', noRequests: 'Aucun article accept\u00e9.',
-        finishedDesc: 'Enregistrez les articles que vous avez cousus avec succ\u00e8s.',
+        finishedDesc: 'Enregistrez les articles que vous avez emball\u00e9s avec succ\u00e8s.',
         finishedItem: 'Mat\u00e9riel utilis\u00e9', finishedQuantity: 'Quantit\u00e9 utilis\u00e9e',
-        outputQuantity: 'Nombre d\'articles', finishedNotes: 'Notes de finition',
+        outputQuantity: 'Nombre d\'articles', finishedNotes: 'Notes d\'emballage',
         finishedPlaceholder: 'ex: 50', outputPlaceholder: 'ex: 50',
-        notesPlaceholder: 'Notes sur cette session de finition...',
-        recordfinished: 'Enregistrer la finition', recording: 'Enregistrement...',
-        recentfinisheds: 'Finitions r\u00e9centes', nofinisheds: 'Aucune finition enregistr\u00e9e.',
+        notesPlaceholder: 'Notes sur cette session d\'emballage...',
+        recordfinished: 'Enregistrer l\'emballage', recording: 'Enregistrement...',
+        recentfinisheds: 'Emballages r\u00e9cents', nofinisheds: 'Aucun emballage enregistr\u00e9.',
         period: "Aujourd'hui",
         refresh: 'Actualiser', updated: 'Mis \u00e0 jour', connecting: 'Connexion...', loading: 'Chargement...',
     },
@@ -132,14 +132,14 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
     const finishOutputTransactions = packingTransactions.filter((tx: any) =>
         tx.type === 'issue' &&
         tx.warehouse_id === packingWarehouseId &&
-        String(tx.reason || '').startsWith('[packing Output]')
+        String(tx.reason || '').startsWith('[Packing Output]')
     );
 
-    const acceptedfinishedPieces = packingTransactions.filter((tx: any) => tx.type === 'receipt' && String(tx.reason || '').includes('finishedID:'));
+    const acceptedfinishedPieces = packingTransactions.filter((tx: any) => tx.type === 'receipt' && String(tx.reason || '').includes('FinishedID:'));
 
     const packingVirtualStock = new Map();
     acceptedfinishedPieces.forEach((tx: any) => {
-        const match = String(tx.reason).match(/finishedID:\s*([^\s|]+)/i);
+        const match = String(tx.reason).match(/FinishedID:\s*([^\s|]+)/i);
         if (match) {
             const finishedId = match[1];
             if (!packingVirtualStock.has(finishedId)) {
@@ -155,8 +155,8 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         }
     });
     packingTransactions.forEach((tx: any) => {
-        if ((tx.type === 'issue' || tx.type === 'waste') && String(tx.reason).includes('finishedID:')) {
-            const match = String(tx.reason).match(/finishedID:\s*([^\s|]+)/i);
+        if ((tx.type === 'issue' || tx.type === 'waste') && String(tx.reason).includes('FinishedID:')) {
+            const match = String(tx.reason).match(/FinishedID:\s*([^\s|]+)/i);
             if (match && packingVirtualStock.has(match[1])) {
                 packingVirtualStock.get(match[1]).available_qty -= Math.abs(tx.quantity_delta);
             }
@@ -175,7 +175,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         clearMsg();
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: packingWarehouseId, type: 'receipt', quantity: Number(piece.available_qty), reason: `[packing Receipt] finishedID: ${piece.id} | Accepted from Finishing` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: packingWarehouseId, type: 'receipt', quantity: Number(piece.available_qty), reason: `[Packing Receipt] FinishedID: ${piece.id} | Accepted from Finishing` }) });
             setSuccess(locale === 'en' ? 'finished pieces received successfully!' : 'Pi\u00e8ces cousues re\u00e7ues avec succ\u00e8s !');
             await load(true);
         } catch (r: any) { setError(r.message); } finally { setBusy(false); }
@@ -186,7 +186,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         if (!requestForm.item_id || !requestForm.quantity) { setError(locale === 'en' ? 'Please select a material and enter quantity.' : 'Veuillez s\u00e9lectionner un mat\u00e9riel.'); return; }
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(requestForm.item_id), warehouse_id: mainWarehouseId, type: 'reserve', quantity: Number(requestForm.quantity), reason: `[packing Request] ${requestForm.reason || 'Material requested for packing'}` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(requestForm.item_id), warehouse_id: mainWarehouseId, type: 'reserve', quantity: Number(requestForm.quantity), reason: `[Packing Request] ${requestForm.reason || 'Material requested for packing'}` }) });
             setSuccess(locale === 'en' ? 'Material request submitted successfully! Pending approval.' : 'Demande soumise avec succ\u00e8s !');
             setRequestForm({ item_id: '', quantity: '', reason: '' }); await load(true);
         } catch (r: any) { setError(r.message); } finally { setBusy(false); }
@@ -205,7 +205,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: packingWarehouseId, type: 'issue', quantity: Number(finishForm.quantity), reason: `[packing Output] finishedID: ${selectedPiece.id} | ${finishForm.quantity} items finished. ${finishForm.notes || ''}` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: packingWarehouseId, type: 'issue', quantity: Number(finishForm.quantity), reason: `[Packing Output] FinishedID: ${selectedPiece.id} | ${finishForm.quantity} items finished. ${finishForm.notes || ''}` }) });
             setSuccess(locale === 'en' ? 'packing record saved successfully!' : 'Enregistrement de finition sauvegard\u00e9 !');
             setFinishForm({ item_id: '', quantity: '', notes: '' }); await load(true);
         } catch (r: any) {
@@ -306,7 +306,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         {loading && !stock.length ? <div className="panel" style={{padding:'3rem',textAlign:'center',opacity:.7}}>{t.loading}</div> :
 
         /* ─── Request Fabrics ─── */
-        tab === 'request' ? <div className="Finishing-tab-content">
+        tab === 'request' ? <div className="sewing-tab-content">
             <article className="panel">
                 <div className="panel-title"><h2>{locale === 'en' ? 'Pending finished Pieces' : 'Pi\u00e8ces cousues en attente'}</h2></div>
                 <p className="cutting-form-desc" style={{ padding: '0 20px' }}>{locale === 'en' ? 'Accept finished pieces from the Finishing department to start packing.' : 'Acceptez les pi\u00e8ces cousues du d\u00e9partement de couture pour commencer \u00e0 finir.'}</p>
@@ -326,16 +326,16 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
                 <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'finished Product' : 'Produit cousu'}</th><th>{t.quantity}</th><th>{t.reason}</th></tr></thead><tbody>
                     {acceptedfinishedPieces.length ? acceptedfinishedPieces.map((tx: any) => {
                         let productName = tx.item_name;
-                        const match = String(tx.reason || '').match(/finishedID:\s*\d+-([^-]+)-([^-]*)-([^\s|]+)/);
+                        const match = String(tx.reason || '').match(/FinishedID:\s*\d+-([^-]+)-([^-]*)-([^\s|]+)/);
                         if (match) productName = `${match[1]}${match[2] ? ` / ${match[2]}` : ''} (${match[3]}) - ${tx.item_name}`;
-                        return <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{productName}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[packing Receipt] ', '')}</td></tr>
+                        return <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{productName}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Packing Receipt] ', '')}</td></tr>
                     }) : <tr><td colSpan={4} className="empty-cell">{t.noRequests}</td></tr>}
                 </tbody></table></div>
             </article>
         </div>
 
         /* ─── Request Materials ─── */
-        : tab === 'materials' ? <div className="Finishing-tab-content">
+        : tab === 'materials' ? <div className="sewing-tab-content">
             <article className="panel cutting-form-panel">
                 <div className="panel-title"><h2>{t.materialsTitle || 'Request raw materials'}</h2></div>
                 <p className="cutting-form-desc">{t.materialsDesc || 'Request materials like buttons, thread, or labels from the main warehouse.'}</p>
@@ -360,7 +360,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         </div>
 
         /* ─── finished Fabrics ─── */
-        : tab === 'finish' ? <div className="Finishing-tab-content">
+        : tab === 'finish' ? <div className="sewing-tab-content">
             <article className="panel cutting-form-panel">
                 <div className="panel-title"><h2>{t.finishedTitle}</h2></div>
                 <p className="cutting-form-desc">{t.finishedDesc}</p>
@@ -385,7 +385,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
             <article className="panel">
                 <div className="panel-title"><h2>{t.recentfinisheds}</h2><span>{todayFinishs.length} {locale === 'en' ? 'records today' : 'enregistrements aujourd\'hui'}</span></div>
                 <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Output' : 'Sortie'}</th><th>{locale === 'en' ? 'Quantity finishn' : 'Quantit\u00e9 cousue'}</th><th>{locale === 'en' ? 'Details' : 'D\u00e9tails'}</th><th></th></tr></thead><tbody>
-                    {todayFinishs.length ? todayFinishs.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))}</td><td>{String(tx.reason || '').replace('[packing Output] ', '')}</td><td style={{textAlign: 'right'}}><button className="secondary-btn" style={{padding: '4px 8px'}} onClick={() => setEditForm({ id: tx.id, quantity: String(Math.abs(tx.quantity_delta)), reason: String(tx.reason || '') })}>{locale === 'en' ? 'Edit' : 'Modifier'}</button></td></tr>) : <tr><td colSpan={5} className="empty-cell">{t.nofinisheds}</td></tr>}
+                    {todayFinishs.length ? todayFinishs.map((tx: any) => <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{tx.item_name}</b></td><td>{num(Math.abs(tx.quantity_delta))}</td><td>{String(tx.reason || '').replace('[Packing Output] ', '')}</td><td style={{textAlign: 'right'}}><button className="secondary-btn" style={{padding: '4px 8px'}} onClick={() => setEditForm({ id: tx.id, quantity: String(Math.abs(tx.quantity_delta)), reason: String(tx.reason || '') })}>{locale === 'en' ? 'Edit' : 'Modifier'}</button></td></tr>) : <tr><td colSpan={5} className="empty-cell">{t.nofinisheds}</td></tr>}
                 </tbody></table></div>
             </article>
         </div>
