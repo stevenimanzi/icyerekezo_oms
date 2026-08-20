@@ -141,10 +141,20 @@ class InventoryController extends Controller
         $isSewingOperator = $request->user()->roles()
             ->wherePivot('factory_id', $request->user()->current_factory_id)
             ->where('slug', 'sewing-operator')->exists();
+
+        $isFinishingManager = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->whereIn('slug', ['finishing-manager', 'finishing-operator'])->exists();
+            
+        $isPackingManager = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->whereIn('slug', ['packing-manager', 'packing-operator'])->exists();
         
         $allowed = $isWarehouseKeeper || 
             ($isCuttingOperator && in_array($data['type'], ['reserve', 'issue', 'waste'])) ||
-            ($isSewingOperator && in_array($data['type'], ['receipt', 'issue', 'waste']));
+            ($isSewingOperator && in_array($data['type'], ['receipt', 'issue', 'waste'])) ||
+            ($isFinishingManager && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output'])) ||
+            ($isPackingManager && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output']));
         abort_unless($allowed, 403, 'You do not have permission to post this type of transaction.');
 
         return response()->json($ledger->post($data), 201);

@@ -51,10 +51,24 @@ class ManufacturingService
         return DB::transaction(function () use ($execution, $data) {
             $execution->load('stage');
             $order = ProductionOrder::lockForUpdate()->findOrFail($execution->production_order_id);
-            $previous = $order->executions()->whereHas('stage', fn ($q) => $q->where('sequence', '<', $execution->stage->sequence))->where('status', '!=', 'completed')->exists();
-            if ($data['status'] === 'in_progress' && $previous) {
+            
+            $previousExecution = $order->executions()
+                ->whereHas('stage', fn ($q) => $q->where('sequence', '<', $execution->stage->sequence))
+                ->with('stage')
+                ->get()
+                ->sortByDesc('stage.sequence')
+                ->first();
+                
+            if ($data['status'] === 'in_progress' && $previousExecution && $previousExecution->status !== 'completed') {
                 throw ValidationException::withMessages(['status' => 'Previous production stages must be completed first.']);
             }
+            
+            if (isset($data['input_quantity']) && $previousExecution) {
+                if ($data['input_quantity'] > $previousExecution->output_quantity) {
+                    throw ValidationException::withMessages(['input_quantity' => 'Cannot input more than what the previous stage ('.$previousExecution->stage->name.') outputted ('.$previousExecution->output_quantity.').']);
+                }
+            }
+
             $updates = $data;
             if ($data['status'] === 'in_progress') {
                 $updates['started_at'] = $execution->started_at ?? now();
@@ -67,6 +81,31 @@ class ManufacturingService
                 $next?->update(['status' => 'ready']);
                 if (! $next) {
                     $order->update(['status' => 'completed', 'completed_quantity' => $data['output_quantity'] ?? 0, 'completed_at' => now()]);
+                    
+                    if (($data['output_quantity'] ?? 0) > 0) {
+                        $order->load('item');
+                        $batchId = null;
+                        if ($order->item->batch_tracked) {
+                            $batch = \App\Models\Batch::firstOrCreate([
+                                'factory_id' => $order->factory_id,
+                                'item_id' => $order->item_id,
+                                'batch_number' => $order->order_number . '-BATCH',
+                            ], [
+                                'manufactured_date' => now()->toDateString(),
+                            ]);
+                            $batchId = $batch->id;
+                        }
+                        
+                        $ledger = new \App\Services\InventoryLedger();
+                        $ledger->post([
+                            'item_id' => $order->item_id,
+                            'warehouse_id' => $order->warehouse_id,
+                            'type' => 'receipt',
+                            'quantity' => $data['output_quantity'],
+                            'reason' => 'Production completed for ' . $order->order_number,
+                            'batch_id' => $batchId
+                        ]);
+                    }
                 }
             }
             $execution->update($updates);

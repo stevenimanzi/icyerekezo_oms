@@ -179,7 +179,7 @@ class ReportController extends Controller
             }
         }
 
-        $rawFinishingDept = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('name', 'like', '%finishing%')->first();
+        $rawFinishingDept = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where(fn($q) => $q->where('name', 'like', '%finishing%')->orWhere('name', 'like', '%finished%'))->first();
         $isFinishingSelected = !isset($departmentId) || (isset($departmentId) && $rawFinishingDept && $departmentId == $rawFinishingDept->id);
 
         if (stripos($factory->name, 'noguchi') !== false && $isFinishingSelected) {
@@ -191,9 +191,7 @@ class ReportController extends Controller
                     $departments->push($finishingDept);
                 }
                 
-                $finishingWarehouseId = DB::table('warehouses')->where('factory_id', $factory->id)->where(fn($q) => $q->where('code', 'FIN')->orWhere('name', 'like', '%finishing%'))->value('id') ?? 1;
                 $finishingTx = StockTransaction::withoutGlobalScopes()->where('stock_transactions.factory_id', $factory->id)
-                    ->where('warehouse_id', $finishingWarehouseId)
                     ->whereBetween('occurred_at', [$from, $to])
                     ->where(fn($q) => $q->where('reason', 'like', '%[Finishing Output]%')->orWhere('reason', 'like', '%[Finishing Receipt]%'))
                     ->join('items', 'items.id', '=', 'stock_transactions.item_id')
@@ -234,6 +232,44 @@ class ReportController extends Controller
                         'waste_quantity' => $waste,
                         'unit_symbol' => 'pcs',
                         'status' => 'completed',
+                    ]);
+                }
+            }
+        }
+        
+        $rawPackingDept = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where(fn($q) => $q->where('name', 'like', '%packing%')->orWhere('name', 'like', '%packaging%'))->first();
+        if (stripos($factory->name, 'noguchi') !== false && (!$departmentId || ($rawPackingDept && $departmentId == $rawPackingDept->id))) {
+            $packingDept = $rawPackingDept;
+            if (!$packingDept && !$departmentOnly) $packingDept = $departments->first();
+            
+            if ($packingDept) {
+                if (!$departments->contains('id', $packingDept->id)) {
+                    $departments->push($packingDept);
+                }
+                
+                $packingStages = ProductionStageExecution::withoutGlobalScopes()->where('production_stage_executions.factory_id', $factory->id)
+                    ->whereHas('stage', fn($q) => $q->where('code', 'PACKING'))
+                    ->whereBetween('production_stage_executions.updated_at', [$from, $to])
+                    ->join('production_orders', 'production_orders.id', '=', 'production_stage_executions.production_order_id')
+                    ->join('items', 'items.id', '=', 'production_orders.item_id')
+                    ->select('production_stage_executions.*', 'production_orders.order_number', 'items.name as product_name')
+                    ->get();
+                    
+                foreach ($packingStages as $stage) {
+                    $executions->push((object)[
+                        'updated_at' => \Carbon\Carbon::parse($stage->updated_at),
+                        'department_id' => $packingDept->id,
+                        'production_order_id' => $stage->production_order_id,
+                        'stage_name' => 'Packing',
+                        'order_number' => $stage->order_number,
+                        'product_name' => $stage->product_name,
+                        'fabric_name' => $stage->product_name,
+                        'input_quantity' => $stage->input_quantity,
+                        'output_quantity' => $stage->output_quantity,
+                        'rejected_quantity' => $stage->rejected_quantity,
+                        'waste_quantity' => $stage->waste_quantity,
+                        'unit_symbol' => 'pcs',
+                        'status' => $stage->status,
                     ]);
                 }
             }
