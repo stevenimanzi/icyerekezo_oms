@@ -247,29 +247,47 @@ class ReportController extends Controller
                     $departments->push($packingDept);
                 }
                 
-                $packingStages = ProductionStageExecution::withoutGlobalScopes()->where('production_stage_executions.factory_id', $factory->id)
-                    ->whereHas('stage', fn($q) => $q->where('code', 'PACKING'))
-                    ->whereBetween('production_stage_executions.updated_at', [$from, $to])
-                    ->join('production_orders', 'production_orders.id', '=', 'production_stage_executions.production_order_id')
-                    ->join('items', 'items.id', '=', 'production_orders.item_id')
-                    ->select('production_stage_executions.*', 'production_orders.order_number', 'items.name as product_name')
+                $packingTx = StockTransaction::withoutGlobalScopes()->where('stock_transactions.factory_id', $factory->id)
+                    ->whereBetween('occurred_at', [$from, $to])
+                    ->where(fn($q) => $q->where('reason', 'like', '%[Packing Output]%')->orWhere('reason', 'like', '%[Packing Receipt]%'))
+                    ->join('items', 'items.id', '=', 'stock_transactions.item_id')
+                    ->select('stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as product_name')
                     ->get();
                     
-                foreach ($packingStages as $stage) {
+                $packingTxGrouped = $packingTx->groupBy(function($tx) {
+                    preg_match('/FinishedID:\s*([^\s|]+)/i', $tx->reason, $match);
+                    $finishedId = $match[1] ?? 'unknown';
+                    return \Carbon\Carbon::parse($tx->occurred_at)->toDateString() . '|' . $finishedId;
+                });
+                
+                foreach ($packingTxGrouped as $key => $txs) {
+                    $finishedId = explode('|', $key)[1];
+                    $parts = explode('-', $finishedId);
+                    $style = $parts[1] ?? '';
+                    $color = $parts[2] ?? '';
+                    $size = $parts[3] ?? '';
+                    $fabricName = $txs->first()->product_name;
+                    $formattedProduct = trim("$style - $color - $size", ' -');
+                    if (!$formattedProduct) $formattedProduct = $fabricName;
+                    
+                    $input = $txs->where('type', 'receipt')->sum(fn($t) => abs($t->quantity_delta));
+                    $output = $txs->where('type', 'issue')->sum(fn($t) => abs($t->quantity_delta));
+                    $waste = $txs->where('type', 'waste')->sum(fn($t) => abs($t->quantity_delta));
+                    
                     $executions->push((object)[
-                        'updated_at' => \Carbon\Carbon::parse($stage->updated_at),
+                        'updated_at' => \Carbon\Carbon::parse($txs->first()->occurred_at),
                         'department_id' => $packingDept->id,
-                        'production_order_id' => $stage->production_order_id,
+                        'production_order_id' => crc32($finishedId),
                         'stage_name' => 'Packing',
-                        'order_number' => $stage->order_number,
-                        'product_name' => $stage->product_name,
-                        'fabric_name' => $stage->product_name,
-                        'input_quantity' => $stage->input_quantity,
-                        'output_quantity' => $stage->output_quantity,
-                        'rejected_quantity' => $stage->rejected_quantity,
-                        'waste_quantity' => $stage->waste_quantity,
+                        'order_number' => $finishedId,
+                        'product_name' => $formattedProduct,
+                        'fabric_name' => $fabricName,
+                        'input_quantity' => $input,
+                        'output_quantity' => $output,
+                        'rejected_quantity' => 0,
+                        'waste_quantity' => $waste,
                         'unit_symbol' => 'pcs',
-                        'status' => $stage->status,
+                        'status' => 'completed',
                     ]);
                 }
             }
