@@ -36,6 +36,7 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
   {!logistics&&!isNoguchiSewing&&!isFinishingManager&&!isPackingManager&&!isQualityManager&&<OperationalPanels warehouse={warehouse} assignments={assignments} stock={stock} stages={stages} data={data} user={user} fr={fr} status={status} number={number} busy={busy} update={update}/>}
   {isFinishingManager&&data?.finishing_progress&&<FinishingCharts data={data.finishing_progress} fr={fr} number={number}/>}
   {isPackingManager&&data?.packing_progress&&<PackingCharts data={data.packing_progress} fr={fr} number={number}/>}
+  {isQualityManager&&data?.quality_progress&&<QualityCharts data={data.quality_progress} fr={fr} number={number}/>}
   {isQualityManager&&<QualityRecentInspections inspections={data?.recent_inspections||[]} fr={fr} status={status} number={number}/>}
  </section>
 }
@@ -125,6 +126,39 @@ function PackingMetrics({values,fr}:any){
         <Metric icon={<PackageCheck/>} label={fr?"Emballé aujourd'hui":"Packed today"} value={number(values.packed_today)} tone="blue"/>
         <Metric icon={<Warehouse/>} label={fr?"Déposé à l'entrepôt":"Deposited to warehouse"} value={number(values.deposited_to_warehouse)} tone="green"/>
     </section>;
+}
+
+function QualityCharts({data, fr, number}:any){
+ const [filter, setFilter] = useState<"weekly"|"monthly"|"annually">("weekly");
+ const tooltipStyle={background:"var(--panel)",border:"1px solid var(--line)",borderRadius:10,boxShadow:"0 12px 30px rgba(15,23,42,.12)",color:"var(--text)"};
+ 
+ const dataList = data && typeof data === "object" && data[filter] ? data[filter] : [];
+ const chartData = Array.isArray(dataList) ? dataList.slice().reverse() : [];
+
+ return <section className="department-grid">
+  <article className="panel chart-panel" style={{gridColumn: "1 / -1"}}>
+   <header className="department-panel-head" style={{alignItems: "flex-start"}}>
+    <div><h2>{fr?"Rapports d'inspection":"Inspection Reports"}</h2><p>{fr?"Résultats de qualité par période":"Quality results per period"}</p></div>
+    <div style={{display:"flex",gap:10,background:"var(--background)",padding:4,borderRadius:8}}>
+     <button className={filter==="weekly"?"primary-btn":"secondary-btn"} style={{margin:0,padding:"4px 12px",minHeight:30}} onClick={()=>setFilter("weekly")}>{fr?"Hebdomadaire":"Weekly"}</button>
+     <button className={filter==="monthly"?"primary-btn":"secondary-btn"} style={{margin:0,padding:"4px 12px",minHeight:30}} onClick={()=>setFilter("monthly")}>{fr?"Mensuel":"Monthly"}</button>
+     <button className={filter==="annually"?"primary-btn":"secondary-btn"} style={{margin:0,padding:"4px 12px",minHeight:30}} onClick={()=>setFilter("annually")}>{fr?"Annuel":"Annually"}</button>
+    </div>
+   </header>
+   <div className="chart-wrap" style={{height: 300, marginTop: 15}}>
+    <ResponsiveContainer width="100%" height="100%">
+     <BarChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}>
+      <CartesianGrid vertical={false} stroke="var(--line)"/>
+      <XAxis dataKey="period" tickLine={false} axisLine={false} />
+      <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+      <Tooltip contentStyle={tooltipStyle} />
+      <Bar dataKey="passed" name={fr?"Réussi":"Passed"} fill="#10b981" radius={[4,4,0,0]} barSize={filter==='monthly'?15:40}/>
+      <Bar dataKey="failed" name={fr?"Échoué":"Failed"} fill="#ef4444" radius={[4,4,0,0]} barSize={filter==='monthly'?15:40}/>
+     </BarChart>
+    </ResponsiveContainer>
+   </div>
+  </article>
+ </section>
 }
 
 function PackingCharts({data, fr, number}:any){

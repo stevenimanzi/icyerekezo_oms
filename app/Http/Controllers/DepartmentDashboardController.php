@@ -218,6 +218,7 @@ class DepartmentDashboardController extends Controller
             ];
         }
 
+        $qualityProgress = [];
         $qualityMetrics = null;
         $recentInspections = [];
         if ($isQualityUser) {
@@ -228,6 +229,37 @@ class DepartmentDashboardController extends Controller
             $monthTotal = (clone $inspectionsQuery)->whereBetween('inspected_at', [$monthStart, $monthEnd])->whereIn('result', ['passed', 'failed'])->count();
             $monthPassed = (clone $inspectionsQuery)->whereBetween('inspected_at', [$monthStart, $monthEnd])->where('result', 'passed')->count();
             
+            $qualityProgress = [
+                'weekly' => collect(range(6, 0))->map(function ($daysAgo) use ($inspectionsQuery) {
+                    $date = today()->subDays($daysAgo);
+                    return [
+                        'period' => $date->format('D'),
+                        'inspections' => (clone $inspectionsQuery)->whereDate('inspected_at', $date)->sum('inspected_quantity'),
+                        'passed' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', $date)->sum('passed_quantity'),
+                        'failed' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', $date)->sum('rejected_quantity'),
+                    ];
+                })->values(),
+                'monthly' => collect(range(29, 0))->map(function ($daysAgo) use ($inspectionsQuery) {
+                    $date = today()->subDays($daysAgo);
+                    return [
+                        'period' => $date->format('d M'),
+                        'inspections' => (clone $inspectionsQuery)->whereDate('inspected_at', $date)->sum('inspected_quantity'),
+                        'passed' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', $date)->sum('passed_quantity'),
+                        'failed' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', $date)->sum('rejected_quantity'),
+                    ];
+                })->values(),
+                'annually' => collect(range(11, 0))->map(function ($monthsAgo) use ($inspectionsQuery) {
+                    $month = now()->startOfMonth()->subMonths($monthsAgo);
+                    return [
+                        'period' => $month->format('M'),
+                        'month_number' => $month->month,
+                        'inspections' => (clone $inspectionsQuery)->whereBetween('inspected_at', [$month, $month->copy()->endOfMonth()])->sum('inspected_quantity'),
+                        'passed' => (float) (clone $inspectionsQuery)->whereBetween('inspected_at', [$month, $month->copy()->endOfMonth()])->sum('passed_quantity'),
+                        'failed' => (float) (clone $inspectionsQuery)->whereBetween('inspected_at', [$month, $month->copy()->endOfMonth()])->sum('rejected_quantity'),
+                    ];
+                })->values(),
+            ];
+
             $qualityMetrics = [
                 'pending_inspections' => (clone $inspectionsQuery)->where('result', 'pending')->count(),
                 'inspections_today' => (clone $inspectionsQuery)->whereDate('inspected_at', today())->count(),
@@ -281,6 +313,7 @@ class DepartmentDashboardController extends Controller
             'packing_progress' => $packingProgress,
             'packing_metrics' => $packingMetrics,
             'is_quality_user' => (bool) $isQualityUser,
+            'quality_progress' => $qualityProgress,
             'quality_metrics' => $qualityMetrics,
             'recent_inspections' => $recentInspections,
         ]);

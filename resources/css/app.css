@@ -6,7 +6,7 @@
 :root { --bg:#f5f7fb; --panel:#fff; --text:#152035; --muted:#748198; --line:#e7ebf2; --soft:#f8fafc; --brand:#2563eb; --sidebar:270px; color-scheme:light; }
 :root[data-theme='dark'] { --bg:#0e1422; --panel:#161e2e; --text:#edf2fb; --muted:#99a7bc; --line:#263246; --soft:#111827; color-scheme:dark; }
 * { box-sizing:border-box; }
-html { font-family:'DM Sans', ui-sans-serif, system-ui, sans-serif; background:var(--bg); color:var(--text); }
+html { font-family:'Inter', ui-sans-serif, system-ui, sans-serif; background:var(--bg); color:var(--text); }
 body { margin:0; min-width:320px; overflow-x:hidden; background:var(--bg); }
 button,input { font:inherit; }
 button { color:inherit; }
@@ -926,3 +926,36 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
 @media(max-width:600px){.school-garment-matrices{padding:8px 12px 18px}.school-size-row{grid-template-columns:180px repeat(7,64px);width:max-content}.school-size-person{position:sticky;left:0;z-index:1;padding-right:8px;background:var(--surface)}}
 
 .sewing-tab-content { display: flex; flex-direction: column; gap: 24px; }
+
+/* Typography Enforcements (Global) */
+html, body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important; }
+
+/* Page Title: 24px - 28px, Bold (700) */
+h1, .page-heading h1 {
+    font-size: 26px !important;
+    font-weight: 700 !important;
+}
+
+/* Section Header: 18px - 20px, Semi-Bold (600) */
+h2, .panel-title h2, .department-panel-head h2, .section-header {
+    font-size: 19px !important;
+    font-weight: 600 !important;
+}
+
+/* Body / Inputs: 14px - 16px, Regular (400) */
+body, p, input, select, textarea, button {
+    font-size: 14.5px;
+    font-weight: 400;
+}
+
+/* Table Data / Secondary: 13px - 14px, Regular (400) */
+table td, table th, .admin-table td, .admin-table th, .assignment-list p, .stage-activity-list span, .metric-copy > span {
+    font-size: 13.5px !important;
+    font-weight: 400 !important;
+}
+
+/* Captions / Meta: 11px - 12px, Medium (500) */
+small, .caption, .meta, .eyebrow, .factory-card span, .workspace-banner small {
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+}
