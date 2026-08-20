@@ -22,7 +22,7 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
  
  const isNoguchiSewing = user?.current_factory?.name?.trim().toLowerCase()==='noguchi holdings ltd' && user?.workspace === 'sewing';
  const isFinishingManager = user?.workspace === 'finishing' || user?.roles?.some((r:any) => r.slug === 'finishing-manager');
- const isPackingManager = user?.workspace === 'packing' || user?.roles?.some((r:any) => r.slug === 'packing-manager');
+ const isPackingManager = user?.workspace === 'packing' || user?.workspace === 'packaging' || user?.roles?.some((r:any) => r.slug === 'packing-manager' || r.slug === 'packaging-manager');
 
  return <section className={`department-dashboard ${user.workspace==='cutting'?'cutting-dashboard':''}`}>
   <div className="page-heading"><div><div className="eyebrow"><span></span>{eyebrow}</div><h1>{title}</h1><p>{description}</p></div><button className="secondary-btn" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'spin':''} size={16}/>{loading?(fr?'Actualisationâ€¦':'Refreshingâ€¦'):(fr?'Actualiser':'Refresh')}</button></div>

@@ -46,8 +46,10 @@ class DepartmentDashboardController extends Controller
             || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'finishing-manager')->exists();
             
         $isPackingUser = str_contains(strtolower((string) $profile?->job_title), 'packing')
+            || str_contains(strtolower((string) $profile?->job_title), 'packaging')
             || str_contains(strtolower((string) $department?->name), 'packing')
-            || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'packing-manager')->exists();
+            || str_contains(strtolower((string) $department?->name), 'packaging')
+            || $user->roles()->wherePivot('factory_id', $factoryId)->whereIn('slug', ['packing-manager', 'packaging-manager'])->exists();
 
         $employeeIds = $department
             ? EmployeeProfile::withoutGlobalScopes()->where('factory_id', $factoryId)->where('department_id', $department->id)->pluck('user_id')
@@ -174,24 +176,24 @@ class DepartmentDashboardController extends Controller
         $packingProgress = [];
         $packingMetrics = null;
         if ($isPackingUser) {
-            $packingOutputQuery = ProductionStageExecution::withoutGlobalScopes()
+            $packingOutputQuery = StockTransaction::withoutGlobalScopes()
                 ->where('factory_id', $factoryId)
-                ->whereHas('stage', fn($q) => $q->where('code', 'PACKING'))
-                ->whereIn('status', ['in_progress', 'completed']);
+                ->where('type', 'issue')
+                ->where('reason', 'LIKE', '[Packing Output]%');
 
             $packingProgress = [
                 'weekly' => collect(range(6, 0))->map(function ($daysAgo) use ($packingOutputQuery) {
                     $date = today()->subDays($daysAgo);
                     return [
                         'period' => $date->format('D'),
-                        'output' => (float) (clone $packingOutputQuery)->whereDate('updated_at', $date)->sum('output_quantity'),
+                        'output' => abs((float) (clone $packingOutputQuery)->whereDate('occurred_at', $date)->sum('quantity_delta')),
                     ];
                 })->values(),
                 'monthly' => collect(range(29, 0))->map(function ($daysAgo) use ($packingOutputQuery) {
                     $date = today()->subDays($daysAgo);
                     return [
                         'period' => $date->format('d M'),
-                        'output' => (float) (clone $packingOutputQuery)->whereDate('updated_at', $date)->sum('output_quantity'),
+                        'output' => abs((float) (clone $packingOutputQuery)->whereDate('occurred_at', $date)->sum('quantity_delta')),
                     ];
                 })->values(),
                 'annually' => collect(range(11, 0))->map(function ($monthsAgo) use ($packingOutputQuery) {
@@ -199,15 +201,14 @@ class DepartmentDashboardController extends Controller
                     return [
                         'period' => $month->format('M'),
                         'month_number' => $month->month,
-                        'output' => (float) (clone $packingOutputQuery)->whereBetween('updated_at', [$month, $month->copy()->endOfMonth()])->sum('output_quantity'),
+                        'output' => abs((float) (clone $packingOutputQuery)->whereBetween('occurred_at', [$month, $month->copy()->endOfMonth()])->sum('quantity_delta')),
                     ];
                 })->values(),
             ];
             
             $packingMetrics = [
-                'pending_packing' => (float) ProductionStageExecution::withoutGlobalScopes()->where('factory_id', $factoryId)->whereHas('stage', fn ($q) => $q->where('code', 'FINISHING'))->sum('output_quantity') 
-                    - (float) ProductionStageExecution::withoutGlobalScopes()->where('factory_id', $factoryId)->whereHas('stage', fn ($q) => $q->where('code', 'PACKING'))->sum('input_quantity'),
-                'packed_today' => (float) (clone $packingOutputQuery)->whereDate('updated_at', today())->sum('output_quantity'),
+                'pending_packing' => abs((float) StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)->where('type', 'receipt')->where('reason', 'LIKE', '[Packing Receipt]%')->sum('quantity_delta')) - abs((float) (clone $packingOutputQuery)->sum('quantity_delta')),
+                'packed_today' => abs((float) (clone $packingOutputQuery)->whereDate('occurred_at', today())->sum('quantity_delta')),
                 'deposited_to_warehouse' => abs((float) StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)->where('type', 'receipt')->whereDate('occurred_at', today())->sum('quantity_delta')),
             ];
         }
