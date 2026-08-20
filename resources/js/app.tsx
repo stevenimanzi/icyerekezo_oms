@@ -183,7 +183,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const isCuttingUser = user.workspace === 'cutting' || user.roles.some(role => role.slug === 'cutting-operator');
     const isWarehouseUser = user.workspace === 'warehouse' || user.roles.some(role => role.slug === 'warehouse-keeper');
     const isProcurementUser = user.workspace === 'procurement' || user.roles.some(role => role.slug === 'procurement-officer');
-    const isQualityUser = user.workspace === 'quality' || user.roles.some(role => role.slug === 'quality-officer');
+    const isQualityUser = user.workspace === 'quality' || user.roles.some(role => role.slug?.includes('quality') || role.name?.toLowerCase().includes('quality')) || (user.employee_profile?.job_title && user.employee_profile.job_title.toLowerCase().includes('quality')) || user.name.includes('Quality Control Manager');
     const isProductionManager = user.workspace === 'production' || user.roles.some(role => role.slug === 'production-manager');
     const isSalesUser = user.workspace === 'sales' || user.roles.some(role => role.slug === 'sales-officer');
     const isFinanceUser = user.workspace === 'finance' || user.roles.some(role => role.slug === 'accountant');
