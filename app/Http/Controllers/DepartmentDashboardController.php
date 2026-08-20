@@ -7,6 +7,7 @@ use App\Models\DeliveryVehicle;
 use App\Models\EmployeeProfile;
 use App\Models\Item;
 use App\Models\ProductionStageExecution;
+use App\Models\QualityInspection;
 use App\Models\SalesDocument;
 use App\Models\Shipment;
 use App\Models\StockBalance;
@@ -50,6 +51,10 @@ class DepartmentDashboardController extends Controller
             || str_contains(strtolower((string) $department?->name), 'packing')
             || str_contains(strtolower((string) $department?->name), 'packaging')
             || $user->roles()->wherePivot('factory_id', $factoryId)->whereIn('slug', ['packing-manager', 'packaging-manager'])->exists();
+
+        $isQualityUser = str_contains(strtolower((string) $profile?->job_title), 'quality')
+            || str_contains(strtolower((string) $department?->name), 'quality')
+            || $user->roles()->wherePivot('factory_id', $factoryId)->whereIn('slug', ['quality-manager', 'quality-officer'])->exists();
 
         $employeeIds = $department
             ? EmployeeProfile::withoutGlobalScopes()->where('factory_id', $factoryId)->where('department_id', $department->id)->pluck('user_id')
@@ -213,6 +218,26 @@ class DepartmentDashboardController extends Controller
             ];
         }
 
+        $qualityMetrics = null;
+        $recentInspections = [];
+        if ($isQualityUser) {
+            $inspectionsQuery = QualityInspection::withoutGlobalScopes()->where('factory_id', $factoryId);
+            $monthStart = now()->startOfMonth();
+            $monthEnd = now()->endOfMonth();
+            
+            $monthTotal = (clone $inspectionsQuery)->whereBetween('inspected_at', [$monthStart, $monthEnd])->whereIn('result', ['passed', 'failed'])->count();
+            $monthPassed = (clone $inspectionsQuery)->whereBetween('inspected_at', [$monthStart, $monthEnd])->where('result', 'passed')->count();
+            
+            $qualityMetrics = [
+                'pending_inspections' => (clone $inspectionsQuery)->where('result', 'pending')->count(),
+                'inspections_today' => (clone $inspectionsQuery)->whereDate('inspected_at', today())->count(),
+                'failed_today' => (clone $inspectionsQuery)->whereDate('inspected_at', today())->where('result', 'failed')->count(),
+                'pass_rate' => $monthTotal > 0 ? round(($monthPassed / $monthTotal) * 100, 1) : 0,
+            ];
+            
+            $recentInspections = (clone $inspectionsQuery)->with(['order:id,order_number', 'item:id,name', 'inspector:id,name'])->latest('id')->limit(15)->get();
+        }
+
         return response()->json([
             'department' => $department ? [
                 'id' => $department->id,
@@ -227,7 +252,7 @@ class DepartmentDashboardController extends Controller
                 'workstation' => $profile->workstation,
             ] : null,
             'is_department_manager' => (bool) $isManager,
-            'dashboard_type' => $isLogistics ? 'logistics' : ($isWarehouse ? 'warehouse' : 'production'),
+            'dashboard_type' => $isQualityUser ? 'quality' : ($isLogistics ? 'logistics' : ($isWarehouse ? 'warehouse' : 'production')),
             'metrics' => [
                 'assigned_work' => (clone $assignments)->whereIn('status', ['assigned', 'ready'])->count(),
                 'work_in_progress' => (clone $assignments)->where('status', 'in_progress')->count(),
@@ -255,6 +280,9 @@ class DepartmentDashboardController extends Controller
             'is_packing_user' => (bool) $isPackingUser,
             'packing_progress' => $packingProgress,
             'packing_metrics' => $packingMetrics,
+            'is_quality_user' => (bool) $isQualityUser,
+            'quality_metrics' => $qualityMetrics,
+            'recent_inspections' => $recentInspections,
         ]);
     }
 }

@@ -251,12 +251,9 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['machines', Wrench, locale === 'en' ? 'Maintenance work orders' : 'Ordres de maintenance', 'maintenance.view'],
         ['inventory', Warehouse, locale === 'en' ? 'Spare parts' : 'Pieces de rechange', 'inventory.view'],
         ['reports', Activity, t.reports, 'reports.view'],
-    ] as const : isQualityManager ? [
+    ] as const : (isQualityManager || isQualityUser) ? [
         ['dashboard', LayoutDashboard, t.dashboard, '*'],
         ['quality', ClipboardCheck, locale === 'en' ? 'Quality management' : 'Gestion de la qualite', 'quality.view'],
-        ['production', Gauge, locale === 'en' ? 'Production records' : 'Dossiers de production', 'production.view'],
-        ['inventory', Warehouse, locale === 'en' ? 'Quarantined materials' : 'Matieres en quarantaine', 'inventory.view'],
-        ['products', Boxes, t.products, 'products.view'],
         ['reports', Activity, t.reports, 'reports.view'],
     ] as const : isHrOfficer ? [
         ['dashboard', LayoutDashboard, t.dashboard, '*'],
