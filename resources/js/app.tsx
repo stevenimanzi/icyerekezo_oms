@@ -251,7 +251,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['machines', Wrench, locale === 'en' ? 'Maintenance work orders' : 'Ordres de maintenance', 'maintenance.view'],
         ['inventory', Warehouse, locale === 'en' ? 'Spare parts' : 'Pieces de rechange', 'inventory.view'],
         ['reports', Activity, t.reports, 'reports.view'],
-    ] as const : (isQualityManager || isQualityUser) ? [
+    ] as const : isQualityManager ? [
         ['dashboard', LayoutDashboard, t.dashboard, '*'],
         ['quality', ClipboardCheck, locale === 'en' ? 'Quality management' : 'Gestion de la qualite', 'quality.view'],
         ['reports', Activity, t.reports, 'reports.view'],
@@ -322,13 +322,15 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ['inventory', Warehouse, locale === 'en' ? 'Stock levels' : 'Niveaux de stock', 'inventory.view'],
         ['products', Boxes, t.products, 'products.view'],
         ['reports', Activity, t.reports, 'reports.view'],
-    ] as const : isQualityUser ? [
-        // ─── Quality Control Officer ───
+    ] as const : (isNoguchiFactory && isQualityUser) ? [
+        // ─── Noguchi Quality Control Officer ───
         ['dashboard', LayoutDashboard, t.dashboard, '*'],
         ['quality', ClipboardCheck, t.control, 'quality.view'],
-        ['inventory', Warehouse, locale === 'en' ? 'Materials' : 'Matières', 'inventory.view'],
-        ['products', Boxes, t.products, 'products.view'],
-        ['production', Gauge, locale === 'en' ? 'Production status' : 'État de production', 'production.view'],
+        ['reports', Activity, t.reports, 'reports.view'],
+    ] as const : isQualityUser ? [
+        // ─── Regular Quality Control Officer ───
+        ['dashboard', LayoutDashboard, t.dashboard, '*'],
+        ['quality', ClipboardCheck, t.control, 'quality.view'],
         ['reports', Activity, t.reports, 'reports.view'],
     ] as const : isSchoolUser ? [
         ['dashboard', LayoutDashboard, 'Dashboard', '*'],
