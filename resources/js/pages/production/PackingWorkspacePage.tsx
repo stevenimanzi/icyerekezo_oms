@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
     AlertTriangle, CheckCircle2, FileText,
-    Package, RefreshCw, Scissors, Send,
+    Package, PackageCheck, RefreshCw, Scissors, Send,
 } from 'lucide-react';
 
 type Locale = 'en' | 'fr';
-type packingTab = 'request' | 'materials' | 'finish';
+type packingTab = 'request' | 'finish';
 type AuthUser = {
     id: number; name: string;
     current_factory: { name?: string; currency_code?: string } | null;
@@ -30,7 +30,7 @@ const copy = {
         title: 'Packing workspace',
         subtitle: 'Manage received pieces, record packing output.',
         eyebrow: 'LIVE PACKING DATA',
-        tabs: { request: 'Receive pieces', materials: 'Request materials', finish: 'Pack pieces' },
+        tabs: { request: 'Receive pieces', finish: 'Pack pieces' },
         materialsTitle: 'Request raw materials',
         materialsDesc: 'Request materials like boxes, tape, or labels from the main warehouse.',
         requestMaterials: 'Submit request', requesting: 'Submitting...',
@@ -55,7 +55,7 @@ const copy = {
         title: 'Espace d\'emballage',
         subtitle: 'G\u00e9rez les pi\u00e8ces re\u00e7ues et enregistrez l\'emballage.',
         eyebrow: 'DONN\u00c9ES D\'EMBALLAGE EN DIRECT',
-        tabs: { request: 'R\u00e9ceptionner', materials: 'Demander mat\u00e9riels', finish: 'Emballer' },
+        tabs: { request: 'R\u00e9ceptionner', finish: 'Emballer' },
         materialsTitle: 'Demander des mati\u00e8res premi\u00e8res',
         materialsDesc: 'Demandez des mat\u00e9riaux (bo\u00eetes, ruban adhésif, etc.) de l\'entrep\u00f4t principal.',
         requestMaterials: 'Soumettre', requesting: 'Soumission...',
@@ -293,11 +293,10 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         {success && <div className="admin-alert success">{success}</div>}
 
         <div className="module-tabs" role="tablist">
-            {(['request', 'materials', 'finish'] as packingTab[]).map(key => (
+            {(['request', 'finish'] as packingTab[]).map(key => (
                 <button key={key} className={tab === key ? 'active' : ''} onClick={() => { setTab(key); clearMsg(); }}>
                     {key === 'request' && <Package size={16}/>}
-                    {key === 'materials' && <Package size={16}/>}
-                    {key === 'finish' && <Scissors size={16}/>}
+                    {key === 'finish' && <PackageCheck size={16}/>}
                     <span>{t.tabs[key]}</span>
                 </button>
             ))}
@@ -331,31 +330,6 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
                         return <tr key={tx.id}><td>{new Date(tx.occurred_at).toLocaleString()}</td><td><b>{productName}</b></td><td>{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</td><td>{String(tx.reason || '').replace('[Packing Receipt] ', '')}</td></tr>
                     }) : <tr><td colSpan={4} className="empty-cell">{t.noRequests}</td></tr>}
                 </tbody></table></div>
-            </article>
-        </div>
-
-        /* ─── Request Materials ─── */
-        : tab === 'materials' ? <div className="sewing-tab-content">
-            <article className="panel cutting-form-panel">
-                <div className="panel-title"><h2>{t.materialsTitle || 'Request raw materials'}</h2></div>
-                <p className="cutting-form-desc">{t.materialsDesc || 'Request materials like buttons, thread, or labels from the main warehouse.'}</p>
-                <div className="cutting-form-grid">
-                    <label><span>{t.selectItem}</span>
-                        <select value={requestForm.item_id} onChange={e => setRequestForm({ ...requestForm, item_id: e.target.value })}>
-                            <option value="">{locale === 'en' ? '\u2014 Choose material \u2014' : '\u2014 Choisir un mat\u00e9riel \u2014'}</option>
-                            {requestableMaterials.map((item: any) => <option key={item.id} value={item.item_id}>{item.name} ({num(item.quantity_on_hand)} {locale === 'en' ? 'in stock' : 'en stock'})</option>)}
-                        </select>
-                    </label>
-                    <label><span>{t.quantity}</span>
-                        <input type="number" min="0.001" step="any" placeholder={t.quantityPlaceholder} value={requestForm.quantity} onChange={e => setRequestForm({ ...requestForm, quantity: e.target.value })}/>
-                    </label>
-                    <label className="cutting-full-width"><span>{t.reason}</span>
-                        <input type="text" placeholder={t.reasonPlaceholder} value={requestForm.reason} onChange={e => setRequestForm({ ...requestForm, reason: e.target.value })}/>
-                    </label>
-                </div>
-                <div className="cutting-form-actions">
-                    <button className="primary-btn" disabled={busy} onClick={submitMaterialRequest}><Send size={17}/>{busy ? (t.requesting || 'Submitting...') : (t.requestMaterials || 'Submit request')}</button>
-                </div>
             </article>
         </div>
 

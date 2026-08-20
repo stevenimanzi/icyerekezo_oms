@@ -149,7 +149,7 @@ class InventoryController extends Controller
             
         $isPackingManager = $request->user()->roles()
             ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->whereIn('slug', ['packing-manager', 'packing-operator'])->exists();
+            ->whereIn('slug', ['packing-manager', 'packing-operator', 'packaging-manager', 'packaging-operator'])->exists();
         
         $allowed = $isWarehouseKeeper || 
             ($isCuttingOperator && in_array($data['type'], ['reserve', 'issue', 'waste'])) ||
@@ -180,11 +180,22 @@ class InventoryController extends Controller
             ->wherePivot('factory_id', $request->user()->current_factory_id)
             ->where('slug', 'sewing-operator')->exists();
 
+        $isFinishingManager = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->whereIn('slug', ['finishing-manager', 'finishing-operator'])->exists();
+            
+        $isPackingManager = $request->user()->roles()
+            ->wherePivot('factory_id', $request->user()->current_factory_id)
+            ->whereIn('slug', ['packing-manager', 'packing-operator', 'packaging-manager', 'packaging-operator'])->exists();
+
         $allowed = $isWarehouseKeeper || 
             ($isCuttingOperator && in_array($transaction->type, ['reserve', 'issue', 'waste'])) ||
-            ($isSewingOperator && in_array($transaction->type, ['receipt', 'issue', 'waste']));
+            ($isSewingOperator && in_array($transaction->type, ['receipt', 'issue', 'waste'])) ||
+            ($isFinishingManager && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output'])) ||
+            ($isPackingManager && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output']));
+            
         if (!$allowed) {
-            \Illuminate\Support\Facades\Log::error('InventoryController@correctTransaction blocked. wh=' . ($isWarehouseKeeper?1:0) . ' cut=' . ($isCuttingOperator?1:0) . ' sew=' . ($isSewingOperator?1:0) . ' type=' . $transaction->type);
+            \Illuminate\Support\Facades\Log::error('InventoryController@correctTransaction blocked.');
         }
         abort_unless($allowed, 403, 'You do not have permission to edit this transaction.');
 
