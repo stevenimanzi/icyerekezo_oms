@@ -33,6 +33,9 @@ function successMessage(method: string, payload: any): string {
     return 'Your changes were saved successfully.';
 }
 
+// Mounted once near the app root. Rather than have every page wire up its own
+// success/error toasts, this patches window.fetch globally so any POST/PUT/PATCH/DELETE
+// to /api/* automatically surfaces a toast — pages just need to fetch normally.
 export default function GlobalOperationToasts() {
     const [items, setItems] = useState<ToastItem[]>([]);
     const nextId = useRef(1);
@@ -76,15 +79,18 @@ export default function GlobalOperationToasts() {
     }, []);
 
     if (!items.length) return null;
+
     return createPortal(
         <div className="operation-toast-viewport" aria-live="polite" aria-atomic="false">
             {items.map(item => {
                 const Icon = item.kind === 'success' ? CheckCircle2 : item.kind === 'warning' ? AlertTriangle : item.kind === 'info' ? Info : CircleAlert;
-                return <div key={item.id} className={`operation-toast operation-toast-${item.kind}`} role={item.kind === 'error' ? 'alert' : 'status'}>
-                    <span className="operation-toast-icon"><Icon size={22}/></span>
-                    <div className="operation-toast-copy"><strong>{item.title}</strong><p>{item.message}</p></div>
-                    <button type="button" aria-label="Close message" onClick={() => setItems(current => current.filter(entry => entry.id !== item.id))}><X size={18}/></button>
-                </div>;
+                return (
+                    <div key={item.id} className={`operation-toast operation-toast-${item.kind}`} role={item.kind === 'error' ? 'alert' : 'status'}>
+                        <span className="operation-toast-icon"><Icon size={22} /></span>
+                        <div className="operation-toast-copy"><strong>{item.title}</strong><p>{item.message}</p></div>
+                        <button type="button" aria-label="Close message" onClick={() => setItems(current => current.filter(entry => entry.id !== item.id))}><X size={18} /></button>
+                    </div>
+                );
             })}
         </div>,
         document.body,

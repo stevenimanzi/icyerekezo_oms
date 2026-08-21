@@ -1,45 +1,640 @@
-import React,{useEffect,useMemo,useState}from'react';
-import{ArrowLeft,ArrowRight,Building2,CalendarDays,CheckCircle2,CreditCard,Eye,FileText,Hash,Mail,MapPin,PackageOpen,Phone,Plus,Printer,RotateCcw,Save,Upload,UserRound,X}from'lucide-react';
-const csrf=()=>document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content||'';
-async function api(url:string,options:RequestInit={}){const multipart=options.body instanceof FormData;const response=await fetch(url,{...options,headers:{Accept:'application/json','X-CSRF-TOKEN':csrf(),...(multipart?{}:{'Content-Type':'application/json'}),...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||Object.values(data.errors||{}).flat()[0]||'The request could not be completed.');return data}
-const n=(x:any)=>Number(x||0).toLocaleString(),cash=(x:any)=>`RWF ${n(x)}`,status=(x:string)=>({pending:'Pending',accepted:'Accepted',partial:'Partially delivered',delivered:'Delivered',rejected:'Rejected'}as any)[x]||x;
-const blank={class_level:'Nursery 1',garment_category:'Uniform',gender:'Boy',size:'XXXS',color:'',quantity_ordered:1};
-export default function SchoolPortalPage({page,onNavigate}:any){const[data,setData]=useState<any>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[selected,setSelected]=useState<any>(null);const load=()=>api('/api/school/overview').then(setData).catch((e:any)=>setError(e.message));useEffect(()=>{load()},[]);if(!data)return <section className="module-page"><div className="panel school-loading">{error||'Loading your school records…'}</div></section>;const props={data,load,error,setError,message,setMessage,selected,setSelected,onNavigate};return <section className="module-page school-portal">{error&&<div className="admin-alert error">{error}</div>}{message&&<div className="admin-alert success">{message}</div>}{page==='dashboard'?<Dashboard {...props}/>:page==='new-order'?<NewOrder {...props}/>:page==='order-history'?<History {...props}/>:page==='financials'?<Financials {...props}/>:page==='return-items'?<ReturnItems {...props}/>:page==='returns-history'?<ReturnsHistory {...props}/>:<SchoolProfile {...props}/>} {selected&&<OrderModal order={selected} close={()=>setSelected(null)}/>}</section>}
-function Heading({title,text,action}:any){return <div className="module-hero school-heading"><div><div className="eyebrow"><i/>SCHOOL PORTAL</div><h1>{title}</h1><p>{text}</p></div>{action}</div>}
-function Dashboard({data,onNavigate,setSelected}:any){
-    const stats={total:Number(data?.stats?.total_items)||0,delivered:Number(data?.stats?.delivered_items)||0,rejected:Number(data?.stats?.rejected_items)||0,pending:Number(data?.stats?.undelivered_items)||0};
-    const recent:any[]=(Array.isArray(data?.orders)?data.orders:[]).slice(0,8).map((order:any,index:number)=>{const total=Number(order?.total_amount)||0,paid=Number(order?.paid_amount)||0;return {source:order,key:String(order?.id??order?.document_number??index),reference:String(order?.document_number||'Not assigned').replace(/^LEGACY-NOGUCHI-/,'') ,date:order?.document_date?String(order.document_date).slice(0,10):'Not set',items:Number(order?.item_count)||0,total,financial:paid>=total&&total>0?'Paid':paid>0?'Partially paid':'Unpaid',state:String(order?.status||'pending')}});
-    return <><Heading title="Dashboard" text="Welcome back, here is your requisition overview." action={<button type="button" className="primary-btn" onClick={()=>onNavigate('new-order')}><Plus size={17}/>New Order</button>}/><div className="school-kpis"><Kpi label="Total Items" value={stats.total}/><Kpi label="Delivered" value={stats.delivered}/><Kpi label="Rejected" value={stats.rejected}/><Kpi label="Pending" value={stats.pending}/></div><section className="panel school-table"><header><h2>Recent orders</h2></header><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Ref #</th><th>Date</th><th>Summary</th><th>Financials</th><th>Status</th><th>Action</th></tr></thead><tbody>{recent.length?recent.map(order=><tr key={order.key}><td><b>{order.reference}</b></td><td>{order.date}</td><td>{order.items.toLocaleString()} items</td><td><b>RWF {order.total.toLocaleString()}</b><small>{order.financial}</small></td><td><span className={`admin-status ${order.state}`}>{status(order.state)}</span></td><td><button type="button" className="school-action-icon view" aria-label={`View order ${order.reference}`} onClick={()=>setSelected(order.source)}><Eye size={17}/></button></td></tr>):<tr><td colSpan={6}>No orders found. Select New Order to start.</td></tr>}</tbody></table></div></section></>}
-function Kpi({label,value,tone}:any){return <article className={`panel school-kpi ${tone}`}><small>{label}</small><b>{n(value)}</b><PackageOpen/></article>}
-function Orders({title,rows,setSelected}:any){const safeRows=Array.isArray(rows)?rows:[];return <section className="panel school-table"><header><h2>{title}</h2></header><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Ref #</th><th>Date</th><th>Summary</th><th>Financials</th><th>Status</th><th>Action</th></tr></thead><tbody>{safeRows.length?safeRows.map((o:any)=>{const total=Number(o?.total_amount)||0,paid=Number(o?.paid_amount)||0,orderStatus=String(o?.status||'pending');return <tr key={o?.id||o?.document_number}><td><b>{String(o?.document_number||'Not assigned').replace(/^LEGACY-NOGUCHI-/,'')}</b></td><td>{o?.document_date?String(o.document_date).slice(0,10):'Not set'}</td><td>{n(o?.item_count)} items</td><td><b>{cash(total)}</b><small>{paid>=total&&total>0?'Paid':paid>0?'Partially paid':'Unpaid'}</small></td><td><span className={'admin-status '+orderStatus}>{status(orderStatus)}</span></td><td><button type="button" className="school-action-icon view" aria-label="View order" onClick={()=>setSelected(o)}><Eye size={17}/></button></td></tr>}):<tr><td colSpan={6}>No orders found. Select New Order to start.</td></tr>}</tbody></table></div></section>}
-function History({data,setSelected}:any){const[from,setFrom]=useState(''),[to,setTo]=useState(''),[state,setState]=useState('');const rows=data.orders.filter((o:any)=>(!from||o.document_date.slice(0,10)>=from)&&(!to||o.document_date.slice(0,10)<=to)&&(!state||o.status===state));return <><Heading title="Order History" text="Find previous orders and print their complete details."/><section className="panel school-inline-filters"><label>Start Date<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>End Date<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><label>Status<select value={state} onChange={e=>setState(e.target.value)}><option value="">All Statuses</option>{['pending','accepted','partial','delivered','rejected'].map(x=><option key={x} value={x}>{status(x)}</option>)}</select></label><button className="secondary-btn" onClick={()=>{setFrom('');setTo('');setState('')}}>Reset</button></section><Orders title="Your orders" rows={rows} setSelected={setSelected}/></>}
-function NewOrder({data,load,setMessage,setError,onNavigate}:any){
-    const sizes=['XXS','XS','S','M','L','XL','XXL'],baseCategories=[['Uniform','Daily Uniforms'],['Sport Uniform','Sport Wear'],['Sweater','Sweaters']],genders=['Boy','Girl'];
-    const categoriesFor=(classLevel:string)=>[...baseCategories,...(/^S[1-6]$/.test(classLevel)?[['T-shirt','T-Shirts']]:[]),...(/^S[4-6]$/.test(classLevel)?[['Overall','Overalls']]:[])];
-    const makeLines=(classLevel:string)=>categoriesFor(classLevel).flatMap(([garment_category])=>genders.flatMap(gender=>sizes.map(size=>({class_level:classLevel,garment_category,gender,size,color:'',quantity_ordered:0}))));
-    const[year,setYear]=useState(data.academic_years[0]),[step,setStep]=useState(0),[lines,setLines]=useState<any[]>(()=>data.classes.flatMap((x:string)=>makeLines(x))),[filledClasses,setFilledClasses]=useState<Set<string>>(()=>new Set()),[review,setReview]=useState(false),[busy,setBusy]=useState(false);
-    const cls=data.classes[step],categories=categoriesFor(cls),current=lines.filter(x=>x.class_level===cls);
-    const updateQuantity=(category:string,gender:string,size:string,value:number)=>setLines(lines.map(line=>line.class_level===cls&&line.garment_category===category&&line.gender===gender&&line.size===size?{...line,quantity_ordered:Math.max(0,value)}:line));
-    const updateColor=(category:string,gender:string,value:string)=>setLines(lines.map(line=>line.class_level===cls&&line.garment_category===category&&line.gender===gender?{...line,color:value}:line));
-    const validLines=lines.filter(line=>Number(line.quantity_ordered)>0),total=validLines.reduce((sum,line)=>{const level=line.class_level.startsWith('P')?'Primary':line.class_level.startsWith('S')?'Secondary':'Nursery';return sum+Number(line.quantity_ordered)*(data.prices[level]?.[line.garment_category]||0)},0);
-    const classIsFilled=(classLevel:string)=>filledClasses.has(classLevel);
-    const goTo=(next:number)=>{setError('');setStep(next)};
-    const saveAndNext=()=>{if(current.some(line=>Number(line.quantity_ordered)>0))setFilledClasses(previous=>new Set(previous).add(cls));goTo(step+1)};
-    const reviewOrder=()=>{const invalid=validLines.find(line=>!line.color?.trim()||!line.size);if(invalid){setError(`Complete the size and color for ${invalid.class_level} before reviewing the order.`);setStep(data.classes.indexOf(invalid.class_level));return}setError('');setReview(true)};
-    const submit=async()=>{if(!validLines.length){setError('Add at least one item before submitting the order.');return}setBusy(true);try{const result=await api('/api/school/orders',{method:'POST',body:JSON.stringify({academic_year:year,lines:validLines})});setMessage(result.message);await load();onNavigate('dashboard')}catch(e:any){setError(e.message)}finally{setBusy(false)}};
-    return <><Heading title="Place New Order" text="Enter quantities for boys and girls in every required size."/>{!review?<section className="panel school-order-builder"><div className="school-class-strip">{data.classes.map((x:string,i:number)=>{const filled=classIsFilled(x);return <button type="button" className={`${i===step?'active ':''}${filled?'filled':''}`.trim()} onClick={()=>goTo(i)} key={x}>{x}{filled&&<CheckCircle2 size={16}/>}</button>})}</div><header><div><small>CLASS {step+1} OF {data.classes.length}</small><h2>{cls}</h2></div><label>Academic year<select value={year} onChange={e=>setYear(e.target.value)}>{data.academic_years.map((x:string)=><option key={x}>{x}</option>)}</select></label></header><div className="school-garment-matrices">{categories.map(([category,label])=><section className="school-garment-matrix" key={category}><h3>{label}</h3>{genders.map(gender=>{const group=current.filter(x=>x.garment_category===category&&x.gender===gender);return <div className="school-size-row" key={gender}><div className="school-size-person"><b>{gender==='Boy'?'Boys':'Girls'}</b><label>Color<input placeholder={category==='Uniform'?'Top and bottom colors':'Main color'} value={group[0]?.color||''} onChange={e=>updateColor(category,gender,e.target.value)}/></label></div>{sizes.map(size=>{const line=group.find(x=>x.size===size);return <label className="school-size-quantity" key={size}><span>{size}</span><input aria-label={`${label} ${gender} ${size}`} type="number" min="0" value={Number(line?.quantity_ordered)>0?line.quantity_ordered:''} onChange={e=>updateQuantity(category,gender,size,Number(e.target.value))}/></label>})}</div>})}</section>)}</div><div className="school-builder-nav"><button type="button" className="secondary-btn" disabled={step===0} onClick={()=>goTo(step-1)}><ArrowLeft size={16}/>Previous</button>{step<data.classes.length-1?<button type="button" className="primary-btn" onClick={saveAndNext}>Save & Next Class<ArrowRight size={16}/></button>:<button type="button" className="primary-btn" onClick={reviewOrder}>Review Order<ArrowRight size={16}/></button>}</div></section>:<section className="panel school-review"><h2>Review Order Details</h2><p>Please check quantities, sizes and colors before submitting. The factory will review your order.</p><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Class</th><th>Item Details & Colors</th><th>Size</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead><tbody>{validLines.map((line,i)=>{const level=line.class_level.startsWith('P')?'Primary':line.class_level.startsWith('S')?'Secondary':'Nursery',price=data.prices[level]?.[line.garment_category]||0;return <tr key={i}><td>{line.class_level}</td><td><b>{line.garment_category} · {line.gender}</b><small>{line.color}</small></td><td>{line.size}</td><td>{n(line.quantity_ordered)}</td><td>{cash(price)}</td><td>{cash(price*line.quantity_ordered)}</td></tr>})}</tbody><tfoot><tr><td colSpan={5}><b>Total</b></td><td><b>{cash(total)}</b></td></tr></tfoot></table></div><div className="school-builder-nav"><button type="button" className="secondary-btn" onClick={()=>setReview(false)}><ArrowLeft size={16}/>Edit Order</button><button type="button" className="primary-btn" disabled={busy} onClick={submit}><CheckCircle2 size={17}/>{busy?'Sending…':'Confirm & Submit'}</button></div></section>}</>}
-function Financials({data,load,setMessage,setError}:any){const[pay,setPay]=useState<any>(null);return <><Heading title="Financial Records" text="Track payments and outstanding balances."/><section className="panel school-table"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Date</th><th>Order Ref</th><th>Total Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead><tbody>{data.orders.map((o:any)=>{const due=Math.max(0,Number(o.total_amount)-Number(o.paid_amount));return <tr key={o.id}><td>{o.document_date.slice(0,10)}</td><td>{String(o.document_number).replace(/^LEGACY-NOGUCHI-/,'')}</td><td>{cash(o.total_amount)}</td><td>{cash(o.paid_amount)}</td><td>{cash(due)}</td><td>{due<=0?'Paid':Number(o.paid_amount)>0?'Partial':'Unpaid'}</td><td>{due>0&&<button className="primary-btn" onClick={()=>setPay({...o,due})}><Upload size={15}/>Submit payment</button>}</td></tr>})}</tbody></table></div></section>{pay&&<PaymentModal order={pay} close={()=>setPay(null)} done={async(msg:string)=>{setPay(null);setMessage(msg);await load()}} fail={setError}/>}</>}
-function PaymentModal({order,close,done,fail}:any){const[amount,setAmount]=useState(order.due),[method,setMethod]=useState('Bank Transfer'),[reference,setReference]=useState(''),[paidAt,setPaidAt]=useState(new Date().toISOString().slice(0,10)),[file,setFile]=useState<File|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');const submit=async(e:any)=>{e.preventDefault();if(!file){setError('Choose a payment slip or screenshot.');return}setBusy(true);setError('');const form=new FormData();form.append('amount',String(amount));form.append('payment_method',method);form.append('payment_reference',reference);form.append('paid_at',paidAt);form.append('proof_file',file);try{const result=await api(`/api/school/orders/${order.id}/payments`,{method:'POST',body:form});done(result.message)}catch(err:any){setError(err.message);fail(err.message)}finally{setBusy(false)}};const ref=String(order.document_number).replace(/^LEGACY-NOGUCHI-/,'');return <div className="school-modal-backdrop"><form className="school-payment-modal" onSubmit={submit}><header><div className="school-payment-title"><i><CreditCard/></i><span><small>PAYMENT VERIFICATION</small><h2>Submit Payment Proof</h2><p>Order {ref}</p></span></div><button type="button" className="icon-btn" aria-label="Close" onClick={close}><X/></button></header><div className="school-payment-summary"><span><small>Order total</small><b>{cash(order.total_amount)}</b></span><span><small>Already paid</small><b>{cash(order.paid_amount)}</b></span><span className="due"><small>Outstanding balance</small><b>{cash(order.due)}</b></span></div>{error&&<div className="form-error">{error}</div>}<div className="school-payment-fields"><label><span><CreditCard/>Amount Paid (RWF)</span><input required type="number" min="1" max={order.due} step="1" value={amount} onChange={e=>setAmount(e.target.value)}/><small>Maximum: {cash(order.due)}</small></label><label><span><CreditCard/>Payment Method</span><select required value={method} onChange={e=>setMethod(e.target.value)}><option>Bank Transfer</option><option>MoMo Pay</option><option>Cheque</option><option>Cash Deposit</option></select></label><label><span><Hash/>Transaction / Reference Number</span><input required maxLength={120} placeholder="Enter bank, MoMo or cheque reference" value={reference} onChange={e=>setReference(e.target.value)}/></label><label><span><CalendarDays/>Payment Date</span><input required type="date" max={new Date().toISOString().slice(0,10)} value={paidAt} onChange={e=>setPaidAt(e.target.value)}/></label></div><label className={`school-proof-upload${file?' selected':''}`}><Upload/><span><b>{file?file.name:'Upload payment slip or screenshot'}</b><small>{file?`${(file.size/1024/1024).toFixed(2)} MB · Select another file`:'PDF, JPG or PNG · Maximum 5 MB'}</small></span><input required type="file" accept="image/jpeg,image/png,.pdf" onChange={e=>setFile(e.target.files?.[0]||null)}/></label><footer><button type="button" className="secondary-btn" onClick={close}>Cancel</button><button className="primary-btn" disabled={busy||!file}><Upload size={16}/>{busy?'Submitting…':'Submit for Verification'}</button></footer></form></div>}
-function ReturnItems({data,load,setMessage,setError,onNavigate}:any){
-    const returned=(lineId:number)=>data.returns.filter((x:any)=>Number(x.sales_document_line_id)===Number(lineId)).reduce((sum:number,x:any)=>sum+Number(x.quantity),0);
-    const available=(line:any)=>Math.max(0,Number(line.quantity_delivered)-returned(line.id));
-    const delivered=data.orders.filter((o:any)=>o.lines.some((line:any)=>available(line)>0)),[orderId,setOrderId]=useState(delivered[0]?.id||''),[items,setItems]=useState<any>({}),[review,setReview]=useState(false),[busy,setBusy]=useState(false);
-    const order=delivered.find((o:any)=>o.id===Number(orderId)),returnable=order?.lines.filter((line:any)=>available(line)>0)||[];
-    const selected=Object.entries(items).filter(([,x]:any)=>Number(x.quantity)>0).map(([line_id,x]:any)=>({line_id:Number(line_id),...x,line:returnable.find((line:any)=>Number(line.id)===Number(line_id))}));
-    const setItem=(line:any,key:string,value:any)=>setItems({...items,[line.id]:{quantity:items[line.id]?.quantity||0,reason:items[line.id]?.reason||'Too Small',[key]:value}});
-    const prepare=()=>{if(!selected.length){setError('Enter a return quantity for at least one item.');return}setError('');setReview(true)};
-    const submit=async()=>{setBusy(true);try{const result=await api(`/api/school/orders/${orderId}/returns`,{method:'POST',body:JSON.stringify({items:selected.map(({line,...item}:any)=>item)})});setMessage(result.message);await load();onNavigate('returns-history')}catch(e:any){setError(e.message);setReview(false)}finally{setBusy(false)}};
-    return <><Heading title="Return Items" text="Choose delivered items, quantities and reasons for return."/><section className="panel school-return-form"><label>Delivered order<select value={orderId} disabled={!delivered.length} onChange={e=>{setOrderId(e.target.value);setItems({});setReview(false)}}><option value="">{delivered.length?'Choose an order':'No returnable orders available'}</option>{delivered.map((o:any)=><option key={o.id} value={o.id}>{String(o.document_number).replace(/^LEGACY-NOGUCHI-/,'')} · {o.item_count} items</option>)}</select></label>{order&&!review?<div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Class</th><th>Item Details</th><th>Size</th><th>Delivered</th><th>Already returned</th><th>Available</th><th>Return Qty</th><th>Reason</th></tr></thead><tbody>{returnable.map((line:any)=><tr key={line.id}><td>{line.class_level}</td><td><b>{line.garment_category} · {line.gender}</b><small>{line.color}</small></td><td>{line.size}</td><td>{line.quantity_delivered}</td><td>{returned(line.id)}</td><td><b>{available(line)}</b></td><td><input aria-label={`Return quantity for ${line.garment_category} ${line.size}`} type="number" min="0" max={available(line)} value={items[line.id]?.quantity||''} onChange={e=>setItem(line,'quantity',Math.min(available(line),Math.max(0,Number(e.target.value))))}/></td><td><select value={items[line.id]?.reason||'Too Small'} onChange={e=>setItem(line,'reason',e.target.value)}>{['Too Small','Too Large','Damaged','Wrong Item','Other'].map(reason=><option key={reason}>{reason}</option>)}</select></td></tr>)}</tbody></table></div>:order&&review?<div className="school-return-review"><h2>Review return request</h2><p>Confirm these items before sending the request to the factory.</p><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Item</th><th>Class</th><th>For</th><th>Size</th><th>Quantity</th><th>Reason</th></tr></thead><tbody>{selected.map(({line,quantity,reason}:any)=><tr key={line.id}><td>{line.garment_category}<small>{line.color}</small></td><td>{line.class_level}</td><td>{line.gender}</td><td>{line.size}</td><td><b>{quantity}</b></td><td>{reason}</td></tr>)}</tbody></table></div><div className="school-return-actions"><button type="button" className="secondary-btn" onClick={()=>setReview(false)}><ArrowLeft size={16}/>Edit return</button><button type="button" className="primary-btn" disabled={busy} onClick={submit}><CheckCircle2 size={16}/>{busy?'Submitting…':'Confirm & Submit'}</button></div></div>:<div className="school-return-empty"><PackageOpen/><h3>No delivered items are available to return</h3><p>Items will appear here after the factory records a delivery to your school.</p><button type="button" className="secondary-btn" onClick={()=>onNavigate('order-history')}>View Order History</button></div>}{order&&!review&&<button type="button" className="primary-btn" disabled={!selected.length} onClick={prepare}><RotateCcw size={16}/>Review Return Request</button>}</section></>}
-function ReturnsHistory({data,onNavigate}:any){return <><Heading title="Returns History" text="Follow factory review and feedback for every returned item." action={<button className="secondary-btn" onClick={()=>onNavigate('return-items')}><RotateCcw size={16}/>Return Items</button>}/><section className="panel school-table"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Date</th><th>Item Details</th><th>Qty</th><th>Reason</th><th>Status</th><th>Factory Feedback</th></tr></thead><tbody>{data.returns.length?data.returns.map((x:any)=><tr key={x.id}><td>{String(x.created_at).slice(0,10)}</td><td>{x.garment_category} · {x.gender}<small>{x.class_level} · {x.size} · {x.color}</small></td><td>{x.quantity}</td><td>{x.reason}</td><td><span className={'admin-status '+x.status}>{status(x.status)}</span></td><td>{x.factory_feedback||'Waiting for factory review'}</td></tr>):<tr><td colSpan={6}>No returns have been submitted.</td></tr>}</tbody></table></div></section></>}
-function SchoolProfile({data,load,setMessage,setError}:any){const[form,setForm]=useState({...data.school}),[busy,setBusy]=useState(false);const sectors=data.locations[form.district]||[];const submit=async(e:any)=>{e.preventDefault();setBusy(true);setError('');try{const result=await api('/api/school/profile',{method:'PUT',body:JSON.stringify(form)});setMessage(result.message);await load()}catch(err:any){setError(err.message)}finally{setBusy(false)}};const Field=({icon,label,children}:any)=><label className="school-profile-field"><span>{icon}{label}</span>{children}</label>;return <><Heading title="School Profile" text="Keep your school identity and contact details correct."/><form className="panel school-profile-form modern" onSubmit={submit}><div className="school-profile-banner"><div className="school-profile-avatar">{form.name?.slice(0,2).toUpperCase()}</div><span><small>SCHOOL ACCOUNT</small><b>{form.name||'Your school'}</b><p>{data.school.email||'No email recorded'} · {form.district||'District not set'}</p></span><i><Building2/></i></div><div className="school-profile-content"><section><header><div><UserRound/><span><b>School information</b><small>Basic identity and contact person</small></span></div></header><div className="school-profile-grid"><Field icon={<Building2/>} label="School Name"><input required placeholder="Enter the school name" value={form.name||''} onChange={e=>setForm({...form,name:e.target.value})}/></Field><Field icon={<UserRound/>} label="Head Teacher"><input placeholder="Enter the head teacher's name" value={form.contact_name||''} onChange={e=>setForm({...form,contact_name:e.target.value})}/></Field><Field icon={<Phone/>} label="Phone Number"><input type="tel" placeholder="e.g. 0780 000 000" value={form.phone||''} onChange={e=>setForm({...form,phone:e.target.value})}/></Field><Field icon={<Mail/>} label="Email Address"><input type="email" placeholder="school@example.rw" value={form.email||''} onChange={e=>setForm({...form,email:e.target.value})}/></Field></div></section><section><header><div><MapPin/><span><b>School location</b><small>Select the district first, then the sector</small></span></div></header><div className="school-profile-grid"><Field icon={<MapPin/>} label="District"><select required value={form.district||''} onChange={e=>setForm({...form,district:e.target.value,sector:''})}><option value="">Choose a district</option>{Object.keys(data.locations).map(x=><option key={x}>{x}</option>)}</select></Field><Field icon={<MapPin/>} label="Sector"><select required disabled={!form.district} value={form.sector||''} onChange={e=>setForm({...form,sector:e.target.value})}><option value="">{form.district?'Choose a sector':'Choose a district first'}</option>{sectors.map((x:string)=><option key={x}>{x}</option>)}</select></Field></div></section></div><footer><p><CheckCircle2/>Keep these details accurate so orders and deliveries reach the correct school.</p><button className="primary-btn" disabled={busy}><Save size={17}/>{busy?'Saving…':'Save Profile'}</button></footer></form></>}
-function OrderModal({order,close}:any){return <div className="school-modal-backdrop"><section className="school-order-modal"><header><div><small>ORDER DETAILS</small><h2>{String(order.document_number).replace(/^LEGACY-NOGUCHI-/,'')}</h2><p>{order.academic_year} · {status(order.status)}</p></div><div><a className="secondary-btn" href={`/api/school/orders/${order.id}/pdf`} target="_blank"><Printer size={16}/>Print Invoice</a><button className="icon-btn" onClick={close}><X/></button></div></header><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Item & Color</th><th>Class</th><th>For</th><th>Size</th><th>Ordered</th><th>Delivered</th><th>Rejected</th><th>Remaining</th></tr></thead><tbody>{order.lines.map((l:any)=><tr key={l.id}><td>{l.garment_category}<small>{l.color}</small></td><td>{l.class_level}</td><td>{l.gender}</td><td>{l.size}</td><td>{l.quantity_ordered}</td><td>{l.quantity_delivered}</td><td>{l.quantity_rejected}</td><td>{Math.max(0,l.quantity_ordered-l.quantity_delivered-l.quantity_rejected)}</td></tr>)}</tbody></table></div></section></div>}
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, ArrowRight, Building2, CalendarDays, CheckCircle2, CreditCard, Eye, Hash, Mail, MapPin, PackageOpen, Phone, Plus, Printer, RotateCcw, Save, Upload, UserRound, X } from 'lucide-react';
+
+const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
+async function api(url: string, options: RequestInit = {}) {
+    const multipart = options.body instanceof FormData;
+    const response = await fetch(url, { ...options, headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf(), ...(multipart ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) } });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || Object.values(data.errors || {}).flat()[0] || 'The request could not be completed.');
+    return data;
+}
+const n = (x: any) => Number(x || 0).toLocaleString();
+const cash = (x: any) => `RWF ${n(x)}`;
+const status = (x: string) => ({ pending: 'Pending', accepted: 'Accepted', partial: 'Partially delivered', delivered: 'Delivered', rejected: 'Rejected' } as any)[x] || x;
+const blank = { class_level: 'Nursery 1', garment_category: 'Uniform', gender: 'Boy', size: 'XXXS', color: '', quantity_ordered: 1 };
+
+export default function SchoolPortalPage({ page, onNavigate }: any) {
+    const [data, setData] = useState<any>(null);
+    const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
+    const [selected, setSelected] = useState<any>(null);
+    const load = () => api('/api/school/overview').then(setData).catch((e: any) => setError(e.message));
+    useEffect(() => { load(); }, []);
+
+    if (!data) return <section className="module-page"><div className="panel school-loading">{error || 'Loading your school records…'}</div></section>;
+
+    const props = { data, load, error, setError, message, setMessage, selected, setSelected, onNavigate };
+    return (
+        <section className="module-page school-portal">
+            {error && <div className="admin-alert error">{error}</div>}
+            {message && <div className="admin-alert success">{message}</div>}
+            {page === 'dashboard' ? <Dashboard {...props} />
+                : page === 'new-order' ? <NewOrder {...props} />
+                    : page === 'order-history' ? <History {...props} />
+                        : page === 'financials' ? <Financials {...props} />
+                            : page === 'return-items' ? <ReturnItems {...props} />
+                                : page === 'returns-history' ? <ReturnsHistory {...props} />
+                                    : <SchoolProfile {...props} />}
+            {selected && <OrderModal order={selected} close={() => setSelected(null)} />}
+        </section>
+    );
+}
+
+function Heading({ title, text, action }: any) {
+    return <div className="module-hero school-heading"><div><div className="eyebrow"><i />SCHOOL PORTAL</div><h1>{title}</h1><p>{text}</p></div>{action}</div>;
+}
+
+function Dashboard({ data, onNavigate, setSelected }: any) {
+    const stats = {
+        total: Number(data?.stats?.total_items) || 0, delivered: Number(data?.stats?.delivered_items) || 0,
+        rejected: Number(data?.stats?.rejected_items) || 0, pending: Number(data?.stats?.undelivered_items) || 0,
+    };
+    const recent: any[] = (Array.isArray(data?.orders) ? data.orders : []).slice(0, 8).map((order: any, index: number) => {
+        const total = Number(order?.total_amount) || 0;
+        const paid = Number(order?.paid_amount) || 0;
+        return {
+            source: order, key: String(order?.id ?? order?.document_number ?? index),
+            reference: String(order?.document_number || 'Not assigned').replace(/^LEGACY-NOGUCHI-/, ''),
+            date: order?.document_date ? String(order.document_date).slice(0, 10) : 'Not set',
+            items: Number(order?.item_count) || 0, total,
+            financial: paid >= total && total > 0 ? 'Paid' : paid > 0 ? 'Partially paid' : 'Unpaid',
+            state: String(order?.status || 'pending'),
+        };
+    });
+
+    return (
+        <>
+            <Heading title="Dashboard" text="Welcome back, here is your requisition overview." action={<button type="button" className="primary-btn" onClick={() => onNavigate('new-order')}><Plus size={17} />New Order</button>} />
+            <div className="school-kpis">
+                <Kpi label="Total Items" value={stats.total} />
+                <Kpi label="Delivered" value={stats.delivered} />
+                <Kpi label="Rejected" value={stats.rejected} />
+                <Kpi label="Pending" value={stats.pending} />
+            </div>
+            <section className="panel school-table">
+                <header><h2>Recent orders</h2></header>
+                <div className="admin-table-wrap">
+                    <table className="admin-table">
+                        <thead><tr><th>Ref #</th><th>Date</th><th>Summary</th><th>Financials</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {recent.length ? recent.map(order => (
+                                <tr key={order.key}>
+                                    <td><b>{order.reference}</b></td>
+                                    <td>{order.date}</td>
+                                    <td>{order.items.toLocaleString()} items</td>
+                                    <td><b>RWF {order.total.toLocaleString()}</b><small>{order.financial}</small></td>
+                                    <td><span className={`admin-status ${order.state}`}>{status(order.state)}</span></td>
+                                    <td><button type="button" className="school-action-icon view" aria-label={`View order ${order.reference}`} onClick={() => setSelected(order.source)}><Eye size={17} /></button></td>
+                                </tr>
+                            )) : <tr><td colSpan={6}>No orders found. Select New Order to start.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </>
+    );
+}
+
+function Kpi({ label, value, tone }: any) {
+    return <article className={`panel school-kpi ${tone}`}><small>{label}</small><b>{n(value)}</b><PackageOpen /></article>;
+}
+
+function Orders({ title, rows, setSelected }: any) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+    return (
+        <section className="panel school-table">
+            <header><h2>{title}</h2></header>
+            <div className="admin-table-wrap">
+                <table className="admin-table">
+                    <thead><tr><th>Ref #</th><th>Date</th><th>Summary</th><th>Financials</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {safeRows.length ? safeRows.map((o: any) => {
+                            const total = Number(o?.total_amount) || 0;
+                            const paid = Number(o?.paid_amount) || 0;
+                            const orderStatus = String(o?.status || 'pending');
+                            return (
+                                <tr key={o?.id || o?.document_number}>
+                                    <td><b>{String(o?.document_number || 'Not assigned').replace(/^LEGACY-NOGUCHI-/, '')}</b></td>
+                                    <td>{o?.document_date ? String(o.document_date).slice(0, 10) : 'Not set'}</td>
+                                    <td>{n(o?.item_count)} items</td>
+                                    <td><b>{cash(total)}</b><small>{paid >= total && total > 0 ? 'Paid' : paid > 0 ? 'Partially paid' : 'Unpaid'}</small></td>
+                                    <td><span className={'admin-status ' + orderStatus}>{status(orderStatus)}</span></td>
+                                    <td><button type="button" className="school-action-icon view" aria-label="View order" onClick={() => setSelected(o)}><Eye size={17} /></button></td>
+                                </tr>
+                            );
+                        }) : <tr><td colSpan={6}>No orders found. Select New Order to start.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    );
+}
+
+function History({ data, setSelected }: any) {
+    const [from, setFrom] = useState('');
+    const [to, setTo] = useState('');
+    const [state, setState] = useState('');
+    const rows = data.orders.filter((o: any) => (!from || o.document_date.slice(0, 10) >= from) && (!to || o.document_date.slice(0, 10) <= to) && (!state || o.status === state));
+
+    return (
+        <>
+            <Heading title="Order History" text="Find previous orders and print their complete details." />
+            <section className="panel school-inline-filters">
+                <label>Start Date<input type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>
+                <label>End Date<input type="date" value={to} onChange={e => setTo(e.target.value)} /></label>
+                <label>
+                    Status
+                    <select value={state} onChange={e => setState(e.target.value)}>
+                        <option value="">All Statuses</option>
+                        {['pending', 'accepted', 'partial', 'delivered', 'rejected'].map(x => <option key={x} value={x}>{status(x)}</option>)}
+                    </select>
+                </label>
+                <button className="secondary-btn" onClick={() => { setFrom(''); setTo(''); setState(''); }}>Reset</button>
+            </section>
+            <Orders title="Your orders" rows={rows} setSelected={setSelected} />
+        </>
+    );
+}
+
+// A school order is built one class at a time (a grid of category × gender × size
+// quantities per class), then reviewed as a flat line list before submission — this
+// keeps the form manageable for schools ordering dozens of garment/size combinations.
+function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
+    const sizes = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    const baseCategories = [['Uniform', 'Daily Uniforms'], ['Sport Uniform', 'Sport Wear'], ['Sweater', 'Sweaters']];
+    const genders = ['Boy', 'Girl'];
+    const categoriesFor = (classLevel: string) => [
+        ...baseCategories,
+        ...(/^S[1-6]$/.test(classLevel) ? [['T-shirt', 'T-Shirts']] : []),
+        ...(/^S[4-6]$/.test(classLevel) ? [['Overall', 'Overalls']] : []),
+    ];
+    const makeLines = (classLevel: string) => categoriesFor(classLevel).flatMap(([garment_category]) => genders.flatMap(gender => sizes.map(size => ({ class_level: classLevel, garment_category, gender, size, color: '', quantity_ordered: 0 }))));
+
+    const [year, setYear] = useState(data.academic_years[0]);
+    const [step, setStep] = useState(0);
+    const [lines, setLines] = useState<any[]>(() => data.classes.flatMap((x: string) => makeLines(x)));
+    const [filledClasses, setFilledClasses] = useState<Set<string>>(() => new Set());
+    const [review, setReview] = useState(false);
+    const [busy, setBusy] = useState(false);
+
+    const cls = data.classes[step];
+    const categories = categoriesFor(cls);
+    const current = lines.filter(x => x.class_level === cls);
+
+    const updateQuantity = (category: string, gender: string, size: string, value: number) => setLines(lines.map(line => line.class_level === cls && line.garment_category === category && line.gender === gender && line.size === size ? { ...line, quantity_ordered: Math.max(0, value) } : line));
+    const updateColor = (category: string, gender: string, value: string) => setLines(lines.map(line => line.class_level === cls && line.garment_category === category && line.gender === gender ? { ...line, color: value } : line));
+
+    const validLines = lines.filter(line => Number(line.quantity_ordered) > 0);
+    const total = validLines.reduce((sum, line) => {
+        const level = line.class_level.startsWith('P') ? 'Primary' : line.class_level.startsWith('S') ? 'Secondary' : 'Nursery';
+        return sum + Number(line.quantity_ordered) * (data.prices[level]?.[line.garment_category] || 0);
+    }, 0);
+
+    const classIsFilled = (classLevel: string) => filledClasses.has(classLevel);
+    const goTo = (next: number) => { setError(''); setStep(next); };
+    const saveAndNext = () => {
+        if (current.some(line => Number(line.quantity_ordered) > 0)) setFilledClasses(previous => new Set(previous).add(cls));
+        goTo(step + 1);
+    };
+    const reviewOrder = () => {
+        const invalid = validLines.find(line => !line.color?.trim() || !line.size);
+        if (invalid) {
+            setError(`Complete the size and color for ${invalid.class_level} before reviewing the order.`);
+            setStep(data.classes.indexOf(invalid.class_level));
+            return;
+        }
+        setError('');
+        setReview(true);
+    };
+    const submit = async () => {
+        if (!validLines.length) {
+            setError('Add at least one item before submitting the order.');
+            return;
+        }
+        setBusy(true);
+        try {
+            const result = await api('/api/school/orders', { method: 'POST', body: JSON.stringify({ academic_year: year, lines: validLines }) });
+            setMessage(result.message);
+            await load();
+            onNavigate('dashboard');
+        } catch (e: any) {
+            setError(e.message);
+        } finally { setBusy(false); }
+    };
+
+    return (
+        <>
+            <Heading title="Place New Order" text="Enter quantities for boys and girls in every required size." />
+            {!review ? (
+                <section className="panel school-order-builder">
+                    <div className="school-class-strip">
+                        {data.classes.map((x: string, i: number) => {
+                            const filled = classIsFilled(x);
+                            return <button type="button" className={`${i === step ? 'active ' : ''}${filled ? 'filled' : ''}`.trim()} onClick={() => goTo(i)} key={x}>{x}{filled && <CheckCircle2 size={16} />}</button>;
+                        })}
+                    </div>
+                    <header>
+                        <div><small>CLASS {step + 1} OF {data.classes.length}</small><h2>{cls}</h2></div>
+                        <label>Academic year<select value={year} onChange={e => setYear(e.target.value)}>{data.academic_years.map((x: string) => <option key={x}>{x}</option>)}</select></label>
+                    </header>
+                    <div className="school-garment-matrices">
+                        {categories.map(([category, label]) => (
+                            <section className="school-garment-matrix" key={category}>
+                                <h3>{label}</h3>
+                                {genders.map(gender => {
+                                    const group = current.filter(x => x.garment_category === category && x.gender === gender);
+                                    return (
+                                        <div className="school-size-row" key={gender}>
+                                            <div className="school-size-person">
+                                                <b>{gender === 'Boy' ? 'Boys' : 'Girls'}</b>
+                                                <label>Color<input placeholder={category === 'Uniform' ? 'Top and bottom colors' : 'Main color'} value={group[0]?.color || ''} onChange={e => updateColor(category, gender, e.target.value)} /></label>
+                                            </div>
+                                            {sizes.map(size => {
+                                                const line = group.find(x => x.size === size);
+                                                return (
+                                                    <label className="school-size-quantity" key={size}>
+                                                        <span>{size}</span>
+                                                        <input aria-label={`${label} ${gender} ${size}`} type="number" min="0" value={Number(line?.quantity_ordered) > 0 ? line.quantity_ordered : ''} onChange={e => updateQuantity(category, gender, size, Number(e.target.value))} />
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })}
+                            </section>
+                        ))}
+                    </div>
+                    <div className="school-builder-nav">
+                        <button type="button" className="secondary-btn" disabled={step === 0} onClick={() => goTo(step - 1)}><ArrowLeft size={16} />Previous</button>
+                        {step < data.classes.length - 1
+                            ? <button type="button" className="primary-btn" onClick={saveAndNext}>Save & Next Class<ArrowRight size={16} /></button>
+                            : <button type="button" className="primary-btn" onClick={reviewOrder}>Review Order<ArrowRight size={16} /></button>}
+                    </div>
+                </section>
+            ) : (
+                <section className="panel school-review">
+                    <h2>Review Order Details</h2>
+                    <p>Please check quantities, sizes and colors before submitting. The factory will review your order.</p>
+                    <div className="admin-table-wrap">
+                        <table className="admin-table">
+                            <thead><tr><th>Class</th><th>Item Details & Colors</th><th>Size</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+                            <tbody>
+                                {validLines.map((line, i) => {
+                                    const level = line.class_level.startsWith('P') ? 'Primary' : line.class_level.startsWith('S') ? 'Secondary' : 'Nursery';
+                                    const price = data.prices[level]?.[line.garment_category] || 0;
+                                    return (
+                                        <tr key={i}>
+                                            <td>{line.class_level}</td>
+                                            <td><b>{line.garment_category} · {line.gender}</b><small>{line.color}</small></td>
+                                            <td>{line.size}</td>
+                                            <td>{n(line.quantity_ordered)}</td>
+                                            <td>{cash(price)}</td>
+                                            <td>{cash(price * line.quantity_ordered)}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                            <tfoot><tr><td colSpan={5}><b>Total</b></td><td><b>{cash(total)}</b></td></tr></tfoot>
+                        </table>
+                    </div>
+                    <div className="school-builder-nav">
+                        <button type="button" className="secondary-btn" onClick={() => setReview(false)}><ArrowLeft size={16} />Edit Order</button>
+                        <button type="button" className="primary-btn" disabled={busy} onClick={submit}><CheckCircle2 size={17} />{busy ? 'Sending…' : 'Confirm & Submit'}</button>
+                    </div>
+                </section>
+            )}
+        </>
+    );
+}
+
+function Financials({ data, load, setMessage, setError }: any) {
+    const [pay, setPay] = useState<any>(null);
+    return (
+        <>
+            <Heading title="Financial Records" text="Track payments and outstanding balances." />
+            <section className="panel school-table">
+                <div className="admin-table-wrap">
+                    <table className="admin-table">
+                        <thead><tr><th>Date</th><th>Order Ref</th><th>Total Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {data.orders.map((o: any) => {
+                                const due = Math.max(0, Number(o.total_amount) - Number(o.paid_amount));
+                                return (
+                                    <tr key={o.id}>
+                                        <td>{o.document_date.slice(0, 10)}</td>
+                                        <td>{String(o.document_number).replace(/^LEGACY-NOGUCHI-/, '')}</td>
+                                        <td>{cash(o.total_amount)}</td>
+                                        <td>{cash(o.paid_amount)}</td>
+                                        <td>{cash(due)}</td>
+                                        <td>{due <= 0 ? 'Paid' : Number(o.paid_amount) > 0 ? 'Partial' : 'Unpaid'}</td>
+                                        <td>{due > 0 && <button className="primary-btn" onClick={() => setPay({ ...o, due })}><Upload size={15} />Submit payment</button>}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {pay && <PaymentModal order={pay} close={() => setPay(null)} done={async (msg: string) => { setPay(null); setMessage(msg); await load(); }} fail={setError} />}
+        </>
+    );
+}
+
+function PaymentModal({ order, close, done, fail }: any) {
+    const [amount, setAmount] = useState(order.due);
+    const [method, setMethod] = useState('Bank Transfer');
+    const [reference, setReference] = useState('');
+    const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 10));
+    const [file, setFile] = useState<File | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+
+    const submit = async (e: any) => {
+        e.preventDefault();
+        if (!file) {
+            setError('Choose a payment slip or screenshot.');
+            return;
+        }
+        setBusy(true);
+        setError('');
+        const form = new FormData();
+        form.append('amount', String(amount));
+        form.append('payment_method', method);
+        form.append('payment_reference', reference);
+        form.append('paid_at', paidAt);
+        form.append('proof_file', file);
+        try {
+            const result = await api(`/api/school/orders/${order.id}/payments`, { method: 'POST', body: form });
+            done(result.message);
+        } catch (err: any) {
+            setError(err.message);
+            fail(err.message);
+        } finally { setBusy(false); }
+    };
+    const ref = String(order.document_number).replace(/^LEGACY-NOGUCHI-/, '');
+
+    return (
+        <div className="school-modal-backdrop">
+            <form className="school-payment-modal" onSubmit={submit}>
+                <header>
+                    <div className="school-payment-title"><i><CreditCard /></i><span><small>PAYMENT VERIFICATION</small><h2>Submit Payment Proof</h2><p>Order {ref}</p></span></div>
+                    <button type="button" className="icon-btn" aria-label="Close" onClick={close}><X /></button>
+                </header>
+                <div className="school-payment-summary">
+                    <span><small>Order total</small><b>{cash(order.total_amount)}</b></span>
+                    <span><small>Already paid</small><b>{cash(order.paid_amount)}</b></span>
+                    <span className="due"><small>Outstanding balance</small><b>{cash(order.due)}</b></span>
+                </div>
+                {error && <div className="form-error">{error}</div>}
+                <div className="school-payment-fields">
+                    <label><span><CreditCard />Amount Paid (RWF)</span><input required type="number" min="1" max={order.due} step="1" value={amount} onChange={e => setAmount(e.target.value)} /><small>Maximum: {cash(order.due)}</small></label>
+                    <label>
+                        <span><CreditCard />Payment Method</span>
+                        <select required value={method} onChange={e => setMethod(e.target.value)}><option>Bank Transfer</option><option>MoMo Pay</option><option>Cheque</option><option>Cash Deposit</option></select>
+                    </label>
+                    <label><span><Hash />Transaction / Reference Number</span><input required maxLength={120} placeholder="Enter bank, MoMo or cheque reference" value={reference} onChange={e => setReference(e.target.value)} /></label>
+                    <label><span><CalendarDays />Payment Date</span><input required type="date" max={new Date().toISOString().slice(0, 10)} value={paidAt} onChange={e => setPaidAt(e.target.value)} /></label>
+                </div>
+                <label className={`school-proof-upload${file ? ' selected' : ''}`}>
+                    <Upload />
+                    <span><b>{file ? file.name : 'Upload payment slip or screenshot'}</b><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB · Select another file` : 'PDF, JPG or PNG · Maximum 5 MB'}</small></span>
+                    <input required type="file" accept="image/jpeg,image/png,.pdf" onChange={e => setFile(e.target.files?.[0] || null)} />
+                </label>
+                <footer>
+                    <button type="button" className="secondary-btn" onClick={close}>Cancel</button>
+                    <button className="primary-btn" disabled={busy || !file}><Upload size={16} />{busy ? 'Submitting…' : 'Submit for Verification'}</button>
+                </footer>
+            </form>
+        </div>
+    );
+}
+
+function ReturnItems({ data, load, setMessage, setError, onNavigate }: any) {
+    const returned = (lineId: number) => data.returns.filter((x: any) => Number(x.sales_document_line_id) === Number(lineId)).reduce((sum: number, x: any) => sum + Number(x.quantity), 0);
+    const available = (line: any) => Math.max(0, Number(line.quantity_delivered) - returned(line.id));
+    const delivered = data.orders.filter((o: any) => o.lines.some((line: any) => available(line) > 0));
+
+    const [orderId, setOrderId] = useState(delivered[0]?.id || '');
+    const [items, setItems] = useState<any>({});
+    const [review, setReview] = useState(false);
+    const [busy, setBusy] = useState(false);
+
+    const order = delivered.find((o: any) => o.id === Number(orderId));
+    const returnable = order?.lines.filter((line: any) => available(line) > 0) || [];
+    const selected = Object.entries(items).filter(([, x]: any) => Number(x.quantity) > 0).map(([line_id, x]: any) => ({ line_id: Number(line_id), ...x, line: returnable.find((line: any) => Number(line.id) === Number(line_id)) }));
+    const setItem = (line: any, key: string, value: any) => setItems({ ...items, [line.id]: { quantity: items[line.id]?.quantity || 0, reason: items[line.id]?.reason || 'Too Small', [key]: value } });
+    const prepare = () => {
+        if (!selected.length) {
+            setError('Enter a return quantity for at least one item.');
+            return;
+        }
+        setError('');
+        setReview(true);
+    };
+    const submit = async () => {
+        setBusy(true);
+        try {
+            const result = await api(`/api/school/orders/${orderId}/returns`, { method: 'POST', body: JSON.stringify({ items: selected.map(({ line, ...item }: any) => item) }) });
+            setMessage(result.message);
+            await load();
+            onNavigate('returns-history');
+        } catch (e: any) {
+            setError(e.message);
+            setReview(false);
+        } finally { setBusy(false); }
+    };
+
+    return (
+        <>
+            <Heading title="Return Items" text="Choose delivered items, quantities and reasons for return." />
+            <section className="panel school-return-form">
+                <label>
+                    Delivered order
+                    <select value={orderId} disabled={!delivered.length} onChange={e => { setOrderId(e.target.value); setItems({}); setReview(false); }}>
+                        <option value="">{delivered.length ? 'Choose an order' : 'No returnable orders available'}</option>
+                        {delivered.map((o: any) => <option key={o.id} value={o.id}>{String(o.document_number).replace(/^LEGACY-NOGUCHI-/, '')} · {o.item_count} items</option>)}
+                    </select>
+                </label>
+                {order && !review ? (
+                    <div className="admin-table-wrap">
+                        <table className="admin-table">
+                            <thead><tr><th>Class</th><th>Item Details</th><th>Size</th><th>Delivered</th><th>Already returned</th><th>Available</th><th>Return Qty</th><th>Reason</th></tr></thead>
+                            <tbody>
+                                {returnable.map((line: any) => (
+                                    <tr key={line.id}>
+                                        <td>{line.class_level}</td>
+                                        <td><b>{line.garment_category} · {line.gender}</b><small>{line.color}</small></td>
+                                        <td>{line.size}</td>
+                                        <td>{line.quantity_delivered}</td>
+                                        <td>{returned(line.id)}</td>
+                                        <td><b>{available(line)}</b></td>
+                                        <td><input aria-label={`Return quantity for ${line.garment_category} ${line.size}`} type="number" min="0" max={available(line)} value={items[line.id]?.quantity || ''} onChange={e => setItem(line, 'quantity', Math.min(available(line), Math.max(0, Number(e.target.value))))} /></td>
+                                        <td>
+                                            <select value={items[line.id]?.reason || 'Too Small'} onChange={e => setItem(line, 'reason', e.target.value)}>
+                                                {['Too Small', 'Too Large', 'Damaged', 'Wrong Item', 'Other'].map(reason => <option key={reason}>{reason}</option>)}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : order && review ? (
+                    <div className="school-return-review">
+                        <h2>Review return request</h2>
+                        <p>Confirm these items before sending the request to the factory.</p>
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead><tr><th>Item</th><th>Class</th><th>For</th><th>Size</th><th>Quantity</th><th>Reason</th></tr></thead>
+                                <tbody>
+                                    {selected.map(({ line, quantity, reason }: any) => (
+                                        <tr key={line.id}><td>{line.garment_category}<small>{line.color}</small></td><td>{line.class_level}</td><td>{line.gender}</td><td>{line.size}</td><td><b>{quantity}</b></td><td>{reason}</td></tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="school-return-actions">
+                            <button type="button" className="secondary-btn" onClick={() => setReview(false)}><ArrowLeft size={16} />Edit return</button>
+                            <button type="button" className="primary-btn" disabled={busy} onClick={submit}><CheckCircle2 size={16} />{busy ? 'Submitting…' : 'Confirm & Submit'}</button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="school-return-empty">
+                        <PackageOpen />
+                        <h3>No delivered items are available to return</h3>
+                        <p>Items will appear here after the factory records a delivery to your school.</p>
+                        <button type="button" className="secondary-btn" onClick={() => onNavigate('order-history')}>View Order History</button>
+                    </div>
+                )}
+                {order && !review && <button type="button" className="primary-btn" disabled={!selected.length} onClick={prepare}><RotateCcw size={16} />Review Return Request</button>}
+            </section>
+        </>
+    );
+}
+
+function ReturnsHistory({ data, onNavigate }: any) {
+    return (
+        <>
+            <Heading title="Returns History" text="Follow factory review and feedback for every returned item." action={<button className="secondary-btn" onClick={() => onNavigate('return-items')}><RotateCcw size={16} />Return Items</button>} />
+            <section className="panel school-table">
+                <div className="admin-table-wrap">
+                    <table className="admin-table">
+                        <thead><tr><th>Date</th><th>Item Details</th><th>Qty</th><th>Reason</th><th>Status</th><th>Factory Feedback</th></tr></thead>
+                        <tbody>
+                            {data.returns.length ? data.returns.map((x: any) => (
+                                <tr key={x.id}>
+                                    <td>{String(x.created_at).slice(0, 10)}</td>
+                                    <td>{x.garment_category} · {x.gender}<small>{x.class_level} · {x.size} · {x.color}</small></td>
+                                    <td>{x.quantity}</td>
+                                    <td>{x.reason}</td>
+                                    <td><span className={'admin-status ' + x.status}>{status(x.status)}</span></td>
+                                    <td>{x.factory_feedback || 'Waiting for factory review'}</td>
+                                </tr>
+                            )) : <tr><td colSpan={6}>No returns have been submitted.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </>
+    );
+}
+
+function SchoolProfile({ data, load, setMessage, setError }: any) {
+    const [form, setForm] = useState({ ...data.school });
+    const [busy, setBusy] = useState(false);
+    const sectors = data.locations[form.district] || [];
+    const submit = async (e: any) => {
+        e.preventDefault();
+        setBusy(true);
+        setError('');
+        try {
+            const result = await api('/api/school/profile', { method: 'PUT', body: JSON.stringify(form) });
+            setMessage(result.message);
+            await load();
+        } catch (err: any) {
+            setError(err.message);
+        } finally { setBusy(false); }
+    };
+    const Field = ({ icon, label, children }: any) => <label className="school-profile-field"><span>{icon}{label}</span>{children}</label>;
+
+    return (
+        <>
+            <Heading title="School Profile" text="Keep your school identity and contact details correct." />
+            <form className="panel school-profile-form modern" onSubmit={submit}>
+                <div className="school-profile-banner">
+                    <div className="school-profile-avatar">{form.name?.slice(0, 2).toUpperCase()}</div>
+                    <span><small>SCHOOL ACCOUNT</small><b>{form.name || 'Your school'}</b><p>{data.school.email || 'No email recorded'} · {form.district || 'District not set'}</p></span>
+                    <i><Building2 /></i>
+                </div>
+                <div className="school-profile-content">
+                    <section>
+                        <header><div><UserRound /><span><b>School information</b><small>Basic identity and contact person</small></span></div></header>
+                        <div className="school-profile-grid">
+                            <Field icon={<Building2 />} label="School Name"><input required placeholder="Enter the school name" value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} /></Field>
+                            <Field icon={<UserRound />} label="Head Teacher"><input placeholder="Enter the head teacher's name" value={form.contact_name || ''} onChange={e => setForm({ ...form, contact_name: e.target.value })} /></Field>
+                            <Field icon={<Phone />} label="Phone Number"><input type="tel" placeholder="e.g. 0780 000 000" value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} /></Field>
+                            <Field icon={<Mail />} label="Email Address"><input type="email" placeholder="school@example.rw" value={form.email || ''} onChange={e => setForm({ ...form, email: e.target.value })} /></Field>
+                        </div>
+                    </section>
+                    <section>
+                        <header><div><MapPin /><span><b>School location</b><small>Select the district first, then the sector</small></span></div></header>
+                        <div className="school-profile-grid">
+                            <Field icon={<MapPin />} label="District">
+                                <select required value={form.district || ''} onChange={e => setForm({ ...form, district: e.target.value, sector: '' })}>
+                                    <option value="">Choose a district</option>
+                                    {Object.keys(data.locations).map(x => <option key={x}>{x}</option>)}
+                                </select>
+                            </Field>
+                            <Field icon={<MapPin />} label="Sector">
+                                <select required disabled={!form.district} value={form.sector || ''} onChange={e => setForm({ ...form, sector: e.target.value })}>
+                                    <option value="">{form.district ? 'Choose a sector' : 'Choose a district first'}</option>
+                                    {sectors.map((x: string) => <option key={x}>{x}</option>)}
+                                </select>
+                            </Field>
+                        </div>
+                    </section>
+                </div>
+                <footer>
+                    <p><CheckCircle2 />Keep these details accurate so orders and deliveries reach the correct school.</p>
+                    <button className="primary-btn" disabled={busy}><Save size={17} />{busy ? 'Saving…' : 'Save Profile'}</button>
+                </footer>
+            </form>
+        </>
+    );
+}
+
+function OrderModal({ order, close }: any) {
+    return (
+        <div className="school-modal-backdrop">
+            <section className="school-order-modal">
+                <header>
+                    <div><small>ORDER DETAILS</small><h2>{String(order.document_number).replace(/^LEGACY-NOGUCHI-/, '')}</h2><p>{order.academic_year} · {status(order.status)}</p></div>
+                    <div>
+                        <a className="secondary-btn" href={`/api/school/orders/${order.id}/pdf`} target="_blank"><Printer size={16} />Print Invoice</a>
+                        <button className="icon-btn" onClick={close}><X /></button>
+                    </div>
+                </header>
+                <div className="admin-table-wrap">
+                    <table className="admin-table">
+                        <thead><tr><th>Item & Color</th><th>Class</th><th>For</th><th>Size</th><th>Ordered</th><th>Delivered</th><th>Rejected</th><th>Remaining</th></tr></thead>
+                        <tbody>
+                            {order.lines.map((l: any) => (
+                                <tr key={l.id}>
+                                    <td>{l.garment_category}<small>{l.color}</small></td>
+                                    <td>{l.class_level}</td>
+                                    <td>{l.gender}</td>
+                                    <td>{l.size}</td>
+                                    <td>{l.quantity_ordered}</td>
+                                    <td>{l.quantity_delivered}</td>
+                                    <td>{l.quantity_rejected}</td>
+                                    <td>{Math.max(0, l.quantity_ordered - l.quantity_delivered - l.quantity_rejected)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    );
+}

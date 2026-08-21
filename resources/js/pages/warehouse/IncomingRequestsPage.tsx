@@ -114,10 +114,13 @@ export default function IncomingRequestsPage() {
         }
     };
 
+    // There's no dedicated "request" record — a request is just a `reserve` transaction,
+    // and approving/rejecting it later posts a matching `release_reservation` whose reason
+    // references the original transaction's id. Status is inferred by pairing the two.
     const pendingRequests = useMemo(() => {
         const reserves = transactions.filter((entry: any) => entry.type === 'reserve');
         const releases = transactions.filter((entry: any) => entry.type === 'release_reservation');
-        
+
         return reserves.map(r => {
             const release = releases.find(rel => String(rel.reason).includes(`#${r.id}`));
             let status = 'Pending';

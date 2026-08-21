@@ -22,23 +22,72 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
  const isPackingManager = isNoguchiFactory && (user?.workspace === 'packing' || user?.workspace === 'packaging' || user?.roles?.some((r:any) => r.slug === 'packing-manager' || r.slug === 'packaging-manager' || r.slug === 'packaging-operator'));
  const isQualityManager = data?.is_quality_user || false;
 
- const title=logistics?(fr?'Tableau de bord logistique':'Logistics dashboard'):warehouse?(fr?'Tableau de bord du stock':'Warehouse dashboard'):isQualityManager?(fr?'Tableau de bord Qualité':'Quality Control dashboard'):production?(fr?'Vue de la production':'Production overview'):`${department?.name||user.workspace.replaceAll('_',' ')} dashboard`;
- const description=logistics?(fr?`Bonjour ${user.name}. Suivez les commandes clients, les expéditions et les livraisons.`:`Hello ${user.name}. Track incoming customer orders, dispatches and deliveries.`):warehouse?(fr?`Bonjour ${user.name}. Voici l’état actuel du stock et les travaux à traiter.`:`Hello ${user.name}. Here is the current stock position and work that needs attention.`):isQualityManager?(fr?`Bonjour ${user.name}. Voici les inspections en attente et les derniers résultats de contrôle.`:`Hello ${user.name}. Here are the pending inspections and latest quality results.`):(fr?`Bonjour ${user.name}. Voici les travaux importants et les résultats actuels.`:`Hello ${user.name}. Here is the work that needs attention and the latest production results.`);
+ const title = logistics ? (fr ? 'Tableau de bord logistique' : 'Logistics dashboard')
+     : warehouse ? (fr ? 'Tableau de bord du stock' : 'Warehouse dashboard')
+     : isQualityManager ? (fr ? 'Tableau de bord Qualité' : 'Quality Control dashboard')
+     : production ? (fr ? 'Vue de la production' : 'Production overview')
+     : `${department?.name || user.workspace.replaceAll('_', ' ')} dashboard`;
+ const description = logistics ? (fr ? `Bonjour ${user.name}. Suivez les commandes clients, les expéditions et les livraisons.` : `Hello ${user.name}. Track incoming customer orders, dispatches and deliveries.`)
+     : warehouse ? (fr ? `Bonjour ${user.name}. Voici l'état actuel du stock et les travaux à traiter.` : `Hello ${user.name}. Here is the current stock position and work that needs attention.`)
+     : isQualityManager ? (fr ? `Bonjour ${user.name}. Voici les inspections en attente et les derniers résultats de contrôle.` : `Hello ${user.name}. Here are the pending inspections and latest quality results.`)
+     : (fr ? `Bonjour ${user.name}. Voici les travaux importants et les résultats actuels.` : `Hello ${user.name}. Here is the work that needs attention and the latest production results.`);
 
- return <section className={`department-dashboard ${user.workspace==='cutting'?'cutting-dashboard':''}`}>
-  <div className="page-heading"><div><h1>{title}</h1><p>{description}</p></div><button className="secondary-btn" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'spin':''} size={16}/>{loading?(fr?'Actualisation…':'Refreshing…'):(fr?'Actualiser':'Refresh')}</button></div>
-  {error&&<div className="admin-alert error">{error}</div>}
-  {logistics?<LogisticsMetrics values={logisticsMetrics} fr={fr}/>:warehouse?<WarehouseMetrics values={warehouseMetrics} fr={fr} money={money}/>:isPackingManager?<PackingMetrics values={data?.packing_metrics||{}} fr={fr}/>:isFinishingManager?<FinishingMetrics values={data?.finishing_metrics||{}} fr={fr}/>:isQualityManager?<QualityMetrics values={data?.quality_metrics||{}} fr={fr}/>:<ProductionMetrics values={metrics} fr={fr} user={user}/>}
-  {logistics&&<LogisticsCharts trends={logisticsTrends} fr={fr} money={money}/>}
-  {isNoguchiSewing&&<ProductionCharts trends={data?.production_trends||[]} fr={fr}/>}
-  {!logistics&&!isNoguchiSewing&&!isFinishingManager&&!isPackingManager&&!isQualityManager&&<div className="production-quick-actions">{warehouse?<><button onClick={()=>onNavigate('inventory')}><Warehouse/><span><b>{fr?'Ouvrir le stock':'Open stock records'}</b><small>{fr?'Voir les soldes et les mouvements':'Review balances and stock movements'}</small></span></button><button onClick={()=>onNavigate('procurement')}><ShoppingCart/><span><b>{fr?'Voir les achats':'View purchasing'}</b><small>{fr?'Suivre les commandes et rÃ©ceptions':'Follow orders and received goods'}</small></span></button></>:<><button onClick={()=>onNavigate('production')}><Factory/><span><b>{fr?'GÃ©rer la production':'Manage production'}</b><small>{fr?'CrÃ©er des commandes et suivre chaque Ã©tape':'Create orders and update production steps'}</small></span></button><button onClick={()=>onNavigate('reports')}><FileText/><span><b>{fr?'Voir les rapports':'View reports'}</b><small>{fr?'Comparer les rÃ©sultats par Ã©tape':'Review results for every production step'}</small></span></button></>}</div>}
-  {isQualityManager&&<div className="production-quick-actions"><button onClick={()=>onNavigate('quality')}><ClipboardCheck/><span><b>{fr?'Démarrer l\'inspection':'Start inspection'}</b><small>{fr?'Inspecter les matériaux et la production':'Inspect materials and production'}</small></span></button><button onClick={()=>onNavigate('reports')}><FileText/><span><b>{fr?'Voir les rapports de qualité':'View quality reports'}</b><small>{fr?'Consulter les journaux d\'inspection':'Review recorded inspection logs'}</small></span></button></div>}
-  {!logistics&&!isNoguchiSewing&&!isFinishingManager&&!isPackingManager&&!isQualityManager&&<OperationalPanels warehouse={warehouse} assignments={assignments} stock={stock} stages={stages} data={data} user={user} fr={fr} status={status} number={number} busy={busy} update={update}/>}
-  {isFinishingManager&&data?.finishing_progress&&<FinishingCharts data={data.finishing_progress} fr={fr} number={number}/>}
-  {isPackingManager&&data?.packing_progress&&<PackingCharts data={data.packing_progress} fr={fr} number={number}/>}
-  {isQualityManager&&data?.quality_progress&&<QualityCharts data={data.quality_progress} fr={fr} number={number}/>}
-  {isQualityManager&&<QualityRecentInspections inspections={data?.recent_inspections||[]} fr={fr} status={status} number={number}/>}
- </section>
+ // These roles get their own dedicated panels below (metrics/charts/quick-actions);
+ // everyone else falls through to the generic production quick-actions + team-work view.
+ const hasDedicatedPanels = logistics || isNoguchiSewing || isFinishingManager || isPackingManager || isQualityManager;
+
+ return (
+  <section className={`department-dashboard ${user.workspace === 'cutting' ? 'cutting-dashboard' : ''}`}>
+   <div className="page-heading">
+    <div><h1>{title}</h1><p>{description}</p></div>
+    <button className="secondary-btn" disabled={loading} onClick={() => load()}>
+     <RefreshCw className={loading ? 'spin' : ''} size={16} />{loading ? (fr ? 'Actualisation…' : 'Refreshing…') : (fr ? 'Actualiser' : 'Refresh')}
+    </button>
+   </div>
+   {error && <div className="admin-alert error">{error}</div>}
+
+   {logistics ? <LogisticsMetrics values={logisticsMetrics} fr={fr} />
+    : warehouse ? <WarehouseMetrics values={warehouseMetrics} fr={fr} money={money} />
+    : isPackingManager ? <PackingMetrics values={data?.packing_metrics || {}} fr={fr} />
+    : isFinishingManager ? <FinishingMetrics values={data?.finishing_metrics || {}} fr={fr} />
+    : isQualityManager ? <QualityMetrics values={data?.quality_metrics || {}} fr={fr} />
+    : <ProductionMetrics values={metrics} fr={fr} user={user} />}
+
+   {logistics && <LogisticsCharts trends={logisticsTrends} fr={fr} money={money} />}
+   {isNoguchiSewing && <ProductionCharts trends={data?.production_trends || []} fr={fr} />}
+
+   {!hasDedicatedPanels && (
+    <div className="production-quick-actions">
+     {warehouse ? (
+      <>
+       <button onClick={() => onNavigate('inventory')}><Warehouse /><span><b>{fr ? 'Ouvrir le stock' : 'Open stock records'}</b><small>{fr ? 'Voir les soldes et les mouvements' : 'Review balances and stock movements'}</small></span></button>
+       <button onClick={() => onNavigate('procurement')}><ShoppingCart /><span><b>{fr ? 'Voir les achats' : 'View purchasing'}</b><small>{fr ? 'Suivre les commandes et réceptions' : 'Follow orders and received goods'}</small></span></button>
+      </>
+     ) : (
+      <>
+       <button onClick={() => onNavigate('production')}><Factory /><span><b>{fr ? 'Gérer la production' : 'Manage production'}</b><small>{fr ? 'Créer des commandes et suivre chaque étape' : 'Create orders and update production steps'}</small></span></button>
+       <button onClick={() => onNavigate('reports')}><FileText /><span><b>{fr ? 'Voir les rapports' : 'View reports'}</b><small>{fr ? 'Comparer les résultats par étape' : 'Review results for every production step'}</small></span></button>
+      </>
+     )}
+    </div>
+   )}
+
+   {isQualityManager && (
+    <div className="production-quick-actions">
+     <button onClick={() => onNavigate('quality')}><ClipboardCheck /><span><b>{fr ? 'Démarrer l\'inspection' : 'Start inspection'}</b><small>{fr ? 'Inspecter les matériaux et la production' : 'Inspect materials and production'}</small></span></button>
+     <button onClick={() => onNavigate('reports')}><FileText /><span><b>{fr ? 'Voir les rapports de qualité' : 'View quality reports'}</b><small>{fr ? 'Consulter les journaux d\'inspection' : 'Review recorded inspection logs'}</small></span></button>
+    </div>
+   )}
+
+   {!hasDedicatedPanels && (
+    <OperationalPanels warehouse={warehouse} assignments={assignments} stock={stock} stages={stages} data={data} user={user} fr={fr} status={status} number={number} busy={busy} update={update} />
+   )}
+   {isFinishingManager && data?.finishing_progress && <FinishingCharts data={data.finishing_progress} fr={fr} number={number} />}
+   {isPackingManager && data?.packing_progress && <PackingCharts data={data.packing_progress} fr={fr} number={number} />}
+   {isQualityManager && data?.quality_progress && <QualityCharts data={data.quality_progress} fr={fr} number={number} />}
+   {isQualityManager && <QualityRecentInspections inspections={data?.recent_inspections || []} fr={fr} status={status} number={number} />}
+  </section>
+ );
 }
 
 function LogisticsMetrics({values,fr}:any){return <section className="department-metrics"><Metric icon={<PackageOpen/>} label={fr?'Commandes entrantes':'Incoming orders'} value={number(values.incoming_orders)} tone="blue"/><Metric icon={<PackageCheck/>} label={fr?'PrÃªtes Ã  expÃ©dier':'Ready to dispatch'} value={number(values.ready_to_dispatch)} tone="violet"/><Metric icon={<Truck/>} label={fr?'En cours de livraison':'In transit'} value={number(values.in_transit)} tone="amber"/><Metric icon={<CheckCircle2/>} label={fr?'LivrÃ©es aujourdâ€™hui':'Delivered today'} value={number(values.delivered_today)} tone="green"/><Metric icon={<CircleAlert/>} label={fr?'Livraisons en retard':'Delayed deliveries'} value={number(values.delayed)} tone="red"/><Metric icon={<Truck/>} label={fr?'VÃ©hicules disponibles':'Available vehicles'} value={number(values.available_vehicles)} tone="blue"/></section>}

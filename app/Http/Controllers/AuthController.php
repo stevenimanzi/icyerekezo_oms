@@ -47,18 +47,38 @@ class AuthController extends Controller
         ]);
         $factory = Factory::get()->first(fn (Factory $candidate) => $candidate->hasNoguchiSchoolOrders());
         abort_unless($factory, 422, 'The school ordering factory is not available yet. Please contact NOGUCHI support.');
+
         $user = DB::transaction(function () use ($data, $factory) {
-            PermissionCatalog::seed(); RoleTemplateCatalog::createFor($factory);
-            $school = School::firstOrCreate(['factory_id'=>$factory->id,'name'=>$data['school_name'],'district'=>$data['district'],'sector'=>$data['sector']], ['contact_name'=>$data['name'],'phone'=>$data['phone'],'email'=>Str::lower($data['email'])]);
-            $school->update(['contact_name'=>$data['name'],'phone'=>$data['phone'],'email'=>Str::lower($data['email'])]);
-            $user = User::create(['current_factory_id'=>$factory->id,'school_id'=>$school->id,'name'=>$data['name'],'email'=>Str::lower($data['email']),'password'=>$data['password'],'locale'=>$data['locale']??'en']);
-            $factory->users()->attach($user->id,['is_owner'=>false,'is_active'=>true,'joined_at'=>now(),'job_title'=>'School Administrator']);
-            $role=Role::where('factory_id',$factory->id)->where('slug','school-user')->firstOrFail();
-            $user->roles()->attach($role->id,['factory_id'=>$factory->id]);
+            PermissionCatalog::seed();
+            RoleTemplateCatalog::createFor($factory);
+
+            // Schools can re-register a contact without duplicating the school record itself.
+            $school = School::firstOrCreate(
+                ['factory_id' => $factory->id, 'name' => $data['school_name'], 'district' => $data['district'], 'sector' => $data['sector']],
+                ['contact_name' => $data['name'], 'phone' => $data['phone'], 'email' => Str::lower($data['email'])]
+            );
+            $school->update(['contact_name' => $data['name'], 'phone' => $data['phone'], 'email' => Str::lower($data['email'])]);
+
+            $user = User::create([
+                'current_factory_id' => $factory->id,
+                'school_id' => $school->id,
+                'name' => $data['name'],
+                'email' => Str::lower($data['email']),
+                'password' => $data['password'],
+                'locale' => $data['locale'] ?? 'en',
+            ]);
+            $factory->users()->attach($user->id, ['is_owner' => false, 'is_active' => true, 'joined_at' => now(), 'job_title' => 'School Administrator']);
+            $role = Role::where('factory_id', $factory->id)->where('slug', 'school-user')->firstOrFail();
+            $user->roles()->attach($role->id, ['factory_id' => $factory->id]);
+
             return $user;
         });
-        Auth::login($user); $request->session()->regenerate(); AuditLog::record('auth.school_registered','School administrator account created',$user->school);
-        return response()->json(['message'=>'School administrator account created.','user'=>$this->userPayload($user)],201);
+
+        Auth::login($user);
+        $request->session()->regenerate();
+        AuditLog::record('auth.school_registered', 'School administrator account created', $user->school);
+
+        return response()->json(['message' => 'School administrator account created.', 'user' => $this->userPayload($user)], 201);
     }
 
     public function register(Request $request): JsonResponse

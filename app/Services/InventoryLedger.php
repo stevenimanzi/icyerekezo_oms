@@ -23,24 +23,9 @@ class InventoryLedger
             abort_unless(OperationalScope::for(auth()->user())->allowsWarehouse($warehouse), 403, 'This warehouse is outside your assigned branch.');
             $location = isset($data['location_id']) ? StorageLocation::findOrFail($data['location_id']) : null;
             abort_if($location && (int) $location->warehouse_id !== (int) $warehouse->id, 422, 'The storage location does not belong to the selected warehouse.');
-            $batch = isset($data['batch_id']) ? Batch::findOrFail($data['batch_id']) : null;
-            $isPackedTransition = $data['type'] === 'production_output' && ($data['production_stage'] ?? null) === 'packed';
-            if ($item->batch_tracked && ! $batch) {
-                throw ValidationException::withMessages(['batch_id' => 'Choose a batch for this item.']);
-            }
-            // A batch's item identity legitimately changes at the packed transition: it
-            // stops being tracked as work-in-progress fabric and becomes the finished
-            // product chosen at packing time (rebound to $item below), so the usual
-            // "batch belongs to this item" guard doesn't apply to that one step.
-            if ($batch && $batch->item_id !== $item->id && ! $isPackedTransition) {
-                throw ValidationException::withMessages(['batch_id' => 'The selected batch does not belong to this item.']);
-            }
-            if ($batch?->expires_at?->isPast() && in_array($data['type'], ['issue', 'dispatch', 'reserve'], true)) {
-                throw ValidationException::withMessages(['batch_id' => 'Expired stock cannot be sent out or reserved.']);
-            }
-            if ($batch && $batch->production_stage === 'packed' && in_array($data['type'], ['issue', 'dispatch'], true) && $batch->qc_status !== 'passed') {
-                throw ValidationException::withMessages(['batch_id' => 'This batch has not passed quality control and cannot be issued or dispatched.']);
-            }
+
+            $batch = $this->resolveBatch($data);
+            $this->guardBatchMovement($data, $item, $batch);
 
             $dimensions = ['factory_id' => auth()->user()->current_factory_id, 'item_id' => $item->id, 'warehouse_id' => $warehouse->id, 'location_id' => $data['location_id'] ?? null, 'batch_id' => $batch?->id];
             $balance = StockBalance::where($dimensions)->lockForUpdate()->first() ?? StockBalance::create($dimensions);
@@ -63,17 +48,63 @@ class InventoryLedger
             $balance->update(['quantity_on_hand' => $newOnHand, 'quantity_reserved' => $newReserved, 'quantity_quarantined' => $newQuarantined]);
             $transaction = StockTransaction::create([...$dimensions, 'uuid' => (string) Str::uuid(), 'type' => $data['type'], 'quantity_delta' => $onHand, 'reserved_delta' => $reserved, 'quarantined_delta' => $quarantined, 'unit_cost' => $data['unit_cost'] ?? $item->standard_cost, 'balance_after' => $newOnHand, 'reason' => $data['reason'] ?? null, 'performed_by' => auth()->id(), 'occurred_at' => $data['occurred_at'] ?? now()]);
 
-            if ($batch && isset($data['production_stage']) && $data['type'] === 'production_output') {
-                $updates = ['production_stage' => $data['production_stage']];
-                if ($data['production_stage'] === 'packed') {
-                    $updates['qc_status'] = 'pending';
-                    $updates['item_id'] = $item->id;
-                }
-                $batch->update($updates);
-            }
+            $this->applyStageTransition($data, $item, $batch);
 
             return $transaction;
         }, 5);
+    }
+
+    /**
+     * Looks up the batch a movement references, if any. Doesn't validate anything —
+     * see guardBatchMovement for the rules that must hold once it's resolved.
+     */
+    private function resolveBatch(array $data): ?Batch
+    {
+        return isset($data['batch_id']) ? Batch::findOrFail($data['batch_id']) : null;
+    }
+
+    /**
+     * The rules a batch-tracked movement must satisfy: the item requires a batch when
+     * it's marked batch_tracked, the batch must belong to that item (except at the
+     * packed transition, where a batch's item identity legitimately changes from
+     * work-in-progress fabric to the finished product chosen at packing time — see
+     * applyStageTransition), it can't be expired stock leaving the building, and a
+     * packed batch can't leave until it has passed quality control.
+     */
+    private function guardBatchMovement(array $data, Item $item, ?Batch $batch): void
+    {
+        if ($item->batch_tracked && ! $batch) {
+            throw ValidationException::withMessages(['batch_id' => 'Choose a batch for this item.']);
+        }
+        $isPackedTransition = $data['type'] === 'production_output' && ($data['production_stage'] ?? null) === 'packed';
+        if ($batch && $batch->item_id !== $item->id && ! $isPackedTransition) {
+            throw ValidationException::withMessages(['batch_id' => 'The selected batch does not belong to this item.']);
+        }
+        if ($batch?->expires_at?->isPast() && in_array($data['type'], ['issue', 'dispatch', 'reserve'], true)) {
+            throw ValidationException::withMessages(['batch_id' => 'Expired stock cannot be sent out or reserved.']);
+        }
+        if ($batch && $batch->production_stage === 'packed' && in_array($data['type'], ['issue', 'dispatch'], true) && $batch->qc_status !== 'passed') {
+            throw ValidationException::withMessages(['batch_id' => 'This batch has not passed quality control and cannot be issued or dispatched.']);
+        }
+    }
+
+    /**
+     * Advances a batch's production_stage when a stage's finished output is posted.
+     * Reaching 'packed' additionally opens a quality-control review (qc_status) and
+     * rebinds the batch to the finished-goods item chosen at packing time, since up
+     * to that point it was only tracked under the work-in-progress fabric's item.
+     */
+    private function applyStageTransition(array $data, Item $item, ?Batch $batch): void
+    {
+        if (! $batch || ! isset($data['production_stage']) || $data['type'] !== 'production_output') {
+            return;
+        }
+        $updates = ['production_stage' => $data['production_stage']];
+        if ($data['production_stage'] === 'packed') {
+            $updates['qc_status'] = 'pending';
+            $updates['item_id'] = $item->id;
+        }
+        $batch->update($updates);
     }
 
     public function correct(StockTransaction $original, float $newQuantity, ?string $newReason = null): StockTransaction

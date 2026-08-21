@@ -1,27 +1,144 @@
 import React, { useEffect, useState } from 'react';
 import { Save, ShieldCheck } from 'lucide-react';
 
-function Toggle({checked,onChange,disabled=false}:{checked:boolean;onChange:(value:boolean)=>void;disabled?:boolean}) {
-    return <button type="button" disabled={disabled} className={`toggle ${checked?'on':''}`} onClick={()=>onChange(!checked)}><span/></button>;
+function Toggle({ checked, onChange, disabled = false }: { checked: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
+    return (
+        <button type="button" disabled={disabled} className={`toggle ${checked ? 'on' : ''}`} onClick={() => onChange(!checked)}>
+            <span />
+        </button>
+    );
 }
 
-export default function SystemSettingsPanel({settings,editing,submit,busy,uploadLogo}:any) {
-    const [values,setValues]=useState<any>({});
-    const update=(key:string,value:any)=>setValues((current:any)=>({...current,[key]:value}));
-    useEffect(()=>setValues({
-        system_name:settings.system_name||'ICYEREKEZO OMS',system_tagline:settings.system_tagline||'Factory operations made clear.',
-        logo_url:settings.logo_url||'/assets/images/icyerekezo_oms_logo.svg',support_email:settings.support_email||'',support_phone:settings.support_phone||'',
-        default_locale:settings.default_locale||'en',currency_code:settings.currency_code||'RWF',timezone:settings.timezone||'Africa/Kigali',
-        backup_retention_days:Number(settings.backup_retention_days||30),registration_enabled:settings.registration_enabled!=='0',
-        maintenance_enabled:settings.maintenance_enabled==='1',maintenance_message:settings.maintenance_message||'Scheduled maintenance in progress.',
-        account_name:settings.account_name||'',account_email:settings.account_email||'',
-    }),[settings]);
-    return <div className="settings-live"><article className="panel admin-form settings-form">
-        <section><h2>Administrator account</h2><p>Update the account currently used to manage the whole system.</p><div className="form-grid"><label>Full name<input disabled={!editing} required value={values.account_name||''} onChange={e=>update('account_name',e.target.value)}/></label><label>Email address<input disabled={!editing} required type="email" value={values.account_email||''} onChange={e=>update('account_email',e.target.value)}/></label></div></section>
-        <section><h2>System identity</h2>{values.logo_url&&<div className="logo-preview"><img src={values.logo_url} alt="Current system logo"/><span>Current logo and browser icon</span></div>}<div className="form-grid"><label>System name<input disabled={!editing} value={values.system_name||''} onChange={e=>update('system_name',e.target.value)}/></label><label>Short description<input disabled={!editing} value={values.system_tagline||''} onChange={e=>update('system_tagline',e.target.value)}/></label></div><label>Upload logo from this computer<input disabled={!editing||busy} type="file" accept=".png,.jpg,.jpeg,.webp,.ico,image/png,image/jpeg,image/webp,image/x-icon" onChange={e=>{const file=e.target.files?.[0];if(file)uploadLogo(file)}}/><small>PNG, JPG, WEBP or ICO, maximum 2 MB. This also becomes the browser icon.</small></label><label>Or use a logo web address<input disabled={!editing} placeholder="https://…" value={values.logo_url||''} onChange={e=>update('logo_url',e.target.value)}/></label></section>
-        <section><h2>Support contact</h2><div className="form-grid"><label>Support email<input disabled={!editing} type="email" value={values.support_email||''} onChange={e=>update('support_email',e.target.value)}/></label><label>Support phone<input disabled={!editing} value={values.support_phone||''} onChange={e=>update('support_phone',e.target.value)}/></label></div></section>
-        <section><h2>Defaults for new factories</h2><div className="form-grid"><label>Default language<select disabled={!editing} value={values.default_locale||'en'} onChange={e=>update('default_locale',e.target.value)}><option value="en">English</option><option value="fr">Français</option></select></label><label>Default currency<select disabled={!editing} value={values.currency_code||'RWF'} onChange={e=>update('currency_code',e.target.value)}><option value="RWF">Rwandan franc (RWF)</option><option value="USD">US dollar (USD)</option><option value="EUR">Euro (EUR)</option></select></label><label>Default time zone<select disabled={!editing} value={values.timezone||'Africa/Kigali'} onChange={e=>update('timezone',e.target.value)}><option value="Africa/Kigali">Kigali</option><option value="Africa/Johannesburg">Johannesburg</option><option value="Africa/Nairobi">Nairobi</option><option value="UTC">UTC</option></select></label><label>Keep backups for (days)<input disabled={!editing} type="number" min="1" max="365" value={values.backup_retention_days||30} onChange={e=>update('backup_retention_days',Number(e.target.value))}/></label></div></section>
-        <section><h2>Access and availability</h2><label className="switch-line"><span><b>Allow new factory registration</b><small>When off, the public registration form cannot create accounts.</small></span><Toggle disabled={!editing} checked={!!values.registration_enabled} onChange={value=>update('registration_enabled',value)}/></label><label className="switch-line danger"><span><b>Maintenance mode</b><small>Factory users are blocked; platform administrators keep access.</small></span><Toggle disabled={!editing} checked={!!values.maintenance_enabled} onChange={value=>update('maintenance_enabled',value)}/></label><label>Message shown during maintenance<textarea disabled={!editing} value={values.maintenance_message||''} onChange={e=>update('maintenance_message',e.target.value)}/></label></section>
-        {editing&&<button className="primary-btn" disabled={busy} onClick={()=>submit(values)}><Save size={16}/>Save all settings</button>}
-    </article><aside><article className="panel settings-summary">{values.logo_url?<img className="settings-logo" src={values.logo_url} alt="System logo"/>:<ShieldCheck size={28}/>}<h3>{values.system_name||'ICYEREKEZO OMS'}</h3><p>{values.system_tagline}</p><span className={`admin-status ${values.maintenance_enabled?'maintenance-enabled':'system-online'}`}>{values.maintenance_enabled?'maintenance enabled':'system online'}</span></article><article className="panel settings-facts"><h3>Current configuration</h3><div><span>Registration</span><b>{values.registration_enabled?'Open':'Closed'}</b></div><div><span>Language</span><b>{values.default_locale==='fr'?'French':'English'}</b></div><div><span>Currency</span><b>{values.currency_code}</b></div><div><span>Time zone</span><b>{values.timezone}</b></div><div><span>Backup retention</span><b>{values.backup_retention_days} days</b></div></article></aside></div>;
+export default function SystemSettingsPanel({ settings, editing, submit, busy, uploadLogo }: any) {
+    const [values, setValues] = useState<any>({});
+    const update = (key: string, value: any) => setValues((current: any) => ({ ...current, [key]: value }));
+
+    // Re-seeds the local draft whenever the server's settings change (e.g. after a
+    // save), so "editing" always starts from the latest saved values.
+    useEffect(() => setValues({
+        system_name: settings.system_name || 'ICYEREKEZO OMS',
+        system_tagline: settings.system_tagline || 'Factory operations made clear.',
+        logo_url: settings.logo_url || '/assets/images/icyerekezo_oms_logo.svg',
+        support_email: settings.support_email || '',
+        support_phone: settings.support_phone || '',
+        default_locale: settings.default_locale || 'en',
+        currency_code: settings.currency_code || 'RWF',
+        timezone: settings.timezone || 'Africa/Kigali',
+        backup_retention_days: Number(settings.backup_retention_days || 30),
+        registration_enabled: settings.registration_enabled !== '0',
+        maintenance_enabled: settings.maintenance_enabled === '1',
+        maintenance_message: settings.maintenance_message || 'Scheduled maintenance in progress.',
+        account_name: settings.account_name || '',
+        account_email: settings.account_email || '',
+    }), [settings]);
+
+    return (
+        <div className="settings-live">
+            <article className="panel admin-form settings-form">
+                <section>
+                    <h2>Administrator account</h2>
+                    <p>Update the account currently used to manage the whole system.</p>
+                    <div className="form-grid">
+                        <label>Full name<input disabled={!editing} required value={values.account_name || ''} onChange={e => update('account_name', e.target.value)} /></label>
+                        <label>Email address<input disabled={!editing} required type="email" value={values.account_email || ''} onChange={e => update('account_email', e.target.value)} /></label>
+                    </div>
+                </section>
+
+                <section>
+                    <h2>System identity</h2>
+                    {values.logo_url && (
+                        <div className="logo-preview">
+                            <img src={values.logo_url} alt="Current system logo" />
+                            <span>Current logo and browser icon</span>
+                        </div>
+                    )}
+                    <div className="form-grid">
+                        <label>System name<input disabled={!editing} value={values.system_name || ''} onChange={e => update('system_name', e.target.value)} /></label>
+                        <label>Short description<input disabled={!editing} value={values.system_tagline || ''} onChange={e => update('system_tagline', e.target.value)} /></label>
+                    </div>
+                    <label>
+                        Upload logo from this computer
+                        <input
+                            disabled={!editing || busy} type="file"
+                            accept=".png,.jpg,.jpeg,.webp,.ico,image/png,image/jpeg,image/webp,image/x-icon"
+                            onChange={e => { const file = e.target.files?.[0]; if (file) uploadLogo(file); }}
+                        />
+                        <small>PNG, JPG, WEBP or ICO, maximum 2 MB. This also becomes the browser icon.</small>
+                    </label>
+                    <label>Or use a logo web address<input disabled={!editing} placeholder="https://…" value={values.logo_url || ''} onChange={e => update('logo_url', e.target.value)} /></label>
+                </section>
+
+                <section>
+                    <h2>Support contact</h2>
+                    <div className="form-grid">
+                        <label>Support email<input disabled={!editing} type="email" value={values.support_email || ''} onChange={e => update('support_email', e.target.value)} /></label>
+                        <label>Support phone<input disabled={!editing} value={values.support_phone || ''} onChange={e => update('support_phone', e.target.value)} /></label>
+                    </div>
+                </section>
+
+                <section>
+                    <h2>Defaults for new factories</h2>
+                    <div className="form-grid">
+                        <label>
+                            Default language
+                            <select disabled={!editing} value={values.default_locale || 'en'} onChange={e => update('default_locale', e.target.value)}>
+                                <option value="en">English</option>
+                                <option value="fr">Français</option>
+                            </select>
+                        </label>
+                        <label>
+                            Default currency
+                            <select disabled={!editing} value={values.currency_code || 'RWF'} onChange={e => update('currency_code', e.target.value)}>
+                                <option value="RWF">Rwandan franc (RWF)</option>
+                                <option value="USD">US dollar (USD)</option>
+                                <option value="EUR">Euro (EUR)</option>
+                            </select>
+                        </label>
+                        <label>
+                            Default time zone
+                            <select disabled={!editing} value={values.timezone || 'Africa/Kigali'} onChange={e => update('timezone', e.target.value)}>
+                                <option value="Africa/Kigali">Kigali</option>
+                                <option value="Africa/Johannesburg">Johannesburg</option>
+                                <option value="Africa/Nairobi">Nairobi</option>
+                                <option value="UTC">UTC</option>
+                            </select>
+                        </label>
+                        <label>Keep backups for (days)<input disabled={!editing} type="number" min="1" max="365" value={values.backup_retention_days || 30} onChange={e => update('backup_retention_days', Number(e.target.value))} /></label>
+                    </div>
+                </section>
+
+                <section>
+                    <h2>Access and availability</h2>
+                    <label className="switch-line">
+                        <span><b>Allow new factory registration</b><small>When off, the public registration form cannot create accounts.</small></span>
+                        <Toggle disabled={!editing} checked={!!values.registration_enabled} onChange={value => update('registration_enabled', value)} />
+                    </label>
+                    <label className="switch-line danger">
+                        <span><b>Maintenance mode</b><small>Factory users are blocked; platform administrators keep access.</small></span>
+                        <Toggle disabled={!editing} checked={!!values.maintenance_enabled} onChange={value => update('maintenance_enabled', value)} />
+                    </label>
+                    <label>Message shown during maintenance<textarea disabled={!editing} value={values.maintenance_message || ''} onChange={e => update('maintenance_message', e.target.value)} /></label>
+                </section>
+
+                {editing && <button className="primary-btn" disabled={busy} onClick={() => submit(values)}><Save size={16} />Save all settings</button>}
+            </article>
+
+            <aside>
+                <article className="panel settings-summary">
+                    {values.logo_url ? <img className="settings-logo" src={values.logo_url} alt="System logo" /> : <ShieldCheck size={28} />}
+                    <h3>{values.system_name || 'ICYEREKEZO OMS'}</h3>
+                    <p>{values.system_tagline}</p>
+                    <span className={`admin-status ${values.maintenance_enabled ? 'maintenance-enabled' : 'system-online'}`}>{values.maintenance_enabled ? 'maintenance enabled' : 'system online'}</span>
+                </article>
+                <article className="panel settings-facts">
+                    <h3>Current configuration</h3>
+                    <div><span>Registration</span><b>{values.registration_enabled ? 'Open' : 'Closed'}</b></div>
+                    <div><span>Language</span><b>{values.default_locale === 'fr' ? 'French' : 'English'}</b></div>
+                    <div><span>Currency</span><b>{values.currency_code}</b></div>
+                    <div><span>Time zone</span><b>{values.timezone}</b></div>
+                    <div><span>Backup retention</span><b>{values.backup_retention_days} days</b></div>
+                </article>
+            </aside>
+        </div>
+    );
 }
