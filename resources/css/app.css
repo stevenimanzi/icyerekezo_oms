@@ -959,3 +959,8 @@ small, .caption, .meta, .eyebrow, .factory-card span, .workspace-banner small {
     font-size: 11.5px !important;
     font-weight: 500 !important;
 }
+
+/* Quality Metrics 4-column grid override */
+.quality-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}

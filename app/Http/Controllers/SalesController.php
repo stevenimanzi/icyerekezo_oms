@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Item;
 use App\Models\SalesDocument;
 use App\Models\SalesDocumentLine;
 use App\Models\School;
+use App\Models\Warehouse;
+use App\Services\InventoryLedger;
 use App\Services\RwandaLocationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -110,7 +113,11 @@ class SalesController extends Controller
             $school = School::firstOrCreate(['name' => $schoolData['name'], 'district' => $schoolData['district'], 'sector' => $schoolData['sector']], $schoolData);
             $data['document_number'] ??= 'SO-'.now()->format('Ymd').'-'.str_pad((string) (SalesDocument::where('document_type', 'customer_order')->count() + 1), 4, '0', STR_PAD_LEFT);
             $order = SalesDocument::create($data + ['school_id' => $school->id, 'document_type' => 'customer_order', 'status' => 'pending', 'item_count' => collect($lines)->sum('quantity_ordered'), 'created_by' => $request->user()->id]);
-            $order->lines()->createMany($lines);
+            $factoryId = (int) $request->user()->current_factory_id;
+            $order->lines()->createMany(array_map(
+                fn ($line) => $line + ['item_id' => Item::resolveFinishedGood($factoryId, $line['garment_category'])->id],
+                $lines
+            ));
             return $order;
         });
         AuditLog::record('sales.school_order_received', "Received school garment order {$order->document_number} from {$order->customer_name}", $order);
@@ -118,7 +125,7 @@ class SalesController extends Controller
         return response()->json(['message' => 'School garment order received.', 'document' => $order->load('lines')], 201);
     }
 
-    public function updateSchoolOrderLine(Request $request, SalesDocumentLine $line): JsonResponse
+    public function updateSchoolOrderLine(Request $request, SalesDocumentLine $line, InventoryLedger $ledger): JsonResponse
     {
         $this->ensureNoguchi($request);
         $data = $request->validate([
@@ -129,8 +136,15 @@ class SalesController extends Controller
         ]);
         $data['quantity_packed'] = max((int) ($data['quantity_packed'] ?? $line->quantity_packed), (int) $data['quantity_delivered']);
         $data['quantity_rejected'] ??= $line->quantity_rejected;
+        $previouslyDelivered = (int) $line->quantity_delivered;
         $line->update($data);
         $document = $line->document()->with('lines')->firstOrFail();
+
+        $newlyDelivered = (int) $data['quantity_delivered'] - $previouslyDelivered;
+        if ($newlyDelivered > 0 && $line->item_id) {
+            $this->releaseDeliveredStock($ledger, (int) $request->user()->current_factory_id, $line, $document, $newlyDelivered);
+        }
+
         $delivered = $document->lines->sum('quantity_delivered');
         $ordered = $document->lines->sum('quantity_ordered');
         if ($delivered >= $ordered) $document->update(['status' => 'delivered']);
@@ -139,6 +153,33 @@ class SalesController extends Controller
         AuditLog::record('sales.school_order_line_updated', "Updated fulfilment for {$document->document_number}", $line);
 
         return response()->json(['message' => 'Garment quantities updated.', 'line' => $line->fresh(), 'document_status' => $document->fresh()->status]);
+    }
+
+    /**
+     * Decrements real warehouse stock for the garment just marked delivered, taken from
+     * whichever single warehouse holds enough of it. Never blocks delivery bookkeeping —
+     * if no warehouse alone has enough (e.g. production never fed this item), it's skipped.
+     */
+    private function releaseDeliveredStock(InventoryLedger $ledger, int $factoryId, SalesDocumentLine $line, SalesDocument $document, int $quantity): void
+    {
+        $warehouse = Warehouse::withoutGlobalScopes()
+            ->where('warehouses.factory_id', $factoryId)->where('warehouses.is_active', true)
+            ->join('stock_balances', 'stock_balances.warehouse_id', '=', 'warehouses.id')
+            ->where('stock_balances.item_id', $line->item_id)
+            ->selectRaw('warehouses.id, (stock_balances.quantity_on_hand - stock_balances.quantity_reserved - stock_balances.quantity_quarantined) as available')
+            ->orderByDesc('available')
+            ->first();
+        if (! $warehouse || (float) $warehouse->available < $quantity) {
+            return;
+        }
+        try {
+            $ledger->post([
+                'item_id' => $line->item_id, 'warehouse_id' => $warehouse->id, 'type' => 'dispatch',
+                'quantity' => $quantity, 'reason' => "School order {$document->document_number} delivered — {$line->garment_category}",
+            ]);
+        } catch (\Throwable) {
+            // Delivery bookkeeping must never fail because a stock movement couldn't be posted.
+        }
     }
 
     public function decide(Request $request, SalesDocument $document): JsonResponse

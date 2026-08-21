@@ -7,6 +7,7 @@ use App\Models\Item;
 use App\Models\ProductionOrder;
 use App\Models\ProductionStageExecution;
 use App\Models\QualityInspection;
+use App\Support\OperationalScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class QualityControlController extends Controller
         $completed = (clone $base)->whereIn('result', ['passed', 'failed', 'conditional'])->where('inspected_at', '>=', now()->startOfMonth());
         $inspected = (float) (clone $completed)->sum('inspected_quantity');
         $passed = (float) (clone $completed)->sum('passed_quantity');
+        $warehouseIds = OperationalScope::for($request->user())->warehouseIds();
 
         return response()->json([
             'metrics' => [
@@ -31,8 +33,9 @@ class QualityControlController extends Controller
                 'pass_rate' => $inspected > 0 ? round($passed / $inspected * 100, 1) : 0,
                 'rejected_quantity' => (float) (clone $completed)->sum('rejected_quantity'),
             ],
-            'inspections' => $base->with(['order:id,order_number', 'item:id,name,sku', 'stageExecution.stage:id,name,code', 'inspector:id,name', 'approver:id,name'])->latest()->paginate(25),
+            'inspections' => $base->with(['order:id,order_number', 'item:id,name,sku', 'stageExecution.stage:id,name,code', 'batch:id,batch_number,item_id', 'inspector:id,name', 'approver:id,name'])->latest()->paginate(25),
             'orders' => ProductionOrder::whereIn('status', ['approved', 'in_progress', 'paused', 'completed'])->with(['item:id,name,sku', 'executions.stage:id,name,code,quality_required'])->latest()->limit(100)->get(),
+            'packed_batches' => InventoryController::batchesAtStage($warehouseIds, 'packed', 'pending'),
             'items' => Item::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku', 'type']),
         ]);
     }
@@ -43,6 +46,7 @@ class QualityControlController extends Controller
         $data = $request->validate([
             'production_order_id' => ['nullable', Rule::exists('production_orders', 'id')->where('factory_id', $factoryId)],
             'stage_execution_id' => ['nullable', Rule::exists('production_stage_executions', 'id')->where('factory_id', $factoryId)],
+            'batch_id' => ['nullable', Rule::exists('batches', 'id')->where('factory_id', $factoryId)],
             'item_id' => ['nullable', Rule::exists('items', 'id')->where('factory_id', $factoryId)],
             'inspection_type' => ['required', Rule::in(['incoming_material', 'in_process', 'finished_goods', 'random', 'customer_return'])],
             'sample_size' => ['nullable', 'numeric', 'min:0'], 'inspected_quantity' => ['required', 'numeric', 'gt:0'],
@@ -63,6 +67,9 @@ class QualityControlController extends Controller
             ]);
             if ($data['result'] === 'failed' && $inspection->stage_execution_id) {
                 $inspection->stageExecution()->update(['status' => 'rework', 'rejected_quantity' => $data['rejected_quantity']]);
+            }
+            if ($inspection->batch_id && in_array($data['result'], ['passed', 'failed'], true)) {
+                $inspection->batch()->update(['qc_status' => $data['result']]);
             }
             return $inspection;
         });

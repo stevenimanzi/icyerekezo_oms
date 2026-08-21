@@ -42,15 +42,21 @@ class DepartmentDashboardController extends Controller
             || str_contains(strtolower((string) $department?->name), 'dispatch')
             || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'logistics-officer')->exists();
 
-        $isFinishingUser = str_contains(strtolower((string) $profile?->job_title), 'finishing')
+        $isNoguchiFactory = $user->currentFactory?->hasNoguchiSchoolOrders() ?? false;
+
+        $isFinishingUser = $isNoguchiFactory && (
+            str_contains(strtolower((string) $profile?->job_title), 'finishing')
             || str_contains(strtolower((string) $department?->name), 'finishing')
-            || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'finishing-manager')->exists();
-            
-        $isPackingUser = str_contains(strtolower((string) $profile?->job_title), 'packing')
+            || $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'finishing-manager')->exists()
+        );
+
+        $isPackingUser = $isNoguchiFactory && (
+            str_contains(strtolower((string) $profile?->job_title), 'packing')
             || str_contains(strtolower((string) $profile?->job_title), 'packaging')
             || str_contains(strtolower((string) $department?->name), 'packing')
             || str_contains(strtolower((string) $department?->name), 'packaging')
-            || $user->roles()->wherePivot('factory_id', $factoryId)->whereIn('slug', ['packing-manager', 'packaging-manager'])->exists();
+            || $user->roles()->wherePivot('factory_id', $factoryId)->whereIn('slug', ['packing-manager', 'packaging-manager', 'packaging-operator'])->exists()
+        );
 
         $isQualityUser = str_contains(strtolower((string) $profile?->job_title), 'quality')
             || str_contains(strtolower((string) $department?->name), 'quality')
@@ -226,8 +232,8 @@ class DepartmentDashboardController extends Controller
             $monthStart = now()->startOfMonth();
             $monthEnd = now()->endOfMonth();
             
-            $monthTotal = (clone $inspectionsQuery)->whereBetween('inspected_at', [$monthStart, $monthEnd])->whereIn('result', ['passed', 'failed'])->count();
-            $monthPassed = (clone $inspectionsQuery)->whereBetween('inspected_at', [$monthStart, $monthEnd])->where('result', 'passed')->count();
+            $monthTotal = (float) (clone $inspectionsQuery)->whereBetween('inspected_at', [$monthStart, $monthEnd])->sum('inspected_quantity');
+            $monthPassed = (float) (clone $inspectionsQuery)->whereBetween('inspected_at', [$monthStart, $monthEnd])->sum('passed_quantity');
             
             $qualityProgress = [
                 'weekly' => collect(range(6, 0))->map(function ($daysAgo) use ($inspectionsQuery) {
@@ -262,8 +268,8 @@ class DepartmentDashboardController extends Controller
 
             $qualityMetrics = [
                 'pending_inspections' => (clone $inspectionsQuery)->where('result', 'pending')->count(),
-                'inspections_today' => (clone $inspectionsQuery)->whereDate('inspected_at', today())->count(),
-                'failed_today' => (clone $inspectionsQuery)->whereDate('inspected_at', today())->where('result', 'failed')->count(),
+                'inspections_today' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', today())->sum('inspected_quantity'),
+                'failed_today' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', today())->sum('rejected_quantity'),
                 'pass_rate' => $monthTotal > 0 ? round(($monthPassed / $monthTotal) * 100, 1) : 0,
             ];
             

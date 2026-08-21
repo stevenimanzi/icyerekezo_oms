@@ -81,9 +81,9 @@ class InventoryController extends Controller
             'low_stock' => StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)->join('items', 'items.id', '=', 'stock_balances.item_id')->whereColumn('stock_balances.quantity_on_hand', '<=', 'items.reorder_level')->count(),
             'total_value' => StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)->join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost),0) as value')->value('value'),
             'stock' => $stock,
-            'cut_pieces' => $this->getVirtualCutPieces($warehouseIds),
-            'sewn_pieces' => $this->getVirtualSewnPieces($warehouseIds),
-            'finished_pieces' => $this->getVirtualFinishedPieces($warehouseIds),
+            'cut_pieces' => $this->batchesAtStage($warehouseIds, 'cut'),
+            'sewn_pieces' => $this->batchesAtStage($warehouseIds, 'sewn'),
+            'finished_pieces' => $this->batchesAtStage($warehouseIds, 'finished'),
             'catalog' => $catalog,
             'warehouse_list' => Warehouse::whereIn('id', $warehouseIds)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'type']),
             'recent_transactions' => $transactions,
@@ -127,35 +127,62 @@ class InventoryController extends Controller
         return response()->json(['message' => 'Stock item updated.', 'item' => $item->fresh('unit:id,name,symbol')]);
     }
 
+    public function storeBatch(Request $request): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $roles = $this->productionRoles($request);
+        abort_unless($roles['cuttingOperator'] || $roles['warehouseKeeper'], 403, 'You do not have permission to create a production batch.');
+
+        $data = $request->validate([
+            'item_id' => ['required', 'integer', Rule::exists('items', 'id')->where('factory_id', $factoryId)],
+            'metadata' => ['nullable', 'array'],
+            'metadata.style' => ['nullable', 'string', 'max:80'],
+            'metadata.color' => ['nullable', 'string', 'max:80'],
+            'metadata.size' => ['nullable', 'string', 'max:40'],
+        ]);
+
+        do {
+            $batchNumber = 'CUT-'.now()->format('ymd').'-'.Str::upper(Str::random(6));
+        } while (\App\Models\Batch::where('item_id', $data['item_id'])->where('batch_number', $batchNumber)->exists());
+
+        $batch = \App\Models\Batch::create([
+            'item_id' => $data['item_id'],
+            'batch_number' => $batchNumber,
+            'production_stage' => 'cut',
+            'metadata' => $data['metadata'] ?? null,
+        ]);
+
+        return response()->json($batch, 201);
+    }
+
+    /**
+     * A narrow item-creation endpoint for production staff: only ever creates a
+     * finished_good, so it can be safely opened to packing roles without granting
+     * them the full storeItem/ensureWarehouseKeeper permission surface.
+     */
+    public function storeFinishedItem(Request $request): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $roles = $this->productionRoles($request);
+        abort_unless($roles['packingManager'] || $roles['warehouseKeeper'], 403, 'You do not have permission to add a finished product.');
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:160', Rule::unique('items')->where('factory_id', $factoryId)],
+        ]);
+
+        return response()->json(Item::resolveFinishedGood($factoryId, $data['name']), 201);
+    }
+
     public function postTransaction(Request $request, InventoryLedger $ledger): JsonResponse
     {
-        $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'type' => ['required', Rule::in(['receipt', 'production_output', 'return_in', 'issue', 'dispatch', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'])], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['required', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
-        
-        $isWarehouseKeeper = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->where('slug', 'warehouse-keeper')->exists();
-            
-        $isCuttingOperator = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->where('slug', 'cutting-operator')->exists();
-            
-        $isSewingOperator = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->where('slug', 'sewing-operator')->exists();
+        $data = $request->validate(['item_id' => ['required', 'integer'], 'warehouse_id' => ['required', 'integer'], 'location_id' => ['nullable', 'integer'], 'batch_id' => ['nullable', 'integer'], 'production_stage' => ['nullable', Rule::in(['cut', 'sewn', 'finished', 'packed'])], 'type' => ['required', Rule::in(['receipt', 'production_output', 'return_in', 'issue', 'dispatch', 'adjustment_in', 'adjustment_out', 'waste', 'reserve', 'release_reservation', 'quarantine', 'release_quarantine'])], 'quantity' => ['required', 'numeric', 'gt:0'], 'unit_cost' => ['nullable', 'numeric', 'min:0'], 'reason' => ['required', 'string', 'max:1000'], 'occurred_at' => ['nullable', 'date', 'before_or_equal:now']]);
 
-        $isFinishingManager = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->whereIn('slug', ['finishing-manager', 'finishing-operator'])->exists();
-            
-        $isPackingManager = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->whereIn('slug', ['packing-manager', 'packing-operator', 'packaging-manager', 'packaging-operator'])->exists();
-        
-        $allowed = $isWarehouseKeeper || 
-            ($isCuttingOperator && in_array($data['type'], ['reserve', 'issue', 'waste'])) ||
-            ($isSewingOperator && in_array($data['type'], ['receipt', 'issue', 'waste'])) ||
-            ($isFinishingManager && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output'])) ||
-            ($isPackingManager && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output']));
+        $roles = $this->productionRoles($request);
+        $allowed = $roles['warehouseKeeper'] ||
+            ($roles['cuttingOperator'] && in_array($data['type'], ['reserve', 'issue', 'waste', 'production_output'])) ||
+            ($roles['sewingOperator'] && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output'])) ||
+            ($roles['finishingManager'] && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output'])) ||
+            ($roles['packingManager'] && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output']));
         abort_unless($allowed, 403, 'You do not have permission to post this type of transaction.');
 
         return response()->json($ledger->post($data), 201);
@@ -168,41 +195,18 @@ class InventoryController extends Controller
             'reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $isWarehouseKeeper = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->where('slug', 'warehouse-keeper')->exists();
-
-        $isCuttingOperator = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->where('slug', 'cutting-operator')->exists();
-
-        $isSewingOperator = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->where('slug', 'sewing-operator')->exists();
-
-        $isFinishingManager = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->whereIn('slug', ['finishing-manager', 'finishing-operator'])->exists();
-            
-        $isPackingManager = $request->user()->roles()
-            ->wherePivot('factory_id', $request->user()->current_factory_id)
-            ->whereIn('slug', ['packing-manager', 'packing-operator', 'packaging-manager', 'packaging-operator'])->exists();
-
-        $allowed = $isWarehouseKeeper || 
-            ($isCuttingOperator && in_array($transaction->type, ['reserve', 'issue', 'waste'])) ||
-            ($isSewingOperator && in_array($transaction->type, ['receipt', 'issue', 'waste'])) ||
-            ($isFinishingManager && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output'])) ||
-            ($isPackingManager && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output']));
-            
-        if (!$allowed) {
-            \Illuminate\Support\Facades\Log::error('InventoryController@correctTransaction blocked.');
-        }
+        $roles = $this->productionRoles($request);
+        $allowed = $roles['warehouseKeeper'] ||
+            ($roles['cuttingOperator'] && in_array($transaction->type, ['reserve', 'issue', 'waste'])) ||
+            ($roles['sewingOperator'] && in_array($transaction->type, ['receipt', 'issue', 'waste'])) ||
+            ($roles['finishingManager'] && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output'])) ||
+            ($roles['packingManager'] && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output']));
         abort_unless($allowed, 403, 'You do not have permission to edit this transaction.');
 
         abort_unless((int) $transaction->factory_id === (int) $request->user()->current_factory_id, 404);
-        
+
         // Prevent editing old transactions unless warehouse keeper
-        if (!$isWarehouseKeeper && $transaction->occurred_at->diffInHours(now()) > 24) {
+        if (! $roles['warehouseKeeper'] && $transaction->occurred_at->diffInHours(now()) > 24) {
             abort(403, 'You can only edit recent transactions. Please contact the warehouse keeper.');
         }
 
@@ -268,25 +272,29 @@ class InventoryController extends Controller
         abort_unless($allowed, 403, 'Only the assigned Warehouse Keeper can record or change stock.');
     }
 
+    /**
+     * Which production-floor role(s) the current user holds, keyed for the
+     * per-transaction-type permission checks in postTransaction/correctTransaction.
+     */
+    private function productionRoles(Request $request): array
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $hasRole = fn (array $slugs) => $request->user()->roles()
+            ->wherePivot('factory_id', $factoryId)
+            ->whereIn('slug', $slugs)->exists();
+
+        return [
+            'warehouseKeeper' => $hasRole(['warehouse-keeper']),
+            'cuttingOperator' => $hasRole(['cutting-operator']),
+            'sewingOperator' => $hasRole(['sewing-operator']),
+            'finishingManager' => $hasRole(['finishing-manager', 'finishing-operator']),
+            'packingManager' => $hasRole(['packing-manager', 'packing-operator', 'packaging-manager', 'packaging-operator']),
+        ];
+    }
+
     private function generateStockCode(int $factoryId, string $type): string
     {
-        $prefix = match ($type) {
-            'raw_material' => 'RAW',
-            'semi_finished' => 'WIP',
-            'finished_good' => 'FIN',
-            'packaging' => 'PKG',
-            'spare_part' => 'SPR',
-            'waste' => 'WST',
-            'by_product' => 'BYP',
-            'service' => 'SRV',
-            default => 'STK',
-        };
-
-        do {
-            $code = $prefix.'-'.Str::upper(Str::random(8));
-        } while (Item::withoutGlobalScopes()->where('factory_id', $factoryId)->where('sku', $code)->exists());
-
-        return $code;
+        return Item::generateSku($factoryId, $type);
     }
 
     public function setup(): JsonResponse
@@ -310,152 +318,33 @@ class InventoryController extends Controller
         return response()->json(Warehouse::create($data), 201);
     }
 
-    private function getVirtualCutPieces($warehouseIds): array
+    /**
+     * Batches currently sitting (with positive stock) at a given production stage,
+     * across the given warehouses. Backs the cross-stage "pending pieces to accept"
+     * lists and the QC queue with real Batch/StockBalance rows instead of parsing
+     * synthetic ids out of free-text transaction reasons.
+     */
+    public static function batchesAtStage(iterable $warehouseIds, string $stage, ?string $qcStatus = null): array
     {
-        $cutTransactions = \App\Models\StockTransaction::whereIn('stock_transactions.warehouse_id', $warehouseIds)
-            ->where('stock_transactions.type', 'issue')
-            ->where('stock_transactions.reason', 'LIKE', '[Cut Output]%')
-            ->join('items', 'items.id', '=', 'stock_transactions.item_id')
-            ->get(['stock_transactions.*', 'items.name as item_name']);
+        return StockBalance::query()
+            ->whereIn('stock_balances.warehouse_id', $warehouseIds)
+            ->where('stock_balances.quantity_on_hand', '>', 0)
+            ->join('batches', 'batches.id', '=', 'stock_balances.batch_id')
+            ->join('items', 'items.id', '=', 'stock_balances.item_id')
+            ->where('batches.production_stage', $stage)
+            ->when($qcStatus, fn ($query) => $query->where('batches.qc_status', $qcStatus))
+            ->get(['stock_balances.warehouse_id', 'stock_balances.quantity_on_hand', 'batches.id as batch_id', 'batches.item_id', 'batches.metadata', 'items.name as item_name'])
+            ->map(function ($row) {
+                $meta = is_string($row->metadata) ? (json_decode($row->metadata, true) ?: []) : ($row->metadata ?? []);
+                $label = trim(($meta['style'] ?? '').(! empty($meta['color']) ? ' / '.$meta['color'] : '').(! empty($meta['size']) ? ' ('.$meta['size'].')' : ''));
 
-        $sewingReceipts = \App\Models\StockTransaction::whereIn('stock_transactions.warehouse_id', $warehouseIds)
-            ->where('stock_transactions.type', 'receipt')
-            ->where('stock_transactions.reason', 'LIKE', '[Sewing Receipt] CutID:%')
-            ->get();
-
-        $pieces = [];
-        foreach ($cutTransactions as $tx) {
-            $details = str_replace('[Cut Output] ', '', $tx->reason ?? '');
-            if (preg_match('/\|\s*([\d,.]+)x\s+(.+?)(?:\s+\/\s+(.+?))?\s+\(([^)]+)\)\s+produced/i', $details, $matches)) {
-                $qty = (float) str_replace(',', '', $matches[1]);
-                $style = trim($matches[2]);
-                $color = trim($matches[3] ?? '');
-                $size = trim($matches[4]);
-                $cutId = "{$tx->item_id}-{$style}-{$color}-{$size}";
-
-                if (!isset($pieces[$cutId])) {
-                    $pieces[$cutId] = [
-                        'id' => $cutId,
-                        'item_id' => $tx->item_id,
-                        'name' => "{$style}" . ($color ? " / {$color}" : "") . " ({$size}) - {$tx->item_name}",
-                        'available_qty' => 0,
-                    ];
-                }
-                $pieces[$cutId]['available_qty'] += $qty;
-            }
-        }
-
-        foreach ($sewingReceipts as $tx) {
-            if (preg_match('/CutID:\s*([^\s|]+)/i', $tx->reason ?? '', $matches)) {
-                $cutId = $matches[1];
-                if (isset($pieces[$cutId])) {
-                    $pieces[$cutId]['available_qty'] -= abs((float) $tx->quantity_delta);
-                }
-            }
-        }
-
-        return array_values(array_filter($pieces, fn($p) => $p['available_qty'] > 0));
-    }
-
-    private function getVirtualSewnPieces($warehouseIds): array
-    {
-        $sewTransactions = StockTransaction::query()
-            ->whereIn('stock_transactions.warehouse_id', $warehouseIds)
-            ->join('items', 'items.id', '=', 'stock_transactions.item_id')
-            ->where('stock_transactions.type', 'issue')
-            ->where('stock_transactions.reason', 'LIKE', '[Sewing Output]%')
-            ->get(['stock_transactions.*', 'items.name as item_name']);
-
-        $finishingReceipts = StockTransaction::query()
-            ->whereIn('warehouse_id', $warehouseIds)
-            ->where('type', 'receipt')
-            ->where('reason', 'LIKE', '[Finishing Receipt] SewnID:%')
-            ->get();
-
-        $pieces = [];
-        foreach ($sewTransactions as $tx) {
-            if (preg_match('/CutID:\s*([^\s|]+)\s*\|\s*([\d,.]+)\s+items\s+sewn/i', $tx->reason ?? '', $matches)) {
-                $cutId = $matches[1];
-                $qty = (float) str_replace(',', '', $matches[2]);
-                $sewnId = $cutId;
-
-                if (!isset($pieces[$sewnId])) {
-                    $parts = explode('-', $sewnId);
-                    $style = $parts[1] ?? '';
-                    $color = $parts[2] ?? '';
-                    $size = $parts[3] ?? '';
-                    
-                    $pieces[$sewnId] = [
-                        'id' => $sewnId,
-                        'item_id' => $tx->item_id,
-                        'name' => "{$style}" . ($color ? " / {$color}" : "") . " ({$size}) - {$tx->item_name}",
-                        'available_qty' => 0,
-                    ];
-                }
-                $pieces[$sewnId]['available_qty'] += $qty;
-            }
-        }
-
-        foreach ($finishingReceipts as $tx) {
-            if (preg_match('/SewnID:\s*([^\s|]+)/i', $tx->reason ?? '', $matches)) {
-                $sewnId = $matches[1];
-                if (isset($pieces[$sewnId])) {
-                    $pieces[$sewnId]['available_qty'] -= abs((float) $tx->quantity_delta);
-                }
-            }
-        }
-
-        return array_values(array_filter($pieces, fn($p) => $p['available_qty'] > 0));
-    }
-
-    private function getVirtualFinishedPieces($warehouseIds): array
-    {
-        $finishTransactions = StockTransaction::query()
-            ->whereIn('stock_transactions.warehouse_id', $warehouseIds)
-            ->join('items', 'items.id', '=', 'stock_transactions.item_id')
-            ->where('stock_transactions.type', 'issue')
-            ->where('stock_transactions.reason', 'LIKE', '[Finishing Output]%')
-            ->get(['stock_transactions.*', 'items.name as item_name']);
-
-        $packingReceipts = StockTransaction::query()
-            ->whereIn('warehouse_id', $warehouseIds)
-            ->where('type', 'receipt')
-            ->where('reason', 'LIKE', '[Packing Receipt] FinishedID:%')
-            ->get();
-
-        $pieces = [];
-        foreach ($finishTransactions as $tx) {
-            if (preg_match('/SewnID:\s*([^\s|]+)\s*\|\s*([\d,.]+)\s+items\s+finished/i', $tx->reason ?? '', $matches)) {
-                $sewnId = $matches[1];
-                $qty = (float) str_replace(',', '', $matches[2]);
-                $finishedId = $sewnId;
-
-                if (!isset($pieces[$finishedId])) {
-                    $parts = explode('-', $finishedId);
-                    $style = $parts[1] ?? '';
-                    $color = $parts[2] ?? '';
-                    $size = $parts[3] ?? '';
-                    
-                    $pieces[$finishedId] = [
-                        'id' => $finishedId,
-                        'item_id' => $tx->item_id,
-                        'name' => "{$style}" . ($color ? " / {$color}" : "") . " ({$size}) - {$tx->item_name}",
-                        'available_qty' => 0,
-                    ];
-                }
-                $pieces[$finishedId]['available_qty'] += $qty;
-            }
-        }
-
-        foreach ($packingReceipts as $tx) {
-            if (preg_match('/FinishedID:\s*([^\s|]+)/i', $tx->reason ?? '', $matches)) {
-                $finishedId = $matches[1];
-                if (isset($pieces[$finishedId])) {
-                    $pieces[$finishedId]['available_qty'] -= abs($tx->quantity_delta);
-                }
-            }
-        }
-
-        return array_values(array_filter($pieces, fn($p) => $p['available_qty'] > 0));
+                return [
+                    'id' => $row->batch_id,
+                    'item_id' => $row->item_id,
+                    'warehouse_id' => $row->warehouse_id,
+                    'name' => trim(($label !== '' ? $label.' - ' : '').$row->item_name),
+                    'available_qty' => (float) $row->quantity_on_hand,
+                ];
+            })->values()->all();
     }
 }

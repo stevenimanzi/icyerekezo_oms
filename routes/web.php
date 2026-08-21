@@ -92,6 +92,8 @@ Route::prefix('api')->group(function () {
             Route::patch('/products/units/{unit}', [ProductCatalogController::class, 'updateUnit'])->middleware('permission:inventory.receive');
             Route::get('/inventory/tools', [InventoryController::class, 'tools'])->middleware('permission:inventory.view');
             Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->middleware('permission:inventory.receive');
+            Route::post('/inventory/batches', [InventoryController::class, 'storeBatch'])->middleware('permission:inventory.issue');
+            Route::post('/inventory/finished-items', [InventoryController::class, 'storeFinishedItem'])->middleware('permission:inventory.issue');
             Route::patch('/inventory/items/{item}', [InventoryController::class, 'updateItem'])->middleware('permission:inventory.receive');
             Route::post('/inventory/transactions', [InventoryController::class, 'postTransaction'])->middleware('permission:inventory.adjust|inventory.issue');
             Route::patch('/inventory/transactions/{transaction}/correct', [InventoryController::class, 'correctTransaction'])->middleware('permission:inventory.adjust|inventory.issue');

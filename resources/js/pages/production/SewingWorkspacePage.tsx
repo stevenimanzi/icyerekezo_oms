@@ -244,7 +244,7 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
         clearMsg();
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: sewingWarehouseId, type: 'receipt', quantity: Number(piece.available_qty), reason: `[Sewing Receipt] CutID: ${piece.id} | Accepted from cutting` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: sewingWarehouseId, batch_id: Number(piece.id), type: 'receipt', quantity: Number(piece.available_qty), reason: `[Sewing Receipt] CutID: ${piece.id} | Accepted from cutting` }) });
             setSuccess(locale === 'en' ? 'Cut pieces received successfully!' : 'Pi\u00e8ces coup\u00e9es re\u00e7ues avec succ\u00e8s !');
             await load(true);
         } catch (r: any) { setError(r.message); } finally { setBusy(false); }
@@ -263,7 +263,9 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: sewingWarehouseId, type: 'issue', quantity: Number(sewForm.quantity), reason: `[Sewing Output] CutID: ${selectedPiece.id} | ${sewForm.quantity} items sewn. ${sewForm.notes || ''}` }) });
+            const reason = `[Sewing Output] CutID: ${selectedPiece.id} | ${sewForm.quantity} items sewn. ${sewForm.notes || ''}`;
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: sewingWarehouseId, batch_id: Number(selectedPiece.id), type: 'issue', quantity: Number(sewForm.quantity), reason }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: sewingWarehouseId, batch_id: Number(selectedPiece.id), production_stage: 'sewn', type: 'production_output', quantity: Number(sewForm.quantity), reason }) });
             setSuccess(locale === 'en' ? 'Sewing record saved successfully!' : 'Enregistrement de couture sauvegard\u00e9 !');
             setSewForm({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' }); await load(true);
         } catch (r: any) {
@@ -285,7 +287,7 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: sewingWarehouseId, type: 'waste', quantity: Number(damageForm.quantity), reason: `[Sewing Damage] CutID: ${selectedPiece.id} | ${damageForm.reason || 'Material damaged during sewing'}` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: sewingWarehouseId, batch_id: Number(selectedPiece.id), type: 'waste', quantity: Number(damageForm.quantity), reason: `[Sewing Damage] CutID: ${selectedPiece.id} | ${damageForm.reason || 'Material damaged during sewing'}` }) });
             setSuccess(locale === 'en' ? 'Damage report submitted successfully!' : 'Rapport de dommage soumis avec succ\u00e8s !');
             setDamageForm({ item_id: '', quantity: '', reason: '' }); await load(true);
         } catch (r: any) {

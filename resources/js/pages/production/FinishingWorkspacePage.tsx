@@ -175,7 +175,7 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
         clearMsg();
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: finishingWarehouseId, type: 'receipt', quantity: Number(piece.available_qty), reason: `[Finishing Receipt] SewnID: ${piece.id} | Accepted from sewing` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: finishingWarehouseId, batch_id: Number(piece.id), type: 'receipt', quantity: Number(piece.available_qty), reason: `[Finishing Receipt] SewnID: ${piece.id} | Accepted from sewing` }) });
             setSuccess(locale === 'en' ? 'Sewn pieces received successfully!' : 'Pi\u00e8ces cousues re\u00e7ues avec succ\u00e8s !');
             await load(true);
         } catch (r: any) { setError(r.message); } finally { setBusy(false); }
@@ -205,7 +205,9 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: finishingWarehouseId, type: 'issue', quantity: Number(finishForm.quantity), reason: `[Finishing Output] SewnID: ${selectedPiece.id} | ${finishForm.quantity} items finished. ${finishForm.notes || ''}` }) });
+            const reason = `[Finishing Output] SewnID: ${selectedPiece.id} | ${finishForm.quantity} items finished. ${finishForm.notes || ''}`;
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: finishingWarehouseId, batch_id: Number(selectedPiece.id), type: 'issue', quantity: Number(finishForm.quantity), reason }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: finishingWarehouseId, batch_id: Number(selectedPiece.id), production_stage: 'finished', type: 'production_output', quantity: Number(finishForm.quantity), reason }) });
             setSuccess(locale === 'en' ? 'Finishing record saved successfully!' : 'Enregistrement de finition sauvegard\u00e9 !');
             setFinishForm({ item_id: '', quantity: '', notes: '' }); await load(true);
         } catch (r: any) {

@@ -220,7 +220,12 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(cutForm.item_id), warehouse_id: cuttingWarehouseId, type: 'issue', quantity: Number(cutForm.quantity), reason: `[Cut Output] ${cutForm.notes || 'Fabric cut for production'}${cutForm.output_quantity ? ` | ${cutForm.output_quantity}x ${cutForm.output_style}${cutForm.output_color ? ` / ${cutForm.output_color}` : ''} (${cutForm.output_size}) produced` : ''}` }) });
+            const reason = `[Cut Output] ${cutForm.notes || 'Fabric cut for production'}${cutForm.output_quantity ? ` | ${cutForm.output_quantity}x ${cutForm.output_style}${cutForm.output_color ? ` / ${cutForm.output_color}` : ''} (${cutForm.output_size}) produced` : ''}`;
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(cutForm.item_id), warehouse_id: cuttingWarehouseId, type: 'issue', quantity: Number(cutForm.quantity), reason }) });
+            if (cutForm.output_quantity && Number(cutForm.output_quantity) > 0) {
+                const batch = await api<any>('/api/inventory/batches', { method: 'POST', body: JSON.stringify({ item_id: Number(cutForm.item_id), metadata: { style: cutForm.output_style, color: cutForm.output_color, size: cutForm.output_size } }) });
+                await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(cutForm.item_id), warehouse_id: cuttingWarehouseId, batch_id: batch.id, production_stage: 'cut', type: 'production_output', quantity: Number(cutForm.output_quantity), reason }) });
+            }
             setSuccess(locale === 'en' ? 'Cut record saved successfully!' : 'Enregistrement de coupe sauvegard\u00e9 !');
             setCutForm({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' }); await load(true);
         } catch (r: any) {

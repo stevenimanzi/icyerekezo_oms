@@ -16,17 +16,17 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
  const fr=locale==='fr',production=user.workspace==='production',warehouse=data?.dashboard_type==='warehouse',logistics=data?.dashboard_type==='logistics';
  const currency=user.current_factory?.currency_code||user.system?.currency_code||'RWF',money=(value:any,currencyCode=currency)=>`${currencyCode} ${Number(value||0).toLocaleString(undefined,{maximumFractionDigits:2})}`;
  const status=(value:string)=>(fr?frenchStatus:englishStatus)[value]||String(value||'').replaceAll('_',' ');
- const isNoguchiSewing = user?.current_factory?.name?.trim().toLowerCase()==='noguchi holdings ltd' && user?.workspace === 'sewing';
- const isFinishingManager = user?.workspace === 'finishing' || user?.roles?.some((r:any) => r.slug === 'finishing-manager');
- const isPackingManager = user?.workspace === 'packing' || user?.workspace === 'packaging' || user?.roles?.some((r:any) => r.slug === 'packing-manager' || r.slug === 'packaging-manager');
+ const isNoguchiFactory = user?.current_factory?.name?.trim().toLowerCase()==='noguchi holdings ltd';
+ const isNoguchiSewing = isNoguchiFactory && user?.workspace === 'sewing';
+ const isFinishingManager = isNoguchiFactory && (user?.workspace === 'finishing' || user?.roles?.some((r:any) => r.slug === 'finishing-manager'));
+ const isPackingManager = isNoguchiFactory && (user?.workspace === 'packing' || user?.workspace === 'packaging' || user?.roles?.some((r:any) => r.slug === 'packing-manager' || r.slug === 'packaging-manager' || r.slug === 'packaging-operator'));
  const isQualityManager = data?.is_quality_user || false;
 
- const eyebrow=logistics?(fr?'DONNÉES LOGISTIQUES EN DIRECT':'LIVE LOGISTICS DATA'):warehouse?(fr?'DONNÉES DE STOCK EN DIRECT':'LIVE STOCK DATA'):isQualityManager?(fr?'DONNÉES QUALITÉ EN DIRECT':'LIVE QUALITY DATA'):(fr?'DONNÉES DE PRODUCTION EN DIRECT':'LIVE PRODUCTION DATA');
  const title=logistics?(fr?'Tableau de bord logistique':'Logistics dashboard'):warehouse?(fr?'Tableau de bord du stock':'Warehouse dashboard'):isQualityManager?(fr?'Tableau de bord Qualité':'Quality Control dashboard'):production?(fr?'Vue de la production':'Production overview'):`${department?.name||user.workspace.replaceAll('_',' ')} dashboard`;
  const description=logistics?(fr?`Bonjour ${user.name}. Suivez les commandes clients, les expéditions et les livraisons.`:`Hello ${user.name}. Track incoming customer orders, dispatches and deliveries.`):warehouse?(fr?`Bonjour ${user.name}. Voici l’état actuel du stock et les travaux à traiter.`:`Hello ${user.name}. Here is the current stock position and work that needs attention.`):isQualityManager?(fr?`Bonjour ${user.name}. Voici les inspections en attente et les derniers résultats de contrôle.`:`Hello ${user.name}. Here are the pending inspections and latest quality results.`):(fr?`Bonjour ${user.name}. Voici les travaux importants et les résultats actuels.`:`Hello ${user.name}. Here is the work that needs attention and the latest production results.`);
 
  return <section className={`department-dashboard ${user.workspace==='cutting'?'cutting-dashboard':''}`}>
-  <div className="page-heading"><div><div className="eyebrow"><span></span>{eyebrow}</div><h1>{title}</h1><p>{description}</p></div><button className="secondary-btn" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'spin':''} size={16}/>{loading?(fr?'Actualisationâ€¦':'Refreshingâ€¦'):(fr?'Actualiser':'Refresh')}</button></div>
+  <div className="page-heading"><div><h1>{title}</h1><p>{description}</p></div><button className="secondary-btn" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'spin':''} size={16}/>{loading?(fr?'Actualisation…':'Refreshing…'):(fr?'Actualiser':'Refresh')}</button></div>
   {error&&<div className="admin-alert error">{error}</div>}
   {logistics?<LogisticsMetrics values={logisticsMetrics} fr={fr}/>:warehouse?<WarehouseMetrics values={warehouseMetrics} fr={fr} money={money}/>:isPackingManager?<PackingMetrics values={data?.packing_metrics||{}} fr={fr}/>:isFinishingManager?<FinishingMetrics values={data?.finishing_metrics||{}} fr={fr}/>:isQualityManager?<QualityMetrics values={data?.quality_metrics||{}} fr={fr}/>:<ProductionMetrics values={metrics} fr={fr} user={user}/>}
   {logistics&&<LogisticsCharts trends={logisticsTrends} fr={fr} money={money}/>}
@@ -201,11 +201,11 @@ function PackingCharts({data, fr, number}:any){
 
 function QualityMetrics({values,fr}:any){
     const number=(value:any)=>Number(value||0).toLocaleString(undefined,{maximumFractionDigits:3});
-    return <section className="department-metrics">
+    return <section className="department-metrics quality-metrics">
         <Metric icon={<ClipboardCheck/>} label={fr?"Inspections en attente":"Pending inspections"} value={number(values.pending_inspections)} tone="amber"/>
-        <Metric icon={<CheckCircle2/>} label={fr?"Inspections aujourd'hui":"Inspections today"} value={number(values.inspections_today)} tone="blue"/>
-        <Metric icon={<CircleAlert/>} label={fr?"Rejetés aujourd'hui":"Failed today"} value={number(values.failed_today)} tone="red"/>
-        <Metric icon={<PackageCheck/>} label={fr?"Taux de réussite (Mois)":"Pass rate (Month)"} value={(values.pass_rate||0)+'%'} tone="green"/>
+        <Metric icon={<CheckCircle2/>} label={fr?"Articles inspectés aujourd'hui":"Items inspected today"} value={number(values.inspections_today)} tone="blue"/>
+        <Metric icon={<CircleAlert/>} label={fr?"Articles rejetés aujourd'hui":"Items failed today"} value={number(values.failed_today)} tone="red"/>
+        <Metric icon={<PackageCheck/>} label={fr?"Taux de réussite (Mois)":"Pass rate (Month)"} value={`${values.pass_rate}%`} tone="green"/>
     </section>;
 }
 

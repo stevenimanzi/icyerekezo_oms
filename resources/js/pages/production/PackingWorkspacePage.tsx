@@ -93,8 +93,10 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
     const [busy, setBusy] = useState(false);
 
     const [requestForm, setRequestForm] = useState({ item_id: '', quantity: '', reason: '' });
-    const [finishForm, setFinishForm] = useState({ item_id: '', quantity: '', notes: '' });
+    const [finishForm, setFinishForm] = useState({ item_id: '', finished_item_id: '', quantity: '', notes: '' });
     const [editForm, setEditForm] = useState<{ id: string, quantity: string, reason: string } | null>(null);
+    const [newProductName, setNewProductName] = useState('');
+    const [addingProduct, setAddingProduct] = useState(false);
 
     useEffect(() => { setTab(initialTab); }, [initialTab]);
 
@@ -103,7 +105,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         try {
             const overview = await api<any>('/api/inventory/overview');
             setStock(overview.stock || []);
-            setItems(overview.items || []);
+            setItems(overview.catalog || []);
             setTransactions(overview.recent_transactions || overview.transactions || []);
             setfinishedPieces(overview.finished_pieces || []);
             setWarehouses(overview.warehouse_list || overview.warehouses || []);
@@ -123,6 +125,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
     
     const requestableItems = finishedPieces;
     const requestableMaterials = stock.filter((s: any) => s.warehouse_id === mainWarehouseId && s.category === 'Raw Materials' && s.quantity_on_hand > 0);
+    const finishedProducts = items.filter((item: any) => item.type === 'finished_good');
 
     const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
@@ -175,7 +178,7 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         clearMsg();
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: packingWarehouseId, type: 'receipt', quantity: Number(piece.available_qty), reason: `[Packing Receipt] FinishedID: ${piece.id} | Accepted from Finishing` }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(piece.item_id), warehouse_id: packingWarehouseId, batch_id: Number(piece.id), type: 'receipt', quantity: Number(piece.available_qty), reason: `[Packing Receipt] FinishedID: ${piece.id} | Accepted from Finishing` }) });
             setSuccess(locale === 'en' ? 'finished pieces received successfully!' : 'Pi\u00e8ces cousues re\u00e7ues avec succ\u00e8s !');
             await load(true);
         } catch (r: any) { setError(r.message); } finally { setBusy(false); }
@@ -205,7 +208,9 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
 
         setBusy(true);
         try {
-            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: packingWarehouseId, type: 'issue', quantity: Number(finishForm.quantity), reason: `[Packing Output] FinishedID: ${selectedPiece.id} | ${finishForm.quantity} items finished. ${finishForm.notes || ''}` }) });
+            const reason = `[Packing Output] FinishedID: ${selectedPiece.id} | ${finishForm.quantity} items finished. ${finishForm.notes || ''}`;
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: packingWarehouseId, batch_id: Number(selectedPiece.id), type: 'issue', quantity: Number(finishForm.quantity), reason }) });
+            await api('/api/inventory/transactions', { method: 'POST', body: JSON.stringify({ item_id: Number(selectedPiece.item_id), warehouse_id: packingWarehouseId, batch_id: Number(selectedPiece.id), production_stage: 'packed', type: 'production_output', quantity: Number(finishForm.quantity), reason }) });
             setSuccess(locale === 'en' ? 'packing record saved successfully!' : 'Enregistrement de finition sauvegard\u00e9 !');
             setFinishForm({ item_id: '', quantity: '', notes: '' }); await load(true);
         } catch (r: any) {
