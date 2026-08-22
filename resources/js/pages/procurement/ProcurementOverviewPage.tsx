@@ -316,7 +316,7 @@ export default function ProcurementOverviewPage() {
         <div className="module-title">
           <div>
             <div className="eyebrow">
-              <i></i>LIVE PURCHASING DATA
+              <i></i>PURCHASING DATA
             </div>
             <h1>Purchasing and stock receipts</h1>
             <p>

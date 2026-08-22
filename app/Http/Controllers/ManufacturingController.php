@@ -136,6 +136,12 @@ class ManufacturingController extends Controller
         $bom = BillOfMaterial::findOrFail($data['bill_of_material_id']);
         abort_unless($bom->item_id === (int) $data['item_id'], 422, 'The BOM does not produce the selected item.');
         $order = ProductionOrder::create($data + ['created_by' => $request->user()->id]);
+        \App\Support\FactoryNotifier::notify(
+            $factoryId, 'production.approve',
+            'New production order needs approval',
+            "{$order->order_number} for {$data['planned_quantity']} units was created by {$request->user()->name} and is waiting for approval.",
+            '/executive/production', 'production', $request->user()->id
+        );
 
         return response()->json(['order' => $order, 'material_requirements' => $service->requirements($bom, (float) $data['planned_quantity'])], 201);
     }

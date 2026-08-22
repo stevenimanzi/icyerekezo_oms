@@ -13,7 +13,7 @@ const copy = {
     en: {
         title: 'Finishing workspace',
         subtitle: 'Manage received pieces, record finishing output.',
-        eyebrow: 'LIVE FINISHING DATA',
+        eyebrow: 'FINISHING DATA',
         tabs: { request: 'Receive pieces', materials: 'Request materials', finish: 'Finish pieces' },
         materialsTitle: 'Request raw materials',
         materialsDesc: 'Request materials like buttons, thread, or labels from the main warehouse.',
@@ -31,7 +31,7 @@ const copy = {
     fr: {
         title: 'Espace de finition',
         subtitle: 'Gérez les pièces reçues et enregistrez la finition.',
-        eyebrow: 'DONNÉES DE FINITION EN DIRECT',
+        eyebrow: 'DONNÉES DE FINITION',
         tabs: { request: 'Réceptionner', materials: 'Demander matériels', finish: 'Finition' },
         materialsTitle: 'Demander des matières premières',
         materialsDesc: 'Demandez des matériaux (boutons, fils, etc.) de l\'entrepôt principal.',

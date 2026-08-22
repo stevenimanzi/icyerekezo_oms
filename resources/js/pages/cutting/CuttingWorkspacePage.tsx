@@ -16,7 +16,7 @@ const copy = {
     en: {
         title: 'Cutting workspace',
         subtitle: 'Manage fabric requests, record cut output and track damaged materials.',
-        eyebrow: 'LIVE CUTTING DATA',
+        eyebrow: 'CUTTING DATA',
         tabs: { request: 'Request fabrics', cut: 'Cut fabrics', damaged: 'Damaged fabrics', report: 'Cutting report' },
         requestTitle: 'Request fabrics from warehouse',
         requestDesc: 'Submit a request for fabric materials needed for your cutting operations.',
@@ -46,7 +46,7 @@ const copy = {
     fr: {
         title: 'Espace de coupe',
         subtitle: 'Gérez les demandes de tissu, enregistrez les découpes et suivez les matériaux endommagés.',
-        eyebrow: 'DONNÉES DE COUPE EN DIRECT',
+        eyebrow: 'DONNÉES DE COUPE',
         tabs: { request: 'Demander des tissus', cut: 'Tissus coupés', damaged: 'Tissus endommagés', report: 'Rapport de coupe' },
         requestTitle: 'Demander des tissus de l\'entrepôt',
         requestDesc: 'Soumettez une demande de matériaux tissus nécessaires pour vos opérations de coupe.',

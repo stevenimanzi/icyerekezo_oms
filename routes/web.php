@@ -18,6 +18,7 @@ use App\Http\Controllers\QualityControlController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SchoolPortalController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,28 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return view('app');
 })->name('dashboard');
+
+Route::get('/manifest.json', function () {
+    $name = \App\Models\SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS');
+    $shortName = strlen($name) <= 12 ? $name : explode(' ', trim($name))[0];
+
+    return response()->json([
+        'name' => $name,
+        'short_name' => $shortName,
+        'description' => 'Factory operations, production and inventory management.',
+        'start_url' => '/dashboard',
+        'scope' => '/',
+        'display' => 'standalone',
+        'background_color' => '#f5f7fb',
+        'theme_color' => '#2563eb',
+        'orientation' => 'any',
+        'icons' => [
+            ['src' => '/assets/images/pwa/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => '/assets/images/pwa/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => '/assets/images/pwa/icon-maskable-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+        ],
+    ])->header('Content-Type', 'application/manifest+json');
+});
 
 Route::prefix('api')->group(function () {
     Route::middleware('throttle:6,1')->group(function () {
@@ -56,6 +79,12 @@ Route::prefix('api')->group(function () {
         Route::get('/support/tickets', [SupportController::class, 'index']);
         Route::post('/support/tickets', [SupportController::class, 'store']);
         Route::post('/support/tickets/{ticket}/reply', [SupportController::class, 'reply']);
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+        Route::get('/push/vapid-public-key', [NotificationController::class, 'vapidPublicKey']);
+        Route::post('/push/subscriptions', [NotificationController::class, 'storePushSubscription']);
+        Route::delete('/push/subscriptions', [NotificationController::class, 'destroyPushSubscription']);
         Route::prefix('platform')->middleware('platform')->group(function () {
             Route::get('/overview', [PlatformAdminController::class, 'overview']);
             Route::get('/factories', [PlatformAdminController::class, 'factories']);
@@ -115,6 +144,7 @@ Route::prefix('api')->group(function () {
             Route::post('/team/users', [TeamWorkspaceController::class, 'storeUser'])->middleware('permission:users.create');
             Route::patch('/team/users/{user}', [TeamWorkspaceController::class, 'updateUser'])->middleware('permission:users.update');
             Route::post('/team/users/{user}/reset-password', [TeamWorkspaceController::class, 'resetPassword'])->middleware('permission:users.update');
+            Route::delete('/team/users/{user}', [TeamWorkspaceController::class, 'destroyUser'])->middleware('permission:users.update');
             Route::post('/team/roles', [TeamWorkspaceController::class, 'storeRole'])->middleware('permission:users.assign_roles');
             Route::post('/team/workstations', [TeamWorkspaceController::class, 'storeWorkstation'])->middleware('permission:factory.manage');
             Route::post('/team/departments', [TeamWorkspaceController::class, 'storeDepartment'])->middleware('permission:factory.manage|users.update');

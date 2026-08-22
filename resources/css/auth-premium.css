@@ -179,11 +179,10 @@
 }
 
 .auth-live-dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: #54e69c;
-    box-shadow: 0 0 0 5px rgba(84,230,156,.12);
+    background: #9eb8eb;
 }
 
 .auth-form-side {

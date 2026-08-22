@@ -1222,7 +1222,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false }: 
             <div>
               <div className="eyebrow">
                 <i />
-                LIVE FACTORY WORK
+                FACTORY WORK
               </div>
               <h1>
                 {noguchiOrdersOnly

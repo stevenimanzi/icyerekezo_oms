@@ -213,7 +213,7 @@ function Dashboard({ data }: { data: any }) {
             <article className="panel platform-growth">
                 <header>
                     <div><span className="platform-kicker">14-DAY TREND</span><h2>Platform growth</h2><p>Cumulative factories, users and subscriptions from live platform records.</p></div>
-                    <div className="growth-live"><i></i><span>Live data</span></div>
+                    <div className="growth-live"><i></i><span>Current data</span></div>
                 </header>
                 <div className="platform-growth-chart">
                     {growth.length ? (

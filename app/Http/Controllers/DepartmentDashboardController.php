@@ -16,6 +16,7 @@ use App\Models\Warehouse;
 use App\Models\WorkAssignment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DepartmentDashboardController extends Controller
 {
@@ -93,6 +94,15 @@ class DepartmentDashboardController extends Controller
             ->leftJoin('units', 'units.id', '=', 'items.unit_id')
             ->latest('stock_transactions.occurred_at')->limit(15)
             ->get(['stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.balance_after', 'stock_transactions.occurred_at', 'items.name as item_name', 'items.sku', 'warehouses.name as warehouse_name', 'units.symbol as unit']);
+        $stockStatus = (clone $stockBalances)
+            ->join('items', 'items.id', '=', 'stock_balances.item_id')
+            ->leftJoin('units', 'units.id', '=', 'items.unit_id')
+            ->where('items.is_active', true)
+            ->groupBy('items.id', 'items.name', 'items.sku', 'items.reorder_level', 'units.symbol')
+            ->orderByRaw('SUM(stock_balances.quantity_on_hand) <= MAX(items.reorder_level) DESC')
+            ->orderBy('items.name')
+            ->limit(20)
+            ->get(['items.id', 'items.name', 'items.sku', 'items.reorder_level', 'units.symbol as unit', DB::raw('SUM(stock_balances.quantity_on_hand) as quantity_on_hand')]);
 
         $activeOrderStatuses = ['draft', 'pending', 'confirmed', 'approved', 'processing', 'ready'];
         $incomingOrdersQuery = SalesDocument::withoutGlobalScopes()
@@ -307,6 +317,7 @@ class DepartmentDashboardController extends Controller
             'stage_activity' => $stageExecutions->with(['stage:id,name,code,sequence', 'order:id,order_number,item_id'])->latest('updated_at')->limit(15)->get(['id', 'production_order_id', 'workflow_stage_id', 'assigned_user_id', 'status', 'input_quantity', 'output_quantity', 'waste_quantity', 'rejected_quantity', 'started_at', 'completed_at', 'updated_at']),
             'warehouse_metrics' => $warehouseMetrics,
             'recent_stock' => $recentStock,
+            'stock_status' => $stockStatus,
             'logistics_metrics' => $logisticsMetrics,
             'logistics_trends' => $logisticsTrends,
             'production_trends' => $productionTrends,

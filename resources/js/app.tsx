@@ -44,6 +44,7 @@ import {
   Users,
   Warehouse,
   UserRound,
+  WifiOff,
   Wrench,
   X,
   Zap,
@@ -96,6 +97,13 @@ type AuthUser = {
   system?: { name: string; tagline?: string; logo_url?: string; support_email?: string; support_phone?: string; currency_code?: string; timezone?: string };
 };
 
+type AppNotificationItem = {
+  id: string;
+  read_at: string | null;
+  created_at: string;
+  data: { title: string; body: string; url?: string; category?: string };
+};
+
 const csrf = () =>
   document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? "";
 
@@ -125,7 +133,7 @@ const copy = {
   en: {
     overview: "Operations overview",
     welcome: "Good morning, Jean. Here is your factory at a glance.",
-    live: "Live operations",
+    live: "Operations",
     newOrder: "New production order",
     search: "Search orders, products, batches…",
     production: "Production today",
@@ -170,7 +178,7 @@ const copy = {
   fr: {
     overview: "Vue d’ensemble des opérations",
     welcome: "Bonjour Jean. Voici un aperçu de votre usine.",
-    live: "Opérations en direct",
+    live: "Opérations",
     newOrder: "Nouvel ordre de production",
     search: "Rechercher commandes, produits, lots…",
     production: "Production du jour",
@@ -264,12 +272,23 @@ const adminPagePaths: Record<string, string> = {
 };
 const adminPathPages = Object.fromEntries(Object.entries(adminPagePaths).map(([page, path]) => [path, page]));
 
-function pageFromLocation(user: AuthUser): string {
-  const path = window.location.pathname.replace(/\/$/, "") || "/";
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
+function pageKeyFromPath(user: AuthUser, rawPath: string): string {
+  const path = rawPath.replace(/\/$/, "") || "/";
   if (user.is_platform_admin) return path === "/admin/profile" ? "profile" : adminPathPages[path] || "platform-dashboard";
   const parts = path.split("/").filter(Boolean);
   const page = parts.length > 1 ? parts[1] : "dashboard";
   return ({ report: "reports", users: "team", products_bom: "products" } as Record<string, string>)[page] || page;
+}
+
+function pageFromLocation(user: AuthUser): string {
+  return pageKeyFromPath(user, window.location.pathname);
 }
 
 function pathForPage(user: AuthUser, page: string): string {
@@ -354,6 +373,11 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [liveAnnouncements, setLiveAnnouncements] = useState(user.announcements || []);
+  const [liveNotifications, setLiveNotifications] = useState<AppNotificationItem[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -433,6 +457,59 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     const timer = window.setInterval(refresh, 5000);
     return () => window.clearInterval(timer);
   }, [onMaintenance]);
+
+  useEffect(() => {
+    const refresh = () =>
+      api<{ notifications: AppNotificationItem[]; unread_count: number }>("/api/notifications")
+        .then((result) => { setLiveNotifications(result.notifications || []); setUnreadNotificationCount(result.unread_count || 0); })
+        .catch(() => {});
+    refresh();
+    const timer = window.setInterval(refresh, 20000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const goOnline = () => { setIsOnline(true); navigator.serviceWorker?.controller?.postMessage("flush-outbox"); };
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === "navigate") setActivePage(pageKeyFromPath(user, event.data.url));
+      if (event.data?.type === "outbox-queued") setPendingSyncCount((count) => count + 1);
+      if (event.data?.type === "outbox-synced") setPendingSyncCount((count) => Math.max(0, count - 1));
+    };
+    navigator.serviceWorker?.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+      navigator.serviceWorker?.removeEventListener("message", onMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    navigator.serviceWorker?.ready.then((registration) => registration.pushManager.getSubscription()).then((sub) => setPushSubscribed(!!sub)).catch(() => {});
+  }, []);
+
+  const enablePushNotifications = async () => {
+    try {
+      if (Notification.permission === "default") {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+      }
+      if (Notification.permission !== "granted") return;
+      const registration = await navigator.serviceWorker.ready;
+      const { public_key } = await api<{ public_key: string }>("/api/push/vapid-public-key");
+      if (!public_key) return;
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(public_key) as BufferSource,
+      });
+      await api("/api/push/subscriptions", { method: "POST", body: JSON.stringify(subscription.toJSON()) });
+      setPushSubscribed(true);
+    } catch {
+      // Permission denied or unsupported — silently leave push disabled.
+    }
+  };
 
   useEffect(() => {
     if (user.is_platform_admin || !can("inventory.view")) {
@@ -981,12 +1058,32 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                     <div className="popover-anchor">
                         <button className="icon-btn notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}>
                             <Bell size={19} />
-                            <b>{liveAnnouncements.length}</b>
+                            <b>{unreadNotificationCount + liveAnnouncements.length}</b>
                         </button>
                         {notificationsOpen && (
                             <div className="top-popover notification-menu">
                                 <strong>{locale === "en" ? "Notifications" : "Notifications"}</strong>
-                                {liveAnnouncements.length ? (
+                                {liveNotifications.length ? (
+                                    liveNotifications.slice(0, 4).map((item) => (
+                                        <span
+                                            key={item.id}
+                                            style={{ cursor: "pointer", opacity: item.read_at ? 0.62 : 1 }}
+                                            onClick={() => {
+                                                if (!item.read_at) {
+                                                    api("/api/notifications/" + item.id + "/read", { method: "POST" }).then(() => {
+                                                        setLiveNotifications((current) => current.map((n) => (n.id === item.id ? { ...n, read_at: new Date().toISOString() } : n)));
+                                                        setUnreadNotificationCount((count) => Math.max(0, count - 1));
+                                                    }).catch(() => {});
+                                                }
+                                                setNotificationsOpen(false);
+                                                if (item.data.url) setActivePage(pageKeyFromPath(user, item.data.url));
+                                            }}
+                                        >
+                                            <b>{item.data.title}</b>
+                                            {item.data.body}
+                                        </span>
+                                    ))
+                                ) : liveAnnouncements.length ? (
                                     liveAnnouncements.slice(0, 4).map((item) => (
                                         <span key={item.id}>
                                             <b>{item.title}</b>
@@ -994,7 +1091,12 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                                         </span>
                                     ))
                                 ) : (
-                                    <span>{locale === "en" ? "No new announcements" : "Aucune nouvelle annonce"}</span>
+                                    <span>{locale === "en" ? "No new notifications" : "Aucune nouvelle notification"}</span>
+                                )}
+                                {!pushSubscribed && (
+                                    <button onClick={enablePushNotifications}>
+                                        <Bell size={14} />{locale === "en" ? "Enable browser notifications" : "Activer les notifications"}
+                                    </button>
                                 )}
                                 <button onClick={() => { setNotificationsOpen(false); setActivePage("notifications"); }}>
                                     {locale === "en" ? "View all notifications" : "Voir toutes les notifications"}
@@ -1024,6 +1126,14 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                     </div>
                 </div>
             </header>
+            {(!isOnline || pendingSyncCount > 0) && (
+                <div className="connectivity-banner">
+                    <WifiOff size={14} />
+                    {!isOnline
+                        ? (locale === "en" ? "You're offline. Changes will be saved and synced automatically once you reconnect." : "Vous êtes hors ligne. Les modifications seront synchronisées à la reconnexion.")
+                        : (locale === "en" ? `Syncing ${pendingSyncCount} change${pendingSyncCount > 1 ? "s" : ""}…` : `Synchronisation de ${pendingSyncCount} modification${pendingSyncCount > 1 ? "s" : ""}…`)}
+                </div>
+            )}
             <div className={`page ${isSchoolUser ? "school-page" : ""}`}>
                 {isSchoolUser && ["dashboard", "new-order", "order-history", "financials", "return-items", "returns-history", "school-profile"].includes(activePage) ? (
                     <PageBoundary resetKey={`school-${activePage}`}>
@@ -1034,7 +1144,24 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                         {activePage === "profile" ? (
                             <ProfileSettingsPage user={user} locale={locale} dark={dark} onLocaleChange={setLocale} onThemeChange={setDark} />
                         ) : activePage === "notifications" ? (
-                            <NotificationsPage announcements={liveAnnouncements} locale={locale} />
+                            <NotificationsPage
+                                announcements={liveAnnouncements}
+                                notifications={liveNotifications}
+                                locale={locale}
+                                onMarkRead={(id) => {
+                                    api("/api/notifications/" + id + "/read", { method: "POST" }).then(() => {
+                                        setLiveNotifications((current) => current.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)));
+                                        setUnreadNotificationCount((count) => Math.max(0, count - 1));
+                                    }).catch(() => {});
+                                }}
+                                onMarkAllRead={() => {
+                                    api("/api/notifications/read-all", { method: "POST" }).then(() => {
+                                        setLiveNotifications((current) => current.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
+                                        setUnreadNotificationCount(0);
+                                    }).catch(() => {});
+                                }}
+                                onOpen={(url) => { if (url) setActivePage(pageKeyFromPath(user, url)); }}
+                            />
                         ) : user.is_platform_admin ? (
                             <PlatformAdminPage page={activePage} locale={locale} />
                         ) : activePage === "support" ? (
@@ -1282,7 +1409,17 @@ const moduleContent = {
     support: { icon: HelpCircle, en: ['Help & support', 'Find guidance, report a problem or contact the ICYEREKEZO support team.', ['Getting started', 'User guide', 'Support tickets', 'System status']], fr: ['Aide et support', 'Consultez les guides, signalez un problème ou contactez le support.', ['Bien démarrer', 'Guide utilisateur', 'Tickets support', 'État du système']] },
 } as const;
 
-function NotificationsPage({ announcements, locale }: { announcements: NonNullable<AuthUser["announcements"]>; locale: Locale }) {
+function NotificationsPage({
+    announcements, notifications, locale, onMarkRead, onMarkAllRead, onOpen,
+}: {
+    announcements: NonNullable<AuthUser["announcements"]>;
+    notifications: AppNotificationItem[];
+    locale: Locale;
+    onMarkRead: (id: string) => void;
+    onMarkAllRead: () => void;
+    onOpen: (url?: string) => void;
+}) {
+    const hasUnread = notifications.some((item) => !item.read_at);
     return (
         <section className="module-page">
             <div className="module-hero">
@@ -1293,31 +1430,55 @@ function NotificationsPage({ announcements, locale }: { announcements: NonNullab
                     <div>
                         <div className="eyebrow">
                             <i></i>
-                            {locale === "en" ? "Live updates" : "Mises à jour"}
+                            {locale === "en" ? "Updates" : "Mises à jour"}
                         </div>
                         <h1>{locale === "en" ? "Notifications" : "Notifications"}</h1>
                         <p>{locale === "en" ? "System messages appear here automatically." : "Les messages système apparaissent automatiquement ici."}</p>
                     </div>
                 </div>
+                {hasUnread && (
+                    <button className="secondary-btn" onClick={onMarkAllRead}>
+                        {locale === "en" ? "Mark all as read" : "Tout marquer comme lu"}
+                    </button>
+                )}
             </div>
             <div className="notification-page">
-                {announcements.length ? (
-                    announcements.map((item) => (
-                        <article className="panel" key={item.id}>
-                            <span className={`notice-icon ${item.severity}`}>
-                                <Megaphone size={20} />
-                            </span>
+                {notifications.map((item) => (
+                    <article
+                        className="panel"
+                        key={item.id}
+                        style={{ cursor: "pointer", opacity: item.read_at ? 0.65 : 1 }}
+                        onClick={() => { if (!item.read_at) onMarkRead(item.id); onOpen(item.data.url); }}
+                    >
+                        <span className={`notice-icon ${item.read_at ? "" : "info"}`}>
+                            <Bell size={20} />
+                        </span>
+                        <div>
                             <div>
-                                <div>
-                                    <h3>{item.title}</h3>
-                                    <span className={`admin-status ${item.severity}`}>{item.severity}</span>
-                                </div>
-                                <p>{item.message}</p>
-                                <time>{new Date(item.published_at).toLocaleString()}</time>
+                                <h3>{item.data.title}</h3>
+                                {!item.read_at && <span className="admin-status info">{locale === "en" ? "New" : "Nouveau"}</span>}
                             </div>
-                        </article>
-                    ))
-                ) : (
+                            <p>{item.data.body}</p>
+                            <time>{new Date(item.created_at).toLocaleString()}</time>
+                        </div>
+                    </article>
+                ))}
+                {announcements.map((item) => (
+                    <article className="panel" key={"a" + item.id}>
+                        <span className={`notice-icon ${item.severity}`}>
+                            <Megaphone size={20} />
+                        </span>
+                        <div>
+                            <div>
+                                <h3>{item.title}</h3>
+                                <span className={`admin-status ${item.severity}`}>{item.severity}</span>
+                            </div>
+                            <p>{item.message}</p>
+                            <time>{new Date(item.published_at).toLocaleString()}</time>
+                        </div>
+                    </article>
+                ))}
+                {!notifications.length && !announcements.length && (
                     <div className="panel empty-state">
                         <span>
                             <Bell size={28} />
@@ -1590,7 +1751,7 @@ function ModulePage({ page, locale, can, onNavigate }: { page: string; locale: L
                     <div>
                         <div className="eyebrow">
                             <i></i>
-                            {locale === "en" ? "Live module" : "Module actif"}
+                            {locale === "en" ? "Module" : "Module"}
                         </div>
                         <h1>{title}</h1>
                         <p>{description}</p>

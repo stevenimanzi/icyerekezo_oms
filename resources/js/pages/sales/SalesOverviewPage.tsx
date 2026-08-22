@@ -108,7 +108,7 @@ export default function SalesOverviewPage() {
             <div className="module-hero">
                 <div className="module-title">
                     <div>
-                        <div className="eyebrow"><i />LIVE SALES DATA</div>
+                        <div className="eyebrow"><i />SALES DATA</div>
                         <h1>{special ? 'NOGUCHI school garment orders' : 'Incoming customer orders'}</h1>
                         <p>{special ? 'Manage school orders by class, garment, gender, size, color and fulfilment quantity.' : 'Review customer demand before logistics prepares and dispatches each order.'}</p>
                         <small className="sales-updated">{updated ? 'Last updated ' + updated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Connecting...'}</small>
@@ -218,7 +218,7 @@ function LegacyOrderMatrix({ rows, open }: any) {
 
     return (
         <section className="panel legacy-order-sheet">
-            <header><div><h2>School order quantity sheet</h2><p>The familiar district and sector layout, now with live delivery progress and instant order details.</p></div><span className="legacy-live-label"><i />Live records</span></header>
+            <header><div><h2>School order quantity sheet</h2><p>The familiar district and sector layout, now with live delivery progress and instant order details.</p></div><span className="legacy-live-label"><i />Records</span></header>
             <div className="admin-table-wrap">
                 <table className="admin-table legacy-order-table">
                     <thead><tr><th>School</th>{legacyColumns.map(([label]) => <th key={label}>{label}</th>)}<th>Total</th><th>Given</th><th>Remaining</th><th>Value</th><th>Status</th><th>View</th></tr></thead>

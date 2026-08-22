@@ -97,7 +97,7 @@ export default function FactorySettingsPage() {
             <div className="module-hero">
                 <div className="module-title">
                     <span><Settings /></span>
-                    <div><div className="eyebrow"><i />LIVE FACTORY CONTROL</div><h1>Factory settings</h1><p>Choose a section below to manage your factory.</p></div>
+                    <div><div className="eyebrow"><i />FACTORY CONTROL</div><h1>Factory settings</h1><p>Choose a section below to manage your factory.</p></div>
                 </div>
                 <button form="factory-settings-form" className="primary-btn" disabled={busy}><Save size={17} />{busy ? 'Saving…' : 'Save settings'}</button>
             </div>

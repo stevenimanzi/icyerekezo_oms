@@ -49,9 +49,28 @@ class InventoryLedger
             $transaction = StockTransaction::create([...$dimensions, 'uuid' => (string) Str::uuid(), 'type' => $data['type'], 'quantity_delta' => $onHand, 'reserved_delta' => $reserved, 'quarantined_delta' => $quarantined, 'unit_cost' => $data['unit_cost'] ?? $item->standard_cost, 'balance_after' => $newOnHand, 'reason' => $data['reason'] ?? null, 'performed_by' => auth()->id(), 'occurred_at' => $data['occurred_at'] ?? now()]);
 
             $this->applyStageTransition($data, $item, $batch);
+            $this->maybeAlertLowStock($item, $currentOnHand, $newOnHand);
 
             return $transaction;
         }, 5);
+    }
+
+    /**
+     * Fires a low-stock notification only on the crossing (was at/above the reorder
+     * point, now below it) so repeated withdrawals while already-low don't spam alerts.
+     */
+    private function maybeAlertLowStock(Item $item, float $before, float $after): void
+    {
+        $threshold = (float) ($item->reorder_level ?? $item->minimum_stock ?? 0);
+        if ($threshold <= 0 || $after >= $threshold || $before < $threshold) {
+            return;
+        }
+        \App\Support\FactoryNotifier::notify(
+            $item->factory_id, 'inventory.adjust',
+            'Low stock alert',
+            "{$item->name} ({$item->sku}) has dropped to {$this->number($after)}, below its reorder level of {$this->number($threshold)}.",
+            '/executive/inventory', 'inventory'
+        );
     }
 
     /**

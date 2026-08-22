@@ -179,7 +179,7 @@ export default function ProductionOperations({ can }: any) {
             <div className="module-hero production-hero">
                 <div className="module-title">
                     <div>
-                        <div className="eyebrow"><i></i>{readOnly ? 'LIVE FACTORY DATA' : 'LIVE PRODUCTION'}</div>
+                        <div className="eyebrow"><i></i>{readOnly ? 'FACTORY DATA' : 'PRODUCTION'}</div>
                         <h1>{readOnly ? 'Production performance' : 'Production orders'}</h1>
                         <p>{readOnly ? 'Monitor orders, output, losses and progress using records entered by your factory team.' : 'Create production work, check progress and record results for each step.'}</p>
                         {updatedAt && <small className="production-updated">Last updated {updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>}

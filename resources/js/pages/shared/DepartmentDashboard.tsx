@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, CheckCircle2, CircleAlert, Clock3, Factory, FileText, ListChecks, PackageCheck, PackageOpen, RefreshCw, Scissors, ShoppingCart, TrendingDown, Truck, Users, Warehouse, ClipboardCheck } from 'lucide-react';
+import { Activity, Boxes, CheckCircle2, CircleAlert, Clock3, Factory, FileText, ListChecks, PackageCheck, PackageOpen, RefreshCw, Scissors, TrendingDown, Truck, Users, Warehouse, ClipboardCheck } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 async function api(url:string,options:RequestInit={}){const response=await fetch(url,{...options,headers:{Accept:'application/json','Content-Type':'application/json',...(options.headers||{})}});const text=await response.text();let data:any;try{data=JSON.parse(text)}catch{throw new Error('The dashboard could not read the server response.')}if(!response.ok)throw new Error(data.message||'The dashboard could not load current data.');return data}
@@ -12,7 +12,7 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
  const load=async(silent=false)=>{if(!silent)setLoading(true);try{setData(await api('/api/department/dashboard'));setError('');setUpdated(new Date())}catch(reason:any){setError(reason.message)}finally{if(!silent)setLoading(false)}};
  useEffect(()=>{load();const timer=window.setInterval(()=>load(true),5000);return()=>window.clearInterval(timer)},[]);
  const update=async(id:number,statusValue:string)=>{setBusy(id);setError('');try{await api('/api/team/assignments/'+id,{method:'PATCH',body:JSON.stringify({status:statusValue})});await load()}catch(reason:any){setError(reason.message)}finally{setBusy(null)}};
- const department=data?.department,metrics=data?.metrics||{},warehouseMetrics=data?.warehouse_metrics||{},logisticsMetrics=data?.logistics_metrics||{},logisticsTrends=data?.logistics_trends||[],assignments=data?.assignments||[],stages=data?.stage_activity||[],stock=data?.recent_stock||[];
+ const department=data?.department,metrics=data?.metrics||{},warehouseMetrics=data?.warehouse_metrics||{},logisticsMetrics=data?.logistics_metrics||{},logisticsTrends=data?.logistics_trends||[],assignments=data?.assignments||[],stages=data?.stage_activity||[],stock=data?.recent_stock||[],stockStatus=data?.stock_status||[];
  const fr=locale==='fr',production=user.workspace==='production',warehouse=data?.dashboard_type==='warehouse',logistics=data?.dashboard_type==='logistics';
  const currency=user.current_factory?.currency_code||user.system?.currency_code||'RWF',money=(value:any,currencyCode=currency)=>`${currencyCode} ${Number(value||0).toLocaleString(undefined,{maximumFractionDigits:2})}`;
  const status=(value:string)=>(fr?frenchStatus:englishStatus)[value]||String(value||'').replaceAll('_',' ');
@@ -56,19 +56,10 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
    {logistics && <LogisticsCharts trends={logisticsTrends} fr={fr} money={money} />}
    {isNoguchiSewing && <ProductionCharts trends={data?.production_trends || []} fr={fr} />}
 
-   {!hasDedicatedPanels && (
+   {!hasDedicatedPanels && !warehouse && (
     <div className="production-quick-actions">
-     {warehouse ? (
-      <>
-       <button onClick={() => onNavigate('inventory')}><Warehouse /><span><b>{fr ? 'Ouvrir le stock' : 'Open stock records'}</b><small>{fr ? 'Voir les soldes et les mouvements' : 'Review balances and stock movements'}</small></span></button>
-       <button onClick={() => onNavigate('procurement')}><ShoppingCart /><span><b>{fr ? 'Voir les achats' : 'View purchasing'}</b><small>{fr ? 'Suivre les commandes et réceptions' : 'Follow orders and received goods'}</small></span></button>
-      </>
-     ) : (
-      <>
-       <button onClick={() => onNavigate('production')}><Factory /><span><b>{fr ? 'Gérer la production' : 'Manage production'}</b><small>{fr ? 'Créer des commandes et suivre chaque étape' : 'Create orders and update production steps'}</small></span></button>
-       <button onClick={() => onNavigate('reports')}><FileText /><span><b>{fr ? 'Voir les rapports' : 'View reports'}</b><small>{fr ? 'Comparer les résultats par étape' : 'Review results for every production step'}</small></span></button>
-      </>
-     )}
+     <button onClick={() => onNavigate('production')}><Factory /><span><b>{fr ? 'Gérer la production' : 'Manage production'}</b><small>{fr ? 'Créer des commandes et suivre chaque étape' : 'Create orders and update production steps'}</small></span></button>
+     <button onClick={() => onNavigate('reports')}><FileText /><span><b>{fr ? 'Voir les rapports' : 'View reports'}</b><small>{fr ? 'Comparer les résultats par étape' : 'Review results for every production step'}</small></span></button>
     </div>
    )}
 
@@ -80,7 +71,7 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
    )}
 
    {!hasDedicatedPanels && (
-    <OperationalPanels warehouse={warehouse} assignments={assignments} stock={stock} stages={stages} data={data} user={user} fr={fr} status={status} number={number} busy={busy} update={update} />
+    <OperationalPanels warehouse={warehouse} assignments={assignments} stock={stock} stockStatus={stockStatus} stages={stages} data={data} user={user} fr={fr} status={status} number={number} busy={busy} update={update} />
    )}
    {isFinishingManager && data?.finishing_progress && <FinishingCharts data={data.finishing_progress} fr={fr} number={number} />}
    {isPackingManager && data?.packing_progress && <PackingCharts data={data.packing_progress} fr={fr} number={number} />}
@@ -114,7 +105,7 @@ function WarehouseMetrics({values,fr,money}:any){return <section className="depa
 function ProductionMetrics({values,fr,user}:any){
     const isNoguchiFactory = user?.current_factory?.name?.trim().toLowerCase()==='noguchi holdings ltd';
     if (isNoguchiFactory && user?.workspace === 'sewing') {
-        return <section className="department-metrics" style={{gridTemplateColumns: 'repeat(4, minmax(0, 1fr))'}}>
+        return <section className="department-metrics cols-4">
             <Metric icon={<Scissors/>} label={fr?'Articles coupÃ©s non cousus':'Items from cutting not used in sewing'} value={number(values.cutting_not_sewn)} tone="blue"/>
             <Metric icon={<PackageCheck/>} label={fr?'UnitÃ©s produites':'Produced'} value={number(values.output_today)} tone="green"/>
             <Metric icon={<Activity/>} label={fr?'EndommagÃ© (RejetÃ©)':'Damaged'} value={number(values.rejected_today)} tone="red"/>
@@ -124,7 +115,107 @@ function ProductionMetrics({values,fr,user}:any){
     return <section className="department-metrics"><Metric icon={<ListChecks/>} label={fr?'Travaux Ã  commencer':'Work to start'} value={number(values.assigned_work)} tone="blue"/><Metric icon={<Clock3/>} label={fr?'Travaux en cours':'Work in progress'} value={number(values.work_in_progress)} tone="amber"/><Metric icon={<CheckCircle2/>} label={fr?'TerminÃ© aujourdâ€™hui':'Completed today'} value={number(values.completed_today)} tone="green"/><Metric icon={<Factory/>} label={fr?'Ã‰tapes de production actives':'Active production steps'} value={number(values.stages_in_progress)} tone="violet"/><Metric icon={<PackageCheck/>} label={fr?'UnitÃ©s produites aujourdâ€™hui':'Units produced today'} value={number(values.output_today)} tone="blue"/><Metric icon={<Activity/>} label={fr?'UnitÃ©s rejetÃ©es aujourdâ€™hui':'Units rejected today'} value={number(values.rejected_today)} tone="red"/></section>
 }
 
-function OperationalPanels({warehouse,assignments,stock,stages,data,user,fr,status,number,busy,update}:any){return <section className="department-grid"><article className="panel"><header className="department-panel-head"><div><h2>{fr?'Travaux de lâ€™Ã©quipe':'Team work'}</h2><p>{data?.is_department_manager?(fr?'Travail de toute votre Ã©quipe':'Work for everyone in your department'):(fr?'Travail qui vous est attribuÃ©':'Work assigned directly to you')}</p></div><Users size={20}/></header><div className="assignment-list">{assignments.length?assignments.map((item:any)=><article key={item.id}><div><span className={'priority '+item.priority}>{item.priority}</span><h3>{item.title}</h3><p>{item.instructions||(fr?'Aucune instruction supplÃ©mentaire.':'No extra instructions.')}</p><small>{item.user?.name||user.name}{item.due_at?` Â· ${fr?'Ã€ terminer avant':'Due'} ${new Date(item.due_at).toLocaleString()}`:''}</small></div><div className="assignment-actions"><label>{fr?'Ã‰tat du travail':'Work status'}<select aria-label={`Status for ${item.title}`} disabled={busy===item.id} value={item.status} onChange={event=>update(item.id,event.target.value)}><option value="assigned">{status('assigned')}</option><option value="ready">{status('ready')}</option><option value="in_progress">{status('in_progress')}</option><option value="blocked">{status('blocked')}</option><option value="completed">{status('completed')}</option></select></label></div></article>):<Empty text={fr?'Aucun travail attribuÃ© pour le moment.':'No work needs attention right now.'}/>}</div></article><article className="panel"><header className="department-panel-head"><div><h2>{warehouse?(fr?'Mouvements de stock rÃ©cents':'Recent stock movements'):(fr?'DerniÃ¨res Ã©tapes de production':'Latest production steps')}</h2><p>{warehouse?(fr?'Toutes les entrÃ©es et sorties enregistrÃ©es':'Recorded receipts and issues for this factory'):(fr?'QuantitÃ©s enregistrÃ©es pour votre dÃ©partement':'Recent quantities recorded by your department')}</p></div><Activity size={20}/></header><div className="stage-activity-list">{warehouse?(stock.length?stock.map((item:any)=><article key={item.id}><div><b>{item.item_name}</b><span>{item.warehouse_name} Â· {String(item.type).replaceAll('_',' ')} Â· {new Date(item.occurred_at).toLocaleString()}</span></div><div><strong>{Number(item.quantity_delta)>0?'+':''}{number(item.quantity_delta)}</strong><small>{item.unit||(fr?'unitÃ©s':'units')} Â· {fr?'solde':'balance'} {number(item.balance_after)}</small></div></article>):<Empty text={fr?'Aucun mouvement de stock enregistrÃ©.':'No stock movements have been recorded yet.'}/>):(stages.length?stages.map((item:any)=><article key={item.id}><div><b>{item.stage?.name||'Production step'}</b><span>{item.order?.order_number||'Order'} Â· {status(item.status)}</span></div><div><strong>{number(item.output_quantity)}</strong><small>{fr?'unitÃ©s produites':'units produced'}</small></div></article>):<Empty text={fr?'Aucune production enregistrÃ©e pour le moment.':'No production has been recorded yet.'}/>)}</div></article></section>}
+function OperationalPanels({ warehouse, assignments, stock, stockStatus, stages, data, user, fr, status, number, busy, update }: any) {
+    if (warehouse) {
+        return (
+            <section className="department-grid">
+                <StockStatusPanel items={stockStatus} fr={fr} number={number} />
+            </section>
+        );
+    }
+    return (
+        <section className="department-grid">
+            <article className="panel">
+                <header className="department-panel-head">
+                    <div>
+                        <h2>{fr ? "Travaux de l'équipe" : 'Team work'}</h2>
+                        <p>{data?.is_department_manager ? (fr ? 'Travail de toute votre équipe' : 'Work for everyone in your department') : (fr ? 'Travail qui vous est attribué' : 'Work assigned directly to you')}</p>
+                    </div>
+                    <Users size={20} />
+                </header>
+                <div className="assignment-list">
+                    {assignments.length ? assignments.map((item: any) => (
+                        <article key={item.id}>
+                            <div>
+                                <span className={'priority ' + item.priority}>{item.priority}</span>
+                                <h3>{item.title}</h3>
+                                <p>{item.instructions || (fr ? 'Aucune instruction supplémentaire.' : 'No extra instructions.')}</p>
+                                <small>{item.user?.name || user.name}{item.due_at ? ` · ${fr ? 'À terminer avant' : 'Due'} ${new Date(item.due_at).toLocaleString()}` : ''}</small>
+                            </div>
+                            <div className="assignment-actions">
+                                <label>
+                                    {fr ? 'État du travail' : 'Work status'}
+                                    <select aria-label={`Status for ${item.title}`} disabled={busy === item.id} value={item.status} onChange={(event) => update(item.id, event.target.value)}>
+                                        <option value="assigned">{status('assigned')}</option>
+                                        <option value="ready">{status('ready')}</option>
+                                        <option value="in_progress">{status('in_progress')}</option>
+                                        <option value="blocked">{status('blocked')}</option>
+                                        <option value="completed">{status('completed')}</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </article>
+                    )) : <Empty text={fr ? 'Aucun travail attribué pour le moment.' : 'No work needs attention right now.'} />}
+                </div>
+            </article>
+            <article className="panel">
+                <header className="department-panel-head">
+                    <div>
+                        <h2>{fr ? 'Dernières étapes de production' : 'Latest production steps'}</h2>
+                        <p>{fr ? 'Quantités enregistrées pour votre département' : 'Recent quantities recorded by your department'}</p>
+                    </div>
+                    <Activity size={20} />
+                </header>
+                <div className="stage-activity-list">
+                    {stages.length ? stages.map((item: any) => (
+                        <article key={item.id}>
+                            <div>
+                                <b>{item.stage?.name || 'Production step'}</b>
+                                <span>{item.order?.order_number || 'Order'} · {status(item.status)}</span>
+                            </div>
+                            <div>
+                                <strong>{number(item.output_quantity)}</strong>
+                                <small>{fr ? 'unités produites' : 'units produced'}</small>
+                            </div>
+                        </article>
+                    )) : <Empty text={fr ? 'Aucune production enregistrée pour le moment.' : 'No production has been recorded yet.'} />}
+                </div>
+            </article>
+        </section>
+    );
+}
+
+function StockStatusPanel({ items, fr, number }: any) {
+    const list = items || [];
+    return (
+        <article className="panel" style={{ gridColumn: '1 / -1' }}>
+            <header className="department-panel-head">
+                <div>
+                    <h2>{fr ? 'État du stock' : 'Stock status'}</h2>
+                    <p>{fr ? "Quantité actuelle par article, triée pour montrer d'abord les stocks faibles" : 'Current quantity by item, with low-stock items surfaced first'}</p>
+                </div>
+                <Boxes size={20} />
+            </header>
+            <div className="stage-activity-list">
+                {list.length ? list.map((item: any) => {
+                    const low = Number(item.reorder_level) > 0 && Number(item.quantity_on_hand) <= Number(item.reorder_level);
+                    return (
+                        <article key={item.id}>
+                            <div>
+                                <b>{item.name}</b>
+                                <span>{item.sku}{low && <em className="admin-status warning" style={{ marginLeft: 8 }}>{fr ? 'Stock faible' : 'Low stock'}</em>}</span>
+                            </div>
+                            <div>
+                                <strong>{number(item.quantity_on_hand)}</strong>
+                                <small>{item.unit || (fr ? 'unités' : 'units')}{Number(item.reorder_level) > 0 ? ` · ${fr ? 'seuil' : 'reorder at'} ${number(item.reorder_level)}` : ''}</small>
+                            </div>
+                        </article>
+                    );
+                }) : <Empty text={fr ? 'Aucun article en stock pour le moment.' : 'No stock items yet.'} />}
+            </div>
+        </article>
+    );
+}
 function Metric({icon,label,value,tone}:any){return <article className="department-metric panel"><span className={'metric-icon '+tone}>{icon}</span><div><small>{label}</small><strong>{value}</strong></div></article>}
 function Empty({text}:{text:string}){return <div className="department-empty"><PackageCheck size={26}/><span>{text}</span></div>}
 function FinishingCharts({data, fr, number}:any){

@@ -13,7 +13,7 @@ const copy = {
     en: {
         title: 'Packing workspace',
         subtitle: 'Manage received pieces, record packing output.',
-        eyebrow: 'LIVE PACKING DATA',
+        eyebrow: 'PACKING DATA',
         tabs: { request: 'Receive pieces', finish: 'Pack pieces' },
         requestTitle: 'Receive pieces from Finishing',
         selectItem: 'Select piece/material', quantity: 'Quantity received', reason: 'Reason / Notes',
@@ -28,7 +28,7 @@ const copy = {
     fr: {
         title: 'Espace d\'emballage',
         subtitle: 'Gérez les pièces reçues et enregistrez l\'emballage.',
-        eyebrow: 'DONNÉES D\'EMBALLAGE EN DIRECT',
+        eyebrow: 'DONNÉES D\'EMBALLAGE',
         tabs: { request: 'Réceptionner', finish: 'Emballer' },
         requestTitle: 'Réceptionner les pièces de la finition',
         selectItem: 'Sélectionner la pièce', quantity: 'Quantité reçue', reason: 'Motif / Notes',

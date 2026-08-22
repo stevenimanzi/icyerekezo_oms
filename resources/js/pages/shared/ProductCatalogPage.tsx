@@ -110,7 +110,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
         <section className="product-catalog-page">
             <header className="products-heading">
                 <div>
-                    <div className="eyebrow"><i></i>LIVE PRODUCT DATA</div>
+                    <div className="eyebrow"><i></i>PRODUCT DATA</div>
                     <h1>Products and materials</h1>
                     <p>Create and control each product, material, category and measurement unit used by this factory.</p>
                     <small>{updated ? 'Updated ' + updated.toLocaleTimeString() : ''}</small>

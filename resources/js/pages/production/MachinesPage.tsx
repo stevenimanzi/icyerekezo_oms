@@ -87,7 +87,7 @@ export default function MachinesPage({ can }: any) {
             <div className="module-hero">
                 <div className="module-title">
                     <span><Wrench /></span>
-                    <div><div className="eyebrow"><i></i>LIVE EQUIPMENT CONTROL</div><h1>Machines and maintenance</h1><p>Track equipment availability, breakdowns, preventive maintenance, costs and downtime.</p></div>
+                    <div><div className="eyebrow"><i></i>EQUIPMENT CONTROL</div><h1>Machines and maintenance</h1><p>Track equipment availability, breakdowns, preventive maintenance, costs and downtime.</p></div>
                 </div>
                 <div className="workflow-actions">
                     <button className="secondary-btn" onClick={load}><RefreshCw size={16} />Refresh</button>

@@ -18,7 +18,7 @@ function Alert({ error, success }: { error: string; success: string }) {
     return <>{error && <div className="admin-alert error">{error}</div>}{success && <div className="admin-alert success">{success}</div>}</>;
 }
 function Heading({ title, description, action }: any) {
-    return <div className="module-hero"><div className="module-title"><div><div className="eyebrow"><i></i>LIVE FACTORY DATA</div><h1>{title}</h1><p>{description}</p></div></div>{action}</div>;
+    return <div className="module-hero"><div className="module-title"><div><div className="eyebrow"><i></i>FACTORY DATA</div><h1>{title}</h1><p>{description}</p></div></div>{action}</div>;
 }
 
 export function FlowSetupPage() {
@@ -206,6 +206,10 @@ export function TeamManagementPage() {
     const [resetPassword, setResetPassword] = useState('');
     const [resetPasswordConfirmation, setResetPasswordConfirmation] = useState('');
     const [resetting, setResetting] = useState(false);
+    const [profileUser, setProfileUser] = useState<any>(null);
+    const [profileForm, setProfileForm] = useState({ name: '', email: '' });
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [removingId, setRemovingId] = useState<number | null>(null);
 
     const [schoolSearch, setSchoolSearch] = useState('');
     const [schoolDistrict, setSchoolDistrict] = useState('');
@@ -240,6 +244,35 @@ export function TeamManagementPage() {
         } catch (reason: any) {
             setError(reason.message);
         }
+    };
+
+    const saveProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingProfile(true);
+        setError('');
+        setSuccess('');
+        try {
+            await api('/api/team/users/' + profileUser.id, { method: 'PATCH', body: JSON.stringify(profileForm) });
+            setSuccess('Employee details updated.');
+            setProfileUser(null);
+            await load();
+        } catch (reason: any) {
+            setError(reason.message);
+        } finally { setSavingProfile(false); }
+    };
+
+    const removeUser = async (user: any) => {
+        if (!window.confirm(`Remove ${user.name} from this factory? They will lose access immediately.`)) return;
+        setRemovingId(user.id);
+        setError('');
+        setSuccess('');
+        try {
+            await api('/api/team/users/' + user.id, { method: 'DELETE' });
+            setSuccess(`${user.name} was removed from this factory.`);
+            await load();
+        } catch (reason: any) {
+            setError(reason.message);
+        } finally { setRemovingId(null); }
     };
 
     const handleResetPassword = async (e: React.FormEvent) => {
@@ -335,9 +368,11 @@ export function TeamManagementPage() {
                                                 </select>
                                             </td>
                                             <td>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                                                     <button className="table-action" disabled={!editing[user.id]} onClick={() => save(user)}><Save size={15} />Save</button>
+                                                    <button className="table-action" style={{ color: '#64748b' }} onClick={() => { setProfileUser(user); setProfileForm({ name: user.name || '', email: user.email || '' }); setError(''); setSuccess(''); }}><Edit3 size={15} />Edit</button>
                                                     <button className="table-action" style={{ color: '#64748b' }} onClick={() => { setResetUser(user); setError(''); setSuccess(''); }}>Reset Password</button>
+                                                    <button className="table-action" style={{ color: '#dc2626' }} disabled={removingId === user.id} onClick={() => removeUser(user)}><Trash2 size={15} />{removingId === user.id ? 'Removing…' : 'Remove'}</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -413,6 +448,27 @@ export function TeamManagementPage() {
                             <footer>
                                 <button type="button" className="secondary-btn" onClick={() => setShowCreate(false)}>Cancel</button>
                                 <button className="primary-btn" disabled={creating}><UserPlus size={16} />{creating ? 'Creating account...' : 'Create employee'}</button>
+                            </footer>
+                        </form>
+                    </section>
+                </div>
+            )}
+
+            {profileUser && (
+                <div className="team-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setProfileUser(null); }}>
+                    <section className="team-modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
+                        <header>
+                            <div><div><h2 id="edit-user-title">Edit employee details</h2><p>Fix the name or email on file for {profileUser.name}.</p></div></div>
+                            <button type="button" aria-label="Close" onClick={() => setProfileUser(null)}><X size={19} /></button>
+                        </header>
+                        <form className="admin-form employee-create-form" onSubmit={saveProfile}>
+                            <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                                <label>Full name<input autoFocus required placeholder="Enter employee name" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} /></label>
+                                <label>Email address<input required type="email" placeholder="name@company.com" value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} /></label>
+                            </div>
+                            <footer>
+                                <button type="button" className="secondary-btn" onClick={() => setProfileUser(null)}>Cancel</button>
+                                <button className="primary-btn" disabled={savingProfile}><Save size={16} />{savingProfile ? 'Saving...' : 'Save changes'}</button>
                             </footer>
                         </form>
                     </section>

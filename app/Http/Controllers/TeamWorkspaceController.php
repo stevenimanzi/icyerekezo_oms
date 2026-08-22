@@ -108,6 +108,12 @@ class TeamWorkspaceController extends Controller
             return $user;
         });
         AuditLog::record('team.user_created', "Created workspace account for {$user->name}", $user);
+        \App\Support\FactoryNotifier::notify(
+            $factoryId, 'users.update',
+            'New employee added',
+            "{$user->name} was added to the team as {$role->name} by {$request->user()->name}.",
+            '/executive/team', 'team', $request->user()->id
+        );
 
         return response()->json($user->load('employeeProfile.department', 'employeeProfile.workstation'), 201);
     }
@@ -147,11 +153,20 @@ class TeamWorkspaceController extends Controller
         $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
         abort_if($membership->is_owner, 422, 'The factory owner account cannot be changed here.');
         $data = $request->validate([
+            'name' => ['nullable', 'string', 'max:120'],
+            'email' => ['nullable', 'email:rfc', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
             'role_id' => ['nullable', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
             'workstation_id' => ['nullable', Rule::exists('workstations', 'id')->where('factory_id', $factoryId)],
             'job_title' => ['nullable', 'string', 'max:120'], 'is_active' => ['nullable', 'boolean'],
         ]);
+        $accountData = collect($data)->only(['name', 'email'])->filter(fn ($value) => $value !== null && $value !== '')->all();
+        if (! empty($accountData['email'])) {
+            $accountData['email'] = strtolower($accountData['email']);
+        }
+        if ($accountData) {
+            $user->update($accountData);
+        }
         if (! empty($data['role_id'])) {
             $role = Role::where('factory_id', $factoryId)->with('permissions:id,slug')->findOrFail($data['role_id']);
             $this->assertCanGrantRole($request->user(), $role);
@@ -168,6 +183,33 @@ class TeamWorkspaceController extends Controller
         AuditLog::record('team.user_updated', "Updated workspace access for {$user->name}", $user);
 
         return response()->json(['message' => 'User access updated']);
+    }
+
+    public function destroyUser(Request $request, User $user): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
+        abort_if($membership->is_owner, 422, 'The factory owner account cannot be removed.');
+        abort_if($user->id === $request->user()->id, 422, 'You cannot remove your own account.');
+        $name = $user->name;
+
+        DB::transaction(function () use ($user, $factoryId) {
+            $user->roles()->wherePivot('factory_id', $factoryId)->detach();
+            $user->factories()->detach($factoryId);
+            EmployeeProfile::where(['factory_id' => $factoryId, 'user_id' => $user->id])->delete();
+            if ($user->current_factory_id === $factoryId) {
+                $user->update(['current_factory_id' => $user->factories()->value('factories.id')]);
+            }
+        });
+        AuditLog::record('team.user_removed', "Removed {$name} from this factory", $user);
+        \App\Support\FactoryNotifier::notify(
+            $factoryId, 'users.update',
+            'Employee removed',
+            "{$name} was removed from the team by {$request->user()->name}.",
+            '/executive/team', 'team', $request->user()->id
+        );
+
+        return response()->json(['message' => 'User removed from this factory']);
     }
 
     public function resetPassword(Request $request, User $user): JsonResponse

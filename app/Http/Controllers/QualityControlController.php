@@ -74,6 +74,15 @@ class QualityControlController extends Controller
             return $inspection;
         });
         AuditLog::record('quality.inspection_created', "Recorded {$inspection->inspection_number}", $inspection);
+        if ($data['result'] === 'failed') {
+            \App\Support\FactoryNotifier::notify(
+                $factoryId, 'quality.approve',
+                'Quality inspection failed',
+                "{$inspection->inspection_number} failed inspection — {$data['rejected_quantity']} units rejected.",
+                '/executive/quality', 'quality', $request->user()->id
+            );
+        }
+
         return response()->json($inspection->load(['order:id,order_number', 'item:id,name,sku', 'inspector:id,name']), 201);
     }
 

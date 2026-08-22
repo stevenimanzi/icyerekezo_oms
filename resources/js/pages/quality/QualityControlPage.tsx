@@ -113,7 +113,7 @@ export default function QualityControlPage({ can }: any) {
                 <div className="module-title">
                     <span><ClipboardCheck /></span>
                     <div>
-                        <div className="eyebrow"><i></i>LIVE QUALITY CONTROL</div>
+                        <div className="eyebrow"><i></i>QUALITY CONTROL</div>
                         <h1>Quality inspections</h1>
                         <p>Inspect materials, production stages and finished products with full traceability.</p>
                     </div>

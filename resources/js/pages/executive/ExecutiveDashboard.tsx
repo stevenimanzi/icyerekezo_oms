@@ -37,7 +37,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
         <section className="executive-live">
             <div className="page-heading">
                 <div>
-                    <div className="eyebrow"><span></span>{locale === 'fr' ? 'DONNÉES EN DIRECT' : 'LIVE FACTORY DATA'}</div>
+                    <div className="eyebrow"><span></span>{locale === 'fr' ? 'DONNÉES DE L’USINE' : 'FACTORY DATA'}</div>
                     <h1>{isOwner ? (locale === 'fr' ? "Performances de l'usine" : 'Factory performance') : (locale === 'fr' ? "Opérations de l'usine" : 'Factory operations')}</h1>
                     <p>{greeting}</p>
                 </div>
@@ -51,11 +51,11 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                 <span>{updatedAt ? (locale === 'fr' ? 'Données actualisées à ' : 'Data updated at ') + updatedAt.toLocaleTimeString() : (locale === 'fr' ? 'Connexion aux données…' : 'Connecting to live data…')}</span>
             </div>
 
-            <section className="metric-grid">
-                <Metric icon={<Factory />} label={locale === 'fr' ? 'Production aujourd’hui' : 'Production today'} value={number(metrics.productionToday)} suffix="units" detail={locale === 'fr' ? 'Quantité terminée aujourd’hui' : 'Completed quantity recorded today'} tone="blue" />
-                <Metric icon={<ShoppingCart />} label={locale === 'fr' ? 'Ordres ouverts' : 'Open production orders'} value={number(metrics.openOrders)} detail={locale === 'fr' ? 'Ordres nécessitant un suivi' : 'Orders requiring follow-up'} tone="amber" />
-                <Metric icon={<AlertTriangle />} label={locale === 'fr' ? 'Stock à surveiller' : 'Low-stock materials'} value={number(metrics.lowStock)} detail={locale === 'fr' ? 'Articles à commander ou à réapprovisionner' : 'Items that may need restocking'} tone="violet" />
-                <Metric icon={<ShieldCheck />} label={locale === 'fr' ? 'Achèvement production' : 'Production completion'} value={number(metrics.completionRate) + '%'} detail={locale === 'fr' ? 'Terminé par rapport au plan' : 'Completed against planned quantity'} tone="green" />
+            <section className="department-metrics cols-4">
+                <Metric icon={<Factory />} label={locale === 'fr' ? 'Production aujourd’hui' : 'Production today'} value={number(metrics.productionToday)} tone="blue" />
+                <Metric icon={<ShoppingCart />} label={locale === 'fr' ? 'Ordres ouverts' : 'Open production orders'} value={number(metrics.openOrders)} tone="amber" />
+                <Metric icon={<AlertTriangle />} label={locale === 'fr' ? 'Stock à surveiller' : 'Low-stock materials'} value={number(metrics.lowStock)} tone="violet" />
+                <Metric icon={<ShieldCheck />} label={locale === 'fr' ? 'Achèvement production' : 'Production completion'} value={number(metrics.completionRate) + '%'} tone="green" />
             </section>
 
             <article className="panel chart-panel executive-chart-panel">
@@ -117,15 +117,11 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
     );
 }
 
-function Metric({ icon, label, value, suffix, detail, tone }: any) {
+function Metric({ icon, label, value, tone }: any) {
     return (
-        <article className="metric-card">
+        <article className="department-metric panel">
             <span className={'metric-icon ' + tone}>{icon}</span>
-            <div className="metric-copy">
-                <span>{label}</span>
-                <div><strong>{value}</strong>{suffix && <small>{suffix}</small>}</div>
-                <p>{detail}</p>
-            </div>
+            <div><small>{label}</small><strong>{value}</strong></div>
         </article>
     );
 }

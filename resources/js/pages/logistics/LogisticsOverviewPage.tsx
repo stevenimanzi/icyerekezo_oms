@@ -147,7 +147,7 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
             <div className="module-hero">
                 <div className="module-title">
                     <div>
-                        <div className="eyebrow"><i />LIVE DELIVERY DATA</div>
+                        <div className="eyebrow"><i />DELIVERY DATA</div>
                         <h1>Logistics control centre</h1>
                         <p>Prepare accepted orders, assign vehicles, dispatch shipments and record proof of delivery.</p>
                         <small className="sales-updated">{updated ? 'Last updated ' + updated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Connecting to delivery records...'}</small>

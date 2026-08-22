@@ -211,7 +211,7 @@ export default function InventoryManagementPage({
           <div>
             <div className="eyebrow">
               <i></i>
-              {isLogisticsView ? (locale === "fr" ? "DISPONIBILITÉ EN DIRECT" : "LIVE GOODS AVAILABILITY") : (locale === "fr" ? "STOCK EN DIRECT" : "LIVE STOCK DATA")}
+              {isLogisticsView ? (locale === "fr" ? "DISPONIBILITÉ DES BIENS" : "GOODS AVAILABILITY") : (locale === "fr" ? "DONNÉES DE STOCK" : "STOCK DATA")}
             </div>
             <h1>{isLogisticsView ? (locale === "fr" ? "Produits disponibles" : "Available goods") : (locale === "fr" ? "Gestion du stock" : "Stock management")}</h1>
             <p>

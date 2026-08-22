@@ -65,6 +65,11 @@ class User extends Authenticatable
         return $this->hasMany(WorkAssignment::class);
     }
 
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
     public function hasPermission(string $permission, ?int $factoryId = null): bool
     {
         if ($this->is_platform_admin) {

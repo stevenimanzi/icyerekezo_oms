@@ -13,7 +13,7 @@ const copy = {
     en: {
         title: 'Sewing workspace',
         subtitle: 'Manage received pieces, record sewn output and track damaged materials.',
-        eyebrow: 'LIVE SEWING DATA',
+        eyebrow: 'SEWING DATA',
         tabs: { request: 'Receive pieces', sew: 'Sew pieces', damaged: 'Damaged pieces', report: 'Sewing report' },
         quantity: 'Quantity received', reason: 'Reason / Notes',
         pendingRequests: 'Accepted items', noRequests: 'No items accepted yet.',
@@ -36,7 +36,7 @@ const copy = {
     fr: {
         title: 'Espace de couture',
         subtitle: 'Gérez les pièces reçues, enregistrez la couture et suivez les rejets.',
-        eyebrow: 'DONNÉES DE COUTURE EN DIRECT',
+        eyebrow: 'DONNÉES DE COUTURE',
         tabs: { request: 'Réceptionner', sew: 'Coudre', damaged: 'Pièces endommagées', report: 'Rapport de couture' },
         quantity: 'Quantité reçue', reason: 'Motif / Notes',
         pendingRequests: 'Articles acceptés', noRequests: 'Aucun article accepté.',
