@@ -1643,7 +1643,226 @@ function ModulePage({ page, locale, can, onNavigate }: { page: string; locale: L
     );
 }
 
+// ─── Dedicated Forgot-Password Page (/forgot-password) ───────────────────────
+function ForgotPasswordPage() {
+    const [locale, setLocale] = useState<Locale>("en");
+    const [email, setEmail] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState("");
+    const [sent, setSent] = useState(false);
+
+    const submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setBusy(true);
+        setError("");
+        try {
+            await api("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
+            setSent(true);
+        } catch (reason: any) {
+            setError(reason instanceof Error ? reason.message : "Unable to send. Please try again.");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <main className="auth-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100svh", background: "#fff" }}>
+            <section className="auth-form-side" style={{ width: "min(100%, 480px)", padding: "48px 32px", background: "#fff" }}>
+                <div className="auth-topbar">
+                    <div className="auth-mobile-logo"><Logo /></div>
+                    <button type="button" className="auth-language" onClick={() => setLocale(locale === "en" ? "fr" : "en")}>
+                        <Languages size={18} />
+                        {locale === "en" ? "Francais" : "English"}
+                    </button>
+                </div>
+                <form className="auth-card" onSubmit={submit} style={{ width: "100%", maxWidth: 400, margin: "0 auto" }}>
+                    <div className="auth-card-mark"><Mail size={22} /></div>
+                    <div className="auth-heading">
+                        <h2 style={{ fontSize: "clamp(28px,3vw,38px)" }}>
+                            {locale === "en" ? "Forgot your password?" : "Mot de passe oublié ?"}
+                        </h2>
+                        <p style={{ whiteSpace: "nowrap" }}>
+                            {locale === "en" ? "Enter your email to receive a reset link." : "Entrez votre e-mail pour recevoir un lien."}
+                        </p>
+                    </div>
+
+                    {error && <div className="form-error">{error}</div>}
+
+                    {sent ? (
+                        <div style={{ padding: "18px", borderRadius: "14px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "14px", lineHeight: "1.7", marginBottom: "20px" }}>
+                            <strong style={{ display: "block", marginBottom: "6px" }}>
+                                {locale === "en" ? "✓ Reset link sent!" : "✓ Lien envoyé !"}
+                            </strong>
+                            {locale === "en"
+                                ? `If ${email} is registered, a reset link has been sent from support@icyerekezooms.com. Check your spam folder too.`
+                                : `Si ${email} est enregistré, un lien a été envoyé depuis support@icyerekezooms.com.`}
+                        </div>
+                    ) : (
+                        <>
+                            <AuthInput icon={<Mail />} label={locale === "en" ? "Email address" : "Adresse e-mail"}>
+                                <input
+                                    placeholder="owner@company.com"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    autoFocus
+                                    autoComplete="email"
+                                />
+                            </AuthInput>
+                            <button className="auth-submit" disabled={busy}>
+                                <span>{busy ? (locale === "en" ? "Sending..." : "Envoi...") : (locale === "en" ? "Send reset link" : "Envoyer le lien")}</span>
+                                <i><ChevronRight size={18} /></i>
+                            </button>
+                        </>
+                    )}
+
+                    <div className="auth-switch" style={{ justifyContent: "center" }}>
+                        <button type="button" onClick={() => window.location.href = "/"}>
+                            {locale === "en" ? "← Back to sign in" : "← Retour à la connexion"}
+                        </button>
+                    </div>
+                    <p className="auth-assurance"><ShieldCheck /> Your connection is encrypted and protected.</p>
+                </form>
+            </section>
+        </main>
+    );
+}
+
+// ─── Dedicated Reset-Password Page (/reset-password/{token}?email=...) ────────
+function ResetPasswordPage() {
+    const token = window.location.pathname.split("/reset-password/")[1] ?? "";
+    const params = new URLSearchParams(window.location.search);
+    const emailFromUrl = params.get("email") ?? "";
+
+    const [locale, setLocale] = useState<Locale>("en");
+    const [email, setEmail] = useState(emailFromUrl);
+    const [password, setPassword] = useState("");
+    const [confirm, setConfirm] = useState("");
+    const [showPw, setShowPw] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState("");
+    const [done, setDone] = useState(false);
+
+    const submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (password !== confirm) { setError(locale === "en" ? "Passwords do not match." : "Les mots de passe ne correspondent pas."); return; }
+        if (password.length < 10) { setError(locale === "en" ? "Password must be at least 10 characters." : "Le mot de passe doit comporter au moins 10 caractères."); return; }
+        setBusy(true);
+        setError("");
+        try {
+            await api("/api/auth/reset-password", {
+                method: "POST",
+                body: JSON.stringify({ token, email, password, password_confirmation: confirm }),
+            });
+            setDone(true);
+            setTimeout(() => { window.location.href = "/"; }, 3000);
+        } catch (reason: any) {
+            setError(reason instanceof Error ? reason.message : "Reset failed. The link may have expired.");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <main className="auth-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100svh", background: "#fff" }}>
+            <section className="auth-form-side" style={{ width: "min(100%, 480px)", padding: "48px 32px", background: "#fff" }}>
+                <div className="auth-topbar">
+                    <div className="auth-mobile-logo"><Logo /></div>
+                    <button type="button" className="auth-language" onClick={() => setLocale(locale === "en" ? "fr" : "en")}>
+                        <Languages size={18} />
+                        {locale === "en" ? "Francais" : "English"}
+                    </button>
+                </div>
+                <form className="auth-card" onSubmit={submit} style={{ width: "100%", maxWidth: 400, margin: "0 auto" }}>
+                    <div className="auth-card-mark"><LockKeyhole size={22} /></div>
+                    <div className="auth-heading">
+                        <h2 style={{ fontSize: "clamp(28px,3vw,38px)" }}>
+                            {locale === "en" ? "Set a new password" : "Définir un nouveau mot de passe"}
+                        </h2>
+                        <p style={{ whiteSpace: "nowrap" }}>
+                            {locale === "en" ? "Choose a strong password for your account." : "Choisissez un mot de passe sécurisé."}
+                        </p>
+                    </div>
+
+                    {error && <div className="form-error">{error}</div>}
+
+                    {done ? (
+                        <div style={{ padding: "18px", borderRadius: "14px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "14px", lineHeight: "1.7", marginBottom: "20px" }}>
+                            <strong style={{ display: "block", marginBottom: "6px" }}>
+                                {locale === "en" ? "✓ Password updated!" : "✓ Mot de passe mis à jour !"}
+                            </strong>
+                            {locale === "en"
+                                ? "Your password has been reset. Redirecting you to sign in…"
+                                : "Votre mot de passe a été réinitialisé. Redirection vers la connexion…"}
+                        </div>
+                    ) : (
+                        <>
+                            <AuthInput icon={<Mail />} label={locale === "en" ? "Email address" : "Adresse e-mail"}>
+                                <input
+                                    placeholder="owner@company.com"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    autoComplete="email"
+                                />
+                            </AuthInput>
+                            <AuthInput
+                                icon={<LockKeyhole />}
+                                label={locale === "en" ? "New password" : "Nouveau mot de passe"}
+                                action={
+                                    <button type="button" className="password-toggle" onClick={() => setShowPw(v => !v)} aria-label="Toggle password">
+                                        {showPw ? <EyeOff /> : <Eye />}
+                                    </button>
+                                }
+                            >
+                                <input
+                                    placeholder={locale === "en" ? "At least 10 characters" : "Au moins 10 caractères"}
+                                    type={showPw ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    minLength={10}
+                                    autoComplete="new-password"
+                                />
+                            </AuthInput>
+                            <AuthInput icon={<LockKeyhole />} label={locale === "en" ? "Confirm password" : "Confirmer le mot de passe"}>
+                                <input
+                                    placeholder={locale === "en" ? "Repeat your new password" : "Répétez le mot de passe"}
+                                    type={showPw ? "text" : "password"}
+                                    value={confirm}
+                                    onChange={(e) => setConfirm(e.target.value)}
+                                    required
+                                    autoComplete="new-password"
+                                />
+                            </AuthInput>
+                            <button className="auth-submit" disabled={busy}>
+                                <span>{busy ? (locale === "en" ? "Saving..." : "Enregistrement...") : (locale === "en" ? "Reset password" : "Réinitialiser")}</span>
+                                <i><ChevronRight size={18} /></i>
+                            </button>
+                        </>
+                    )}
+
+                    <div className="auth-switch" style={{ justifyContent: "center" }}>
+                        <button type="button" onClick={() => window.location.href = "/"}>
+                            {locale === "en" ? "← Back to sign in" : "← Retour à la connexion"}
+                        </button>
+                    </div>
+                    <p className="auth-assurance"><ShieldCheck /> Your connection is encrypted and protected.</p>
+                </form>
+            </section>
+        </main>
+    );
+}
+
 function App() {
+    const path = window.location.pathname;
+
+    // Public password-reset pages — shown before the auth check.
+    if (path === "/forgot-password") return <ForgotPasswordPage />;
+    if (path.startsWith("/reset-password/")) return <ResetPasswordPage />;
+
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [maintenance, setMaintenance] = useState("");
@@ -1932,7 +2151,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                     </div>
                     {error && <div className="form-error">{error}</div>}
 
-                    {mode !== "login" && (
+                    {(mode === "register" || mode === "school_register") && (
                         <>
                             <AuthInput icon={<UserRound />} label={words.name}>
                                 <input placeholder={words.namePlaceholder} value={form.name} onChange={(e) => update("name", e.target.value)} required autoComplete="name" />
@@ -2038,7 +2257,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                                     autoComplete={mode === "login" ? "current-password" : "new-password"}
                                 />
                             </AuthInput>
-                            {mode !== "login" && (
+                            {(mode === "register" || mode === "school_register") && (
                                 <AuthInput icon={<LockKeyhole />} label={words.confirm}>
                                     <input
                                         placeholder={words.confirmPlaceholder}
@@ -2061,7 +2280,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                             <button
                                 type="button"
                                 style={{ padding: 0, background: "none", border: "none", color: "#2563eb", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
-                                onClick={() => { setMode("forgot"); setError(""); setForgotSuccess(false); update("email", ""); }}
+                                onClick={() => { window.location.href = "/forgot-password"; }}
                             >
                                 {locale === "en" ? "Forgot password?" : "Mot de passe oublié ?"}
                             </button>
