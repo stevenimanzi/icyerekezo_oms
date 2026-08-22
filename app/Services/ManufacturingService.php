@@ -29,7 +29,9 @@ class ManufacturingService
     {
         return DB::transaction(function () use ($order) {
             abort_unless($order->status === 'draft', 422, 'Only draft production orders can be approved.');
-            $shortages = $this->requirements($order->billOfMaterial, (float) $order->planned_quantity)->where('is_optional', false)->where('shortage_quantity', '>', 0);
+            abort_unless($order->warehouse_id, 422, 'Choose which warehouse this order draws materials from and delivers into.');
+            $requirements = $this->requirements($order->billOfMaterial, (float) $order->planned_quantity);
+            $shortages = $requirements->where('is_optional', false)->where('shortage_quantity', '>', 0);
             if ($shortages->isNotEmpty()) {
                 throw ValidationException::withMessages(['materials' => 'Required materials are not available.', 'shortages' => $shortages->values()->all()]);
             }
@@ -37,6 +39,27 @@ class ManufacturingService
             if ($stages->isEmpty()) {
                 throw ValidationException::withMessages(['workflow_template_id' => 'The workflow must contain at least one stage.']);
             }
+
+            // Draw the recipe's raw materials out of stock now, so the warehouse balance reflects
+            // what's actually committed to this order. Optional components only draw what's on
+            // hand — a shortage of an optional component never blocks approval (see the check above).
+            $ledger = new InventoryLedger();
+            foreach ($requirements as $requirement) {
+                $quantity = $requirement['is_optional']
+                    ? min((float) $requirement['required_quantity'], (float) $requirement['available_quantity'])
+                    : (float) $requirement['required_quantity'];
+                if ($quantity <= 0) {
+                    continue;
+                }
+                $ledger->post([
+                    'item_id' => $requirement['item_id'],
+                    'warehouse_id' => $order->warehouse_id,
+                    'type' => 'issue',
+                    'quantity' => $quantity,
+                    'reason' => 'Issued to production order '.$order->order_number,
+                ]);
+            }
+
             foreach ($stages as $index => $stage) {
                 ProductionStageExecution::create(['production_order_id' => $order->id, 'workflow_stage_id' => $stage->id, 'status' => $index === 0 ? 'ready' : 'not_started']);
             }

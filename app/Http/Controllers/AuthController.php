@@ -20,10 +20,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class AuthController extends Controller
 {
@@ -37,7 +39,7 @@ class AuthController extends Controller
     {
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'School registration is currently closed. Please contact support.');
         $locations = app(RwandaLocationService::class)->northernDistrictsAndSectors();
-        $passwordRule = Password::min(10)->mixedCase()->numbers()->symbols();
+        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
         if (app()->isProduction()) $passwordRule->uncompromised();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'], 'school_name' => ['required', 'string', 'max:255'],
@@ -84,7 +86,7 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'New factory registration is currently closed. Please contact support.');
-        $passwordRule = Password::min(10)->mixedCase()->numbers()->symbols();
+        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
         if (app()->isProduction()) {
             $passwordRule->uncompromised();
         }
@@ -200,7 +202,7 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request): JsonResponse
     {
-        $passwordRule = Password::min(10)->mixedCase()->numbers()->symbols();
+        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
         if (app()->isProduction()) {
             $passwordRule->uncompromised();
         }
@@ -221,6 +223,56 @@ class AuthController extends Controller
         AuditLog::record('account.password_updated', 'Changed account password', $user);
 
         return response()->json(['message' => 'Your password has been changed securely.']);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email']]);
+
+        // Always send the same response to prevent email enumeration.
+        Password::sendResetLink(
+            ['email' => Str::lower(trim($request->input('email')))]
+        );
+
+        return response()->json([
+            'message' => 'If that email is registered, a password reset link has been sent from support@icyerekezooms.com.',
+        ]);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
+        if (app()->isProduction()) {
+            $passwordRule->uncompromised();
+        }
+
+        $data = $request->validate([
+            'token'    => ['required', 'string'],
+            'email'    => ['required', 'email'],
+            'password' => ['required', 'confirmed', $passwordRule],
+        ]);
+
+        $status = Password::reset(
+            [
+                'email'                 => Str::lower(trim($data['email'])),
+                'password'              => $data['password'],
+                'password_confirmation' => $data['password_confirmation'] ?? $data['password'],
+                'token'                 => $data['token'],
+            ],
+            function (User $user, string $password) use ($request) {
+                $user->forceFill(['password' => Hash::make($password)])
+                     ->setRememberToken(Str::random(60));
+                $user->save();
+
+                AuditLog::record('account.password_reset', 'Password reset via email link', $user);
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return response()->json(['message' => __($status)], 422);
+        }
+
+        return response()->json(['message' => 'Your password has been reset. You can now sign in.']);
     }
 
     private function profilePayload(User $user, Request $request): array

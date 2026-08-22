@@ -1150,6 +1150,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false }: 
 
   const reportScope = data?.report?.scope;
   const logisticsOnly = reportScope === "logistics";
+  const warehouseOnly = reportScope === "warehouse";
   const noguchiOrdersOnly =
     logisticsOnly && String(data?.factory?.name || "").trim().toLowerCase() === "noguchi holdings ltd";
   const departmentOnly = reportScope === "department";
@@ -1230,11 +1231,13 @@ export default function ClearReportsPage({ canExport, productionOnly = false }: 
                     ? "NOGUCHI HOLDINGS LTD daily report"
                     : logisticsOnly
                       ? "Daily logistics report"
-                      : departmentOnly
-                        ? `${data?.report?.scope_label || "Department"} daily report`
-                        : productionOnly
-                          ? "Daily production report"
-                          : "Daily factory report"}
+                      : warehouseOnly
+                        ? "Daily stock report"
+                        : departmentOnly
+                          ? `${data?.report?.scope_label || "Department"} daily report`
+                          : productionOnly
+                            ? "Daily production report"
+                            : "Daily factory report"}
               </h1>
               <p>
                 {noguchiOrdersOnly
@@ -1243,9 +1246,11 @@ export default function ClearReportsPage({ canExport, productionOnly = false }: 
                     ? "Warehouse, cutting, production, finishing and closing stock in the official Noguchi daily register format."
                     : logisticsOnly
                       ? "See only goods received, goods issued and warehouse balances handled by logistics."
-                      : departmentOnly
-                        ? "See only your department input, output, rejected quantity and waste."
-                        : "Combined factory report for management, covering every department and warehouse."}
+                      : warehouseOnly
+                        ? "Review stock received, issued and current balances across every warehouse you manage."
+                        : departmentOnly
+                          ? "See only your department input, output, rejected quantity and waste."
+                          : "Combined factory report for management, covering every department and warehouse."}
               </p>
             </div>
           </div>

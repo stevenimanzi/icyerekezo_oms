@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\BillOfMaterial;
 use App\Models\ProductionOrder;
 use App\Models\ProductionStageExecution;
+use App\Models\Warehouse;
 use App\Models\WorkflowTemplate;
 use App\Services\ManufacturingService;
 use App\Support\OperationalScope;
@@ -41,9 +42,10 @@ class ManufacturingController extends Controller
                 'completed_stages' => (clone $executions)->where('status', 'completed')->count(),
                 'total_stages' => (clone $executions)->count(),
             ],
-            'orders' => (clone $orders)->with(['item:id,name,sku', 'executions' => fn ($query) => $scope->scopeExecutions($query), 'executions.stage'])->latest()->paginate(20),
+            'orders' => (clone $orders)->with(['item:id,name,sku', 'warehouse:id,name', 'executions' => fn ($query) => $scope->scopeExecutions($query), 'executions.stage'])->latest()->paginate(20),
             'boms' => BillOfMaterial::with(['item:id,name,sku', 'components.item'])->latest()->get(),
             'workflows' => WorkflowTemplate::with('stages')->latest()->get(),
+            'warehouses' => Warehouse::whereIn('id', $scope->warehouseIds())->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
         ]);
     }
 
@@ -130,7 +132,7 @@ class ManufacturingController extends Controller
     public function storeOrder(Request $request, ManufacturingService $service): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
-        $data = $request->validate(['order_number' => ['required', 'string', 'max:60', Rule::unique('production_orders')->where('factory_id', $factoryId)], 'item_id' => ['required', Rule::exists('items', 'id')->where('factory_id', $factoryId)], 'bill_of_material_id' => ['required', Rule::exists('bills_of_materials', 'id')->where('factory_id', $factoryId)], 'workflow_template_id' => ['required', Rule::exists('workflow_templates', 'id')->where('factory_id', $factoryId)], 'warehouse_id' => ['nullable', Rule::exists('warehouses', 'id')->where('factory_id', $factoryId)], 'planned_quantity' => ['required', 'numeric', 'gt:0'], 'planned_start' => ['nullable', 'date'], 'planned_end' => ['nullable', 'date', 'after_or_equal:planned_start']]);
+        $data = $request->validate(['order_number' => ['required', 'string', 'max:60', Rule::unique('production_orders')->where('factory_id', $factoryId)], 'item_id' => ['required', Rule::exists('items', 'id')->where('factory_id', $factoryId)], 'bill_of_material_id' => ['required', Rule::exists('bills_of_materials', 'id')->where('factory_id', $factoryId)], 'workflow_template_id' => ['required', Rule::exists('workflow_templates', 'id')->where('factory_id', $factoryId)], 'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('factory_id', $factoryId)], 'planned_quantity' => ['required', 'numeric', 'gt:0'], 'planned_start' => ['nullable', 'date'], 'planned_end' => ['nullable', 'date', 'after_or_equal:planned_start']]);
         $bom = BillOfMaterial::findOrFail($data['bill_of_material_id']);
         abort_unless($bom->item_id === (int) $data['item_id'], 422, 'The BOM does not produce the selected item.');
         $order = ProductionOrder::create($data + ['created_by' => $request->user()->id]);

@@ -269,6 +269,7 @@
     margin: 11px 0 28px;
     color: #70809e;
     font-size: 15px;
+    white-space: nowrap;
 }
 
 .auth-field {
@@ -312,6 +313,18 @@
     color: var(--auth-navy);
     font-size: 14px;
     transition: border-color .18s, box-shadow .18s, background .18s, transform .18s;
+}
+
+/* Hide Edge / IE native password-reveal button — we have our own toggle */
+.auth-card .auth-field input[type="password"]::-ms-reveal,
+.auth-card .auth-field input[type="password"]::-ms-clear {
+    display: none;
+}
+
+/* Hide Chrome / Safari native credential eye icon */
+.auth-card .auth-field input[type="password"]::-webkit-credentials-auto-fill-button {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .auth-card .auth-field input::placeholder {
@@ -647,7 +660,7 @@
         padding: clamp(18px, 4vw, 64px);
         display: block;
         gap: 0;
-        background: linear-gradient(135deg, #4357f5 0%, #5268ff 52%, #3d50e7 100%);
+        background: #ffffff;
     }
 
     .auth-form-side,
@@ -662,7 +675,7 @@
         padding: 58px 32px 26px;
         border-radius: 36px;
         background: #fff;
-        box-shadow: 0 30px 80px rgba(12,28,105,.28);
+        box-shadow: 0 8px 40px rgba(12,28,105,.10);
     }
 
     .auth-story {
@@ -686,7 +699,7 @@
 
     .auth-story .brand-logo {
         max-width: 190px;
-        filter: brightness(0) invert(1);
+        filter: none;
     }
 
     .auth-topbar {
@@ -700,6 +713,7 @@
 
     .auth-mobile-logo .brand-logo {
         max-width: 210px;
+        filter: none;
     }
 
     .auth-card {

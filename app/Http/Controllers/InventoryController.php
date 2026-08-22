@@ -182,7 +182,8 @@ class InventoryController extends Controller
             ($roles['cuttingOperator'] && in_array($data['type'], ['reserve', 'issue', 'waste', 'production_output'])) ||
             ($roles['sewingOperator'] && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output'])) ||
             ($roles['finishingManager'] && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output'])) ||
-            ($roles['packingManager'] && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output']));
+            ($roles['packingManager'] && in_array($data['type'], ['receipt', 'issue', 'waste', 'production_output'])) ||
+            $this->allowedByGenericPermission($request, $data['type']);
         abort_unless($allowed, 403, 'You do not have permission to post this type of transaction.');
 
         return response()->json($ledger->post($data), 201);
@@ -200,7 +201,8 @@ class InventoryController extends Controller
             ($roles['cuttingOperator'] && in_array($transaction->type, ['reserve', 'issue', 'waste'])) ||
             ($roles['sewingOperator'] && in_array($transaction->type, ['receipt', 'issue', 'waste'])) ||
             ($roles['finishingManager'] && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output'])) ||
-            ($roles['packingManager'] && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output']));
+            ($roles['packingManager'] && in_array($transaction->type, ['receipt', 'issue', 'waste', 'production_output'])) ||
+            $this->allowedByGenericPermission($request, $transaction->type);
         abort_unless($allowed, 403, 'You do not have permission to edit this transaction.');
 
         abort_unless((int) $transaction->factory_id === (int) $request->user()->current_factory_id, 404);
@@ -290,6 +292,21 @@ class InventoryController extends Controller
             'finishingManager' => $hasRole(['finishing-manager', 'finishing-operator']),
             'packingManager' => $hasRole(['packing-manager', 'packing-operator', 'packaging-manager', 'packaging-operator']),
         ];
+    }
+
+    /**
+     * Fallback for every role outside the bespoke garment pipeline above (mixing,
+     * processing, bottling, maintenance, logistics, and any future industry role):
+     * trust the same inventory.receive/issue/adjust permissions the route middleware
+     * already enforces, mapped to the transaction types each permission covers.
+     */
+    private function allowedByGenericPermission(Request $request, string $type): bool
+    {
+        $user = $request->user();
+
+        return ($user->hasPermission('inventory.receive') && in_array($type, ['receipt', 'return_in', 'adjustment_in'], true))
+            || ($user->hasPermission('inventory.issue') && in_array($type, ['issue', 'dispatch', 'waste', 'reserve', 'release_reservation'], true))
+            || ($user->hasPermission('inventory.adjust') && in_array($type, ['adjustment_in', 'adjustment_out', 'quarantine', 'release_quarantine'], true));
     }
 
     private function generateStockCode(int $factoryId, string $type): string

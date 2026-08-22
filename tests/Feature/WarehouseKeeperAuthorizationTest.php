@@ -43,5 +43,9 @@ class WarehouseKeeperAuthorizationTest extends TestCase
         $overview = $this->getJson('/api/procurement/overview')->assertOk();
         $this->assertGreaterThanOrEqual(1, $overview->json('summary.receipts'));
         $this->assertTrue(collect($overview->json('stock_receipts'))->contains(fn (array $receipt) => $receipt['reason'] === 'Delivery DN-001'));
+
+        $report = $this->getJson('/api/reports?period=all')->assertOk()->assertJsonPath('report.scope', 'warehouse');
+        $this->assertTrue(collect($report->json('stock_register'))->contains(fn (array $row) => $row['item'] === 'Cotton Fabric'));
+        $this->assertNull($report->json('logistics'));
     }
 }

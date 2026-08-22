@@ -65,8 +65,9 @@ class ReportController extends Controller
         $roles = $request->attributes->get('factory_roles') ?? $request->user()->roles()->wherePivot('factory_id', $factory->id)->get();
         $isExecutive = $request->user()->is_platform_admin || $roles->whereIn('slug', ['factory-owner', 'factory-administrator', 'factory-manager'])->isNotEmpty();
         $dashboardKey = (string) ($roles->first()?->dashboard_key ?? 'operations');
-        $logisticsOnly = ! $isExecutive && in_array($dashboardKey, ['logistics', 'warehouse'], true);
-        $departmentOnly = ! $isExecutive && ! $logisticsOnly;
+        $logisticsOnly = ! $isExecutive && $dashboardKey === 'logistics';
+        $warehouseOnly = ! $isExecutive && $dashboardKey === 'warehouse';
+        $departmentOnly = ! $isExecutive && ! $logisticsOnly && ! $warehouseOnly;
         $operationalScope = OperationalScope::for($request->user());
         $data = $request->validate([
             'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'year', 'custom'])],
@@ -79,7 +80,7 @@ class ReportController extends Controller
             'sector' => ['nullable', 'string', 'max:80'],
         ]);
         [$from, $to] = $this->range($data);
-        $type = $departmentOnly ? 'production' : ($logisticsOnly ? 'inventory' : ($data['type'] ?? 'all'));
+        $type = $departmentOnly ? 'production' : (($logisticsOnly || $warehouseOnly) ? 'inventory' : ($data['type'] ?? 'all'));
         $departmentId = isset($data['department_id']) ? (int) $data['department_id'] : null;
         if ($departmentOnly) {
             $departmentId = $operationalScope->profile?->department_id;
@@ -113,7 +114,7 @@ class ReportController extends Controller
             ->join('production_orders', 'production_orders.id', '=', 'production_stage_executions.production_order_id')
             ->leftJoin('items', 'items.id', '=', 'production_orders.item_id')
             ->leftJoin('units', 'units.id', '=', 'items.unit_id')
-            ->when($logisticsOnly || ($departmentOnly && ! $departmentId), fn ($query) => $query->whereRaw('1 = 0'))
+            ->when($logisticsOnly || $warehouseOnly || ($departmentOnly && ! $departmentId), fn ($query) => $query->whereRaw('1 = 0'))
             ->when(! $departmentId && $configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('workflow_stages.department_id', $configuredDepartmentIds))
             ->when($departmentId, fn ($query) => $query->where('workflow_stages.department_id', $departmentId))
             ->select('production_stage_executions.id', 'production_stage_executions.status', 'production_stage_executions.input_quantity', 'production_stage_executions.output_quantity', 'production_stage_executions.waste_quantity', 'production_stage_executions.rejected_quantity', 'production_stage_executions.updated_at', 'workflow_stages.department_id', 'workflow_stages.name as stage_name', 'production_orders.id as production_order_id', 'production_orders.order_number', 'items.name as product_name', 'units.name as unit_name', 'units.symbol as unit_symbol')
@@ -396,10 +397,12 @@ class ReportController extends Controller
             'standard' => array_replace(
                 IndustryDailyReportCatalog::for($factory->industry_type),
                 array_filter($factory->settings['report'] ?? [], fn ($value) => $value !== '' && $value !== []),
-                $logisticsOnly ? ['title' => 'Daily logistics report', 'orientation' => 'landscape', 'show_department_totals' => false, 'show_daily_register' => false, 'default_period' => $factory->hasNoguchiSchoolOrders() ? 'all' : 'day'] : ($departmentOnly ? ['title' => ($departments->first()?->name ?? ucfirst($dashboardKey)).' daily report', 'show_stock_register' => false] : [])
+                $logisticsOnly ? ['title' => 'Daily logistics report', 'orientation' => 'landscape', 'show_department_totals' => false, 'show_daily_register' => false, 'default_period' => $factory->hasNoguchiSchoolOrders() ? 'all' : 'day']
+                    : ($warehouseOnly ? ['title' => 'Daily stock report', 'orientation' => 'landscape', 'show_summary' => false, 'show_department_totals' => false, 'show_daily_register' => false, 'show_stock_register' => true, 'default_period' => 'day']
+                        : ($departmentOnly ? ['title' => ($departments->first()?->name ?? ucfirst($dashboardKey)).' daily report', 'show_stock_register' => false] : []))
             ),
             'filters' => ['departments' => $isExecutive ? Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))->orderBy('name')->get(['id', 'name']) : [], 'districts' => $logisticsOnly ? SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->distinct()->orderBy('schools.district')->pluck('schools.district') : [], 'sectors_by_district' => $logisticsOnly ? SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->whereNotNull('schools.sector')->select(['schools.district', 'schools.sector'])->distinct()->orderBy('schools.sector')->get()->groupBy('district')->map(fn ($rows) => $rows->pluck('sector')->values()) : (object) []],
-            'report' => ['scope' => $logisticsOnly ? 'logistics' : ($departmentOnly ? 'department' : 'factory'), 'scope_label' => $logisticsOnly ? 'Logistics' : ($departments->first()?->name ?? 'Whole factory'), 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
+            'report' => ['scope' => $logisticsOnly ? 'logistics' : ($warehouseOnly ? 'warehouse' : ($departmentOnly ? 'department' : 'factory')), 'scope_label' => $logisticsOnly ? 'Logistics' : ($warehouseOnly ? 'Warehouse stock' : ($departments->first()?->name ?? 'Whole factory')), 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
             'summary' => array_filter([($departmentOnly ? 'flow_categories' : 'departments') => $departmentActivity->count(), 'production_orders' => $executions->pluck('production_order_id')->unique()->count(), 'work_records' => $executions->count(), 'completed_records' => $executions->where('status', 'completed')->count(), 'quantity_received' => (float) $executions->sum('input_quantity'), 'quantity_completed' => (float) $executions->sum('output_quantity'), 'damaged_quantity' => (float) $executions->sum('rejected_quantity'), 'waste_quantity' => (float) $executions->sum('waste_quantity'), 'stock_movements' => $departmentOnly ? null : $inventory->count()], fn ($value) => $value !== null),
             'department_activity' => $departmentActivity,
             'daily_activity' => $dailyActivity,

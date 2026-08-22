@@ -30,4 +30,9 @@ class ProductionOrder extends Model
     {
         return $this->belongsTo(BillOfMaterial::class);
     }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
 }

@@ -672,6 +672,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["inventory", Warehouse, t.warehouse, "inventory.view"],
         ["products", Boxes, t.products, "products.view"],
         ["procurement", ShoppingCart, locale === "en" ? "Incoming goods" : "Réceptions", "procurement.view"],
+        ["reports", Activity, t.reports, "reports.view"],
     ] as const : isProcurementUser ? [
         // ─── Procurement Officer ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
@@ -1693,9 +1694,10 @@ function MaintenanceScreen({ message, onRetry, onAdmin }: { message: string; onR
 
 function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user: AuthUser) => void; onMaintenance: (message: string) => void }) {
     const schoolAuth = window.location.pathname.startsWith("/school/");
-    const [mode, setMode] = useState<"login" | "register" | "school_register">(() =>
+    const [mode, setMode] = useState<"login" | "register" | "school_register" | "forgot">(() =>
         schoolAuth && /\/(?:signup|register)\/?$/.test(window.location.pathname) ? "school_register" : "login",
     );
+    const [forgotSuccess, setForgotSuccess] = useState(false);
     const [locale, setLocale] = useState<Locale>("en");
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
@@ -1733,6 +1735,12 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
         setBusy(true);
         setError("");
         try {
+            if (mode === "forgot") {
+                await api("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email: form.email }) });
+                setForgotSuccess(true);
+                setBusy(false);
+                return;
+            }
             const endpoint = mode === "login" ? "/api/auth/login" : mode === "school_register" ? "/api/auth/register-school" : "/api/auth/register";
             const payload =
                 mode === "login"
@@ -1919,9 +1927,8 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                         <ShieldCheck size={22} />
                     </div>
                     <div className="auth-heading">
-                        <span>{mode === "login" ? (locale === "en" ? "WELCOME BACK" : "BON RETOUR") : locale === "en" ? "GET STARTED" : "COMMENCER"}</span>
-                        <h2>{words.title}</h2>
-                        <p>{words.subtitle}</p>
+                        <h2>{mode === "forgot" ? (locale === "en" ? "Reset your password" : "Réinitialiser le mot de passe") : words.title}</h2>
+                        <p style={{ whiteSpace: "nowrap" }}>{mode === "forgot" ? (locale === "en" ? "Enter your email and we'll send a reset link." : "Entrez votre e-mail pour recevoir un lien.") : words.subtitle}</p>
                     </div>
                     {error && <div className="form-error">{error}</div>}
 
@@ -2008,62 +2015,111 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                             )}
                         </>
                     )}
-                    <AuthInput icon={<Mail />} label={words.email}>
-                        <input placeholder={words.emailPlaceholder} type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required autoComplete="email" />
-                    </AuthInput>
-                    <AuthInput
-                        icon={<LockKeyhole />}
-                        label={words.password}
-                        action={
-                            <button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>
-                                {showPassword ? <EyeOff /> : <Eye />}
-                            </button>
-                        }
-                    >
-                        <input
-                            placeholder={words.passwordPlaceholder}
-                            type={showPassword ? "text" : "password"}
-                            value={form.password}
-                            onChange={(e) => update("password", e.target.value)}
-                            required
-                            autoComplete={mode === "login" ? "current-password" : "new-password"}
-                        />
-                    </AuthInput>
-                    {mode !== "login" && (
-                        <AuthInput icon={<LockKeyhole />} label={words.confirm}>
-                            <input
-                                placeholder={words.confirmPlaceholder}
-                                type={showPassword ? "text" : "password"}
-                                value={form.password_confirmation}
-                                onChange={(e) => update("password_confirmation", e.target.value)}
-                                required
-                                autoComplete="new-password"
-                            />
-                        </AuthInput>
+                    {mode !== "forgot" && (
+                        <>
+                            <AuthInput icon={<Mail />} label={words.email}>
+                                <input placeholder={words.emailPlaceholder} type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required autoComplete="email" />
+                            </AuthInput>
+                            <AuthInput
+                                icon={<LockKeyhole />}
+                                label={words.password}
+                                action={
+                                    <button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>
+                                        {showPassword ? <EyeOff /> : <Eye />}
+                                    </button>
+                                }
+                            >
+                                <input
+                                    placeholder={words.passwordPlaceholder}
+                                    type={showPassword ? "text" : "password"}
+                                    value={form.password}
+                                    onChange={(e) => update("password", e.target.value)}
+                                    required
+                                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                                />
+                            </AuthInput>
+                            {mode !== "login" && (
+                                <AuthInput icon={<LockKeyhole />} label={words.confirm}>
+                                    <input
+                                        placeholder={words.confirmPlaceholder}
+                                        type={showPassword ? "text" : "password"}
+                                        value={form.password_confirmation}
+                                        onChange={(e) => update("password_confirmation", e.target.value)}
+                                        required
+                                        autoComplete="new-password"
+                                    />
+                                </AuthInput>
+                            )}
+                        </>
                     )}
                     {mode === "login" && (
-                        <label className="check-row">
-                            <input type="checkbox" checked={form.remember} onChange={(e) => update("remember", e.target.checked)} />
-                            <span>{words.remember}</span>
-                        </label>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+                            <label className="check-row" style={{ margin: 0 }}>
+                                <input type="checkbox" checked={form.remember} onChange={(e) => update("remember", e.target.checked)} />
+                                <span>{words.remember}</span>
+                            </label>
+                            <button
+                                type="button"
+                                style={{ padding: 0, background: "none", border: "none", color: "#2563eb", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+                                onClick={() => { setMode("forgot"); setError(""); setForgotSuccess(false); update("email", ""); }}
+                            >
+                                {locale === "en" ? "Forgot password?" : "Mot de passe oublié ?"}
+                            </button>
+                        </div>
                     )}
-                    <button className="auth-submit" disabled={busy}>
-                        <span>{busy ? (locale === "en" ? "Please wait..." : "Veuillez patienter...") : words.action}</span>
-                        <i><ChevronRight size={18} /></i>
-                    </button>
-                    <div className="auth-switch">
-                        <span>{words.switchText}</span>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                const next = mode === "login" ? (schoolAuth ? "school_register" : "register") : "login";
-                                setMode(next);
-                                if (schoolAuth) window.history.pushState({}, "", next === "login" ? "/school/login" : "/school/signup");
-                                setError("");
-                            }}
-                        >
-                            {words.switchAction}
+                    {mode === "forgot" && !forgotSuccess && (
+                        <>
+                            <AuthInput icon={<Mail />} label={locale === "en" ? "Your email address" : "Votre adresse e-mail"}>
+                                <input
+                                    placeholder="owner@company.com"
+                                    type="email"
+                                    value={form.email}
+                                    onChange={(e) => update("email", e.target.value)}
+                                    required
+                                    autoComplete="email"
+                                />
+                            </AuthInput>
+                            <button className="auth-submit" disabled={busy}>
+                                <span>{busy ? (locale === "en" ? "Sending..." : "Envoi...") : (locale === "en" ? "Send reset link" : "Envoyer le lien")}</span>
+                                <i><ChevronRight size={18} /></i>
+                            </button>
+                        </>
+                    )}
+                    {mode === "forgot" && forgotSuccess && (
+                        <div style={{ padding: "16px", borderRadius: "14px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "14px", lineHeight: "1.6" }}>
+                            <strong style={{ display: "block", marginBottom: "4px" }}>{locale === "en" ? "Check your inbox" : "Vérifiez votre boîte mail"}</strong>
+                            {locale === "en"
+                                ? "If that email is registered, a reset link has been sent from support@icyerekezooms.com. Check your spam folder if you don't see it."
+                                : "Si cet email est enregistré, un lien de réinitialisation a été envoyé depuis support@icyerekezooms.com."}
+                        </div>
+                    )}
+                    {mode !== "forgot" && (
+                        <button className="auth-submit" disabled={busy}>
+                            <span>{busy ? (locale === "en" ? "Please wait..." : "Veuillez patienter...") : words.action}</span>
+                            <i><ChevronRight size={18} /></i>
                         </button>
+                    )}
+                    <div className="auth-switch">
+                        {mode === "forgot" ? (
+                            <button type="button" onClick={() => { setMode("login"); setError(""); setForgotSuccess(false); }}>
+                                {locale === "en" ? "← Back to sign in" : "← Retour à la connexion"}
+                            </button>
+                        ) : (
+                            <>
+                                <span>{words.switchText}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const next = mode === "login" ? (schoolAuth ? "school_register" : "register") : "login";
+                                        setMode(next);
+                                        if (schoolAuth) window.history.pushState({}, "", next === "login" ? "/school/login" : "/school/signup");
+                                        setError("");
+                                    }}
+                                >
+                                    {words.switchAction}
+                                </button>
+                            </>
+                        )}
                     </div>
                     <p className="auth-assurance">
                         <ShieldCheck /> Your connection is encrypted and protected.

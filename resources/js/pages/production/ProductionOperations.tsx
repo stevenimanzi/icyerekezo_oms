@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, PackageCheck, Play, Plus, RefreshCw, Save } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, PackageCheck, Play, Plus, RefreshCw, Save, Trash2 } from 'lucide-react';
 
 async function api(url: string, options: RequestInit = {}) {
     const response = await fetch(url, { ...options, headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...(options.headers || {}) } });
@@ -19,8 +19,13 @@ async function api(url: string, options: RequestInit = {}) {
 
 const blank = () => ({
     order_number: 'PO-' + new Date().toISOString().slice(2, 10).replaceAll('-', '') + '-' + String(Date.now()).slice(-4),
-    bill_of_material_id: '', workflow_template_id: '', planned_quantity: '',
+    bill_of_material_id: '', workflow_template_id: '', warehouse_id: '', planned_quantity: '',
     planned_start: new Date().toISOString().slice(0, 10), planned_end: '',
+});
+const blankComponent = () => ({ item_id: '', quantity: '', waste_percent: '0', is_optional: false });
+const blankBom = () => ({
+    item_id: '', name: '', version: '1.0', output_quantity: '', expected_waste_percent: '0',
+    components: [blankComponent()],
 });
 const statusLabel: Record<string, string> = {
     draft: 'Needs approval', approved: 'Ready to produce', in_progress: 'In production', paused: 'Paused', completed: 'Completed', cancelled: 'Cancelled',
@@ -30,8 +35,11 @@ const number = (value: any) => Number(value || 0).toLocaleString();
 
 export default function ProductionOperations({ can }: any) {
     const [data, setData] = useState<any>(null);
+    const [catalog, setCatalog] = useState<any>(null);
     const [form, setForm] = useState<any>(blank());
+    const [bomForm, setBomForm] = useState<any>(blankBom());
     const [open, setOpen] = useState(false);
+    const [bomOpen, setBomOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -47,7 +55,12 @@ export default function ProductionOperations({ can }: any) {
     const load = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            setData(await api('/api/manufacturing/overview'));
+            const [overview, products] = await Promise.all([
+                api('/api/manufacturing/overview'),
+                canPlan ? api('/api/products/overview') : Promise.resolve(null),
+            ]);
+            setData(overview);
+            if (products) setCatalog(products);
             setUpdatedAt(new Date());
             setError('');
         } catch (reason: any) {
@@ -62,7 +75,49 @@ export default function ProductionOperations({ can }: any) {
     const summary = data?.summary || {};
     const recipes = data?.boms || [];
     const processes = (data?.workflows || []).filter((item: any) => item.status === 'active');
+    const warehouses = data?.warehouses || [];
+    const items = catalog?.items || [];
     const stages = orders.flatMap((order: any) => (order.executions || []).map((stage: any) => ({ ...stage, order_number: order.order_number, product: order.item?.name || 'Product' })));
+
+    const editBomField = (field: string, value: any) => setBomForm((current: any) => ({ ...current, [field]: value }));
+    const editComponent = (index: number, field: string, value: any) => setBomForm((current: any) => ({
+        ...current,
+        components: current.components.map((component: any, position: number) => (position === index ? { ...component, [field]: value } : component)),
+    }));
+    const addComponent = () => setBomForm((current: any) => ({ ...current, components: [...current.components, blankComponent()] }));
+    const removeComponent = (index: number) => setBomForm((current: any) => ({ ...current, components: current.components.filter((_: any, position: number) => position !== index) }));
+
+    const createBom = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setBusy(true);
+        setError('');
+        setSuccess('');
+        try {
+            const components = bomForm.components.map((component: any) => {
+                const material = items.find((item: any) => String(item.id) === String(component.item_id));
+                if (!material) throw new Error('Choose a material for every ingredient row.');
+                return {
+                    item_id: Number(component.item_id), unit_id: material.unit_id,
+                    quantity: Number(component.quantity), waste_percent: Number(component.waste_percent || 0),
+                    is_optional: Boolean(component.is_optional),
+                };
+            });
+            await api('/api/manufacturing/boms', {
+                method: 'POST',
+                body: JSON.stringify({
+                    item_id: Number(bomForm.item_id), name: bomForm.name, version: bomForm.version,
+                    output_quantity: Number(bomForm.output_quantity), expected_waste_percent: Number(bomForm.expected_waste_percent || 0),
+                    components,
+                }),
+            });
+            setBomForm(blankBom());
+            setBomOpen(false);
+            setSuccess('Product recipe created successfully.');
+            await load();
+        } catch (reason: any) {
+            setError(reason.message);
+        } finally { setBusy(false); }
+    };
 
     const create = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -105,6 +160,7 @@ export default function ProductionOperations({ can }: any) {
                 method: 'PATCH',
                 body: JSON.stringify({
                     status: nextStatus,
+                    input_quantity: Number(values.input_quantity ?? stage.input_quantity ?? 0),
                     output_quantity: Number(values.output_quantity ?? stage.output_quantity ?? 0),
                     rejected_quantity: Number(values.rejected_quantity ?? stage.rejected_quantity ?? 0),
                     waste_quantity: Number(values.waste_quantity ?? stage.waste_quantity ?? 0),
@@ -131,18 +187,58 @@ export default function ProductionOperations({ can }: any) {
                 </div>
                 <div className="workflow-actions">
                     <button className="secondary-btn" disabled={loading} onClick={() => load()}><RefreshCw className={loading ? 'spin' : ''} size={16} />{loading ? 'Refreshing…' : 'Refresh data'}</button>
-                    {canPlan && <button className="primary-btn" disabled={!recipes.length || !processes.length} onClick={() => setOpen(!open)}><Plus size={16} />{open ? 'Close form' : 'Create production order'}</button>}
+                    {canPlan && <button className="secondary-btn" disabled={!items.length} onClick={() => setBomOpen(!bomOpen)}><Plus size={16} />{bomOpen ? 'Close recipe form' : 'Create product recipe'}</button>}
+                    {canPlan && <button className="primary-btn" disabled={!recipes.length || !processes.length || !warehouses.length} onClick={() => setOpen(!open)}><Plus size={16} />{open ? 'Close form' : 'Create production order'}</button>}
                 </div>
             </div>
 
             {error && <div className="admin-alert error"><AlertTriangle size={18} /><span>{error}</span></div>}
             {success && <div className="admin-alert success"><CheckCircle2 size={18} /><span>{success}</span></div>}
 
-            {(!recipes.length || !processes.length) && !loading && !readOnly && (
+            {(!recipes.length || !processes.length || !warehouses.length) && !loading && !readOnly && (
                 <div className="production-setup-warning">
                     <AlertTriangle />
-                    <div><b>Production setup is not complete</b><p>{!recipes.length ? 'Create a product recipe before adding an order. ' : ''}{!processes.length ? 'The Factory Manager must activate a production process.' : ''}</p></div>
+                    <div><b>Production setup is not complete</b><p>{!recipes.length ? 'Create a product recipe before adding an order. ' : ''}{!processes.length ? 'The Factory Manager must activate a production process. ' : ''}{!warehouses.length ? 'No warehouse is available to receive finished output.' : ''}</p></div>
                 </div>
+            )}
+
+            {bomOpen && canPlan && (
+                <form className="panel admin-form production-order-form" onSubmit={createBom}>
+                    <header><div><h2>Create a product recipe</h2><p>Define the finished product, its raw materials and how much of each is needed.</p></div></header>
+                    <div className="form-grid">
+                        <label>
+                            Finished product
+                            <select required value={bomForm.item_id} onChange={event => editBomField('item_id', event.target.value)}>
+                                <option value="">Choose the item this recipe produces</option>
+                                {items.map((item: any) => <option key={item.id} value={item.id}>{item.name} ({item.sku})</option>)}
+                            </select>
+                        </label>
+                        <label>Recipe name<input required value={bomForm.name} onChange={event => editBomField('name', event.target.value)} placeholder="Example: Standard maize flour" /></label>
+                        <label>Version<input required value={bomForm.version} onChange={event => editBomField('version', event.target.value)} /></label>
+                        <label>Output quantity per batch<input required type="number" min="0.01" step="0.01" value={bomForm.output_quantity} onChange={event => editBomField('output_quantity', event.target.value)} placeholder="Example: 10" /></label>
+                        <label>Expected waste (%)<input type="number" min="0" max="100" step="0.1" value={bomForm.expected_waste_percent} onChange={event => editBomField('expected_waste_percent', event.target.value)} /></label>
+                    </div>
+                    <div className="bom-components">
+                        <p><b>Raw materials needed per batch</b></p>
+                        {bomForm.components.map((component: any, index: number) => (
+                            <div className="form-grid bom-component-row" key={index}>
+                                <label>
+                                    Material
+                                    <select required value={component.item_id} onChange={event => editComponent(index, 'item_id', event.target.value)}>
+                                        <option value="">Choose a material</option>
+                                        {items.map((item: any) => <option key={item.id} value={item.id}>{item.name} ({item.sku})</option>)}
+                                    </select>
+                                </label>
+                                <label>Quantity needed<input required type="number" min="0.000001" step="any" value={component.quantity} onChange={event => editComponent(index, 'quantity', event.target.value)} /></label>
+                                <label>Waste (%)<input type="number" min="0" max="100" step="0.1" value={component.waste_percent} onChange={event => editComponent(index, 'waste_percent', event.target.value)} /></label>
+                                <label className="check-row"><input type="checkbox" checked={component.is_optional} onChange={event => editComponent(index, 'is_optional', event.target.checked)} /><span>Optional</span></label>
+                                {bomForm.components.length > 1 && <button type="button" className="icon-btn" onClick={() => removeComponent(index)} aria-label="Remove material"><Trash2 size={16} /></button>}
+                            </div>
+                        ))}
+                        <button type="button" className="secondary-btn" onClick={addComponent}><Plus size={15} />Add another material</button>
+                    </div>
+                    <button className="primary-btn" disabled={busy}><Save size={16} />{busy ? 'Creating…' : 'Create recipe'}</button>
+                </form>
             )}
 
             <section className="production-summary">
@@ -180,6 +276,13 @@ export default function ProductionOperations({ can }: any) {
                             <select required value={form.workflow_template_id} onChange={event => setForm({ ...form, workflow_template_id: event.target.value })}>
                                 <option value="">Choose the production steps</option>
                                 {processes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                            </select>
+                        </label>
+                        <label>
+                            Warehouse
+                            <select required value={form.warehouse_id} onChange={event => setForm({ ...form, warehouse_id: event.target.value })}>
+                                <option value="">Choose where materials come from and output goes to</option>
+                                {warehouses.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}
                             </select>
                         </label>
                         <label>Quantity to produce<input required type="number" min="0.01" step="0.01" value={form.planned_quantity} onChange={event => setForm({ ...form, planned_quantity: event.target.value })} /></label>
@@ -249,7 +352,7 @@ export default function ProductionOperations({ can }: any) {
 
 function EditableStage({ stage, edit, editStage, saveStage, busy, canExecute }: any) {
     const canRecord = canExecute && ['ready', 'in_progress', 'blocked', 'rework'].includes(stage.status);
-    const resultFields: [string, string][] = [['output_quantity', 'Units produced'], ['rejected_quantity', 'Units rejected'], ['waste_quantity', 'Waste'], ['downtime_minutes', 'Stopped time (minutes)']];
+    const resultFields: [string, string][] = [['input_quantity', 'Material received into this step'], ['output_quantity', 'Units produced'], ['rejected_quantity', 'Units rejected'], ['waste_quantity', 'Waste'], ['downtime_minutes', 'Stopped time (minutes)']];
 
     return (
         <article className="production-step">
@@ -289,20 +392,21 @@ function OwnerStageResults({ stages }: any) {
             <header className="production-section-head"><div><h2>Production step results</h2><p>Output and losses recorded at each stage of production.</p></div></header>
             <div className="admin-table-wrap borderless">
                 <table className="admin-table production-results-table">
-                    <thead><tr><th>Order</th><th>Production step</th><th>Status</th><th>Output</th><th>Rejected</th><th>Waste</th><th>Stopped time</th></tr></thead>
+                    <thead><tr><th>Order</th><th>Production step</th><th>Status</th><th>Input</th><th>Output</th><th>Rejected</th><th>Waste</th><th>Stopped time</th></tr></thead>
                     <tbody>
                         {stages.length ? stages.map((stage: any) => (
                             <tr key={stage.id}>
                                 <td><b>{stage.order_number}</b></td>
                                 <td>{stage.stage?.name || 'Production step'}</td>
                                 <td><span className={'admin-status ' + stage.status}>{statusLabel[stage.status] || stage.status.replaceAll('_', ' ')}</span></td>
+                                <td>{number(stage.input_quantity)}</td>
                                 <td>{number(stage.output_quantity)}</td>
                                 <td>{number(stage.rejected_quantity)}</td>
                                 <td>{number(stage.waste_quantity)}</td>
                                 <td>{number(stage.downtime_minutes)} min</td>
                             </tr>
                         )) : (
-                            <tr><td colSpan={7}><Empty title="No production step results yet" text="Results will appear when the production team starts recording work." /></td></tr>
+                            <tr><td colSpan={8}><Empty title="No production step results yet" text="Results will appear when the production team starts recording work." /></td></tr>
                         )}
                     </tbody>
                 </table>
