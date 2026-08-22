@@ -4,8 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ $code }} is your ICYEREKEZO OMS verification code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!--[if mso]>
+<style>* { font-family: 'Segoe UI', Arial, sans-serif !important; }</style>
+<![endif]-->
 </head>
-<body style="margin:0; padding:0; background-color:#eef2fb; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<body style="margin:0; padding:0; background-color:#eef2fb; font-family:'Inter','Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef2fb; padding:32px 16px;">
   <tr>
     <td align="center">
@@ -41,7 +47,7 @@
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f7ff; border:1px solid #dbe4fb; border-radius:16px;">
               <tr>
                 <td align="center" style="padding:26px 20px;">
-                  <span style="font-size:38px; font-weight:800; letter-spacing:14px; color:#12285e; font-family:'Consolas','Courier New',monospace;">
+                  <span style="font-size:38px; font-weight:800; letter-spacing:14px; color:#12285e; font-family:'Inter','Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
                     {{ $code }}
                   </span>
                 </td>

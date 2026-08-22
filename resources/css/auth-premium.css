@@ -228,18 +228,6 @@
     backdrop-filter: blur(18px);
 }
 
-.auth-card-mark {
-    display: grid;
-    width: 48px;
-    height: 48px;
-    margin-bottom: 22px;
-    place-items: center;
-    border-radius: 15px;
-    color: #fff;
-    background: linear-gradient(145deg, #1b55dc, #467ff8);
-    box-shadow: 0 13px 28px rgba(34,94,234,.28);
-}
-
 .auth-heading > span {
     color: var(--auth-blue);
     font-size: 11px;
@@ -513,12 +501,6 @@
         border-radius: 22px;
     }
 
-    .auth-card-mark {
-        width: 43px;
-        height: 43px;
-        margin-bottom: 17px;
-    }
-
     .auth-card h2 {
         font-size: 30px;
     }
@@ -576,14 +558,7 @@
         border-radius: 26px;
     }
 
-    .auth-card-mark {
-        width: 42px;
-        height: 42px;
-        margin-bottom: 14px;
-        border-radius: 13px;
-    }
-
-    .auth-card h2 {
+.auth-card h2 {
         font-size: 36px;
     }
 
@@ -627,7 +602,6 @@
 }
 
 @media (min-width: 861px) and (max-height: 760px) {
-    .auth-card-mark,
     .auth-assurance {
         display: none;
     }
@@ -724,10 +698,6 @@
         background: transparent;
         box-shadow: none;
         backdrop-filter: none;
-    }
-
-    .auth-card-mark {
-        display: none;
     }
 
     .auth-heading > span {

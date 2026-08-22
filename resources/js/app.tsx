@@ -1676,7 +1676,6 @@ function ForgotPasswordPage() {
                     </button>
                 </div>
                 <form className="auth-card" onSubmit={submit} style={{ width: "100%", maxWidth: 400, margin: "0 auto" }}>
-                    <div className="auth-card-mark"><Mail size={22} /></div>
                     <div className="auth-heading">
                         <h2 style={{ fontSize: "clamp(28px,3vw,38px)" }}>
                             {locale === "en" ? "Forgot your password?" : "Mot de passe oublié ?"}
@@ -1775,7 +1774,6 @@ function ResetPasswordPage() {
                     </button>
                 </div>
                 <form className="auth-card" onSubmit={submit} style={{ width: "100%", maxWidth: 400, margin: "0 auto" }}>
-                    <div className="auth-card-mark"><LockKeyhole size={22} /></div>
                     <div className="auth-heading">
                         <h2 style={{ fontSize: "clamp(28px,3vw,38px)" }}>
                             {locale === "en" ? "Set a new password" : "Définir un nouveau mot de passe"}
@@ -2193,9 +2191,6 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                 </div>
                 {pendingOtpEmail ? (
                     <form className="auth-card" onSubmit={verifyOtp}>
-                        <div className="auth-card-mark">
-                            <ShieldCheck size={22} />
-                        </div>
                         <div className="auth-heading">
                             <span>{locale === "en" ? "CHECK YOUR EMAIL" : "VÉRIFIEZ VOS E-MAILS"}</span>
                             <h2>{locale === "en" ? "Enter your code" : "Saisissez le code"}</h2>
@@ -2239,9 +2234,6 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                     </form>
                 ) : (
                 <form className="auth-card" onSubmit={submit}>
-                    <div className="auth-card-mark">
-                        <ShieldCheck size={22} />
-                    </div>
                     <div className="auth-heading">
                         <h2>{mode === "forgot" ? (locale === "en" ? "Reset your password" : "Réinitialiser le mot de passe") : words.title}</h2>
                         <p style={{ whiteSpace: "nowrap" }}>{mode === "forgot" ? (locale === "en" ? "Enter your email and we'll send a reset link." : "Entrez votre e-mail pour recevoir un lien.") : words.subtitle}</p>
