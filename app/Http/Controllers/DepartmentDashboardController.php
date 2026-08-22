@@ -103,6 +103,16 @@ class DepartmentDashboardController extends Controller
             ->orderBy('items.name')
             ->limit(20)
             ->get(['items.id', 'items.name', 'items.sku', 'items.reorder_level', 'units.symbol as unit', DB::raw('SUM(stock_balances.quantity_on_hand) as quantity_on_hand')]);
+        $stockTrends = collect(range(6, 0))->map(function (int $daysAgo) use ($stockTransactions) {
+            $day = today()->subDays($daysAgo);
+            $dayTransactions = (clone $stockTransactions)->whereDate('occurred_at', $day);
+
+            return [
+                'date' => $day->format('M j'),
+                'received' => (float) (clone $dayTransactions)->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+                'issued' => abs((float) (clone $dayTransactions)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+            ];
+        })->values();
 
         $activeOrderStatuses = ['draft', 'pending', 'confirmed', 'approved', 'processing', 'ready'];
         $incomingOrdersQuery = SalesDocument::withoutGlobalScopes()
@@ -318,6 +328,7 @@ class DepartmentDashboardController extends Controller
             'warehouse_metrics' => $warehouseMetrics,
             'recent_stock' => $recentStock,
             'stock_status' => $stockStatus,
+            'stock_trends' => $stockTrends,
             'logistics_metrics' => $logisticsMetrics,
             'logistics_trends' => $logisticsTrends,
             'production_trends' => $productionTrends,

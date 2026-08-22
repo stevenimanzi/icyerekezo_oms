@@ -55,6 +55,7 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
 
    {logistics && <LogisticsCharts trends={logisticsTrends} fr={fr} money={money} />}
    {isNoguchiSewing && <ProductionCharts trends={data?.production_trends || []} fr={fr} />}
+   {warehouse && <WarehouseStockChart trends={data?.stock_trends || []} fr={fr} number={number} />}
 
    {!hasDedicatedPanels && !warehouse && (
     <div className="production-quick-actions">
@@ -113,6 +114,35 @@ function ProductionMetrics({values,fr,user}:any){
         </section>;
     }
     return <section className="department-metrics"><Metric icon={<ListChecks/>} label={fr?'Travaux Ã  commencer':'Work to start'} value={number(values.assigned_work)} tone="blue"/><Metric icon={<Clock3/>} label={fr?'Travaux en cours':'Work in progress'} value={number(values.work_in_progress)} tone="amber"/><Metric icon={<CheckCircle2/>} label={fr?'TerminÃ© aujourdâ€™hui':'Completed today'} value={number(values.completed_today)} tone="green"/><Metric icon={<Factory/>} label={fr?'Ã‰tapes de production actives':'Active production steps'} value={number(values.stages_in_progress)} tone="violet"/><Metric icon={<PackageCheck/>} label={fr?'UnitÃ©s produites aujourdâ€™hui':'Units produced today'} value={number(values.output_today)} tone="blue"/><Metric icon={<Activity/>} label={fr?'UnitÃ©s rejetÃ©es aujourdâ€™hui':'Units rejected today'} value={number(values.rejected_today)} tone="red"/></section>
+}
+
+function WarehouseStockChart({ trends, fr, number }: any) {
+    const tooltipStyle = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 10, boxShadow: '0 12px 30px rgba(15,23,42,.12)', color: 'var(--text)' };
+    return (
+        <section className="department-grid logistics-charts">
+            <article className="panel chart-panel" style={{ gridColumn: '1 / -1' }}>
+                <header className="department-panel-head">
+                    <div>
+                        <h2>{fr ? 'Mouvements de stock (7 jours)' : 'Stock movement (7 days)'}</h2>
+                        <p>{fr ? 'Quantités reçues et sorties chaque jour' : 'Quantity received and issued each day'}</p>
+                    </div>
+                    <Activity size={20} />
+                </header>
+                <div className="chart-wrap">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={trends} margin={{ top: 12, right: 18, left: -18, bottom: 2 }}>
+                            <CartesianGrid vertical={false} stroke="var(--line)" />
+                            <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                            <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                            <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [number(value), '']} />
+                            <Bar dataKey="received" name={fr ? 'Reçu' : 'Received'} fill="#10b981" radius={[5, 5, 0, 0]} />
+                            <Bar dataKey="issued" name={fr ? 'Sorti' : 'Issued'} fill="#ef4444" radius={[5, 5, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </article>
+        </section>
+    );
 }
 
 function OperationalPanels({ warehouse, assignments, stock, stockStatus, stages, data, user, fr, status, number, busy, update }: any) {

@@ -2243,7 +2243,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                     emailPlaceholder: "owner@company.com",
                     passwordPlaceholder: "Create a strong password",
                     confirmPlaceholder: "Enter the password again",
-                    action: mode === "login" ? "Sign in securely" : "Create workspace",
+                    action: mode === "login" ? "Sign in" : "Create Account",
                     switchText: mode === "login" ? "New to ICYEREKEZO?" : "Already have an account?",
                     switchAction: mode === "login" ? "Create account" : "Sign in",
                 }),
@@ -2288,7 +2288,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                     emailPlaceholder: "nom@entreprise.com",
                     passwordPlaceholder: "Saisissez votre mot de passe",
                     confirmPlaceholder: "Saisissez encore le mot de passe",
-                    action: mode === "login" ? "Se connecter" : "Creer l'espace",
+                    action: mode === "login" ? "Se connecter" : "Creer le compte",
                     switchText: mode === "login" ? "Nouveau sur ICYEREKEZO ?" : "Vous avez deja un compte ?",
                     switchAction: mode === "login" ? "Creer un espace" : "Se connecter",
                 }),
@@ -2565,7 +2565,6 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                     {mode !== "forgot" && (
                         <button className="auth-submit" disabled={busy}>
                             <span>{busy ? (locale === "en" ? "Please wait..." : "Veuillez patienter...") : words.action}</span>
-                            <i><ChevronRight size={18} /></i>
                         </button>
                     )}
                     <div className="auth-switch">

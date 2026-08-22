@@ -382,8 +382,8 @@
 
 .auth-submit {
     min-height: 58px;
-    justify-content: space-between;
-    padding: 0 10px 0 23px;
+    justify-content: center;
+    padding: 0 23px;
     border-radius: 18px;
     background: linear-gradient(100deg, #174fd8, #2f72f3 58%, #4b86fa);
     font-size: 15px;
@@ -394,15 +394,6 @@
 .auth-submit:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 20px 42px rgba(33,91,226,.34);
-}
-
-.auth-submit i {
-    display: grid;
-    width: 40px;
-    height: 40px;
-    place-items: center;
-    border-radius: 13px;
-    background: rgba(255,255,255,.16);
 }
 
 .auth-switch {
@@ -584,11 +575,6 @@
 
     .auth-submit {
         min-height: 52px;
-    }
-
-    .auth-submit i {
-        width: 36px;
-        height: 36px;
     }
 
     .auth-switch {
