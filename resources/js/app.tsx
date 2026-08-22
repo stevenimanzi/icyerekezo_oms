@@ -1921,6 +1921,9 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [pendingOtpEmail, setPendingOtpEmail] = useState("");
+    const [otpCode, setOtpCode] = useState("");
+    const [resendCooldown, setResendCooldown] = useState(0);
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -1977,7 +1980,16 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                           locale,
                         }
                       : { ...form, industry_type: form.industry_type === "other" ? form.industry_other : form.industry_type, locale };
-            const data = await api<{ user: AuthUser }>(endpoint, { method: "POST", body: JSON.stringify(payload) });
+            const data = await api<{ user: AuthUser } | { status: "verification_required"; email: string }>(endpoint, {
+                method: "POST",
+                body: JSON.stringify(payload),
+            });
+            if (!("user" in data)) {
+                setPendingOtpEmail(data.email);
+                setOtpCode("");
+                setResendCooldown(30);
+                return;
+            }
             if (schoolAuth && data.user.workspace !== "school") {
                 await api("/api/auth/logout", { method: "POST" });
                 throw new Error("This sign-in page is only for school administrators.");
@@ -1986,6 +1998,44 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
         } catch (reason: any) {
             if (reason?.status === 503) onMaintenance(reason.message);
             else setError(reason instanceof Error ? reason.message : "Unable to continue.");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    useEffect(() => {
+        if (resendCooldown <= 0) return;
+        const timer = window.setTimeout(() => setResendCooldown((value) => value - 1), 1000);
+        return () => window.clearTimeout(timer);
+    }, [resendCooldown]);
+
+    const verifyOtp = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setBusy(true);
+        setError("");
+        try {
+            const data = await api<{ user: AuthUser }>("/api/auth/verify-otp", {
+                method: "POST",
+                body: JSON.stringify({ email: pendingOtpEmail, code: otpCode }),
+            });
+            onAuthenticated(data.user);
+        } catch (reason: any) {
+            setError(reason instanceof Error ? reason.message : "Unable to verify that code.");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const resendOtp = async () => {
+        if (resendCooldown > 0 || busy) return;
+        setBusy(true);
+        setError("");
+        try {
+            await api("/api/auth/resend-otp", { method: "POST", body: JSON.stringify({ email: pendingOtpEmail }) });
+            setOtpCode("");
+            setResendCooldown(30);
+        } catch (reason: any) {
+            setError(reason instanceof Error ? reason.message : "Unable to resend the code.");
         } finally {
             setBusy(false);
         }
@@ -2141,6 +2191,53 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                         {locale === "en" ? "Francais" : "English"}
                     </button>
                 </div>
+                {pendingOtpEmail ? (
+                    <form className="auth-card" onSubmit={verifyOtp}>
+                        <div className="auth-card-mark">
+                            <ShieldCheck size={22} />
+                        </div>
+                        <div className="auth-heading">
+                            <span>{locale === "en" ? "CHECK YOUR EMAIL" : "VÉRIFIEZ VOS E-MAILS"}</span>
+                            <h2>{locale === "en" ? "Enter your code" : "Saisissez le code"}</h2>
+                            <p>
+                                {locale === "en"
+                                    ? `We sent a 4-digit code to ${pendingOtpEmail}.`
+                                    : `Nous avons envoyé un code à 4 chiffres à ${pendingOtpEmail}.`}
+                            </p>
+                        </div>
+                        {error && <div className="form-error">{error}</div>}
+                        <AuthInput icon={<ShieldCheck />} label={locale === "en" ? "Verification code" : "Code de vérification"}>
+                            <input
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={4}
+                                placeholder="0000"
+                                value={otpCode}
+                                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                                autoFocus
+                                required
+                                style={{ letterSpacing: "0.5em", fontWeight: 700, textAlign: "center" }}
+                            />
+                        </AuthInput>
+                        <button className="auth-submit" disabled={busy || otpCode.length !== 4}>
+                            <span>{busy ? (locale === "en" ? "Verifying..." : "Vérification...") : (locale === "en" ? "Verify and continue" : "Vérifier et continuer")}</span>
+                            <i><ChevronRight size={18} /></i>
+                        </button>
+                        <div className="auth-switch">
+                            <span>{locale === "en" ? "Didn't get a code?" : "Vous n'avez rien reçu ?"}</span>
+                            <button type="button" onClick={resendOtp} disabled={resendCooldown > 0 || busy}>
+                                {resendCooldown > 0
+                                    ? (locale === "en" ? `Resend in ${resendCooldown}s` : `Renvoyer dans ${resendCooldown}s`)
+                                    : (locale === "en" ? "Resend code" : "Renvoyer le code")}
+                            </button>
+                        </div>
+                        <div className="auth-switch">
+                            <button type="button" onClick={() => { setPendingOtpEmail(""); setOtpCode(""); setError(""); }}>
+                                {locale === "en" ? "← Use a different email" : "← Utiliser un autre e-mail"}
+                            </button>
+                        </div>
+                    </form>
+                ) : (
                 <form className="auth-card" onSubmit={submit}>
                     <div className="auth-card-mark">
                         <ShieldCheck size={22} />
@@ -2344,6 +2441,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                         <ShieldCheck /> Your connection is encrypted and protected.
                     </p>
                 </form>
+                )}
             </section>
         </main>
     );

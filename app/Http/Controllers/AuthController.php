@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OtpVerificationMail;
 use App\Models\AuditLog;
 use App\Models\Factory;
 use App\Models\Permission;
@@ -29,6 +30,10 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class AuthController extends Controller
 {
+    private const OTP_TTL_MINUTES = 10;
+
+    private const OTP_MAX_ATTEMPTS = 5;
+
     public function schoolRegistrationOptions(): JsonResponse
     {
         $factory = Factory::get()->first(fn (Factory $factory) => $factory->hasNoguchiSchoolOrders());
@@ -38,6 +43,7 @@ class AuthController extends Controller
     public function registerSchool(Request $request): JsonResponse
     {
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'School registration is currently closed. Please contact support.');
+        $this->reclaimUnverifiedEmail($request->input('email', ''));
         $locations = app(RwandaLocationService::class)->northernDistrictsAndSectors();
         $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
         if (app()->isProduction()) $passwordRule->uncompromised();
@@ -76,16 +82,15 @@ class AuthController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-        $request->session()->regenerate();
         AuditLog::record('auth.school_registered', 'School administrator account created', $user->school);
 
-        return response()->json(['message' => 'School administrator account created.', 'user' => $this->userPayload($user)], 201);
+        return $this->completeRegistration($request, $user, 'School administrator account created.');
     }
 
     public function register(Request $request): JsonResponse
     {
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'New factory registration is currently closed. Please contact support.');
+        $this->reclaimUnverifiedEmail($request->input('email', ''));
         $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
         if (app()->isProduction()) {
             $passwordRule->uncompromised();
@@ -132,11 +137,51 @@ class AuthController extends Controller
             return [$user, $factory];
         });
 
-        Auth::login($user);
-        $request->session()->regenerate();
         AuditLog::record('auth.registered', 'Factory and owner account created', $factory);
 
-        return response()->json(['message' => 'Account created.', 'user' => $this->userPayload($user)], 201);
+        return $this->completeRegistration($request, $user, 'Account created.');
+    }
+
+    public function verifyOtp(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'size:4'],
+        ]);
+        $email = Str::lower(trim($data['email']));
+        $user = User::where('email', $email)->whereNull('email_verified_at')->first();
+        if (! $user || ! $user->otp_code) {
+            throw ValidationException::withMessages(['code' => 'This code is no longer valid. Request a new one.']);
+        }
+        if ($user->otp_expires_at?->isPast()) {
+            throw ValidationException::withMessages(['code' => 'This code has expired. Request a new one.']);
+        }
+        if ($user->otp_attempts >= self::OTP_MAX_ATTEMPTS) {
+            throw ValidationException::withMessages(['code' => 'Too many incorrect attempts. Request a new code.']);
+        }
+        if (! hash_equals((string) $user->otp_code, trim($data['code']))) {
+            $user->increment('otp_attempts');
+            throw ValidationException::withMessages(['code' => 'That code is incorrect.']);
+        }
+
+        $user->update(['email_verified_at' => now(), 'otp_code' => null, 'otp_expires_at' => null, 'otp_attempts' => 0]);
+        Auth::login($user);
+        $request->session()->regenerate();
+        AuditLog::record('auth.email_verified', 'Verified account email with a one-time code', $user);
+
+        return response()->json(['message' => 'Email verified.', 'user' => $this->userPayload($user)]);
+    }
+
+    public function resendOtp(Request $request): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email']]);
+        $user = User::where('email', Str::lower(trim($data['email'])))->whereNull('email_verified_at')->first();
+        if ($user) {
+            $this->issueOtp($user);
+        }
+
+        // Same response whether or not a matching unverified account exists, to avoid leaking registration state.
+        return response()->json(['message' => 'If that account is awaiting verification, a new code has been sent.']);
     }
 
     public function login(Request $request): JsonResponse
@@ -273,6 +318,61 @@ class AuthController extends Controller
         }
 
         return response()->json(['message' => 'Your password has been reset. You can now sign in.']);
+    }
+
+    /**
+     * Finishes a registration request: with OTP verification enabled, this issues a code
+     * and holds off on signing the user in until it's confirmed via verifyOtp(); otherwise
+     * it preserves the previous behaviour of signing the user in immediately.
+     */
+    private function completeRegistration(Request $request, User $user, string $message): JsonResponse
+    {
+        if (! config('features.otp_verification')) {
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            return response()->json(['message' => $message, 'user' => $this->userPayload($user)], 201);
+        }
+
+        $this->issueOtp($user);
+
+        return response()->json([
+            'status' => 'verification_required',
+            'email' => $user->email,
+            'message' => "We sent a 4-digit code to {$user->email}. Enter it to finish creating your account.",
+        ], 201);
+    }
+
+    private function issueOtp(User $user): void
+    {
+        $code = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+        $user->update([
+            'otp_code' => $code,
+            'otp_expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES),
+            'otp_attempts' => 0,
+        ]);
+        Mail::to($user->email)->send(new OtpVerificationMail($user->name, $code, self::OTP_TTL_MINUTES));
+    }
+
+    /**
+     * A registration that was never confirmed with its OTP shouldn't permanently occupy
+     * its email address. If an unverified account owns this email, discard it (and any
+     * factory it created as owner) so a fresh registration attempt can proceed cleanly.
+     */
+    private function reclaimUnverifiedEmail(string $email): void
+    {
+        if (! config('features.otp_verification') || ! $email) {
+            return;
+        }
+        $stale = User::where('email', Str::lower(trim($email)))->whereNull('email_verified_at')->first();
+        if (! $stale) {
+            return;
+        }
+        $ownedFactoryId = $stale->factories()->wherePivot('is_owner', true)->value('factories.id');
+        $stale->delete();
+        if ($ownedFactoryId) {
+            Factory::find($ownedFactoryId)?->delete();
+        }
     }
 
     private function profilePayload(User $user, Request $request): array

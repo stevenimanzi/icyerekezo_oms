@@ -37,8 +37,12 @@ Route::prefix('api')->group(function () {
         Route::post('/auth/login', [AuthController::class, 'login']);
         Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
     });
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
+    });
     Route::middleware('throttle:3,1')->group(function () {
         Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('/auth/resend-otp', [AuthController::class, 'resendOtp']);
     });
     Route::get('/auth/school-registration-options', [AuthController::class, 'schoolRegistrationOptions']);
     Route::middleware('auth')->group(function () {

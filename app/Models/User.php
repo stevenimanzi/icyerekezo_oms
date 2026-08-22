@@ -14,8 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['current_factory_id', 'school_id', 'name', 'email', 'locale', 'timezone', 'password', 'last_login_at', 'last_login_ip', 'is_platform_admin', 'is_active'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['current_factory_id', 'school_id', 'name', 'email', 'locale', 'timezone', 'password', 'last_login_at', 'last_login_ip', 'is_platform_admin', 'is_active', 'email_verified_at', 'otp_code', 'otp_expires_at', 'otp_attempts'])]
+#[Hidden(['password', 'remember_token', 'otp_code'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -34,6 +34,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'is_platform_admin' => 'boolean',
             'is_active' => 'boolean',
+            'otp_expires_at' => 'datetime',
         ];
     }
 
