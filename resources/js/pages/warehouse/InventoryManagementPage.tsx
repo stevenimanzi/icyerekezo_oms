@@ -89,7 +89,9 @@ export default function InventoryManagementPage({
     [error, setError] = useState(""),
     [success, setSuccess] = useState(""),
     [updated, setUpdated] = useState<Date | null>(null);
-  const canManageStock = user?.workspace === "warehouse";
+  const canManageStock =
+    user?.workspace === "warehouse" ||
+    Boolean(user?.roles?.some((role: any) => role.slug === "warehouse-keeper"));
   const isLogisticsView = user?.workspace === "logistics";
   const [item, setItem] = useState<any>(emptyItem),
     [movement, setMovement] = useState<any>(emptyMovement),
@@ -160,27 +162,6 @@ export default function InventoryManagementPage({
       reorder_level: String(entry.reorder_level || 0),
     });
     setModal("item");
-  };
-
-  const approveRequest = async (tx: any) => {
-    if (!window.confirm(locale === "en" ? "Approve and transfer this fabric to the cutting floor?" : "Approuver et transférer vers la salle de coupe ?")) return;
-    const cutWH = tools.warehouses?.find((w:any) => w.code === 'CUT' || /cutting/i.test(w.name))?.id || 1;
-    setBusy(true);
-    try {
-      await request('/api/inventory/transfer', {
-        method: 'POST',
-        body: JSON.stringify({ item_id: tx.item_id, from_warehouse_id: tx.warehouse_id, to_warehouse_id: cutWH, quantity: Math.abs(tx.quantity_delta), reason: `Approved Request #${tx.id}` })
-      });
-      await request('/api/inventory/transactions', {
-        method: 'POST',
-        body: JSON.stringify({ item_id: tx.item_id, warehouse_id: tx.warehouse_id, type: 'release_reservation', quantity: Math.abs(tx.quantity_delta), reason: `Released Request #${tx.id}` })
-      });
-      await load(true);
-    } catch(e:any) {
-      alert(e.message);
-    } finally {
-      setBusy(false);
-    }
   };
 
   const changeStatus = async (entry: any) => {
