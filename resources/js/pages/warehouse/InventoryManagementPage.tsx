@@ -163,7 +163,7 @@ export default function InventoryManagementPage({
   };
 
   const approveRequest = async (tx: any) => {
-    if (!window.confirm(locale === "en" ? "Approve and transfer this fabric to the cutting floor?" : "Approuver et transfÃ©rer vers la salle de coupe ?")) return;
+    if (!window.confirm(locale === "en" ? "Approve and transfer this fabric to the cutting floor?" : "Approuver et transférer vers la salle de coupe ?")) return;
     const cutWH = tools.warehouses?.find((w:any) => w.code === 'CUT' || /cutting/i.test(w.name))?.id || 1;
     setBusy(true);
     try {
@@ -230,23 +230,23 @@ export default function InventoryManagementPage({
           <div>
             <div className="eyebrow">
               <i></i>
-              {isLogisticsView ? (locale === "fr" ? "DISPONIBILITÃƒâ€° EN DIRECT" : "LIVE GOODS AVAILABILITY") : (locale === "fr" ? "STOCK EN DIRECT" : "LIVE STOCK DATA")}
+              {isLogisticsView ? (locale === "fr" ? "DISPONIBILITÉ EN DIRECT" : "LIVE GOODS AVAILABILITY") : (locale === "fr" ? "STOCK EN DIRECT" : "LIVE STOCK DATA")}
             </div>
             <h1>{isLogisticsView ? (locale === "fr" ? "Produits disponibles" : "Available goods") : (locale === "fr" ? "Gestion du stock" : "Stock management")}</h1>
             <p>
               {isLogisticsView
-                ? (locale === "fr" ? "VÃƒÂ©rifiez les produits prÃƒÂªts ou rÃƒÂ©servÃƒÂ©s avant de planifier une livraison." : "Check goods ready or reserved for customer deliveries before planning dispatch.")
+                ? (locale === "fr" ? "Vérifiez les produits prêts ou réservés avant de planifier une livraison." : "Check goods ready or reserved for customer deliveries before planning dispatch.")
                 : locale === "fr"
-                ? "ContrÃƒÂ´lez les articles, quantitÃƒÂ©s, transferts et comptages de votre usine."
+                ? "Contrôlez les articles, quantités, transferts et comptages de votre usine."
                 : "Control every item, quantity, transfer and stock count in your factory."}
             </p>
             <small className="sales-updated">
               {updated
-                ? (locale === "fr" ? "Mis ÃƒÂ  jour " : "Updated ") +
+                ? (locale === "fr" ? "Mis à jour " : "Updated ") +
                   updated.toLocaleTimeString()
                 : locale === "fr"
-                  ? "ConnexionÃ¢â‚¬Â¦"
-                  : "ConnectingÃ¢â‚¬Â¦"}
+                  ? "Connexion…"
+                  : "Connecting…"}
             </small>
           </div>
         </div>
@@ -364,7 +364,7 @@ export default function InventoryManagementPage({
       </div>
       <section className="panel inventory-data-panel">
         {loading && !data ? (
-          <div className="admin-loading">Loading stock recordsÃ¢â‚¬Â¦</div>
+          <div className="admin-loading">Loading stock records…</div>
         ) : tab === "items" ? (
           <Catalog
             rows={data?.catalog || []}
@@ -771,7 +771,6 @@ function Catalog({ rows, money, quantity, edit, changeStatus, busy }: any) {
           <thead>
             <tr>
               <th>Item</th>
-              
               <th>Type</th>
               <th>Unit</th>
               <th>Total quantity</th>
@@ -788,9 +787,8 @@ function Catalog({ rows, money, quantity, edit, changeStatus, busy }: any) {
                   <td>
                     <b>{entry.name}</b>
                   </td>
-                  
                   <td>{String(entry.type).replaceAll("_", " ")}</td>
-                  <td>{entry.unit?.symbol || "Ã¢â‚¬â€"}</td>
+                  <td>{entry.unit?.symbol || "—"}</td>
                   <td>{quantity(entry.total_quantity, entry.unit?.symbol)}</td>
                   <td>{money(entry.standard_cost)}</td>
                   <td>{money(entry.stock_value)}</td>
@@ -837,7 +835,6 @@ function Balances({ rows, money, quantity }: any) {
           <thead>
             <tr>
               <th>Item</th>
-              
               <th>Warehouse</th>
               <th>On hand</th>
               <th>Reserved</th>
@@ -856,7 +853,6 @@ function Balances({ rows, money, quantity }: any) {
                       {String(entry.item_type).replaceAll("_", " ")}
                     </small>
                   </td>
-                  
                   <td>{entry.warehouse_name}</td>
                   <td>{quantity(entry.quantity_on_hand, entry.unit)}</td>
                   <td>{quantity(entry.quantity_reserved, entry.unit)}</td>
@@ -908,14 +904,13 @@ function Transactions({ rows, quantity, money, title }: any) {
                   <td>{new Date(entry.occurred_at).toLocaleString()}</td>
                   <td>
                     <b>{entry.item_name}</b>
-                    
                   </td>
                   <td>{entry.warehouse_name}</td>
                   <td>{String(entry.type).replaceAll("_", " ")}</td>
                   <td>{quantity(entry.quantity_delta, entry.unit)}</td>
                   <td>{quantity(entry.balance_after, entry.unit)}</td>
                   <td>{money(entry.unit_cost)}</td>
-                  <td>{entry.reason || "Ã¢â‚¬â€"}</td>
+                  <td>{entry.reason || "—"}</td>
                 </tr>
               ))
             ) : (
@@ -987,7 +982,7 @@ function Submit({ busy, label, icon }: any) {
   return (
     <button className="primary-btn" disabled={busy}>
       {icon}
-      {busy ? "SavingÃ¢â‚¬Â¦" : label}
+      {busy ? "Saving…" : label}
     </button>
   );
 }

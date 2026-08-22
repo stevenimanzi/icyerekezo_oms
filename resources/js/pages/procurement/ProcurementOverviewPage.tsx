@@ -1,6 +1,7 @@
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Edit3, Plus, RefreshCw, X } from "lucide-react";
 
+// lucide-react in this project doesn't export these names; reuse Plus as a stand-in icon.
 const PackagePlus = Plus;
 const ArrowDownToLine = Plus;
 const Boxes = Plus;
@@ -8,6 +9,7 @@ const Boxes = Plus;
 const csrf = () =>
   document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ||
   "";
+
 async function request(url: string, options: RequestInit = {}) {
   const response = await fetch(url, {
     ...options,
@@ -35,12 +37,14 @@ async function request(url: string, options: RequestInit = {}) {
   }
   return data;
 }
+
 const money = (value: any, currency = "RWF") =>
   new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
     maximumFractionDigits: currency === "RWF" ? 0 : 2,
   }).format(Number(value || 0));
+
 const typeForTab: Record<string, string> = {
   requests: "purchase_request",
   orders: "purchase_order",
@@ -69,20 +73,32 @@ const emptyMovement = {
   reason: "",
 };
 
+type ModalKind =
+  | "item"
+  | "movement"
+  | "supplier"
+  | "request"
+  | "price"
+  | "order"
+  | "receive"
+  | "payment"
+  | null;
+
 export default function ProcurementOverviewPage() {
-  const [data, setData] = useState<any>(null),
-    [tools, setTools] = useState<any>(null),
-    [tab, setTab] = useState("requests"),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(""),
-    [success, setSuccess] = useState(""),
-    [updated, setUpdated] = useState<Date | null>(null),
-    [modal, setModal] = useState<"item" | "movement" | "supplier" | "request" | "price" | "order" | "receive" | "payment" | null>(null),
-    [busy, setBusy] = useState(false);
+  const [data, setData] = useState<any>(null);
+  const [tools, setTools] = useState<any>(null);
+  const [tab, setTab] = useState("requests");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [updated, setUpdated] = useState<Date | null>(null);
+  const [modal, setModal] = useState<ModalKind>(null);
+  const [busy, setBusy] = useState(false);
   const [permissions, setPermissions] = useState<string[]>([]);
-  const [itemForm, setItemForm] = useState<any>(emptyItem),
-    [movement, setMovement] = useState<any>(emptyMovement);
+  const [itemForm, setItemForm] = useState<any>(emptyItem);
+  const [movement, setMovement] = useState<any>(emptyMovement);
   const [form, setForm] = useState<any>({});
+
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -95,6 +111,7 @@ export default function ProcurementOverviewPage() {
       if (!silent) setLoading(false);
     }
   };
+
   const loadTools = async () => {
     try {
       setTools(await request("/api/inventory/tools"));
@@ -102,13 +119,17 @@ export default function ProcurementOverviewPage() {
       if (reason.status !== 403) setError(reason.message);
     }
   };
+
   useEffect(() => {
     load();
     loadTools();
-    request("/api/auth/me").then((result:any)=>setPermissions(result.user?.permissions||[])).catch(()=>setPermissions([]));
+    request("/api/auth/me")
+      .then((result: any) => setPermissions(result.user?.permissions || []))
+      .catch(() => setPermissions([]));
     const timer = window.setInterval(() => load(true), 15000);
     return () => window.clearInterval(timer);
   }, []);
+
   useEffect(() => {
     const codeInput = document.querySelector<HTMLInputElement>(
       ".warehouse-form label:nth-child(2) input",
@@ -120,24 +141,32 @@ export default function ProcurementOverviewPage() {
         : "Generated automatically";
     }
   }, [modal, itemForm.id, itemForm.sku]);
-  const summary = data?.summary || {},
-    rows = useMemo(
-      () =>
-        (data?.documents || []).filter(
-          (item: any) => item.document_type === typeForTab[tab],
-        ),
-      [data, tab],
-    ),
-    canManage = Boolean(tools);
-  const documents = data?.documents || [], suppliers = data?.suppliers || [], items = data?.items || [];
-  const allowed=(permission:string)=>permissions.includes('*')||permissions.includes(permission);
-  const canCreate=allowed('procurement.create'), canApprove=allowed('procurement.approve');
-  const canReceive=allowed('procurement.receive'), canPay=allowed('finance.receive_payment');
+
+  const summary = data?.summary || {};
+  const rows = useMemo(
+    () =>
+      (data?.documents || []).filter(
+        (item: any) => item.document_type === typeForTab[tab],
+      ),
+    [data, tab],
+  );
+  const canManage = Boolean(tools);
+  const documents = data?.documents || [];
+  const suppliers = data?.suppliers || [];
+
+  const allowed = (permission: string) =>
+    permissions.includes("*") || permissions.includes(permission);
+  const canCreate = allowed("procurement.create");
+  const canApprove = allowed("procurement.approve");
+  const canReceive = allowed("procurement.receive");
+  const canPay = allowed("finance.receive_payment");
+
   const notify = (message: string) => {
     setSuccess(message);
     setError("");
     window.setTimeout(() => setSuccess(""), 3500);
   };
+
   const saveItem = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -164,16 +193,17 @@ export default function ProcurementOverviewPage() {
       setBusy(false);
     }
   };
+
   const saveMovement = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
     try {
       await request("/api/inventory/transactions", {
         method: "POST",
-                body: JSON.stringify({
-                    ...movement,
-                    unit_cost: movement.type === "receipt" ? movement.unit_cost || null : null,
-                }),
+        body: JSON.stringify({
+          ...movement,
+          unit_cost: movement.type === "receipt" ? movement.unit_cost || null : null,
+        }),
       });
       notify("Stock movement recorded successfully.");
       setModal(null);
@@ -194,6 +224,7 @@ export default function ProcurementOverviewPage() {
       setBusy(false);
     }
   };
+
   const editItem = (id: string) => {
     const item = tools.items.find((entry: any) => String(entry.id) === id);
     if (item) {
@@ -206,23 +237,79 @@ export default function ProcurementOverviewPage() {
       setModal("item");
     }
   };
-  const open = (name: any, values: any = {}) => { setError(""); setSuccess(""); setForm(values); setModal(name); };
+
+  const open = (name: ModalKind, values: any = {}) => {
+    setError("");
+    setSuccess("");
+    setForm(values);
+    setModal(name);
+  };
+
   const submit = async (event: FormEvent) => {
-    event.preventDefault(); setBusy(true); setError("");
+    event.preventDefault();
+    setBusy(true);
+    setError("");
     try {
-      let url = "", method = "POST", body: any = form, message = "Saved successfully.";
-      if (modal === "supplier") { url = "/api/procurement/suppliers"; message = "Supplier saved."; }
-      if (modal === "price") { url = `/api/procurement/suppliers/${form.supplier_id}/prices`; method = "PUT"; message = "Supplier price saved."; }
-      if (modal === "request") { url = "/api/procurement/requests"; body = {...form, lines:[{item_id:form.item_id, quantity:form.quantity, description:form.description}]}; message = "Purchase request sent for approval."; }
-      if (modal === "order") { url = `/api/procurement/requests/${form.document_id}/order`; message = "Purchase order created."; }
-      if (modal === "receive") { url = `/api/procurement/orders/${form.document_id}/receive`; body = {...form, lines:[{line_id:form.line_id, quantity:form.quantity}]}; message = "Goods received and stock updated."; }
-      if (modal === "payment") { url = `/api/procurement/orders/${form.document_id}/payments`; message = "Payment recorded."; }
-      await request(url, {method, body:JSON.stringify(body)}); notify(message); setModal(null); setForm({}); await load();
-    } catch (reason:any) { setError(reason.message); } finally { setBusy(false); }
+      let url = "";
+      let method = "POST";
+      let body: any = form;
+      let message = "Saved successfully.";
+      if (modal === "supplier") {
+        url = "/api/procurement/suppliers";
+        message = "Supplier saved.";
+      }
+      if (modal === "price") {
+        url = `/api/procurement/suppliers/${form.supplier_id}/prices`;
+        method = "PUT";
+        message = "Supplier price saved.";
+      }
+      if (modal === "request") {
+        url = "/api/procurement/requests";
+        body = {
+          ...form,
+          lines: [{ item_id: form.item_id, quantity: form.quantity, description: form.description }],
+        };
+        message = "Purchase request sent for approval.";
+      }
+      if (modal === "order") {
+        url = `/api/procurement/requests/${form.document_id}/order`;
+        message = "Purchase order created.";
+      }
+      if (modal === "receive") {
+        url = `/api/procurement/orders/${form.document_id}/receive`;
+        body = { ...form, lines: [{ line_id: form.line_id, quantity: form.quantity }] };
+        message = "Goods received and stock updated.";
+      }
+      if (modal === "payment") {
+        url = `/api/procurement/orders/${form.document_id}/payments`;
+        message = "Payment recorded.";
+      }
+      await request(url, { method, body: JSON.stringify(body) });
+      notify(message);
+      setModal(null);
+      setForm({});
+      await load();
+    } catch (reason: any) {
+      setError(reason.message);
+    } finally {
+      setBusy(false);
+    }
   };
-  const approve = async (id:number) => {
-    setBusy(true); setError(""); try { await request(`/api/procurement/requests/${id}/approve`, {method:"POST"}); notify("Purchase request approved."); await load(); } catch(reason:any){setError(reason.message)} finally{setBusy(false)}
+
+  const approve = async (id: number) => {
+    setBusy(true);
+    setError("");
+    try {
+      await request(`/api/procurement/requests/${id}/approve`, { method: "POST" });
+      notify("Purchase request approved.");
+      await load();
+    } catch (reason: any) {
+      setError(reason.message);
+    } finally {
+      setBusy(false);
+    }
   };
+
   return (
     <section className="module-page procurement-live-page">
       <div className="module-hero">
@@ -247,9 +334,33 @@ export default function ProcurementOverviewPage() {
           </div>
         </div>
         <div className="warehouse-toolbar">
-          {canCreate&&<button className="secondary-btn" onClick={() => open("supplier", {payment_terms_days:30})}><Plus/>Add supplier</button>}
-          {canCreate&&<button className="secondary-btn" onClick={() => open("price", {lead_time_days:0, minimum_order_quantity:0})}><Plus/>Add supplier price</button>}
-          {canCreate&&<button className="primary-btn" onClick={() => open("request", {expected_date:"", quantity:""})}><Plus/>New purchase request</button>}
+          {canCreate && (
+            <button
+              className="secondary-btn"
+              onClick={() => open("supplier", { payment_terms_days: 30 })}
+            >
+              <Plus />
+              Add supplier
+            </button>
+          )}
+          {canCreate && (
+            <button
+              className="secondary-btn"
+              onClick={() => open("price", { lead_time_days: 0, minimum_order_quantity: 0 })}
+            >
+              <Plus />
+              Add supplier price
+            </button>
+          )}
+          {canCreate && (
+            <button
+              className="primary-btn"
+              onClick={() => open("request", { expected_date: "", quantity: "" })}
+            >
+              <Plus />
+              New purchase request
+            </button>
+          )}
           <button
             className="secondary-btn"
             disabled={loading}
@@ -267,6 +378,7 @@ export default function ProcurementOverviewPage() {
         </div>
       )}
       {success && <div className="admin-alert success">{success}</div>}
+      {/* Inline catalogue-edit strip: disabled until the item-edit UX is redesigned, kept for a quick re-enable. */}
       {false && canManage && tools.items.length > 0 && (
         <div className="warehouse-edit-strip">
           <Edit3 />
@@ -321,9 +433,21 @@ export default function ProcurementOverviewPage() {
       {tab === "prices" ? (
         <PriceTable suppliers={suppliers} />
       ) : tab === "receipts" ? (
-        <ReceiptTable rows={documents.filter((row:any)=>row.document_type==='purchase_order' && ['partially_received','received'].includes(row.status))} />
+        <ReceiptTable
+          rows={documents.filter(
+            (row: any) =>
+              row.document_type === "purchase_order" &&
+              ["partially_received", "received"].includes(row.status),
+          )}
+        />
       ) : (
-        <DocumentTable rows={rows} tab={tab} onApprove={approve} onOpen={open} permissions={{canCreate,canApprove,canReceive,canPay}} />
+        <DocumentTable
+          rows={rows}
+          tab={tab}
+          onApprove={approve}
+          onOpen={open}
+          permissions={{ canCreate, canApprove, canReceive, canPay }}
+        />
       )}
       {modal && (
         <div className="modal-backdrop" role="presentation">
@@ -335,7 +459,20 @@ export default function ProcurementOverviewPage() {
             <header>
               <div>
                 <h2>
-                  {({supplier:"Add supplier",price:"Add supplier price",request:"New purchase request",order:"Create purchase order",receive:"Receive ordered goods",payment:"Record supplier payment",item:"Add stock item",movement:"Record stock movement"} as any)[modal]}
+                  {
+                    (
+                      {
+                        supplier: "Add supplier",
+                        price: "Add supplier price",
+                        request: "New purchase request",
+                        order: "Create purchase order",
+                        receive: "Receive ordered goods",
+                        payment: "Record supplier payment",
+                        item: "Add stock item",
+                        movement: "Record stock movement",
+                      } as any
+                    )[modal]
+                  }
                 </h2>
                 <p>
                   Complete the required details below. The system will keep a permanent purchasing record.
@@ -351,8 +488,15 @@ export default function ProcurementOverviewPage() {
                 <span>{error}</span>
               </div>
             )}
-            {["supplier","price","request","order","receive","payment"].includes(modal) ? (
-              <ProcurementForm kind={modal} form={form} setForm={setForm} data={data} busy={busy} onSubmit={submit}/>
+            {["supplier", "price", "request", "order", "receive", "payment"].includes(modal) ? (
+              <ProcurementForm
+                kind={modal}
+                form={form}
+                setForm={setForm}
+                data={data}
+                busy={busy}
+                onSubmit={submit}
+              />
             ) : modal === "item" ? (
               <form className="warehouse-form" onSubmit={saveItem}>
                 <Field label="Item name">
@@ -557,7 +701,7 @@ export default function ProcurementOverviewPage() {
                 </Field>
                 <button className="primary-btn" disabled={busy}>
                   <ArrowDownToLine />
-                  {busy ? "Saving..." : "Save stock movement"}
+                  {busy ? "Saving…" : "Save stock movement"}
                 </button>
               </form>
             )}
@@ -567,23 +711,315 @@ export default function ProcurementOverviewPage() {
     </section>
   );
 }
-function ProcurementForm({kind,form,setForm,data,busy,onSubmit}:any){
-  const suppliers=data?.suppliers||[], items=data?.items||[], warehouses=data?.warehouses||[], documents=data?.documents||[];
-  const requests=documents.filter((d:any)=>d.document_type==='purchase_request'&&d.status==='approved');
-  const orders=documents.filter((d:any)=>d.document_type==='purchase_order'&&['ordered','partially_received','received'].includes(d.status));
-  const selectedOrder=orders.find((d:any)=>String(d.id)===String(form.document_id));
-  const set=(key:string,value:any)=>setForm({...form,[key]:value});
-  return <form className="warehouse-form" onSubmit={onSubmit}>
-    {kind==='supplier'&&<><Field label="Supplier name"><input value={form.name||''} onChange={e=>set('name',e.target.value)} placeholder="Example: Kigali Materials Ltd" required/></Field><Field label="Email"><input type="email" value={form.email||''} onChange={e=>set('email',e.target.value)} placeholder="supplier@company.com"/></Field><Field label="Phone number"><input value={form.phone||''} onChange={e=>set('phone',e.target.value)} placeholder="Example: +250 788 000 000"/></Field><Field label="Tax number"><input value={form.tax_number||''} onChange={e=>set('tax_number',e.target.value)} placeholder="Optional"/></Field><Field label="Payment due after"><input type="number" min="0" max="365" value={form.payment_terms_days??30} onChange={e=>set('payment_terms_days',e.target.value)} required/></Field><Field label="Address"><textarea value={form.address||''} onChange={e=>set('address',e.target.value)} placeholder="Supplier address"/></Field></>}
-    {kind==='price'&&<><Select label="Supplier" value={form.supplier_id} onChange={(v:any)=>set('supplier_id',v)} options={suppliers.map((x:any)=>[x.id,x.name])}/><Select label="Item" value={form.item_id} onChange={(v:any)=>set('item_id',v)} options={items.map((x:any)=>[x.id,`${x.name} (${x.sku})`])}/><Field label="Price for one unit"><input type="number" min="0" step="0.01" value={form.unit_price||''} onChange={e=>set('unit_price',e.target.value)} placeholder="Enter supplier price" required/></Field><Field label="Delivery time in days"><input type="number" min="0" value={form.lead_time_days??0} onChange={e=>set('lead_time_days',e.target.value)} required/></Field><Field label="Smallest quantity supplier accepts"><input type="number" min="0" step="any" value={form.minimum_order_quantity??0} onChange={e=>set('minimum_order_quantity',e.target.value)} required/></Field><Field label="Supplier item code"><input value={form.supplier_sku||''} onChange={e=>set('supplier_sku',e.target.value)} placeholder="Optional"/></Field></>}
-    {kind==='request'&&<><Field label="Why is this purchase needed?"><textarea value={form.purpose||''} onChange={e=>set('purpose',e.target.value)} placeholder="Explain what the factory needs and why" required/></Field><Field label="Needed by"><input type="date" value={form.expected_date||''} onChange={e=>set('expected_date',e.target.value)}/></Field><Select label="Item needed" value={form.item_id} onChange={(v:any)=>set('item_id',v)} options={items.map((x:any)=>[x.id,`${x.name} (${x.sku})`])}/><Field label="Quantity needed"><input type="number" min="0.000001" step="any" value={form.quantity||''} onChange={e=>set('quantity',e.target.value)} placeholder="Enter quantity" required/></Field><Field label="Extra details"><textarea value={form.description||''} onChange={e=>set('description',e.target.value)} placeholder="Size, grade, colour or other requirements"/></Field></>}
-    {kind==='order'&&<><Select label="Approved request" value={form.document_id} onChange={(v:any)=>set('document_id',v)} options={requests.map((x:any)=>[x.id,`${x.document_number} — ${x.purpose}`])}/><Select label="Supplier" value={form.supplier_id} onChange={(v:any)=>set('supplier_id',v)} options={suppliers.filter((x:any)=>x.status==='active').map((x:any)=>[x.id,x.name])}/><p className="form-help">Prices saved for this supplier will be used automatically. Add supplier prices before creating the order.</p></>}
-    {kind==='receive'&&<><Select label="Purchase order" value={form.document_id} onChange={(v:any)=>setForm({...form,document_id:v,line_id:'',quantity:''})} options={orders.filter((x:any)=>x.status!=='received').map((x:any)=>[x.id,`${x.document_number} — ${x.supplier?.name||''}`])}/><Select label="Item received" value={form.line_id} onChange={(v:any)=>set('line_id',v)} options={(selectedOrder?.lines||[]).filter((x:any)=>Number(x.received_quantity)<Number(x.quantity)).map((x:any)=>[x.id,`${x.item?.name} — ${Number(x.quantity)-Number(x.received_quantity)} remaining`])}/><Select label="Put goods in" value={form.warehouse_id} onChange={(v:any)=>set('warehouse_id',v)} options={warehouses.map((x:any)=>[x.id,x.name])}/><Field label="Quantity received"><input type="number" min="0.000001" step="any" value={form.quantity||''} onChange={e=>set('quantity',e.target.value)} required/></Field><Field label="Supplier delivery note"><input value={form.delivery_reference||''} onChange={e=>set('delivery_reference',e.target.value)} placeholder="Example: DN-104" required/></Field></>}
-    {kind==='payment'&&<><Select label="Purchase order" value={form.document_id} onChange={(v:any)=>set('document_id',v)} options={orders.filter((x:any)=>Number(x.paid_amount)<Number(x.total_amount)).map((x:any)=>[x.id,`${x.document_number} — ${money(Number(x.total_amount)-Number(x.paid_amount))} due`])}/><Field label="Amount paid"><input type="number" min="0.01" step="0.01" value={form.amount||''} onChange={e=>set('amount',e.target.value)} required/></Field><Select label="Payment method" value={form.method} onChange={(v:any)=>set('method',v)} options={[["bank_transfer","Bank transfer"],["mobile_money","Mobile money"],["cash","Cash"],["cheque","Cheque"],["card","Card"]]}/><Field label="Payment date"><input type="date" value={form.paid_on||''} onChange={e=>set('paid_on',e.target.value)} required/></Field><Field label="Payment reference"><input value={form.reference||''} onChange={e=>set('reference',e.target.value)} placeholder="Bank, cheque or transaction number"/></Field></>}
-    <button className="primary-btn" disabled={busy}><Plus/>{busy?'Saving...':'Save'}</button>
-  </form>
+
+function ProcurementForm({ kind, form, setForm, data, busy, onSubmit }: any) {
+  const suppliers = data?.suppliers || [];
+  const items = data?.items || [];
+  const warehouses = data?.warehouses || [];
+  const documents = data?.documents || [];
+  const requests = documents.filter(
+    (d: any) => d.document_type === "purchase_request" && d.status === "approved",
+  );
+  const orders = documents.filter(
+    (d: any) =>
+      d.document_type === "purchase_order" &&
+      ["ordered", "partially_received", "received"].includes(d.status),
+  );
+  const selectedOrder = orders.find((d: any) => String(d.id) === String(form.document_id));
+  const set = (key: string, value: any) => setForm({ ...form, [key]: value });
+
+  return (
+    <form className="warehouse-form" onSubmit={onSubmit}>
+      {kind === "supplier" && (
+        <>
+          <Field label="Supplier name">
+            <input
+              value={form.name || ""}
+              onChange={(e) => set("name", e.target.value)}
+              placeholder="Example: Kigali Materials Ltd"
+              required
+            />
+          </Field>
+          <Field label="Email">
+            <input
+              type="email"
+              value={form.email || ""}
+              onChange={(e) => set("email", e.target.value)}
+              placeholder="supplier@company.com"
+            />
+          </Field>
+          <Field label="Phone number">
+            <input
+              value={form.phone || ""}
+              onChange={(e) => set("phone", e.target.value)}
+              placeholder="Example: +250 788 000 000"
+            />
+          </Field>
+          <Field label="Tax number">
+            <input
+              value={form.tax_number || ""}
+              onChange={(e) => set("tax_number", e.target.value)}
+              placeholder="Optional"
+            />
+          </Field>
+          <Field label="Payment due after">
+            <input
+              type="number"
+              min="0"
+              max="365"
+              value={form.payment_terms_days ?? 30}
+              onChange={(e) => set("payment_terms_days", e.target.value)}
+              required
+            />
+          </Field>
+          <Field label="Address">
+            <textarea
+              value={form.address || ""}
+              onChange={(e) => set("address", e.target.value)}
+              placeholder="Supplier address"
+            />
+          </Field>
+        </>
+      )}
+      {kind === "price" && (
+        <>
+          <Select
+            label="Supplier"
+            value={form.supplier_id}
+            onChange={(v: any) => set("supplier_id", v)}
+            options={suppliers.map((x: any) => [x.id, x.name])}
+          />
+          <Select
+            label="Item"
+            value={form.item_id}
+            onChange={(v: any) => set("item_id", v)}
+            options={items.map((x: any) => [x.id, `${x.name} (${x.sku})`])}
+          />
+          <Field label="Price for one unit">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.unit_price || ""}
+              onChange={(e) => set("unit_price", e.target.value)}
+              placeholder="Enter supplier price"
+              required
+            />
+          </Field>
+          <Field label="Delivery time in days">
+            <input
+              type="number"
+              min="0"
+              value={form.lead_time_days ?? 0}
+              onChange={(e) => set("lead_time_days", e.target.value)}
+              required
+            />
+          </Field>
+          <Field label="Smallest quantity supplier accepts">
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={form.minimum_order_quantity ?? 0}
+              onChange={(e) => set("minimum_order_quantity", e.target.value)}
+              required
+            />
+          </Field>
+          <Field label="Supplier item code">
+            <input
+              value={form.supplier_sku || ""}
+              onChange={(e) => set("supplier_sku", e.target.value)}
+              placeholder="Optional"
+            />
+          </Field>
+        </>
+      )}
+      {kind === "request" && (
+        <>
+          <Field label="Why is this purchase needed?">
+            <textarea
+              value={form.purpose || ""}
+              onChange={(e) => set("purpose", e.target.value)}
+              placeholder="Explain what the factory needs and why"
+              required
+            />
+          </Field>
+          <Field label="Needed by">
+            <input
+              type="date"
+              value={form.expected_date || ""}
+              onChange={(e) => set("expected_date", e.target.value)}
+            />
+          </Field>
+          <Select
+            label="Item needed"
+            value={form.item_id}
+            onChange={(v: any) => set("item_id", v)}
+            options={items.map((x: any) => [x.id, `${x.name} (${x.sku})`])}
+          />
+          <Field label="Quantity needed">
+            <input
+              type="number"
+              min="0.000001"
+              step="any"
+              value={form.quantity || ""}
+              onChange={(e) => set("quantity", e.target.value)}
+              placeholder="Enter quantity"
+              required
+            />
+          </Field>
+          <Field label="Extra details">
+            <textarea
+              value={form.description || ""}
+              onChange={(e) => set("description", e.target.value)}
+              placeholder="Size, grade, colour or other requirements"
+            />
+          </Field>
+        </>
+      )}
+      {kind === "order" && (
+        <>
+          <Select
+            label="Approved request"
+            value={form.document_id}
+            onChange={(v: any) => set("document_id", v)}
+            options={requests.map((x: any) => [x.id, `${x.document_number} — ${x.purpose}`])}
+          />
+          <Select
+            label="Supplier"
+            value={form.supplier_id}
+            onChange={(v: any) => set("supplier_id", v)}
+            options={suppliers
+              .filter((x: any) => x.status === "active")
+              .map((x: any) => [x.id, x.name])}
+          />
+          <p className="form-help">
+            Prices saved for this supplier will be used automatically. Add supplier prices before creating the order.
+          </p>
+        </>
+      )}
+      {kind === "receive" && (
+        <>
+          <Select
+            label="Purchase order"
+            value={form.document_id}
+            onChange={(v: any) => setForm({ ...form, document_id: v, line_id: "", quantity: "" })}
+            options={orders
+              .filter((x: any) => x.status !== "received")
+              .map((x: any) => [x.id, `${x.document_number} — ${x.supplier?.name || ""}`])}
+          />
+          <Select
+            label="Item received"
+            value={form.line_id}
+            onChange={(v: any) => set("line_id", v)}
+            options={(selectedOrder?.lines || [])
+              .filter((x: any) => Number(x.received_quantity) < Number(x.quantity))
+              .map((x: any) => [
+                x.id,
+                `${x.item?.name} — ${Number(x.quantity) - Number(x.received_quantity)} remaining`,
+              ])}
+          />
+          <Select
+            label="Put goods in"
+            value={form.warehouse_id}
+            onChange={(v: any) => set("warehouse_id", v)}
+            options={warehouses.map((x: any) => [x.id, x.name])}
+          />
+          <Field label="Quantity received">
+            <input
+              type="number"
+              min="0.000001"
+              step="any"
+              value={form.quantity || ""}
+              onChange={(e) => set("quantity", e.target.value)}
+              required
+            />
+          </Field>
+          <Field label="Supplier delivery note">
+            <input
+              value={form.delivery_reference || ""}
+              onChange={(e) => set("delivery_reference", e.target.value)}
+              placeholder="Example: DN-104"
+              required
+            />
+          </Field>
+        </>
+      )}
+      {kind === "payment" && (
+        <>
+          <Select
+            label="Purchase order"
+            value={form.document_id}
+            onChange={(v: any) => set("document_id", v)}
+            options={orders
+              .filter((x: any) => Number(x.paid_amount) < Number(x.total_amount))
+              .map((x: any) => [
+                x.id,
+                `${x.document_number} — ${money(Number(x.total_amount) - Number(x.paid_amount))} due`,
+              ])}
+          />
+          <Field label="Amount paid">
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={form.amount || ""}
+              onChange={(e) => set("amount", e.target.value)}
+              required
+            />
+          </Field>
+          <Select
+            label="Payment method"
+            value={form.method}
+            onChange={(v: any) => set("method", v)}
+            options={[
+              ["bank_transfer", "Bank transfer"],
+              ["mobile_money", "Mobile money"],
+              ["cash", "Cash"],
+              ["cheque", "Cheque"],
+              ["card", "Card"],
+            ]}
+          />
+          <Field label="Payment date">
+            <input
+              type="date"
+              value={form.paid_on || ""}
+              onChange={(e) => set("paid_on", e.target.value)}
+              required
+            />
+          </Field>
+          <Field label="Payment reference">
+            <input
+              value={form.reference || ""}
+              onChange={(e) => set("reference", e.target.value)}
+              placeholder="Bank, cheque or transaction number"
+            />
+          </Field>
+        </>
+      )}
+      <button className="primary-btn" disabled={busy}>
+        <Plus />
+        {busy ? "Saving…" : "Save"}
+      </button>
+    </form>
+  );
 }
-function Select({label,value,onChange,options}:any){return <Field label={label}><select value={value||''} onChange={e=>onChange(e.target.value)} required><option value="">Choose</option>{options.map((x:any)=><option key={x[0]} value={x[0]}>{x[1]}</option>)}</select></Field>}
+
+function Select({ label, value, onChange, options }: any) {
+  return (
+    <Field label={label}>
+      <select value={value || ""} onChange={(e) => onChange(e.target.value)} required>
+        <option value="">Choose</option>
+        {options.map((x: any) => (
+          <option key={x[0]} value={x[0]}>
+            {x[1]}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
 function DocumentTable({ rows, tab, onApprove, onOpen, permissions }: any) {
   return (
     <section className="panel sales-records">
@@ -617,13 +1053,54 @@ function DocumentTable({ rows, tab, onApprove, onOpen, permissions }: any) {
                   <td>
                     <b>{item.document_number}</b>
                   </td>
-                  <td><div className="table-actions">
-                    {permissions.canApprove&&tab==='requests'&&['submitted','pending_approval'].includes(item.status)&&<button className="secondary-btn" onClick={()=>onApprove(item.id)}>Approve</button>}
-                    {permissions.canCreate&&tab==='requests'&&item.status==='approved'&&<button className="primary-btn" onClick={()=>onOpen('order',{document_id:item.id})}>Create order</button>}
-                    {permissions.canReceive&&tab==='orders'&&['ordered','partially_received'].includes(item.status)&&<button className="secondary-btn" onClick={()=>onOpen('receive',{document_id:item.id})}>Receive goods</button>}
-                    {permissions.canPay&&tab==='orders'&&Number(item.total_amount)>0&&Number(item.paid_amount)<Number(item.total_amount)&&<button className="secondary-btn" onClick={()=>onOpen('payment',{document_id:item.id,paid_on:new Date().toISOString().slice(0,10)})}>Record payment</button>}
-                    <span className="record-state">{['received','converted'].includes(item.status)?'Complete':'View record'}</span>
-                  </div></td>
+                  <td>
+                    <div className="table-actions">
+                      {permissions.canApprove &&
+                        tab === "requests" &&
+                        ["submitted", "pending_approval"].includes(item.status) && (
+                          <button className="secondary-btn" onClick={() => onApprove(item.id)}>
+                            Approve
+                          </button>
+                        )}
+                      {permissions.canCreate && tab === "requests" && item.status === "approved" && (
+                        <button
+                          className="primary-btn"
+                          onClick={() => onOpen("order", { document_id: item.id })}
+                        >
+                          Create order
+                        </button>
+                      )}
+                      {permissions.canReceive &&
+                        tab === "orders" &&
+                        ["ordered", "partially_received"].includes(item.status) && (
+                          <button
+                            className="secondary-btn"
+                            onClick={() => onOpen("receive", { document_id: item.id })}
+                          >
+                            Receive goods
+                          </button>
+                        )}
+                      {permissions.canPay &&
+                        tab === "orders" &&
+                        Number(item.total_amount) > 0 &&
+                        Number(item.paid_amount) < Number(item.total_amount) && (
+                          <button
+                            className="secondary-btn"
+                            onClick={() =>
+                              onOpen("payment", {
+                                document_id: item.id,
+                                paid_on: new Date().toISOString().slice(0, 10),
+                              })
+                            }
+                          >
+                            Record payment
+                          </button>
+                        )}
+                      <span className="record-state">
+                        {["received", "converted"].includes(item.status) ? "Complete" : "View record"}
+                      </span>
+                    </div>
+                  </td>
                   <td>
                     {item.supplier?.name || "Not assigned"}
                     <small>{item.supplier?.code || ""}</small>
@@ -668,6 +1145,7 @@ function DocumentTable({ rows, tab, onApprove, onOpen, permissions }: any) {
     </section>
   );
 }
+
 function ReceiptTable({ rows }: any) {
   return (
     <section className="panel sales-records">
@@ -681,16 +1159,37 @@ function ReceiptTable({ rows }: any) {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Order</th><th>Supplier</th><th>Items</th><th>Total ordered</th><th>Received</th><th>Payment</th>
+              <th>Order</th>
+              <th>Supplier</th>
+              <th>Items</th>
+              <th>Total ordered</th>
+              <th>Received</th>
+              <th>Payment</th>
             </tr>
           </thead>
           <tbody>
             {rows.length ? (
               rows.map((item: any) => (
                 <tr key={item.id}>
-                  <td><b>{item.document_number}</b></td><td>{item.supplier?.name}</td>
-                  <td>{(item.lines||[]).map((line:any)=><small key={line.id}>{line.item?.name}: {Number(line.received_quantity).toLocaleString()} / {Number(line.quantity).toLocaleString()}</small>)}</td>
-                  <td>{money(item.total_amount,item.currency_code)}</td><td>{item.received_at?new Date(item.received_at).toLocaleString():'Partly received'}</td><td>{String(item.payment_status).replaceAll('_',' ')}</td>
+                  <td>
+                    <b>{item.document_number}</b>
+                  </td>
+                  <td>{item.supplier?.name}</td>
+                  <td>
+                    {(item.lines || []).map((line: any) => (
+                      <small key={line.id}>
+                        {line.item?.name}: {Number(line.received_quantity).toLocaleString()} /{" "}
+                        {Number(line.quantity).toLocaleString()}
+                      </small>
+                    ))}
+                  </td>
+                  <td>{money(item.total_amount, item.currency_code)}</td>
+                  <td>
+                    {item.received_at
+                      ? new Date(item.received_at).toLocaleString()
+                      : "Partly received"}
+                  </td>
+                  <td>{String(item.payment_status).replaceAll("_", " ")}</td>
                 </tr>
               ))
             ) : (
@@ -706,6 +1205,7 @@ function ReceiptTable({ rows }: any) {
     </section>
   );
 }
+
 function PriceTable({ suppliers }: any) {
   const rows = suppliers.flatMap((supplier: any) =>
     (supplier.items || []).map((item: any) => ({
@@ -768,6 +1268,7 @@ function PriceTable({ suppliers }: any) {
     </section>
   );
 }
+
 function Field({ label, children }: any) {
   return (
     <label>
@@ -776,6 +1277,7 @@ function Field({ label, children }: any) {
     </label>
   );
 }
+
 function Metric({ label, value }: any) {
   return (
     <article className="panel">
@@ -788,6 +1290,7 @@ function Metric({ label, value }: any) {
     </article>
   );
 }
+
 function Empty({ text }: any) {
   return (
     <div className="sales-empty">
