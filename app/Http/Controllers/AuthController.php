@@ -351,7 +351,14 @@ class AuthController extends Controller
             'otp_expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES),
             'otp_attempts' => 0,
         ]);
-        Mail::to($user->email)->send(new OtpVerificationMail($user->name, $code, self::OTP_TTL_MINUTES));
+        try {
+            Mail::to($user->email)->send(new OtpVerificationMail($user->name, $code, self::OTP_TTL_MINUTES));
+        } catch (\Throwable $exception) {
+            report($exception);
+            throw ValidationException::withMessages([
+                'email' => 'We could not send a verification email right now. Please try again shortly or contact support.',
+            ]);
+        }
     }
 
     /**
