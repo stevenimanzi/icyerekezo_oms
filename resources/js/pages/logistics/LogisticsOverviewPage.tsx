@@ -309,6 +309,11 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
                     rows={schoolOrderRows} page={schoolOrdersPage} lastPage={schoolOrdersLastPage}
                     setPage={setSchoolOrdersPage} view={(item: any) => setSelectedOrder(item)}
                 />
+            ) : tab === 'agreements' ? (
+                <AgreementsPanel
+                    data={agreementData} filters={agreementFilters} setFilters={setAgreementFilters} can={can}
+                    file={agreementFile} setFile={setAgreementFile} busy={agreementBusy} upload={uploadAgreement}
+                />
             ) : (
                 <ShipmentTable rows={rows} tab={tab} busy={busy} action={action} can={can} />
             )}
