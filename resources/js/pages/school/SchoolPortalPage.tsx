@@ -35,7 +35,8 @@ export default function SchoolPortalPage({ page, onNavigate }: any) {
                         : page === 'financials' ? <Financials {...props} />
                             : page === 'return-items' ? <ReturnItems {...props} />
                                 : page === 'returns-history' ? <ReturnsHistory {...props} />
-                                    : <SchoolProfile {...props} />}
+                                    : page === 'agreement' ? <Agreement {...props} />
+                                        : <SchoolProfile {...props} />}
             {selected && <OrderModal order={selected} close={() => setSelected(null)} />}
         </section>
     );
@@ -536,6 +537,73 @@ function ReturnsHistory({ data, onNavigate }: any) {
                     </table>
                 </div>
             </section>
+        </>
+    );
+}
+
+function Agreement({ data, load, setMessage, setError }: any) {
+    const agreement = data?.agreement;
+    const signature = data?.agreement_signature;
+    const [file, setFile] = useState<File | null>(null);
+    const [busy, setBusy] = useState(false);
+
+    const submit = async () => {
+        if (!file) { setError('Choose your signed agreement file to upload.'); return; }
+        setBusy(true);
+        setError('');
+        const form = new FormData();
+        form.append('signed_agreement', file);
+        try {
+            const result = await api('/api/school/agreement', { method: 'POST', body: form });
+            setMessage(result.message);
+            setFile(null);
+            await load();
+        } catch (e: any) {
+            setError(e.message);
+        } finally { setBusy(false); }
+    };
+
+    return (
+        <>
+            <Heading title="Agreement" text="Download the factory agreement, sign it, then upload your signed copy." />
+            {!agreement ? (
+                <section className="panel school-table"><div style={{ padding: 30 }}>No agreement has been uploaded by the factory yet. Check back later.</div></section>
+            ) : (
+                <>
+                    <section className="panel">
+                        <header className="department-panel-head">
+                            <div><h2>Current agreement</h2><p>Download, print and sign this document.</p></div>
+                        </header>
+                        <div className="school-agreement-file">
+                            <FileSignature size={22} />
+                            <div><b>{agreement.original_name}</b><small>Uploaded {new Date(agreement.created_at).toLocaleDateString()}</small></div>
+                            <a className="secondary-btn" href={agreement.file_url} target="_blank" rel="noreferrer"><Download size={16} />Download</a>
+                        </div>
+                    </section>
+
+                    <section className="panel">
+                        <header className="department-panel-head">
+                            <div><h2>Your signed copy</h2><p>{signature ? 'You already submitted a signed copy for this agreement.' : 'Upload your signed copy once you have printed and signed it.'}</p></div>
+                            {signature && <span className="admin-status accepted">Signed</span>}
+                        </header>
+                        {signature && (
+                            <div className="school-agreement-file">
+                                <FileSignature size={22} />
+                                <div><b>{signature.original_name}</b><small>Submitted {new Date(signature.submitted_at).toLocaleString()}</small></div>
+                                <a className="secondary-btn" href={signature.file_url} target="_blank" rel="noreferrer"><Eye size={16} />View</a>
+                            </div>
+                        )}
+                        <label className={`school-proof-upload${file ? ' selected' : ''}`}>
+                            <Upload />
+                            <span><b>{file ? file.name : (signature ? 'Replace with a new signed copy' : 'Upload your signed agreement')}</b><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB · Select another file` : 'PDF, JPG or PNG · Maximum 15 MB'}</small></span>
+                            <input type="file" accept="image/jpeg,image/png,.pdf" onChange={e => setFile(e.target.files?.[0] || null)} />
+                        </label>
+                        <div className="school-builder-nav">
+                            <button className="primary-btn" disabled={busy || !file} onClick={submit}><Upload size={16} />{busy ? 'Submitting…' : (signature ? 'Submit replacement' : 'Submit signed agreement')}</button>
+                        </div>
+                    </section>
+                </>
+            )}
         </>
     );
 }
