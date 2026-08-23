@@ -39,6 +39,10 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     const [schoolOrders, setSchoolOrders] = useState<any>(null);
     const [schoolOrdersPage, setSchoolOrdersPage] = useState(1);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [agreementData, setAgreementData] = useState<any>(null);
+    const [agreementFilters, setAgreementFilters] = useState({ status: '', district: '', sector: '', search: '' });
+    const [agreementFile, setAgreementFile] = useState<File | null>(null);
+    const [agreementBusy, setAgreementBusy] = useState(false);
 
     const specialized = data?.specialization?.type === 'noguchi_school_garments';
 
