@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   Factory,
+  FileSignature,
   FileText,
   Gauge,
   HelpCircle,
@@ -803,6 +804,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["financials", CreditCard, "Financial Records", "*"],
         ["return-items", RotateCcw, "Return Items", "*"],
         ["returns-history", RefreshCw, "Returns History", "*"],
+        ["agreement", FileSignature, "Agreement", "*"],
         ["school-profile", Building2, "School Profile", "*"],
     ] as const : isLogisticsUser ? [
         // ─── Logistics Officer ───
@@ -1181,7 +1183,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                 </div>
             )}
             <div className={`page ${isSchoolUser ? "school-page" : ""}`}>
-                {isSchoolUser && ["dashboard", "new-order", "order-history", "financials", "return-items", "returns-history", "school-profile"].includes(activePage) ? (
+                {isSchoolUser && ["dashboard", "new-order", "order-history", "financials", "return-items", "returns-history", "agreement", "school-profile"].includes(activePage) ? (
                     <PageBoundary resetKey={`school-${activePage}`}>
                         <SchoolPortalPage page={activePage} onNavigate={setActivePage} />
                     </PageBoundary>
