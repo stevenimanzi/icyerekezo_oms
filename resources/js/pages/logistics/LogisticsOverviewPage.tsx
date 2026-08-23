@@ -226,6 +226,7 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
         ['dispatch', 'Dispatch board', Number(summary.ready || 0) + Number(summary.in_transit || 0) + Number(summary.planned || 0)],
         ['vehicles', 'Vehicles and drivers', summary.vehicles],
         ['proof', 'Delivery confirmation', specialized ? (schoolOrders?.documents?.total || 0) : summary.proof_of_delivery],
+        ['agreements', 'Agreements', agreementData?.summary?.total_schools || 0],
     ];
 
     return (
