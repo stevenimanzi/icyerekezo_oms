@@ -14,6 +14,17 @@ const cash = (x: any) => `RWF ${n(x)}`;
 const status = (x: string) => ({ pending: 'Pending', accepted: 'Accepted', partial: 'Partially delivered', delivered: 'Delivered', rejected: 'Rejected' } as any)[x] || x;
 const blank = { class_level: 'Nursery 1', garment_category: 'Uniform', gender: 'Boy', size: 'XXXS', color: '', quantity_ordered: 1 };
 
+// Uniforms need a top and a bottom color; every other garment is a single piece
+// with one color. Both are stored in the same `color` string column, joined with
+// " / " for uniforms so the rest of the app (review, history, invoices) can keep
+// treating color as plain text.
+const UNIFORM_COLOR_SEPARATOR = ' / ';
+const splitUniformColor = (value: string) => {
+    const idx = (value || '').indexOf(UNIFORM_COLOR_SEPARATOR);
+    return idx === -1 ? { top: value || '', bottom: '' } : { top: value.slice(0, idx), bottom: value.slice(idx + UNIFORM_COLOR_SEPARATOR.length) };
+};
+const combineUniformColor = (top: string, bottom: string) => (top || bottom ? `${top}${UNIFORM_COLOR_SEPARATOR}${bottom}` : '');
+
 export default function SchoolPortalPage({ page, onNavigate }: any) {
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState('');
@@ -245,11 +256,19 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
                                 <h3>{label}</h3>
                                 {genders.map(gender => {
                                     const group = current.filter(x => x.garment_category === category && x.gender === gender);
+                                    const { top: topColor, bottom: bottomColor } = splitUniformColor(group[0]?.color);
                                     return (
                                         <div className="school-size-row" key={gender}>
                                             <div className="school-size-person">
                                                 <b>{gender === 'Boy' ? 'Boys' : 'Girls'}</b>
-                                                <label>Color<input placeholder={category === 'Uniform' ? 'Top and bottom colors' : 'Main color'} value={group[0]?.color || ''} onChange={e => updateColor(category, gender, e.target.value)} /></label>
+                                                {category === 'Uniform' ? (
+                                                    <div className="school-size-color-stack">
+                                                        <label><span>Top color</span><input placeholder="e.g., Blue" value={topColor} onChange={e => updateColor(category, gender, combineUniformColor(e.target.value, bottomColor))} /></label>
+                                                        <label><span>Bottom color</span><input placeholder="e.g., White" value={bottomColor} onChange={e => updateColor(category, gender, combineUniformColor(topColor, e.target.value))} /></label>
+                                                    </div>
+                                                ) : (
+                                                    <label>Color<input placeholder="Main color" value={group[0]?.color || ''} onChange={e => updateColor(category, gender, e.target.value)} /></label>
+                                                )}
                                             </div>
                                             {sizes.map(size => {
                                                 const line = group.find(x => x.size === size);
