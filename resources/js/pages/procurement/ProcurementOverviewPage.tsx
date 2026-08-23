@@ -30,7 +30,7 @@ async function request(url: string, options: RequestInit = {}) {
   if (!response.ok) {
     const first = data.errors ? Object.values(data.errors).flat()[0] : null;
     const error: any = new Error(
-      String(first || data.message || "The request could not be completed."),
+      String(first || data.message || "This could not be saved. Please try again."),
     );
     error.status = response.status;
     throw error;
@@ -1230,7 +1230,7 @@ function PriceTable({ suppliers }: any) {
             <tr>
               <th>Supplier</th>
               <th>Item</th>
-              <th>Supplier SKU</th>
+              <th>Supplier's product code</th>
               <th>Unit price</th>
               <th>Lead time</th>
               <th>Minimum order</th>

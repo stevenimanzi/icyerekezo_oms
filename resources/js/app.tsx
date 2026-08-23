@@ -44,6 +44,7 @@ import {
   Users,
   Warehouse,
   UserRound,
+  Wallet,
   WifiOff,
   Wrench,
   X,
@@ -66,6 +67,10 @@ import FactorySettingsPage from "./pages/executive/FactorySettingsPage";
 import ReportsPage from "./pages/shared/ClearReportsPage";
 import InventoryManagementPage from "./pages/warehouse/InventoryManagementPage";
 import SalesOverviewPage from "./pages/sales/SalesOverviewPage";
+import FinanceOverviewPage from "./pages/finance/FinanceOverviewPage";
+import FinancialReportsPage from "./pages/finance/FinancialReportsPage";
+import HrOverviewPage from "./pages/hr/HrOverviewPage";
+import SafetyOverviewPage from "./pages/safety/SafetyOverviewPage";
 import LogisticsOverviewPage from "./pages/logistics/LogisticsOverviewPage";
 import ProcurementOverviewPage from "./pages/procurement/ProcurementOverviewPage";
 import IncomingRequestsPage from "./pages/warehouse/IncomingRequestsPage";
@@ -85,6 +90,7 @@ type AuthUser = {
   locale: Locale;
   timezone?: string;
   current_factory: { id: number; name: string; slug: string; industry_type?: string; currency_code?: string } | null;
+  factories?: { id: number; name: string; slug: string }[];
   is_platform_admin: boolean;
   permissions: string[];
   workspace: string;
@@ -122,7 +128,7 @@ async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
     throw error;
   }
   if (!response.ok) {
-    const error: any = new Error(payload.message || "Something went wrong.");
+    const error: any = new Error(payload.message || "This didn't work. Please try again.");
     error.status = response.status;
     throw error;
   }
@@ -158,7 +164,7 @@ const copy = {
     dashboard: "Dashboard",
     procurement: "Procurement",
     warehouse: "Inventory",
-    products: "Products & BOM",
+    products: "Products & Recipes",
     planning: "Production",
     control: "Quality control",
     sales: "Sales & orders",
@@ -378,6 +384,8 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [isOnline, setIsOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [factorySwitcherOpen, setFactorySwitcherOpen] = useState(false);
+  const [switchingFactory, setSwitchingFactory] = useState<number | null>(null);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -490,6 +498,18 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     navigator.serviceWorker?.ready.then((registration) => registration.pushManager.getSubscription()).then((sub) => setPushSubscribed(!!sub)).catch(() => {});
   }, []);
 
+  const switchFactory = async (factoryId: number) => {
+    if (factoryId === user.current_factory?.id) { setFactorySwitcherOpen(false); return; }
+    setSwitchingFactory(factoryId);
+    try {
+      await api("/api/factories/switch", { method: "POST", body: JSON.stringify({ factory_id: factoryId }) });
+      window.location.href = "/dashboard";
+    } catch (reason: any) {
+      setNotice(reason instanceof Error ? reason.message : "Unable to switch factory.");
+      setSwitchingFactory(null);
+    }
+  };
+
   const enablePushNotifications = async () => {
     try {
       if (Notification.permission === "default") {
@@ -576,6 +596,8 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     audit: "reports",
     machines: "maintenance",
     reports: "reports",
+    finance: "sales",
+    "finance-reports": "reports",
     "cutting-workspace": "production",
     "fabric-request": "inventory",
     "cut-fabrics": "production",
@@ -600,6 +622,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
   const isProductionManager = user.workspace === "production" || user.roles.some((role) => role.slug === "production-manager");
   const isSalesUser = user.workspace === "sales" || user.roles.some((role) => role.slug === "sales-officer");
   const isFinanceUser = user.workspace === "finance" || user.roles.some((role) => role.slug === "accountant");
+  const isFinancialManager = user.roles.some((role) => role.slug === "financial-manager");
   const specializedOperatorRoles = [
     "sewing-operator",
     "finishing-manager",
@@ -633,6 +656,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["factories", Building2, locale === "en" ? "Factories" : "Usines", "*"],
         ["platform-users", Users, locale === "en" ? "All users" : "Tous les utilisateurs", "*"],
         ["subscriptions", CreditCard, locale === "en" ? "Subscriptions" : "Abonnements", "*"],
+        ["audit-logs", ShieldCheck, locale === "en" ? "Audit logs" : "Journaux d'audit", "*"],
         ["announcements", Megaphone, locale === "en" ? "Announcements" : "Annonces", "*"],
         ["notifications", Bell, locale === "en" ? "Notifications" : "Notifications", "*"],
         ["support-center", MessageSquare, locale === "en" ? "Support centre" : "Centre de support", "*"],
@@ -668,6 +692,12 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["team", Users, t.people, "users.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
         ["reports", Activity, t.reports, "reports.view"],
+    ] as const : isFinancialManager ? [
+        // ─── Financial Manager ───
+        ["dashboard", LayoutDashboard, t.dashboard, "*"],
+        ["finance", Wallet, locale === "en" ? "Finance overview" : "Vue financière", "finance.view"],
+        ["sales", PackageOpen, locale === "en" ? "Orders & invoices" : "Commandes et factures", "sales.view"],
+        ["finance-reports", Activity, locale === "en" ? "Financial reports" : "Rapports financiers", "reports.view"],
     ] as const : isProductionPlanner ? [
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["production", Gauge, locale === "en" ? "Production planning" : "Planification de production", "production.view"],
@@ -702,7 +732,6 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["reports", FileText, locale === "en" ? "Compliance reports" : "Rapports de conformite", "reports.view"],
     ] as const : isInternalAuditor ? [
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
-        ["audit", ShieldCheck, locale === "en" ? "Audit logs" : "Journaux d audit", "audit.view"],
         ["inventory", Warehouse, locale === "en" ? "Inventory movements" : "Mouvements de stock", "inventory.view"],
         ["production", Gauge, locale === "en" ? "Production records" : "Dossiers de production", "production.view"],
         ["quality", ClipboardCheck, locale === "en" ? "Quality records" : "Dossiers qualite", "quality.view"],
@@ -819,7 +848,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     ), [
         t, locale, user.is_platform_admin, user.permissions, user.roles, subscribedFeatures, isFactoryOwner, isSchoolUser,
         isLogisticsUser, isCuttingUser, isWarehouseUser, isProcurementUser, isQualityUser, isProductionManager, isSalesUser,
-        isFinanceUser, isMachineOperator, isFactoryManager, isFactoryAdmin, isProductionPlanner, isProductionSupervisor,
+        isFinanceUser, isFinancialManager, isMachineOperator, isFactoryManager, isFactoryAdmin, isProductionPlanner, isProductionSupervisor,
         isMaintenanceTechnician, isQualityManager, isHrOfficer, isSafetyOfficer, isInternalAuditor,
     ]);
 
@@ -990,25 +1019,42 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                     </>
                 )}
             </nav>
-            <button
-                className="factory-card"
-                onClick={() => setActivePage(user.is_platform_admin ? "system-settings" : isSchoolUser ? "school-profile" : isFactoryOwner ? "dashboard" : "settings")}
-            >
-                <div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || "IC"}</div>
-                <div>
-                    <strong>{user.current_factory?.name || user.system?.name || "ICYEREKEZO OMS"}</strong>
-                    <span>
-                        {user.is_platform_admin
-                            ? locale === "en" ? "System administration" : "Administration système"
-                            : isSchoolUser
-                              ? locale === "en" ? "School account" : "Compte scolaire"
-                              : isFactoryOwner
-                                ? locale === "en" ? "Performance overview" : "Vue des performances"
-                                : locale === "en" ? "Factory workspace" : "Espace usine"}
-                    </span>
-                </div>
-                <ChevronRight size={17} />
-            </button>
+            <div className="popover-anchor">
+                <button
+                    className="factory-card"
+                    onClick={() => {
+                        if (!user.is_platform_admin && (user.factories?.length || 0) > 1) { setFactorySwitcherOpen((open) => !open); return; }
+                        setActivePage(user.is_platform_admin ? "system-settings" : isSchoolUser ? "school-profile" : isFactoryOwner ? "dashboard" : "settings");
+                    }}
+                >
+                    <div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || "IC"}</div>
+                    <div>
+                        <strong>{user.current_factory?.name || user.system?.name || "ICYEREKEZO OMS"}</strong>
+                        <span>
+                            {user.is_platform_admin
+                                ? locale === "en" ? "System administration" : "Administration système"
+                                : isSchoolUser
+                                  ? locale === "en" ? "School account" : "Compte scolaire"
+                                  : (user.factories?.length || 0) > 1
+                                    ? locale === "en" ? "Switch factory" : "Changer d'usine"
+                                    : isFactoryOwner
+                                      ? locale === "en" ? "Performance overview" : "Vue des performances"
+                                      : locale === "en" ? "Factory workspace" : "Espace usine"}
+                        </span>
+                    </div>
+                    <ChevronRight size={17} />
+                </button>
+                {factorySwitcherOpen && !user.is_platform_admin && (user.factories?.length || 0) > 1 && (
+                    <div className="top-popover" style={{ bottom: "calc(100% + 12px)", top: "auto" }}>
+                        <strong>{locale === "en" ? "Switch factory" : "Changer d'usine"}</strong>
+                        {(user.factories || []).map((factory) => (
+                            <button key={factory.id} disabled={switchingFactory !== null} onClick={() => switchFactory(factory.id)} style={{ fontWeight: factory.id === user.current_factory?.id ? 700 : 500, color: factory.id === user.current_factory?.id ? "var(--brand)" : undefined }}>
+                                {switchingFactory === factory.id ? (locale === "en" ? "Switching…" : "Changement…") : factory.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
         </aside>
         {sidebarOpen && <button className="backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
         <main className="main-area">
@@ -1191,6 +1237,12 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                         ) : activePage === "dashboard" ? (
                             isExecutiveUser ? (
                                 <ExecutiveDashboard user={user} locale={locale} onNavigate={setActivePage} />
+                            ) : isFinancialManager ? (
+                                <FinanceOverviewPage compact onNavigate={setActivePage} />
+                            ) : isHrOfficer ? (
+                                <HrOverviewPage />
+                            ) : isSafetyOfficer ? (
+                                <SafetyOverviewPage />
                             ) : (
                                 <DepartmentDashboard user={user} locale={locale} onNavigate={setActivePage} />
                             )
@@ -1204,6 +1256,14 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                             <ProcurementOverviewPage />
                         ) : activePage === "sales" ? (
                             <SalesOverviewPage />
+                        ) : activePage === "finance" ? (
+                            <FinanceOverviewPage />
+                        ) : activePage === "finance-reports" ? (
+                            <FinancialReportsPage />
+                        ) : activePage === "hr" ? (
+                            <HrOverviewPage />
+                        ) : activePage === "safety" ? (
+                            <SafetyOverviewPage />
                         ) : ["logistics", "dispatch", "vehicles", "delivery-confirmation"].includes(activePage) ? (
                             <LogisticsOverviewPage
                                 initialTab={
@@ -1386,7 +1446,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
 const moduleContent = {
     hr: { icon: Users, en: ['Human resources', 'Manage attendance, leave, training, qualifications and workforce records.', ['Attendance', 'Leave requests', 'Training', 'Worker qualifications']], fr: ['Ressources humaines', 'Gerez les presences, conges, formations et qualifications.', ['Presences', 'Conges', 'Formation', 'Qualifications']] },
     safety: { icon: ShieldCheck, en: ['Health and safety', 'Record incidents, inspections, protective equipment and corrective actions.', ['Workplace incidents', 'Safety inspections', 'Protective equipment', 'Corrective actions']], fr: ['Sante et securite', 'Enregistrez les incidents, inspections, equipements et actions correctives.', ['Incidents', 'Inspections', 'Equipements de protection', 'Actions correctives']] },
-    audit: { icon: ShieldCheck, en: ['Internal audit', 'Review operational records and audit history without changing factory data.', ['Audit logs', 'Inventory movements', 'Production and quality', 'Procurement and finance']], fr: ['Audit interne', 'Consultez les operations et journaux sans modifier les donnees.', ['Journaux audit', 'Mouvements de stock', 'Production et qualite', 'Achats et finances']] },
+    audit: { icon: ShieldCheck, en: ['Internal audit', 'Review operational records and activity history without changing factory data.', ['Activity history', 'Inventory movements', 'Production and quality', 'Procurement and finance']], fr: ['Audit interne', 'Consultez les operations et l’historique sans modifier les donnees.', ['Historique des activités', 'Mouvements de stock', 'Production et qualite', 'Achats et finances']] },
     'platform-dashboard': { icon: LayoutDashboard, en: ['System overview', 'View every factory, subscription, user, support request and system service.', ['System status', 'Factory activity', 'Subscription status', 'Security alerts']], fr: ['Vue du système', 'Consultez les usines, abonnements, utilisateurs, demandes et services.', ['État du système', 'Activité des usines', 'État des abonnements', 'Alertes de sécurité']] },
     factories: { icon: Building2, en: ['Factory administration', 'Register, approve, activate, suspend and monitor every factory account.', ['All factories', 'Pending approval', 'Active factories', 'Suspended factories']], fr: ['Administration des usines', 'Enregistrez, approuvez, activez, suspendez et surveillez chaque usine.', ['Toutes les usines', 'En attente', 'Usines actives', 'Usines suspendues']] },
     'platform-users': { icon: Users, en: ['Platform users', 'Search all accounts, control status and grant trusted platform administrators.', ['All users', 'Factory owners', 'Platform administrators', 'Inactive accounts']], fr: ['Utilisateurs plateforme', 'Recherchez les comptes, contrôlez leur état et les administrateurs.', ['Tous les utilisateurs', 'Propriétaires', 'Administrateurs', 'Comptes inactifs']] },
@@ -1398,8 +1458,8 @@ const moduleContent = {
     procurement: { icon: ShoppingCart, en: ['Purchasing', 'Manage suppliers, purchase requests, prices, orders and received goods.', ['Purchase requests', 'Supplier prices', 'Purchase orders', 'Received goods']], fr: ['Achats', 'Gérez les fournisseurs, demandes, prix, commandes et réceptions.', ['Demandes d’achat', 'Prix fournisseurs', 'Bons de commande', 'Produits reçus']] },
     inventory: { icon: Warehouse, en: ['Stock and warehouses', 'Track stock in every warehouse, location and batch.', ['Current stock', 'Stock movements', 'Transfers', 'Stock counts']], fr: ['Stock et entrepôts', 'Suivez le stock dans chaque entrepôt, emplacement et lot.', ['Stock actuel', 'Mouvements de stock', 'Transferts', 'Comptages de stock']] },
     products: { icon: Boxes, en: ['Products and materials', 'Manage raw materials, finished products and what is needed to make each product.', ['Products and item codes', 'Categories', 'Materials needed', 'Units and conversions']], fr: ['Produits et matières', 'Gérez les matières premières, produits finis et besoins de fabrication.', ['Produits et codes', 'Catégories', 'Matières nécessaires', 'Unités et conversions']] },
-    production: { icon: Gauge, en: ['Production', 'Plan demand, check materials and execute configurable factory workflows.', ['Production orders', 'Planning', 'Workflow templates', 'Stage execution']], fr: ['Production', 'Planifiez la demande, vérifiez les matières et exécutez les flux configurables.', ['Ordres de production', 'Planification', 'Modèles de flux', 'Exécution des étapes']] },
-    quality: { icon: ClipboardCheck, en: ['Quality control', 'Inspect incoming materials, production stages and finished batches.', ['Inspection queue', 'Test templates', 'Defects & rework', 'Certificates']], fr: ['Contrôle qualité', 'Inspectez les matières reçues, les étapes et les lots finis.', ['File d’inspection', 'Modèles de test', 'Défauts et retouches', 'Certificats']] },
+    production: { icon: Gauge, en: ['Production', 'Plan demand, check materials and manage every production step.', ['Production orders', 'Planning', 'Production steps setup', 'Recording work done']], fr: ['Production', 'Planifiez la demande, vérifiez les matières et gérez chaque étape.', ['Ordres de production', 'Planification', 'Configuration des étapes', 'Suivi du travail']] },
+    quality: { icon: ClipboardCheck, en: ['Quality control', 'Inspect incoming materials, production stages and finished batches.', ['Inspections to do', 'Test checklists', 'Defects & rework', 'Certificates']], fr: ['Contrôle qualité', 'Inspectez les matières reçues, les étapes et les lots finis.', ['Inspections à faire', 'Listes de contrôle', 'Défauts et retouches', 'Certificats']] },
     sales: { icon: PackageOpen, en: ['Sales & orders', 'Manage customers, quotations, orders, invoices and returns.', ['Customer orders', 'Quotations', 'Invoices', 'Returns']], fr: ['Ventes et commandes', 'Gérez les clients, devis, commandes, factures et retours.', ['Commandes clients', 'Devis', 'Factures', 'Retours']] },
     logistics: { icon: Truck, en: ['Logistics', 'Plan packing, dispatch, routes, vehicles and proof of delivery.', ['Shipments', 'Dispatch board', 'Vehicles & drivers', 'Proof of delivery']], fr: ['Logistique', 'Planifiez emballage, expédition, routes, véhicules et preuve de livraison.', ['Expéditions', 'Tableau d’envoi', 'Véhicules et chauffeurs', 'Preuve de livraison']] },
     team: { icon: Users, en: ['Employees and work schedules', 'Manage employees, access, departments, schedules and attendance.', ['Employees', 'Roles and access', 'Work assignments', 'Schedules and attendance']], fr: ['Employés et horaires', 'Gérez les employés, accès, départements, horaires et présences.', ['Employés', 'Rôles et accès', 'Affectations', 'Horaires et présence']] },

@@ -32,10 +32,11 @@ const copy = {
         notesPlaceholder: 'Any notes about this cutting session…',
         recordCut: 'Record cut output', recording: 'Recording…',
         recentCuts: 'Recent cutting records', noCuts: 'No cutting records yet. Record your first cut above.',
-        damagedTitle: 'Report damaged fabrics',
-        damagedDesc: 'Record fabric materials that were damaged or wasted during cutting.',
-        damagedQuantity: 'Quantity damaged', damagedReason: 'Damage reason',
+        damagedTitle: 'Report damaged cut pieces',
+        damagedDesc: 'Record cut pieces that were damaged, miscut or rejected after cutting.',
+        damagedItem: 'Damaged cut pieces', damagedQuantity: 'Quantity damaged', damagedReason: 'Damage reason',
         damagedPlaceholder: 'Amount damaged', damagedReasonPlaceholder: 'Describe what happened (tear, miscut, stain…)',
+        chooseCutPieces: '— Choose cut pieces —', noCutPieces: 'No cut pieces on hand yet — record a cut first.',
         reportDamage: 'Report damage', reporting: 'Reporting…',
         recentDamage: 'Recent damage records', noDamage: 'No damage records. Good job keeping waste low!',
         totalCut: 'Total cut today', totalDamaged: 'Total damaged today', wasteRate: 'Waste rate',
@@ -62,10 +63,11 @@ const copy = {
         notesPlaceholder: 'Notes sur cette session de coupe…',
         recordCut: 'Enregistrer la coupe', recording: 'Enregistrement…',
         recentCuts: 'Coupes récentes', noCuts: 'Aucune coupe enregistrée. Enregistrez votre première coupe ci-dessus.',
-        damagedTitle: 'Signaler les tissus endommagés',
-        damagedDesc: 'Enregistrez les matériaux endommagés ou gaspillés pendant la coupe.',
-        damagedQuantity: 'Quantité endommagée', damagedReason: 'Motif du dommage',
+        damagedTitle: 'Signaler des pièces coupées endommagées',
+        damagedDesc: 'Enregistrez les pièces coupées endommagées, mal coupées ou rejetées après la coupe.',
+        damagedItem: 'Pièces coupées endommagées', damagedQuantity: 'Quantité endommagée', damagedReason: 'Motif du dommage',
         damagedPlaceholder: 'Quantité endommagée', damagedReasonPlaceholder: 'Décrivez ce qui s\'est passé (déchirure, mauvaise coupe, tache…)',
+        chooseCutPieces: '— Choisir les pièces coupées —', noCutPieces: 'Aucune pièce coupée disponible — enregistrez d\'abord une coupe.',
         reportDamage: 'Signaler le dommage', reporting: 'Signalement…',
         recentDamage: 'Dommages récents', noDamage: 'Aucun dommage enregistré. Bravo pour la réduction des déchets !',
         totalCut: 'Total coupé aujourd\'hui', totalDamaged: 'Total endommagé aujourd\'hui', wasteRate: 'Taux de déchet',
@@ -93,7 +95,8 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
 
     const [requestForm, setRequestForm] = useState({ item_id: '', quantity: '', reason: '' });
     const [cutForm, setCutForm] = useState({ item_id: '', quantity: '', output_style: '', output_color: '', output_size: '', output_quantity: '', notes: '' });
-    const [damageForm, setDamageForm] = useState({ item_id: '', quantity: '', reason: '' });
+    const [damageForm, setDamageForm] = useState({ batch_id: '', item_id: '', quantity: '', reason: '' });
+    const [cutPieces, setCutPieces] = useState<any[]>([]);
 
     useEffect(() => { setTab(initialTab); }, [initialTab]);
 
@@ -105,6 +108,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
             setTransactions(overview.recent_transactions || overview.transactions || []);
             setItems(overview.catalog || []);
             setWarehouses(overview.warehouse_list || []);
+            setCutPieces(overview.cut_pieces || []);
             setUpdated(new Date());
             setError('');
         } catch (reason: any) {
@@ -128,6 +132,7 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
         .filter((item: any) => item.available_qty > 0);
 
     const cuttingStock = stock.filter(s => s.warehouse_id === cuttingWarehouseId && s.quantity_on_hand > 0);
+    const damageablePieces = cutPieces.filter((p: any) => p.warehouse_id === cuttingWarehouseId && p.available_qty > 0);
     const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
     const cuttingTransactions = transactions.filter((tx: any) =>
@@ -165,10 +170,15 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
     const isToday = (tx: any) => new Date(tx.occurred_at).toDateString() === new Date().toDateString();
     const todayCuts = cutOutputTransactions.filter(isToday);
     const todayDamage = cuttingTransactions.filter((tx: any) => isToday(tx) && ['waste', 'adjustment_out'].includes(tx.type));
+    const todayPiecesProduced = cuttingTransactions.filter((tx: any) => isToday(tx) && tx.type === 'production_output');
 
     const totalCutQty = todayCuts.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
     const totalDamagedQty = todayDamage.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
-    const wastePercent = totalCutQty + totalDamagedQty > 0 ? ((totalDamagedQty / (totalCutQty + totalDamagedQty)) * 100).toFixed(1) : '0.0';
+    const totalPiecesProducedQty = todayPiecesProduced.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
+    // Waste rate compares damaged pieces against pieces produced (not fabric meters
+    // consumed) — damage is now reported against cut output, so both sides of the
+    // ratio need to be in the same unit (pieces).
+    const wastePercent = totalPiecesProducedQty + totalDamagedQty > 0 ? ((totalDamagedQty / (totalPiecesProducedQty + totalDamagedQty)) * 100).toFixed(1) : '0.0';
 
     const clearMsg = () => { setError(''); setSuccess(''); };
 
@@ -240,20 +250,31 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
 
     const submitDamage = async () => {
         clearMsg();
-        if (!damageForm.item_id || !damageForm.quantity) {
-            setError(locale === 'en' ? 'Please select a fabric and enter the damaged quantity.' : 'Veuillez sélectionner un tissu et entrer la quantité endommagée.');
+        if (!damageForm.batch_id || !damageForm.quantity) {
+            setError(locale === 'en' ? 'Please select the cut pieces and enter the damaged quantity.' : 'Veuillez sélectionner les pièces coupées et entrer la quantité endommagée.');
+            return;
+        }
+        const piece = damageablePieces.find((p: any) => p.id === Number(damageForm.batch_id));
+        if (piece && Number(damageForm.quantity) > piece.available_qty) {
+            setStockPopup(locale === 'en' ? `Insufficient pieces. Only ${num(piece.available_qty)} of this cut available.` : `Pièces insuffisantes. Seulement ${num(piece.available_qty)} disponible.`);
             return;
         }
         setBusy(true);
         try {
             await productionApi('/api/inventory/transactions', {
                 method: 'POST',
-                body: JSON.stringify({ item_id: Number(damageForm.item_id), warehouse_id: cuttingWarehouseId, type: 'waste', quantity: Number(damageForm.quantity), reason: `[Cutting Damage] ${damageForm.reason || 'Material damaged during cutting'}` }),
+                body: JSON.stringify({
+                    item_id: Number(damageForm.item_id), warehouse_id: cuttingWarehouseId, batch_id: Number(damageForm.batch_id), type: 'waste',
+                    quantity: Number(damageForm.quantity), reason: `[Cutting Damage] ${piece ? piece.name + ' — ' : ''}${damageForm.reason || 'Cut pieces damaged during cutting'}`,
+                }),
             });
             setSuccess(locale === 'en' ? 'Damage report submitted successfully!' : 'Rapport de dommage soumis avec succès !');
-            setDamageForm({ item_id: '', quantity: '', reason: '' });
+            setDamageForm({ batch_id: '', item_id: '', quantity: '', reason: '' });
             await load(true);
-        } catch (r: any) { setError(r.message); } finally { setBusy(false); }
+        } catch (r: any) {
+            if (/insufficient stock|not enough|stock insuffisant/i.test(String(r.message || ''))) setStockPopup(r.message);
+            else setError(r.message);
+        } finally { setBusy(false); }
     };
 
     return (
@@ -411,15 +432,21 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
                         <p className="cutting-form-desc">{t.damagedDesc}</p>
                         <div className="cutting-form-grid">
                             <label>
-                                <span>{locale === 'en' ? 'Damaged fabric' : 'Tissu endommagé'}</span>
-                                <select value={damageForm.item_id} onChange={e => setDamageForm({ ...damageForm, item_id: e.target.value })}>
-                                    <option value="">{locale === 'en' ? '— Choose fabric in stock —' : '— Choisir un tissu en stock —'}</option>
-                                    {cuttingStock.map((s: any) => <option key={s.item_id} value={s.item_id}>{s.item_name} ({num(s.quantity_on_hand)} {s.unit})</option>)}
+                                <span>{t.damagedItem}</span>
+                                <select
+                                    value={damageForm.batch_id}
+                                    onChange={e => {
+                                        const piece = damageablePieces.find((p: any) => p.id === Number(e.target.value));
+                                        setDamageForm({ ...damageForm, batch_id: e.target.value, item_id: piece ? String(piece.item_id) : '' });
+                                    }}
+                                >
+                                    <option value="">{damageablePieces.length ? t.chooseCutPieces : t.noCutPieces}</option>
+                                    {damageablePieces.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({num(p.available_qty)} pcs)</option>)}
                                 </select>
                             </label>
                             <label>
                                 <span>{t.damagedQuantity}</span>
-                                <input type="number" min="0.001" step="any" placeholder={t.damagedPlaceholder} value={damageForm.quantity} onChange={e => setDamageForm({ ...damageForm, quantity: e.target.value })} />
+                                <input type="number" min="1" step="1" placeholder={t.damagedPlaceholder} value={damageForm.quantity} onChange={e => setDamageForm({ ...damageForm, quantity: e.target.value })} />
                             </label>
                             <label className="cutting-full-width">
                                 <span>{t.damagedReason}</span>
@@ -434,13 +461,13 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
                         <div className="panel-title"><h2>{t.recentDamage}</h2><span>{damageRecords.length} {locale === 'en' ? 'records' : 'enregistrements'}</span></div>
                         <div className="admin-table-wrap">
                             <table className="admin-table">
-                                <thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Fabric' : 'Tissu'}</th><th>{locale === 'en' ? 'Quantity wasted' : 'Quantité perdue'}</th><th>{locale === 'en' ? 'Reason' : 'Motif'}</th></tr></thead>
+                                <thead><tr><th>{locale === 'en' ? 'Date' : 'Date'}</th><th>{locale === 'en' ? 'Cut pieces' : 'Pièces coupées'}</th><th>{locale === 'en' ? 'Quantity wasted' : 'Quantité perdue'}</th><th>{locale === 'en' ? 'Reason' : 'Motif'}</th></tr></thead>
                                 <tbody>
                                     {damageRecords.length ? damageRecords.map((tx: any) => (
                                         <tr key={tx.id}>
                                             <td>{new Date(tx.occurred_at).toLocaleString()}</td>
                                             <td><b>{tx.item_name}</b></td>
-                                            <td><span className="admin-status warning">{num(Math.abs(tx.quantity_delta))} {tx.unit || ''}</span></td>
+                                            <td><span className="admin-status warning">{num(Math.abs(tx.quantity_delta))} pcs</span></td>
                                             <td>{String(tx.reason || '').replace('[Cutting Damage] ', '')}</td>
                                         </tr>
                                     )) : (

@@ -17,7 +17,7 @@ class FactoryNotifier
             ->whereHas('factories', fn ($query) => $query->where('factories.id', $factoryId)->where('factory_user.is_active', true))
             ->where(function ($query) use ($factoryId, $permission) {
                 $query->whereHas('factories', fn ($sub) => $sub->where('factories.id', $factoryId)->where('factory_user.is_owner', true))
-                    ->orWhereHas('roles', fn ($sub) => $sub->wherePivot('factory_id', $factoryId)->whereHas('permissions', fn ($p) => $p->where('slug', $permission)));
+                    ->orWhereHas('roles', fn ($sub) => $sub->where('role_user.factory_id', $factoryId)->whereHas('permissions', fn ($p) => $p->where('slug', $permission)));
             })
             ->when($excludeUserId, fn ($query) => $query->where('id', '!=', $excludeUserId))
             ->get();

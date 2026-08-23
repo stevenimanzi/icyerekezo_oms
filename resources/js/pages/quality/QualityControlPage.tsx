@@ -11,9 +11,9 @@ async function api(url: string, options: RequestInit = {}) {
     try {
         payload = JSON.parse(text);
     } catch {
-        throw new Error('Invalid server response.');
+        throw new Error('The page could not load. Please try again.');
     }
-    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Request failed.');
+    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Could not save this. Please try again.');
     return payload;
 }
 

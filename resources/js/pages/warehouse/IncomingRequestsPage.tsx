@@ -8,7 +8,7 @@ async function api(url: string, options: RequestInit = {}) {
         headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRF-TOKEN": csrf(), ...(options.headers || {}) },
     });
     if (response.status === 401) window.location.href = "/login";
-    if (!response.ok) throw new Error((await response.json().catch(() => ({})))?.message || `HTTP ${response.status}`);
+    if (!response.ok) throw new Error((await response.json().catch(() => ({})))?.message || "The server did not respond. Please try again.");
     return response.json();
 }
 

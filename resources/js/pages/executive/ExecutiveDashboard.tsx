@@ -98,7 +98,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                         <td>
                                             <div className="product-cell">
                                                 <span className="product-icon p0"><Boxes size={17} /></span>
-                                                <div><strong>{item.item?.name || 'Product'}</strong><small>{item.item?.sku || 'No SKU'}</small></div>
+                                                <div><strong>{item.item?.name || 'Product'}</strong><small>{item.item?.sku || 'No code'}</small></div>
                                             </div>
                                         </td>
                                         <td><span className="status s0">{item.status.replaceAll('_', ' ')}</span></td>

@@ -308,6 +308,32 @@ class PlatformAdminController extends Controller
         return response()->json(DatabaseBackup::latest()->paginate(25));
     }
 
+    public function auditLogs(Request $request): JsonResponse
+    {
+        $query = AuditLog::with(['user:id,name,email', 'factory:id,name']);
+        if ($search = $request->string('search')->trim()->toString()) {
+            $query->where(fn ($q) => $q->where('description', 'like', "%{$search}%")->orWhere('event', 'like', "%{$search}%"));
+        }
+        if ($factoryId = $request->integer('factory_id')) {
+            $query->where('factory_id', $factoryId);
+        }
+        if ($event = $request->string('event')->toString()) {
+            $query->where('event', $event);
+        }
+        if ($from = $request->date('from')) {
+            $query->where('created_at', '>=', $from->startOfDay());
+        }
+        if ($to = $request->date('to')) {
+            $query->where('created_at', '<=', $to->endOfDay());
+        }
+
+        return response()->json([
+            'logs' => $query->latest()->paginate(30)->withQueryString(),
+            'events' => AuditLog::select('event')->distinct()->orderBy('event')->pluck('event'),
+            'factories' => Factory::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
     public function backup(Request $request): JsonResponse
     {
         $backup = DatabaseBackup::create(['requested_by' => $request->user()->id, 'status' => 'pending']);

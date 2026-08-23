@@ -14,7 +14,7 @@ async function request(url: string, options: RequestInit = {}) {
     } catch {
         throw new Error('The server returned a web page instead of data. Please refresh and sign in again.');
     }
-    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Request failed.');
+    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Could not save this. Please check your entries and try again.');
     return payload;
 }
 
@@ -26,6 +26,7 @@ const pageInfo: Record<string, [React.ElementType, string, string]> = {
     announcements: [Megaphone, 'Announcements', 'Broadcast important messages to platform users.'],
     'support-center': [MessageSquare, 'Support centre', 'Receive problems, reply and track resolution.'],
     backups: [Database, 'Database backups', 'Create and monitor secure recovery points.'],
+    'audit-logs': [ShieldCheck, 'Audit logs', 'Every recorded action across every factory, searchable and filterable.'],
     'system-settings': [Settings, 'System settings', 'Manage branding, registration and maintenance mode.'],
 };
 const industries = [
@@ -43,23 +44,28 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
     const [success, setSuccess] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState<Record<string, any>>({});
+    const [auditFilters, setAuditFilters] = useState({ search: '', event: '', factory_id: '', from: '', to: '' });
     const [Icon, title, description] = pageInfo[page] || pageInfo['platform-dashboard'];
     const endpoint = ({
         'platform-dashboard': '/api/platform/overview', factories: '/api/platform/factories', 'platform-users': '/api/platform/users',
         subscriptions: '/api/platform/subscriptions', announcements: '/api/platform/announcements', 'support-center': '/api/platform/tickets',
-        backups: '/api/platform/backups', 'system-settings': '/api/platform/settings',
+        backups: '/api/platform/backups', 'audit-logs': '/api/platform/audit-logs', 'system-settings': '/api/platform/settings',
     } as Record<string, string>)[page];
 
     const load = async () => {
         setBusy(true);
         setError('');
         try {
-            setData(await request(endpoint));
+            const url = page === 'audit-logs'
+                ? `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(auditFilters).filter(([, v]) => v)))}`
+                : endpoint;
+            setData(await request(url));
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Unable to load.');
         } finally { setBusy(false); }
     };
     useEffect(() => { setShowForm(false); setForm({}); load(); }, [page]);
+    useEffect(() => { if (page === 'audit-logs') load(); }, [auditFilters]);
     useEffect(() => {
         if (!['support-center', 'platform-dashboard', 'backups'].includes(page)) return;
         const timer = window.setInterval(() => request(endpoint).then(setData).catch(() => {}), 5000);
@@ -95,7 +101,7 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
             setBusy(false);
         }
     };
-    const records = page === 'platform-users' ? (data?.users?.data || []) : (data?.data || []);
+    const records = page === 'platform-users' ? (data?.users?.data || []) : page === 'audit-logs' ? (data?.logs?.data || []) : (data?.data || []);
 
     return (
         <section className="platform-page">
@@ -103,7 +109,7 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                 <div><span className="platform-kicker">SYSTEM ADMINISTRATION</span><h1>{title}</h1><p>{description}</p></div>
                 <div className="platform-heading-actions">
                     <button className="secondary-btn" onClick={load} disabled={busy}><RefreshCw size={15} />Refresh</button>
-                    {!['platform-dashboard', 'support-center', 'system-settings'].includes(page) && (
+                    {!['platform-dashboard', 'support-center', 'system-settings', 'audit-logs'].includes(page) && (
                         <button className="primary-btn" onClick={() => setShowForm(!showForm)}><Plus size={16} />{page === 'backups' ? 'Create backup' : 'Create new'}</button>
                     )}
                 </div>
@@ -178,6 +184,31 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                             new Date(item.created_at).toLocaleString(), <Status value={item.status} />,
                             item.size_bytes ? `${(item.size_bytes / 1048576).toFixed(2)} MB` : '—', item.path || '—',
                             item.completed_at ? new Date(item.completed_at).toLocaleString() : '—',
+                        ])}
+                    />
+                </>
+            )}
+
+            {page === 'audit-logs' && (
+                <>
+                    <div className="admin-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10, padding: 16, marginBottom: 14 }}>
+                        <input placeholder="Search description or event" value={auditFilters.search} onChange={(e) => setAuditFilters({ ...auditFilters, search: e.target.value })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 7, background: 'var(--panel)', color: 'var(--text)' }} />
+                        <select value={auditFilters.event} onChange={(e) => setAuditFilters({ ...auditFilters, event: e.target.value })}>
+                            <option value="">All events</option>
+                            {(data?.events || []).map((event: string) => <option key={event} value={event}>{event}</option>)}
+                        </select>
+                        <select value={auditFilters.factory_id} onChange={(e) => setAuditFilters({ ...auditFilters, factory_id: e.target.value })}>
+                            <option value="">All factories</option>
+                            {(data?.factories || []).map((factory: any) => <option key={factory.id} value={factory.id}>{factory.name}</option>)}
+                        </select>
+                        <input type="date" value={auditFilters.from} onChange={(e) => setAuditFilters({ ...auditFilters, from: e.target.value })} />
+                        <input type="date" value={auditFilters.to} onChange={(e) => setAuditFilters({ ...auditFilters, to: e.target.value })} />
+                    </div>
+                    <AdminTable
+                        headers={['When', 'Event', 'Description', 'User', 'Factory']}
+                        rows={records.map((item: any) => [
+                            new Date(item.created_at).toLocaleString(), item.event, item.description || '—',
+                            item.user?.name || 'System', item.factory?.name || '—',
                         ])}
                     />
                 </>

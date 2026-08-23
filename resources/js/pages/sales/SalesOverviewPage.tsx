@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Check, Eye, Plus, Printer, RefreshCw, Search, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Check, Download, Eye, FileUp, Plus, Printer, RefreshCw, Search, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 async function api(url: string, options: RequestInit = {}) {
     const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
@@ -39,6 +39,7 @@ export default function SalesOverviewPage() {
     const [criteria, setCriteria] = useState({ search: '', district: '', sector: '', status: '', academic_year: '' });
     const [order, setOrder] = useState<any>(blankOrder);
     const [updated, setUpdated] = useState<Date | null>(null);
+    const [confirmDialog, setConfirmDialog] = useState<any>(null);
     const previousPage = useRef(page);
 
     const load = async (silent = false) => {
@@ -65,18 +66,52 @@ export default function SalesOverviewPage() {
     const summary = data?.summary || {};
     const special = data?.specialization;
     const cap = data?.capabilities || {};
-    const rows = useMemo(() => (data?.documents?.data || []).filter((x: any) => x.document_type === tab), [data, tab]);
+    const rows = useMemo(() => (data?.documents?.data || []).filter((x: any) => x.document_type === (tab === 'invoice' ? 'customer_order' : tab)), [data, tab]);
     const title = labels[tab] + 's';
 
-    const decide = async (item: any, decision: 'accept' | 'reject') => {
-        const reason = decision === 'reject' ? window.prompt('Reason for rejecting this order:') : '';
-        if (decision === 'reject' && reason === null) return;
-        if (decision === 'accept' && !window.confirm(`Accept order ${orderNumber(item.document_number)}?`)) return;
-        await run(item.id, `/api/sales/orders/${item.id}/decision`, 'PATCH', { decision, reason });
+    const decide = (item: any, decision: 'accept' | 'reject') => {
+        if (decision === 'reject') {
+            setConfirmDialog({
+                tone: 'danger', title: `Reject order ${orderNumber(item.document_number)}?`,
+                message: 'This will be recorded on the order. Enter a reason so it is clear why it was rejected.',
+                requiresReason: true, confirmLabel: 'Reject order',
+                onConfirm: (reason: string) => { setConfirmDialog(null); void run(item.id, `/api/sales/orders/${item.id}/decision`, 'PATCH', { decision, reason }); },
+            });
+            return;
+        }
+        setConfirmDialog({
+            title: `Accept order ${orderNumber(item.document_number)}?`,
+            message: 'The order will move forward to fulfilment.',
+            confirmLabel: 'Accept order',
+            onConfirm: () => { setConfirmDialog(null); void run(item.id, `/api/sales/orders/${item.id}/decision`, 'PATCH', { decision, reason: '' }); },
+        });
     };
-    const remove = async (item: any) => {
-        if (!window.confirm(`Delete order ${orderNumber(item.document_number)}? This cannot be undone.`)) return;
-        await run(`delete-${item.id}`, `/api/sales/orders/${item.id}`, 'DELETE', null);
+    const remove = (item: any) => {
+        setConfirmDialog({
+            tone: 'danger', title: `Delete order ${orderNumber(item.document_number)}?`,
+            message: 'This cannot be undone.', confirmLabel: 'Delete order',
+            onConfirm: () => { setConfirmDialog(null); void run(`delete-${item.id}`, `/api/sales/orders/${item.id}`, 'DELETE', null); },
+        });
+    };
+    const uploadInvoice = async (item: any, file: File) => {
+        const key = `invoice-${item.id}`;
+        setBusy(key);
+        setError('');
+        setSuccess('');
+        try {
+            const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
+            const form = new FormData();
+            form.append('invoice', file);
+            const response = await fetch(`/api/sales/orders/${item.id}/invoice`, { method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: form });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'The invoice could not be uploaded.');
+            setSuccess(payload.message || 'Invoice uploaded.');
+            await load(true);
+        } catch (reason: any) {
+            setError(reason.message);
+        } finally {
+            setBusy(null);
+        }
     };
     const run = async (key: any, url: string, method: string, payload: any) => {
         setBusy(key);
@@ -151,7 +186,7 @@ export default function SalesOverviewPage() {
                 <header><div><h2>{special && tab === 'customer_order' ? 'School orders' : title}</h2><p>{special ? `${data?.documents?.total || 0} orders found. Select the eye to see sizes, colors and class details.` : 'Accept valid incoming orders or reject them with a recorded reason.'}</p></div></header>
                 <div className="admin-table-wrap">
                     <table className="admin-table">
-                        <thead><tr><th>Order number</th><th>{special ? 'School' : 'Customer'}</th><th>Date</th><th>{special ? 'Total items ordered' : 'Items'}</th><th>Total value</th><th>Status</th><th>Due</th>{tab === 'customer_order' && <th>Actions</th>}</tr></thead>
+                        <thead><tr><th>Order number</th><th>{special ? 'School' : 'Customer'}</th><th>Date</th><th>{special ? 'Total items ordered' : 'Items'}</th><th>Total value</th><th>Status</th><th>Due</th>{tab === 'customer_order' && <th>Actions</th>}{tab === 'invoice' && <th>Invoice</th>}</tr></thead>
                         <tbody>
                             {rows.length ? rows.map((item: any) => (
                                 <tr key={item.id} className={special ? 'school-order-row' : ''}>
@@ -176,9 +211,27 @@ export default function SalesOverviewPage() {
                                             </div>
                                         </td>
                                     )}
+                                    {tab === 'invoice' && (
+                                        <td>
+                                            <div className="workflow-actions" style={{ flexWrap: 'wrap', rowGap: 6 }}>
+                                                {item.invoice_url ? (
+                                                    <>
+                                                        <a className="school-action-icon view" title="View invoice" aria-label={`View invoice for order ${item.document_number}`} href={item.invoice_url} target="_blank" rel="noreferrer"><Eye size={18} /></a>
+                                                        <a className="school-action-icon view" title="Download invoice" aria-label={`Download invoice for order ${item.document_number}`} href={item.invoice_url} download={item.invoice_original_name || true}><Download size={18} /></a>
+                                                    </>
+                                                ) : <span className="muted">Not uploaded</span>}
+                                                {cap.invoice && (
+                                                    <label className="secondary-btn" style={{ cursor: busy === `invoice-${item.id}` ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                        <FileUp size={15} />{busy === `invoice-${item.id}` ? 'Uploading…' : (item.invoice_url ? 'Replace' : 'Upload')}
+                                                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }} disabled={busy === `invoice-${item.id}`} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) void uploadInvoice(item, file); }} />
+                                                    </label>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             )) : (
-                                <tr><td colSpan={8}><div className="sales-empty"><b>No orders found</b><span>Try changing or clearing the filters.</span></div></td></tr>
+                                <tr><td colSpan={tab === 'customer_order' || tab === 'invoice' ? 8 : 7}><div className="sales-empty"><b>No orders found</b><span>Try changing or clearing the filters.</span></div></td></tr>
                             )}
                         </tbody>
                     </table>
@@ -193,6 +246,7 @@ export default function SalesOverviewPage() {
             </section>
 
             {selected && <OrderDetailsModal order={selected} editable={cap.review && selected.status !== 'rejected'} busy={busy} run={run} close={() => setSelected(null)} />}
+            {confirmDialog && <ConfirmDialog config={confirmDialog} onCancel={() => setConfirmDialog(null)} />}
         </section>
     );
 }
@@ -251,6 +305,39 @@ function LegacyOrderMatrix({ rows, open }: any) {
                 </table>
             </div>
         </section>
+    );
+}
+
+function ConfirmDialog({ config, onCancel }: any) {
+    const [reason, setReason] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const confirm = async () => {
+        setSubmitting(true);
+        try {
+            await config.onConfirm(config.requiresReason ? reason : undefined);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+    return (
+        <div className="school-modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
+            <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+                <header className={config.tone === 'danger' ? 'danger' : ''}>
+                    {config.tone === 'danger' && <AlertTriangle size={20} />}
+                    <h2 id="confirm-dialog-title">{config.title}</h2>
+                </header>
+                <p>{config.message}</p>
+                {config.requiresReason && (
+                    <textarea rows={3} autoFocus placeholder={config.placeholder || 'Enter a reason…'} value={reason} onChange={e => setReason(e.target.value)} maxLength={1000} />
+                )}
+                <footer>
+                    <button className="secondary-btn" disabled={submitting} onClick={onCancel}>Cancel</button>
+                    <button className={config.tone === 'danger' ? 'primary-btn confirm-dialog-danger-btn' : 'primary-btn'} disabled={submitting || (config.requiresReason && !reason.trim())} onClick={confirm}>
+                        {submitting ? 'Working…' : config.confirmLabel || 'Confirm'}
+                    </button>
+                </footer>
+            </section>
+        </div>
     );
 }
 

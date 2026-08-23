@@ -20,6 +20,11 @@ class AuditLog extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function factory()
+    {
+        return $this->belongsTo(Factory::class);
+    }
+
     public static function record(string $event, string $description, ?Model $subject = null, array $old = [], array $new = []): self
     {
         $request = request();

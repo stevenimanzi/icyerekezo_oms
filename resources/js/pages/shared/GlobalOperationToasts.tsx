@@ -6,6 +6,9 @@ type ToastKind = 'success' | 'error' | 'warning' | 'info';
 type ToastItem = { id: number; kind: ToastKind; title: string; message: string };
 
 const mutationMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+// Login/logout already give their own feedback (inline form error, or an immediate
+// redirect) — a generic "Completed" toast on top of that is just noise.
+const silentPaths = new Set(['/api/auth/login', '/api/auth/logout']);
 
 function firstMessage(payload: any): string {
     const validation = payload?.errors && Object.values(payload.errors).flat().find(value => typeof value === 'string');
@@ -57,7 +60,10 @@ export default function GlobalOperationToasts() {
             const method = String(init?.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
             const rawUrl = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
             let isApiMutation = false;
-            try { isApiMutation = mutationMethods.has(method) && new URL(rawUrl, window.location.origin).pathname.startsWith('/api/'); } catch {}
+            try {
+                const path = new URL(rawUrl, window.location.origin).pathname;
+                isApiMutation = mutationMethods.has(method) && path.startsWith('/api/') && !silentPaths.has(path);
+            } catch {}
 
             try {
                 const response = await originalFetch(input, init);

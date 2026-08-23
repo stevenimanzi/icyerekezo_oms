@@ -8,12 +8,13 @@ async function api(url: string, options: RequestInit = {}) {
     try {
         payload = JSON.parse(text);
     } catch {
-        throw new Error('Invalid server response.');
+        throw new Error('The page could not load. Please try again.');
     }
-    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Request failed.');
+    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Could not save this. Please try again.');
     return payload;
 }
 
+const machineStatusLabels: Record<string, string> = { operational: 'Operational', maintenance: 'Under maintenance', down: 'Down', broken: 'Broken', retired: 'Retired' };
 const machineBlank = { name: '', code: '', type: '', department_id: '', serial_number: '', manufacturer: '', model: '', location: '', installed_at: '', next_maintenance_at: '' };
 const requestBlank = { machine_id: '', maintenance_type: 'preventive', title: '', description: '', priority: 'normal', assigned_to: '', scheduled_at: '' };
 
@@ -27,6 +28,9 @@ export default function MachinesPage({ can }: any) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [editMachine, setEditMachine] = useState<any>(null);
+    const [machineEdit, setMachineEdit] = useState<any>({});
+    const [savingMachine, setSavingMachine] = useState(false);
 
     const load = () => api('/api/machines/overview').then(setData).catch((e: any) => setError(e.message));
     useEffect(() => { load(); const timer = setInterval(load, 5000); return () => clearInterval(timer); }, []);
@@ -56,6 +60,20 @@ export default function MachinesPage({ can }: any) {
             setSuccess('Maintenance request created.');
             await load();
         } catch (e: any) { setError(e.message); } finally { setBusy(false); }
+    };
+
+    const saveMachineEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingMachine(true);
+        try {
+            await api('/api/machines/' + editMachine.id, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: machineEdit.status, location: machineEdit.location, runtime_hours: machineEdit.runtime_hours || 0, next_maintenance_at: machineEdit.next_maintenance_at || null }),
+            });
+            setSuccess('Machine updated.');
+            setEditMachine(null);
+            await load();
+        } catch (e: any) { setError(e.message); } finally { setSavingMachine(false); }
     };
 
     const update = async (x: any) => {
@@ -175,7 +193,7 @@ export default function MachinesPage({ can }: any) {
                         <header>
                             <span><Factory size={20} /></span>
                             <div><b>{x.name}</b><small>{x.code} · {x.type}</small></div>
-                            <em className={'admin-status ' + x.status}>{x.status}</em>
+                            <em className={'admin-status ' + x.status}>{machineStatusLabels[x.status] || x.status}</em>
                         </header>
                         <dl>
                             <div><dt>Department</dt><dd>{x.department?.name || 'Not assigned'}</dd></div>
@@ -183,9 +201,53 @@ export default function MachinesPage({ can }: any) {
                             <div><dt>Runtime</dt><dd>{Number(x.runtime_hours)} hours</dd></div>
                             <div><dt>Next service</dt><dd>{x.next_maintenance_at ? new Date(x.next_maintenance_at).toLocaleString() : 'Not scheduled'}</dd></div>
                         </dl>
+                        {can('factory.manage') && (
+                            <button
+                                className="table-action"
+                                style={{ margin: '12px 16px 16px' }}
+                                onClick={() => {
+                                    setEditMachine(x);
+                                    setMachineEdit({ status: x.status, location: x.location || '', runtime_hours: x.runtime_hours || 0, next_maintenance_at: x.next_maintenance_at ? String(x.next_maintenance_at).slice(0, 16) : '' });
+                                }}
+                            >
+                                Edit
+                            </button>
+                        )}
                     </article>
                 ))}
             </div>
+
+            {editMachine && (
+                <div className="team-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setEditMachine(null); }}>
+                    <section className="team-modal" role="dialog" aria-modal="true" aria-labelledby="edit-machine-title">
+                        <header>
+                            <div><div><h2 id="edit-machine-title">Edit {editMachine.name}</h2><p>Update status, location, runtime or the next scheduled service.</p></div></div>
+                            <button type="button" aria-label="Close" onClick={() => setEditMachine(null)}>×</button>
+                        </header>
+                        <form className="admin-form" onSubmit={saveMachineEdit}>
+                            <div className="form-grid">
+                                <label>
+                                    Status
+                                    <select value={machineEdit.status} onChange={e => setMachineEdit({ ...machineEdit, status: e.target.value })}>
+                                        <option value="operational">Operational</option>
+                                        <option value="maintenance">Under maintenance</option>
+                                        <option value="down">Down</option>
+                                        <option value="broken">Broken</option>
+                                        <option value="retired">Retired / decommissioned</option>
+                                    </select>
+                                </label>
+                                <label>Location<input value={machineEdit.location} onChange={e => setMachineEdit({ ...machineEdit, location: e.target.value })} /></label>
+                                <label>Runtime hours<input type="number" min="0" value={machineEdit.runtime_hours} onChange={e => setMachineEdit({ ...machineEdit, runtime_hours: e.target.value })} /></label>
+                                <label>Next maintenance<input type="datetime-local" value={machineEdit.next_maintenance_at} onChange={e => setMachineEdit({ ...machineEdit, next_maintenance_at: e.target.value })} /></label>
+                            </div>
+                            <footer>
+                                <button type="button" className="secondary-btn" onClick={() => setEditMachine(null)}>Cancel</button>
+                                <button className="primary-btn" disabled={savingMachine}>{savingMachine ? 'Saving…' : 'Save changes'}</button>
+                            </footer>
+                        </form>
+                    </section>
+                </div>
+            )}
 
             <div className="admin-table-wrap">
                 <table className="admin-table">

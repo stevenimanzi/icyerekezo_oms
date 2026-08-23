@@ -41,6 +41,7 @@ final class RoleTemplateCatalog
         'logistics-officer' => ['Logistics Officer', 'logistics', ['logistics.*', 'sales.view', 'sales.fulfill', 'inventory.view', 'inventory.issue', 'reports.view']],
         'sales-officer' => ['Sales Officer', 'sales', ['sales.*', 'products.view', 'inventory.view', 'reports.view']],
         'accountant' => ['Accountant', 'finance', ['finance.*', 'sales.view', 'procurement.view', 'reports.*']],
+        'financial-manager' => ['Financial Manager', 'finance', ['finance.view', 'finance.receive_payment', 'finance.approve', 'sales.view', 'reports.view', 'reports.export']],
         'quality-manager' => ['Quality Manager', 'quality', ['quality.*', 'products.view', 'inventory.view', 'production.view', 'reports.view']],
         'hr-officer' => ['HR Officer', 'people', ['hr.*', 'users.view', 'users.create', 'users.update', 'factory.view', 'reports.view']],
         'health-safety-officer' => ['Health and Safety Officer', 'safety', ['safety.*', 'users.view', 'maintenance.view', 'reports.view']],

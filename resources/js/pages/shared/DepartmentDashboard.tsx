@@ -54,7 +54,7 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
     : <ProductionMetrics values={metrics} fr={fr} user={user} />}
 
    {logistics && <LogisticsCharts trends={logisticsTrends} fr={fr} money={money} />}
-   {isNoguchiSewing && <ProductionCharts trends={data?.production_trends || []} fr={fr} />}
+   {(isNoguchiSewing || (!hasDedicatedPanels && !warehouse)) && <ProductionCharts trends={data?.production_trends || []} fr={fr} />}
    {warehouse && <WarehouseStockChart trends={data?.stock_trends || []} fr={fr} number={number} />}
 
    {!hasDedicatedPanels && !warehouse && (

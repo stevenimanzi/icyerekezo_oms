@@ -23,7 +23,7 @@ export async function productionApi<T = any>(url: string, options: RequestInit =
     } catch {
         throw new Error('The server returned an invalid response.');
     }
-    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Something went wrong.');
+    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || "This didn't save. Please try again.");
     return payload;
 }
 

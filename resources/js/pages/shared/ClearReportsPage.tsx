@@ -1021,7 +1021,7 @@ function LogisticsDocument({ data }: any) {
       />
       <Table
         title="Warehouse stock balances"
-        headers={["Item", "SKU", "Warehouse", "Opening", "Received", "Issued", "Closing"]}
+        headers={["Item", "Code", "Warehouse", "Opening", "Received", "Issued", "Closing"]}
         rows={(data.stock_register || []).map((row: any) => [
           row.item,
           row.sku,
@@ -1094,7 +1094,7 @@ function Document({ data }: any) {
       {!departmentOnly && data.standard.show_stock_register && (
         <Table
           title="Warehouse stock register"
-          headers={["Item", "SKU", "Warehouse", "Opening balance", "Quantity in", "Quantity out", "Closing balance"]}
+          headers={["Item", "Code", "Warehouse", "Opening balance", "Quantity in", "Quantity out", "Closing balance"]}
           rows={(data.stock_register || []).map((row: any) => [
             row.item,
             row.sku,

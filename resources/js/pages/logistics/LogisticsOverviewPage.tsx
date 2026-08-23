@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertTriangle, Pencil, Plus, RefreshCw, Trash2, Truck } from 'lucide-react';
+import { OrderDetailsModal } from '../sales/SalesOverviewPage';
 
 async function api(url = '/api/logistics/overview', options: RequestInit = {}) {
     const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
@@ -21,6 +22,8 @@ const statusLabel: Record<string, string> = {
 };
 const blank = { sales_document_id: '', delivery_vehicle_id: '', destination: '', package_count: '1', total_weight: '', weight_unit: 'kg', planned_dispatch_at: '', delivery_notes: '' };
 const blankVehicle = { registration_number: '', vehicle_type: 'Truck', driver_name: '', driver_phone: '', status: 'available', capacity: '', capacity_unit: 'kg' };
+const orderStatusLabel: Record<string, string> = { pending: 'Pending', accepted: 'Accepted', partial: 'Partial delivery', delivered: 'Delivered', rejected: 'Rejected' };
+const orderNumber = (value: any) => String(value || '').replace(/^LEGACY-NOGUCHI-/i, '');
 
 export default function LogisticsOverviewPage({ initialTab = 'shipments', can = () => true }: { initialTab?: string; can?: (permission: string) => boolean }) {
     const [data, setData] = useState<any>(null);
@@ -33,21 +36,60 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     const [form, setForm] = useState<any>(blank);
     const [vehicleForm, setVehicleForm] = useState<any>(null);
     const [updated, setUpdated] = useState<Date | null>(null);
+    const [schoolOrders, setSchoolOrders] = useState<any>(null);
+    const [schoolOrdersPage, setSchoolOrdersPage] = useState(1);
+    const [selectedOrder, setSelectedOrder] = useState<any>(null);
+
+    const specialized = data?.specialization?.type === 'noguchi_school_garments';
 
     const load = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            setData(await api());
+            const overview = await api();
+            setData(overview);
             setUpdated(new Date());
             setError('');
+            if (overview?.specialization?.type === 'noguchi_school_garments') {
+                await loadSchoolOrders(silent);
+            }
         } catch (reason: any) {
             if (!silent) setError(reason.message);
         } finally {
             if (!silent) setLoading(false);
         }
     };
+
+    // Noguchi school orders track delivery per garment line (quantity_delivered vs
+    // quantity_ordered) rather than through the generic vehicle/shipment workflow below,
+    // so "Delivery confirmation" pulls real order data from Sales instead of Shipment rows.
+    const loadSchoolOrders = async (silent = false) => {
+        try {
+            const result = await api(`/api/sales/overview?page=${schoolOrdersPage}`);
+            setSchoolOrders(result);
+        } catch (reason: any) {
+            if (!silent) setError(reason.message);
+        }
+    };
+
+    const runLine = async (key: any, url: string, method: string, payload: any) => {
+        setBusy(key);
+        setError('');
+        setSuccess('');
+        try {
+            const result = await api(url, { method, body: JSON.stringify(payload) });
+            setSuccess(result.message);
+            await loadSchoolOrders(true);
+            return true;
+        } catch (reason: any) {
+            setError(reason.message);
+            return false;
+        } finally {
+            setBusy(null);
+        }
+    };
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 15000); return () => window.clearInterval(timer); }, []);
     useEffect(() => setTab(initialTab), [initialTab]);
+    useEffect(() => { if (specialized) void loadSchoolOrders(); }, [schoolOrdersPage]);
 
     const summary = data?.summary || {};
     const shipments = data?.shipments?.data || [];
@@ -135,11 +177,14 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
         } finally { setBusy(null); }
     };
 
+    const schoolOrderRows = (schoolOrders?.documents?.data || []).filter((x: any) => x.document_type === 'customer_order');
+    const schoolOrdersLastPage = schoolOrders?.documents?.last_page || 1;
+
     const tabs: [string, string, number][] = [
         ['shipments', 'Shipments', summary.total_shipments],
         ['dispatch', 'Dispatch board', Number(summary.ready || 0) + Number(summary.in_transit || 0) + Number(summary.planned || 0)],
         ['vehicles', 'Vehicles and drivers', summary.vehicles],
-        ['proof', 'Delivery confirmation', summary.proof_of_delivery],
+        ['proof', 'Delivery confirmation', specialized ? (schoolOrders?.documents?.total || 0) : summary.proof_of_delivery],
     ];
 
     return (
@@ -217,8 +262,64 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
             {vehicleForm && <VehicleForm form={vehicleForm} setForm={setVehicleForm} submit={saveVehicle} busy={busy} />}
             {tab === 'vehicles' ? (
                 <VehicleTable vehicles={data?.vehicles || []} can={can} busy={busy} edit={(item: any) => setVehicleForm({ ...item, capacity: item.capacity || '' })} remove={deleteVehicle} />
+            ) : tab === 'proof' && specialized ? (
+                <SchoolDeliveryTable
+                    rows={schoolOrderRows} page={schoolOrdersPage} lastPage={schoolOrdersLastPage}
+                    setPage={setSchoolOrdersPage} view={(item: any) => setSelectedOrder(item)}
+                />
             ) : (
                 <ShipmentTable rows={rows} tab={tab} busy={busy} action={action} can={can} />
+            )}
+
+            {selectedOrder && (
+                <OrderDetailsModal
+                    order={selectedOrder} editable={can('sales.fulfill') && selectedOrder.status !== 'rejected'}
+                    busy={busy} run={runLine} close={() => setSelectedOrder(null)}
+                />
+            )}
+        </section>
+    );
+}
+
+function SchoolDeliveryTable({ rows, page, lastPage, setPage, view }: any) {
+    return (
+        <section className="panel sales-records">
+            <header><div><h2>Confirm deliveries</h2><p>Open an order to record how many of each garment were actually delivered — the remaining quantity and order status update automatically.</p></div></header>
+            <div className="admin-table-wrap">
+                <table className="admin-table">
+                    <thead><tr><th>Order number</th><th>School</th><th>Ordered</th><th>Delivered</th><th>Remaining</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        {rows.length ? rows.map((order: any) => {
+                            const ordered = Number(order.item_count || 0);
+                            const delivered = (order.lines || []).reduce((sum: number, line: any) => sum + Number(line.quantity_delivered || 0), 0);
+                            const remaining = Math.max(0, ordered - delivered);
+                            return (
+                                <tr key={order.id}>
+                                    <td><b>{orderNumber(order.document_number)}</b></td>
+                                    <td><b>{order.school?.name || order.customer_name}</b><small>{[order.school?.district, order.school?.sector, order.academic_year].filter(Boolean).join(' · ')}</small></td>
+                                    <td>{ordered.toLocaleString()}</td>
+                                    <td>{delivered.toLocaleString()}</td>
+                                    <td><b>{remaining.toLocaleString()}</b></td>
+                                    <td><span className={'admin-status ' + order.status}>{orderStatusLabel[order.status] || order.status}</span></td>
+                                    <td>
+                                        <div className="workflow-actions school-icon-actions">
+                                            <button className="school-action-icon accept" title="Record delivery" aria-label={`Record delivery for order ${order.document_number}`} onClick={() => view(order)}><Truck size={18} /></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        }) : (
+                            <tr><td colSpan={7}><Empty text="No school orders are ready for delivery yet." /></td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            {lastPage > 1 && (
+                <div className="school-pagination">
+                    <button className="secondary-btn" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
+                    <span>Page {page} of {lastPage}</span>
+                    <button className="secondary-btn" disabled={page >= lastPage} onClick={() => setPage(page + 1)}>Next</button>
+                </div>
             )}
         </section>
     );

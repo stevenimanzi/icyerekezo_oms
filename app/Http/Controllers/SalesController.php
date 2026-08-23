@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class SalesController extends Controller
@@ -39,7 +40,6 @@ class SalesController extends Controller
         $northernLocations = $specialized ? app(RwandaLocationService::class)->northernDistrictsAndSectors() : [];
         $documents = SalesDocument::query();
         $orders = (clone $documents)->where('document_type', 'customer_order');
-        $invoices = (clone $documents)->where('document_type', 'invoice');
         $list = SalesDocument::query()->with($specialized ? ['lines', 'school'] : []);
         if ($specialized) {
             $list->where('document_type', 'customer_order')
@@ -63,12 +63,12 @@ class SalesController extends Controller
                 'active_orders' => (clone $orders)->whereIn('status', ['accepted', 'partial'])->count(),
                 'completed_orders' => (clone $orders)->where('status', 'delivered')->count(),
                 'quotations' => (clone $documents)->where('document_type', 'quotation')->count(),
-                'invoices' => (clone $invoices)->count(),
+                'invoices' => (clone $orders)->whereNotNull('invoice_path')->count(),
                 'returns' => (clone $documents)->where('document_type', 'return')->count(),
-                'invoiced_amount' => (float) (clone $invoices)->sum('total_amount'),
-                'paid_amount' => (float) (clone $invoices)->sum('paid_amount'),
-                'outstanding_amount' => (float) (clone $invoices)->selectRaw('COALESCE(SUM(total_amount - paid_amount), 0) as balance')->value('balance'),
-                'past_due_invoices' => (clone $invoices)->whereNotIn('status', ['paid', 'cancelled'])->whereDate('due_date', '<', today())->count(),
+                'invoiced_amount' => (float) (clone $orders)->sum('total_amount'),
+                'paid_amount' => (float) (clone $orders)->sum('paid_amount'),
+                'outstanding_amount' => (float) (clone $orders)->selectRaw('COALESCE(SUM(total_amount - paid_amount), 0) as balance')->value('balance'),
+                'past_due_invoices' => (clone $orders)->whereNotNull('invoice_path')->whereNotIn('status', ['delivered', 'rejected'])->whereDate('due_date', '<', today())->count(),
             ],
             'documents' => $paginatedDocuments,
             'specialization' => $specialized ? [
@@ -86,7 +86,11 @@ class SalesController extends Controller
                     'statuses' => ['pending', 'accepted', 'partial', 'delivered', 'rejected'],
                 ],
             ] : null,
-            'capabilities' => ['review' => $request->user()->hasPermission('sales.fulfill'), 'create' => $request->user()->hasPermission('sales.create') || $request->user()->hasPermission('sales.fulfill')],
+            'capabilities' => [
+                'review' => $request->user()->hasPermission('sales.fulfill'),
+                'create' => $request->user()->hasPermission('sales.create') || $request->user()->hasPermission('sales.fulfill'),
+                'invoice' => $request->user()->hasPermission('sales.fulfill'),
+            ],
             'updated_at' => now()->toIso8601String(),
         ]);
     }
@@ -180,6 +184,27 @@ class SalesController extends Controller
         } catch (\Throwable) {
             // Delivery bookkeeping must never fail because a stock movement couldn't be posted.
         }
+    }
+
+    public function uploadInvoice(Request $request, SalesDocument $document): JsonResponse
+    {
+        abort_unless($document->document_type === 'customer_order', 422, 'Invoices can only be attached to customer orders.');
+        $data = $request->validate([
+            'invoice' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:15360'],
+        ]);
+        if ($document->invoice_path) {
+            Storage::disk('public')->delete($document->invoice_path);
+        }
+        $path = $data['invoice']->store('invoices/'.$document->factory_id, 'public');
+        $document->update([
+            'invoice_path' => $path,
+            'invoice_original_name' => $data['invoice']->getClientOriginalName(),
+            'invoice_uploaded_at' => now(),
+            'invoice_uploaded_by' => $request->user()->id,
+        ]);
+        AuditLog::record('sales.invoice_uploaded', "Uploaded invoice for order {$document->document_number}", $document);
+
+        return response()->json(['message' => 'Invoice uploaded.', 'document' => $document->fresh()]);
     }
 
     public function decide(Request $request, SalesDocument $document): JsonResponse

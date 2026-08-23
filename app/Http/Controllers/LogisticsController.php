@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AgreementDocument;
 use App\Models\AuditLog;
 use App\Models\DeliveryVehicle;
 use App\Models\SalesDocument;
 use App\Models\SalesDocumentLine;
+use App\Models\School;
+use App\Models\SchoolAgreementSignature;
 use App\Models\Shipment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -131,6 +134,66 @@ class LogisticsController extends Controller
         AuditLog::record('logistics.vehicle_deleted', "Deleted delivery vehicle {$registration}", $vehicle);
         $vehicle->delete();
         return response()->json(['message' => "Vehicle {$registration} deleted."]);
+    }
+
+    public function agreements(Request $request): JsonResponse
+    {
+        $factoryId = (int) $request->user()->current_factory_id;
+        $current = AgreementDocument::where('factory_id', $factoryId)->latest()->with('uploadedBy:id,name')->first();
+
+        $schools = School::where('factory_id', $factoryId)
+            ->when($request->string('search')->trim()->value(), fn ($q, $v) => $q->where('name', 'like', "%{$v}%"))
+            ->when($request->string('district')->trim()->value(), fn ($q, $v) => $q->where('district', $v))
+            ->when($request->string('sector')->trim()->value(), fn ($q, $v) => $q->where('sector', $v))
+            ->orderBy('name')
+            ->get(['id', 'name', 'district', 'sector']);
+
+        $signatures = $current
+            ? SchoolAgreementSignature::where('agreement_document_id', $current->id)->get()->keyBy('school_id')
+            : collect();
+
+        $rows = $schools->map(function (School $school) use ($signatures) {
+            $signature = $signatures->get($school->id);
+
+            return [
+                'id' => $school->id, 'name' => $school->name, 'district' => $school->district, 'sector' => $school->sector,
+                'signed' => (bool) $signature,
+                'signed_at' => $signature?->submitted_at,
+                'file_url' => $signature?->file_url,
+                'original_name' => $signature?->original_name,
+            ];
+        });
+
+        $status = $request->string('status')->trim()->value();
+        if ($status === 'signed') $rows = $rows->where('signed', true)->values();
+        elseif ($status === 'unsigned') $rows = $rows->where('signed', false)->values();
+
+        $allSchoolIds = School::where('factory_id', $factoryId)->pluck('id');
+        $signedCount = $current ? SchoolAgreementSignature::where('agreement_document_id', $current->id)->whereIn('school_id', $allSchoolIds)->count() : 0;
+
+        return response()->json([
+            'current' => $current,
+            'schools' => $rows->values(),
+            'summary' => ['total_schools' => $allSchoolIds->count(), 'signed' => $signedCount, 'unsigned' => max(0, $allSchoolIds->count() - $signedCount)],
+            'filters' => [
+                'districts' => School::where('factory_id', $factoryId)->whereNotNull('district')->distinct()->orderBy('district')->pluck('district'),
+                'sectors_by_district' => School::where('factory_id', $factoryId)->whereNotNull('district')->whereNotNull('sector')->select('district', 'sector')->distinct()->orderBy('sector')->get()->groupBy('district')->map(fn ($group) => $group->pluck('sector')->values()),
+            ],
+        ]);
+    }
+
+    public function uploadAgreement(Request $request): JsonResponse
+    {
+        $factoryId = (int) $request->user()->current_factory_id;
+        $data = $request->validate(['agreement' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:15360']]);
+        $path = $data['agreement']->store('agreements/'.$factoryId, 'public');
+        $document = AgreementDocument::create([
+            'factory_id' => $factoryId, 'file_path' => $path,
+            'original_name' => $data['agreement']->getClientOriginalName(), 'uploaded_by' => $request->user()->id,
+        ]);
+        AuditLog::record('logistics.agreement_uploaded', "Uploaded a new school agreement ({$document->original_name})", $document);
+
+        return response()->json(['message' => 'Agreement uploaded. Schools will see this version and can sign it.', 'document' => $document->load('uploadedBy:id,name')], 201);
     }
 
     private function vehicleData(Request $request, ?DeliveryVehicle $vehicle = null): array

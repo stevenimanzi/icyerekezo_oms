@@ -11,7 +11,7 @@ async function api(url: string, options: RequestInit = {}) {
     } catch {
         throw new Error('The server returned an invalid response.');
     }
-    if (!response.ok) throw new Error(data.message || Object.values(data.errors || {}).flat().join(' ') || 'Request failed.');
+    if (!response.ok) throw new Error(data.message || Object.values(data.errors || {}).flat().join(' ') || 'Could not save this. Please try again.');
     return data;
 }
 

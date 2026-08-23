@@ -336,7 +336,7 @@ function Boms({ rows, units, quantity }: any) {
                     <section key={bom.id}>
                         <header>
                             <div><h3>{bom.item?.name || bom.name}</h3><p>{bom.name} · Version {bom.version}</p></div>
-                            <span className={`admin-status ${bom.status === 'active' ? 'active' : 'pending'}`}>{bom.status}</span>
+                            <span className={`admin-status ${bom.status === 'active' ? 'active' : 'pending'}`}>{bom.status === 'active' ? 'Active' : 'Draft'}</span>
                         </header>
                         <div className="recipe-summary">
                             <span>Output <b>{quantity(bom.output_quantity, (units.get(bom.item?.unit_id) as any)?.symbol)}</b></span>
