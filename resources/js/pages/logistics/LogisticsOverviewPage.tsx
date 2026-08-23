@@ -95,6 +95,43 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     useEffect(() => setTab(initialTab), [initialTab]);
     useEffect(() => { if (specialized) void loadSchoolOrders(); }, [schoolOrdersPage]);
 
+    const loadAgreements = async () => {
+        try {
+            const params = new URLSearchParams(Object.fromEntries(Object.entries(agreementFilters).filter(([, v]) => v)));
+            const result = await api(`/api/logistics/agreements?${params.toString()}`);
+            setAgreementData(result);
+        } catch (reason: any) {
+            setError(reason.message);
+        }
+    };
+    useEffect(() => {
+        if (tab !== 'agreements') return;
+        const wait = window.setTimeout(() => void loadAgreements(), agreementFilters.search ? 300 : 0);
+        return () => window.clearTimeout(wait);
+    }, [tab, agreementFilters.status, agreementFilters.district, agreementFilters.sector, agreementFilters.search]);
+
+    const uploadAgreement = async () => {
+        if (!agreementFile) return;
+        setAgreementBusy(true);
+        setError('');
+        setSuccess('');
+        try {
+            const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
+            const form = new FormData();
+            form.append('agreement', agreementFile);
+            const response = await fetch('/api/logistics/agreements', { method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: form });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'The agreement could not be uploaded.');
+            setSuccess(payload.message);
+            setAgreementFile(null);
+            await loadAgreements();
+        } catch (reason: any) {
+            setError(reason.message);
+        } finally {
+            setAgreementBusy(false);
+        }
+    };
+
     const summary = data?.summary || {};
     const shipments = data?.shipments?.data || [];
     const rows = useMemo(() => (
