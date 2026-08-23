@@ -596,7 +596,7 @@ function Agreement({ data, load, setMessage, setError }: any) {
                         <div className="school-agreement-file">
                             <FileSignature size={22} />
                             <div><b>{agreement.original_name}</b><small>Uploaded {new Date(agreement.created_at).toLocaleDateString()}</small></div>
-                            <a className="secondary-btn" href={agreement.file_url} target="_blank" rel="noreferrer"><Download size={16} />Download</a>
+                            <a className="secondary-btn" href={agreement.file_url} download={agreement.original_name} target="_blank" rel="noreferrer"><Download size={16} />Download</a>
                         </div>
                     </section>
 

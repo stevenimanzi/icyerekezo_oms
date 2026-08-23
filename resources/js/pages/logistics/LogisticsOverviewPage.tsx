@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Download, FileSignature, FileUp, Pencil, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Truck } from 'lucide-react';
+import { AlertTriangle, Pencil, Plus, RefreshCw, Trash2, Truck } from 'lucide-react';
 import { OrderDetailsModal } from '../sales/SalesOverviewPage';
 
 async function api(url = '/api/logistics/overview', options: RequestInit = {}) {
@@ -39,10 +39,6 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     const [schoolOrders, setSchoolOrders] = useState<any>(null);
     const [schoolOrdersPage, setSchoolOrdersPage] = useState(1);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
-    const [agreementData, setAgreementData] = useState<any>(null);
-    const [agreementFilters, setAgreementFilters] = useState({ status: '', district: '', sector: '', search: '' });
-    const [agreementFile, setAgreementFile] = useState<File | null>(null);
-    const [agreementBusy, setAgreementBusy] = useState(false);
 
     const specialized = data?.specialization?.type === 'noguchi_school_garments';
 
@@ -94,43 +90,6 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 15000); return () => window.clearInterval(timer); }, []);
     useEffect(() => setTab(initialTab), [initialTab]);
     useEffect(() => { if (specialized) void loadSchoolOrders(); }, [schoolOrdersPage]);
-
-    const loadAgreements = async () => {
-        try {
-            const params = new URLSearchParams(Object.fromEntries(Object.entries(agreementFilters).filter(([, v]) => v)));
-            const result = await api(`/api/logistics/agreements?${params.toString()}`);
-            setAgreementData(result);
-        } catch (reason: any) {
-            setError(reason.message);
-        }
-    };
-    useEffect(() => {
-        if (tab !== 'agreements') return;
-        const wait = window.setTimeout(() => void loadAgreements(), agreementFilters.search ? 300 : 0);
-        return () => window.clearTimeout(wait);
-    }, [tab, agreementFilters.status, agreementFilters.district, agreementFilters.sector, agreementFilters.search]);
-
-    const uploadAgreement = async () => {
-        if (!agreementFile) return;
-        setAgreementBusy(true);
-        setError('');
-        setSuccess('');
-        try {
-            const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
-            const form = new FormData();
-            form.append('agreement', agreementFile);
-            const response = await fetch('/api/logistics/agreements', { method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: form });
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'The agreement could not be uploaded.');
-            setSuccess(payload.message);
-            setAgreementFile(null);
-            await loadAgreements();
-        } catch (reason: any) {
-            setError(reason.message);
-        } finally {
-            setAgreementBusy(false);
-        }
-    };
 
     const summary = data?.summary || {};
     const shipments = data?.shipments?.data || [];
@@ -226,7 +185,6 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
         ['dispatch', 'Dispatch board', Number(summary.ready || 0) + Number(summary.in_transit || 0) + Number(summary.planned || 0)],
         ['vehicles', 'Vehicles and drivers', summary.vehicles],
         ['proof', 'Delivery confirmation', specialized ? (schoolOrders?.documents?.total || 0) : summary.proof_of_delivery],
-        ['agreements', 'Agreements', agreementData?.summary?.total_schools || 0],
     ];
 
     return (
@@ -308,11 +266,6 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
                 <SchoolDeliveryTable
                     rows={schoolOrderRows} page={schoolOrdersPage} lastPage={schoolOrdersLastPage}
                     setPage={setSchoolOrdersPage} view={(item: any) => setSelectedOrder(item)}
-                />
-            ) : tab === 'agreements' ? (
-                <AgreementsPanel
-                    data={agreementData} filters={agreementFilters} setFilters={setAgreementFilters} can={can}
-                    file={agreementFile} setFile={setAgreementFile} busy={agreementBusy} upload={uploadAgreement}
                 />
             ) : (
                 <ShipmentTable rows={rows} tab={tab} busy={busy} action={action} can={can} />

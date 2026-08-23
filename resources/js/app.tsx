@@ -73,6 +73,7 @@ import FinancialReportsPage from "./pages/finance/FinancialReportsPage";
 import HrOverviewPage from "./pages/hr/HrOverviewPage";
 import SafetyOverviewPage from "./pages/safety/SafetyOverviewPage";
 import LogisticsOverviewPage from "./pages/logistics/LogisticsOverviewPage";
+import AgreementWorkspacePage from "./pages/logistics/AgreementWorkspacePage";
 import ProcurementOverviewPage from "./pages/procurement/ProcurementOverviewPage";
 import IncomingRequestsPage from "./pages/warehouse/IncomingRequestsPage";
 import ProfileSettingsPage from "./pages/shared/ProfileSettingsPage";
@@ -591,6 +592,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     dispatch: "logistics",
     vehicles: "logistics",
     "delivery-confirmation": "logistics",
+    agreement: "logistics",
     team: "team",
     hr: "team",
     safety: "team",
@@ -817,6 +819,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
             ["vehicles", Truck, locale === "en" ? "Vehicles & drivers" : "Véhicules et chauffeurs", "logistics.view"],
         ] as const : []),
         ["delivery-confirmation", PackageCheck, locale === "en" ? "Delivery confirmation" : "Confirmation de livraison", "logistics.deliver"],
+        ["agreement", FileSignature, locale === "en" ? "Agreement" : "Accord", "logistics.view"],
         ["reports", Activity, t.reports, "reports.view"],
     ] as const : isSalesUser ? [
         // ─── Sales Officer ───
@@ -1268,12 +1271,15 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                             <SafetyOverviewPage />
                         ) : ["logistics", "dispatch", "vehicles", "delivery-confirmation"].includes(activePage) ? (
                             <LogisticsOverviewPage
+                                can={can}
                                 initialTab={
                                     (
                                         { dispatch: "dispatch", vehicles: "vehicles", "delivery-confirmation": "proof" } as Record<string, string>
                                     )[activePage] || "shipments"
                                 }
                             />
+                        ) : activePage === "agreement" && isLogisticsUser ? (
+                            <AgreementWorkspacePage can={can} />
                         ) : activePage === "settings" ? (
                             <FactorySettingsPage />
                         ) : activePage === "team" ? (
