@@ -185,6 +185,7 @@ Route::prefix('api')->group(function () {
             Route::post('/school/orders/{document}/payments', [SchoolPortalController::class, 'payment']);
             Route::post('/school/orders/{document}/returns', [SchoolPortalController::class, 'returnItems']);
             Route::put('/school/profile', [SchoolPortalController::class, 'updateProfile']);
+            Route::post('/school/agreement', [SchoolPortalController::class, 'uploadAgreementSignature']);
             Route::get('/school/orders/{document}/pdf', [SchoolPortalController::class, 'pdf']);
             Route::get('/logistics/overview', [LogisticsController::class, 'overview'])->middleware('permission:logistics.view');
             Route::post('/logistics/shipments', [LogisticsController::class, 'storeShipment'])->middleware('permission:logistics.plan');
@@ -192,6 +193,8 @@ Route::prefix('api')->group(function () {
             Route::post('/logistics/vehicles', [LogisticsController::class, 'storeVehicle'])->middleware('permission:logistics.plan');
             Route::patch('/logistics/vehicles/{vehicle}', [LogisticsController::class, 'updateVehicle'])->middleware('permission:logistics.plan');
             Route::delete('/logistics/vehicles/{vehicle}', [LogisticsController::class, 'destroyVehicle'])->middleware('permission:logistics.plan');
+            Route::get('/logistics/agreements', [LogisticsController::class, 'agreements'])->middleware('permission:logistics.view');
+            Route::post('/logistics/agreements', [LogisticsController::class, 'uploadAgreement'])->middleware('permission:logistics.plan');
             Route::get('/procurement/overview', [ProcurementController::class, 'overview'])->middleware('permission:procurement.view');
             Route::post('/procurement/suppliers', [ProcurementController::class, 'storeSupplier'])->middleware('permission:procurement.create');
             Route::put('/procurement/suppliers/{supplier}/prices', [ProcurementController::class, 'savePrice'])->middleware('permission:procurement.create');
