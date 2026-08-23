@@ -24,13 +24,37 @@ class SchoolPortalController extends Controller
         $school = $this->school($request);
         $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $request->user()->current_factory_id)->where('school_id', $school->id)->where('document_type', 'customer_order')->with(['lines', 'shipments.vehicle'])->latest('document_date')->get();
         $ordered = (int) $orders->sum('item_count'); $delivered = (int) $orders->flatMap->lines->sum('quantity_delivered'); $rejected = (int) $orders->flatMap->lines->sum('quantity_rejected');
+        $agreement = AgreementDocument::where('factory_id', $request->user()->current_factory_id)->latest()->first();
         return response()->json([
             'school'=>$school, 'orders'=>$orders, 'stats'=>['total_items'=>$ordered,'delivered_items'=>$delivered,'rejected_items'=>$rejected,'undelivered_items'=>max(0,$ordered-$delivered-$rejected)],
             'payments'=>DB::table('school_payment_submissions')->where('school_id',$school->id)->latest()->get(),
             'returns'=>DB::table('school_returns')->where('school_returns.school_id',$school->id)->join('sales_document_lines','sales_document_lines.id','=','school_returns.sales_document_line_id')->select('school_returns.*','sales_document_lines.class_level','sales_document_lines.garment_category','sales_document_lines.gender','sales_document_lines.size','sales_document_lines.color')->latest('school_returns.created_at')->get(),
+            'agreement'=>$agreement,
+            'agreement_signature'=>$agreement ? SchoolAgreementSignature::where('agreement_document_id',$agreement->id)->where('school_id',$school->id)->first() : null,
             'locations'=>app(RwandaLocationService::class)->northernDistrictsAndSectors(), 'academic_years'=>['2025-2026','2026-2027','2027-2028','2028-2029','2029-2030','2030-2031'],
             'classes'=>['Nursery 1','Nursery 2','Nursery 3','P1','P2','P3','P4','P5','P6','S1','S2','S3','S4','S5','S6'], 'prices'=>self::PRICES,
         ]);
+    }
+
+    public function uploadAgreementSignature(Request $request): JsonResponse
+    {
+        $school = $this->school($request);
+        $factoryId = (int) $request->user()->current_factory_id;
+        $current = AgreementDocument::where('factory_id', $factoryId)->latest()->first();
+        abort_unless($current, 422, 'There is no agreement available to sign yet.');
+        $data = $request->validate(['signed_agreement' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:15360']]);
+
+        $existing = SchoolAgreementSignature::where('agreement_document_id', $current->id)->where('school_id', $school->id)->first();
+        if ($existing) {
+            Storage::disk('public')->delete($existing->file_path);
+        }
+        $path = $data['signed_agreement']->store('agreement-signatures/'.$factoryId, 'public');
+        $signature = SchoolAgreementSignature::updateOrCreate(
+            ['agreement_document_id' => $current->id, 'school_id' => $school->id],
+            ['factory_id' => $factoryId, 'file_path' => $path, 'original_name' => $data['signed_agreement']->getClientOriginalName(), 'submitted_at' => now()]
+        );
+
+        return response()->json(['message' => 'Signed agreement submitted.', 'signature' => $signature], 201);
     }
 
     public function storeOrder(Request $request): JsonResponse
