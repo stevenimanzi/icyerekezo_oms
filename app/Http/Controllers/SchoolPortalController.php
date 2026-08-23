@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AgreementDocument;
 use App\Models\SalesDocument;
 use App\Models\School;
+use App\Models\SchoolAgreementSignature;
 use App\Services\RwandaLocationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class SchoolPortalController extends Controller
