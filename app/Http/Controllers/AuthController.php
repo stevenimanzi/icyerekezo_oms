@@ -414,6 +414,7 @@ class AuthController extends Controller
             'employee_profile' => $user->employeeProfile,
             'school' => $user->school,
             'unread_notifications_count' => $user->unreadNotifications()->count(),
+            'notifications' => $user->notifications()->limit(5)->get(),
             'pending_orders_count' => \App\Models\SalesDocument::where('factory_id', $user->current_factory_id)->where('status', 'pending')->count(),
             'access_scope' => $user->current_factory_id ? \App\Support\OperationalScope::for($user)->payload() : null,
             'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),

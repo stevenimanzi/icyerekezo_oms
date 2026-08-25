@@ -381,8 +381,8 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [liveAnnouncements, setLiveAnnouncements] = useState(user.announcements || []);
-  const [liveNotifications, setLiveNotifications] = useState<AppNotificationItem[]>([]);
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [liveNotifications, setLiveNotifications] = useState<AppNotificationItem[]>(user.notifications || []);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(user.unread_notifications_count || 0);
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [isOnline, setIsOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
