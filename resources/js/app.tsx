@@ -969,6 +969,11 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                                     {lowStockCount}
                                 </i>
                             )}
+                            {group.key === "sales" && user.pending_orders_count > 0 && (
+                                <i className="bg-blue-500" title={locale === "en" ? "Pending incoming orders" : "Commandes entrantes en attente"}>
+                                    {user.pending_orders_count}
+                                </i>
+                            )}
                         </button>
                     ) : (
                         <div
@@ -992,6 +997,11 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                                         {key === "inventory" && lowStockCount > 0 && (
                                             <i title={locale === "en" ? "Low-stock items that need attention" : "Articles en stock faible nécessitant une attention"}>
                                                 {lowStockCount}
+                                            </i>
+                                        )}
+                                        {key === "sales" && user.pending_orders_count > 0 && (
+                                            <i className="bg-blue-500" title={locale === "en" ? "Pending incoming orders" : "Commandes entrantes en attente"}>
+                                                {user.pending_orders_count}
                                             </i>
                                         )}
                                     </button>
