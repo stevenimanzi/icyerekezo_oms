@@ -25,7 +25,7 @@ const splitUniformColor = (value: string) => {
 };
 const combineUniformColor = (top: string, bottom: string) => (top || bottom ? `${top}${UNIFORM_COLOR_SEPARATOR}${bottom}` : '');
 
-export default function SchoolPortalPage({ page, onNavigate }: any) {
+export default function SchoolPortalPage({ page, onNavigate, locale }: any) {
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
@@ -33,9 +33,9 @@ export default function SchoolPortalPage({ page, onNavigate }: any) {
     const load = () => api('/api/school/overview').then(setData).catch((e: any) => setError(e.message));
     useEffect(() => { load(); }, []);
 
-    if (!data) return <section className="module-page"><div className="panel school-loading">{error || 'Loading your school records…'}</div></section>;
+    if (!data) return <section className="module-page"><div className="panel school-loading">{error || (locale === 'en' ? 'Loading your school records…' : 'Chargement des dossiers de votre école…')}</div></section>;
 
-    const props = { data, load, error, setError, message, setMessage, selected, setSelected, onNavigate };
+    const props = { data, load, error, setError, message, setMessage, selected, setSelected, onNavigate, locale };
     return (
         <section className="module-page school-portal">
             {error && <div className="admin-alert error">{error}</div>}
@@ -627,7 +627,7 @@ function Agreement({ data, load, setMessage, setError }: any) {
     );
 }
 
-function SchoolProfile({ data, load, setMessage, setError }: any) {
+function SchoolProfile({ data, load, setMessage, setError, locale }: any) {
     const [form, setForm] = useState({ ...data.school });
     const [busy, setBusy] = useState(false);
     const sectors = data.locations[form.district] || [];
@@ -647,35 +647,35 @@ function SchoolProfile({ data, load, setMessage, setError }: any) {
 
     return (
         <>
-            <Heading title="School Profile" text="Keep your school identity and contact details correct." />
+            <Heading title={locale === "en" ? "School Profile" : "Profil de l'école"} text={locale === "en" ? "Keep your school identity and contact details correct." : "Gardez l'identité et les coordonnées de votre école à jour."} />
             <form className="panel school-profile-form modern" onSubmit={submit}>
                 <div className="school-profile-banner">
                     <div className="school-profile-avatar">{form.name?.slice(0, 2).toUpperCase()}</div>
-                    <span><small>SCHOOL ACCOUNT</small><b>{form.name || 'Your school'}</b><p>{data.school.email || 'No email recorded'} · {form.district || 'District not set'}</p></span>
+                    <span><small>{locale === "en" ? "SCHOOL ACCOUNT" : "COMPTE SCOLAIRE"}</small><b>{form.name || (locale === "en" ? "Your school" : "Votre école")}</b><p>{data.school.email || (locale === "en" ? "No email recorded" : "Aucun e-mail enregistré")} · {form.district || (locale === "en" ? "District not set" : "District non défini")}</p></span>
                     <i><Building2 /></i>
                 </div>
                 <div className="school-profile-content">
                     <section>
-                        <header><div><UserRound /><span><b>School information</b><small>Basic identity and contact person</small></span></div></header>
+                        <header><div><UserRound /><span><b>{locale === "en" ? "School information" : "Informations sur l'école"}</b><small>{locale === "en" ? "Basic identity and contact person" : "Identité de base et personne de contact"}</small></span></div></header>
                         <div className="school-profile-grid">
-                            <Field icon={<Building2 />} label="School Name"><input required placeholder="Enter the school name" value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} /></Field>
-                            <Field icon={<UserRound />} label="Head Teacher"><input placeholder="Enter the head teacher's name" value={form.contact_name || ''} onChange={e => setForm({ ...form, contact_name: e.target.value })} /></Field>
-                            <Field icon={<Phone />} label="Phone Number"><input type="tel" placeholder="e.g. 0780 000 000" value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} /></Field>
-                            <Field icon={<Mail />} label="Email Address"><input type="email" placeholder="school@example.rw" value={form.email || ''} onChange={e => setForm({ ...form, email: e.target.value })} /></Field>
+                            <Field icon={<Building2 />} label={locale === "en" ? "School Name" : "Nom de l'école"}><input required placeholder={locale === "en" ? "Enter the school name" : "Entrez le nom de l'école"} value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} /></Field>
+                            <Field icon={<UserRound />} label={locale === "en" ? "Head Teacher" : "Directeur(trice)"}><input placeholder={locale === "en" ? "Enter the head teacher's name" : "Entrez le nom du directeur(trice)"} value={form.contact_name || ''} onChange={e => setForm({ ...form, contact_name: e.target.value })} /></Field>
+                            <Field icon={<Phone />} label={locale === "en" ? "Phone Number" : "Numéro de téléphone"}><input type="tel" placeholder={locale === "en" ? "e.g. 0780 000 000" : "ex. 0780 000 000"} value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} /></Field>
+                            <Field icon={<Mail />} label={locale === "en" ? "Email Address" : "Adresse e-mail"}><input type="email" placeholder="school@example.rw" value={form.email || ''} onChange={e => setForm({ ...form, email: e.target.value })} /></Field>
                         </div>
                     </section>
                     <section>
-                        <header><div><MapPin /><span><b>School location</b><small>Select the district first, then the sector</small></span></div></header>
+                        <header><div><MapPin /><span><b>{locale === "en" ? "School location" : "Emplacement de l'école"}</b><small>{locale === "en" ? "Select the district first, then the sector" : "Sélectionnez le district d'abord, puis le secteur"}</small></span></div></header>
                         <div className="school-profile-grid">
-                            <Field icon={<MapPin />} label="District">
+                            <Field icon={<MapPin />} label={locale === "en" ? "District" : "District"}>
                                 <select required value={form.district || ''} onChange={e => setForm({ ...form, district: e.target.value, sector: '' })}>
-                                    <option value="">Choose a district</option>
+                                    <option value="">{locale === "en" ? "Choose a district" : "Choisissez un district"}</option>
                                     {Object.keys(data.locations).map(x => <option key={x}>{x}</option>)}
                                 </select>
                             </Field>
-                            <Field icon={<MapPin />} label="Sector">
+                            <Field icon={<MapPin />} label={locale === "en" ? "Sector" : "Secteur"}>
                                 <select required disabled={!form.district} value={form.sector || ''} onChange={e => setForm({ ...form, sector: e.target.value })}>
-                                    <option value="">{form.district ? 'Choose a sector' : 'Choose a district first'}</option>
+                                    <option value="">{form.district ? (locale === "en" ? "Choose a sector" : "Choisissez un secteur") : (locale === "en" ? "Choose a district first" : "Choisissez d'abord un district")}</option>
                                     {sectors.map((x: string) => <option key={x}>{x}</option>)}
                                 </select>
                             </Field>
@@ -683,8 +683,8 @@ function SchoolProfile({ data, load, setMessage, setError }: any) {
                     </section>
                 </div>
                 <footer>
-                    <p><CheckCircle2 />Keep these details accurate so orders and deliveries reach the correct school.</p>
-                    <button className="primary-btn" disabled={busy}><Save size={17} />{busy ? 'Saving…' : 'Save Profile'}</button>
+                    <p><CheckCircle2 />{locale === "en" ? "Keep these details accurate so orders and deliveries reach the correct school." : "Gardez ces informations exactes pour que les commandes et les livraisons atteignent la bonne école."}</p>
+                    <button className="primary-btn" disabled={busy}><Save size={17} />{busy ? (locale === "en" ? 'Saving…' : 'Enregistrement…') : (locale === "en" ? 'Save Profile' : 'Enregistrer le profil')}</button>
                 </footer>
             </form>
         </>
