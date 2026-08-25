@@ -1212,7 +1212,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
             <div className={`page ${isSchoolUser ? "school-page" : ""}`}>
                 {isSchoolUser && ["dashboard", "new-order", "order-history", "financials", "return-items", "returns-history", "agreement", "school-profile"].includes(activePage) ? (
                     <PageBoundary resetKey={`school-${activePage}`}>
-                        <SchoolPortalPage page={activePage} onNavigate={setActivePage} />
+                        <SchoolPortalPage page={activePage} onNavigate={setActivePage} locale={locale} />
                     </PageBoundary>
                 ) : (
                     <PageBoundary resetKey={activePage}>
