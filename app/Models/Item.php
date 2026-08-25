@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['factory_id', 'category_id', 'unit_id', 'type', 'name', 'sku', 'barcode', 'description', 'standard_cost', 'selling_price', 'tax_rate', 'minimum_stock', 'reorder_level', 'batch_tracked', 'serial_tracked', 'expiry_tracked', 'storage_conditions', 'is_active'])]
+#[Fillable(['factory_id', 'category_id', 'unit_id', 'type', 'name', 'sku', 'barcode', 'description', 'standard_cost', 'tax_rate', 'minimum_stock', 'reorder_level', 'batch_tracked', 'serial_tracked', 'expiry_tracked', 'storage_conditions', 'is_active'])]
 class Item extends Model
 {
     use BelongsToFactory, SoftDeletes;

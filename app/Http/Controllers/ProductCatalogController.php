@@ -23,7 +23,7 @@ class ProductCatalogController extends Controller
         $items = Item::query()->with('unit:id,name,symbol')->leftJoin('item_categories', 'item_categories.id', '=', 'items.category_id')
             ->orderBy('items.name')->get([
                 'items.id', 'items.category_id', 'items.unit_id', 'items.name', 'items.sku', 'items.type', 'items.description',
-                'items.standard_cost', 'items.selling_price', 'items.reorder_level', 'items.is_active', 'item_categories.name as category_name',
+                'items.standard_cost', 'items.reorder_level', 'items.is_active', 'item_categories.name as category_name',
             ])->map(function ($item) use ($stock) {
                 $item->quantity_on_hand = (float) ($stock[$item->id] ?? 0);
                 $item->stock_value = $item->quantity_on_hand * (float) $item->standard_cost;

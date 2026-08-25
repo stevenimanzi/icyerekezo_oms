@@ -68,13 +68,13 @@ class ProductCatalogTest extends TestCase
         ])->assertCreated()->json('unit.id');
         $item = $this->postJson('/api/inventory/items', [
             'name' => 'Steel coil', 'type' => 'raw_material', 'category_id' => $category, 'unit_id' => $unit,
-            'standard_cost' => 1200, 'selling_price' => 1500, 'reorder_level' => 10,
+            'standard_cost' => 1200, 'reorder_level' => 10,
         ])->assertCreated()->json();
 
         $this->assertNotEmpty($item['sku']);
         $this->patchJson('/api/inventory/items/'.$item['id'], [
             'name' => 'Steel coil premium', 'type' => 'raw_material', 'category_id' => $category, 'unit_id' => $unit,
-            'standard_cost' => 1300, 'selling_price' => 1600, 'reorder_level' => 12, 'is_active' => true,
+            'standard_cost' => 1300, 'reorder_level' => 12, 'is_active' => true,
         ])->assertOk()->assertJsonPath('item.name', 'Steel coil premium');
         $this->getJson('/api/products/overview')->assertOk()
             ->assertJsonPath('summary.items', 1)->assertJsonPath('items.0.category_name', 'Metals');

@@ -20,7 +20,7 @@ async function request(url: string, options: RequestInit = {}) {
     }
     return payload;
 }
-const emptyItem = { name: '', type: 'raw_material', category_id: '', unit_id: '', standard_cost: '0', selling_price: '0', reorder_level: '0', is_active: true };
+const emptyItem = { name: '', type: 'raw_material', category_id: '', unit_id: '', standard_cost: '0', reorder_level: '0', is_active: true };
 const emptyCategory = { name: '' };
 const emptyUnit = { name: '', symbol: '', dimension: 'count', precision: '2', is_active: true };
 
@@ -55,7 +55,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
         setSuccess('');
         setModal(type);
         setForm(row
-            ? type === 'item' ? { name: row.name, type: row.type, category_id: row.category_id || '', unit_id: row.unit_id || '', standard_cost: String(row.standard_cost || 0), selling_price: String(row.selling_price || 0), reorder_level: String(row.reorder_level || 0), is_active: Boolean(row.is_active) }
+            ? type === 'item' ? { name: row.name, type: row.type, category_id: row.category_id || '', unit_id: row.unit_id || '', standard_cost: String(row.standard_cost || 0), reorder_level: String(row.reorder_level || 0), is_active: Boolean(row.is_active) }
                 : type === 'category' ? { name: row.name }
                     : { name: row.name, symbol: row.symbol, dimension: row.dimension, precision: String(row.precision), is_active: Boolean(row.is_active) }
             : type === 'item' ? emptyItem : type === 'category' ? emptyCategory : emptyUnit);
@@ -232,7 +232,7 @@ function ItemForm({ form, setForm, data }: any) {
                 </select>
             </Field>
             <Field label="Cost per unit"><input type="number" min="0" step="0.01" value={form.standard_cost} onChange={e => set('standard_cost', e.target.value)} /></Field>
-            <Field label="Selling price"><input type="number" min="0" step="0.01" value={form.selling_price} onChange={e => set('selling_price', e.target.value)} /></Field>
+
             <Field label="Low-stock warning level"><input type="number" min="0" step="0.001" value={form.reorder_level} onChange={e => set('reorder_level', e.target.value)} /></Field>
             <label className="warehouse-check"><input type="checkbox" checked={form.is_active} onChange={e => set('is_active', e.target.checked)} /><span>Active and available for factory work</span></label>
         </div>
