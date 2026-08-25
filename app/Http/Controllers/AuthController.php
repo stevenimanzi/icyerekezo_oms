@@ -413,6 +413,8 @@ class AuthController extends Controller
             'workspace' => $user->is_platform_admin && ! $user->current_factory_id ? 'platform_admin' : ($roles->first()?->dashboard_key ?? 'operations'),
             'employee_profile' => $user->employeeProfile,
             'school' => $user->school,
+            'unread_notifications_count' => $user->unreadNotifications()->count(),
+            'pending_orders_count' => \App\Models\SalesDocument::where('factory_id', $user->current_factory_id)->where('status', 'pending')->count(),
             'access_scope' => $user->current_factory_id ? \App\Support\OperationalScope::for($user)->payload() : null,
             'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
             'announcements' => PlatformAnnouncement::whereNotNull('published_at')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->latest('published_at')->limit(10)->get(['id', 'title', 'message', 'severity', 'published_at']),
