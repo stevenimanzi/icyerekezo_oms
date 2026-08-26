@@ -2490,7 +2490,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                 <form className="auth-card" onSubmit={submit}>
                     <div className="auth-heading">
                         <h2>{mode === "forgot" ? (locale === "en" ? "Reset your password" : "Réinitialiser le mot de passe") : words.title}</h2>
-                        <p style={{ whiteSpace: "nowrap" }}>{mode === "forgot" ? (locale === "en" ? "Enter your email and we'll send a reset link." : "Entrez votre e-mail pour recevoir un lien.") : words.subtitle}</p>
+                        <p>{mode === "forgot" ? (locale === "en" ? "Enter your email and we'll send a reset link." : "Entrez votre e-mail pour recevoir un lien.") : words.subtitle}</p>
                     </div>
                     {error && <div className="form-error">{error}</div>}
 
