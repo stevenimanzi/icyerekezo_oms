@@ -186,8 +186,12 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
-        $credentials = $request->validate(['email' => ['required', 'email'], 'password' => ['required', 'string'], 'remember' => ['nullable', 'boolean']]);
-        $user = User::where('email', Str::lower($credentials['email']))->first();
+        $credentials = $request->validate(['email' => ['required', 'string'], 'password' => ['required', 'string'], 'remember' => ['nullable', 'boolean']]);
+        
+        $loginField = Str::lower($credentials['email']);
+        $user = User::where('email', $loginField)
+            ->orWhere('username', $loginField)
+            ->first();
         if (! $user || ! $user->is_active || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json(['message' => 'The provided credentials are incorrect.'], 422);
         }
