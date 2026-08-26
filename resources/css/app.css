@@ -922,12 +922,8 @@ th,.admin-table th { font-size:12px; }td,.admin-table td { font-size:14px; }.pro
   .cutting-workspace .noguchi-cutting-report thead tr:first-child th,.report-page .noguchi-cutting-report thead tr:first-child th {
     background:#fff!important; color:#000!important;
   }
-  .cutting-workspace .noguchi-cutting-report thead tr:nth-child(2) th,.report-page .noguchi-cutting-report thead tr:nth-child(2) th {
-  }
   .cutting-workspace .noguchi-cutting-report td,.report-page .noguchi-cutting-report td {
     font-size:11px!important; padding:14px 16px!important; border:0.5px solid #000!important; color:#000!important; vertical-align:middle!important;
-  }
-  .cutting-workspace .noguchi-cutting-report tbody tr:last-child td,.report-page .noguchi-cutting-report tbody tr:last-child td {
   }
   
   .cutting-workspace .noguchi-cutting-report tbody tr:nth-child(even) td,.report-page .noguchi-cutting-report tbody tr:nth-child(even) td {
