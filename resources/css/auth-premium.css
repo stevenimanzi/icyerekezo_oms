@@ -227,6 +227,10 @@
     backdrop-filter: blur(18px);
 }
 
+.auth-heading {
+    margin-bottom: 24px;
+}
+
 .auth-heading > span {
     color: var(--auth-blue);
     font-size: 11px;
