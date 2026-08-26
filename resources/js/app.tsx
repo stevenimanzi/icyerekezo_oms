@@ -395,6 +395,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
   const [notice, setNotice] = useState<string | null>(null);
   const [activePage, setActivePage] = useState(() => pageFromLocation(user));
   const skipHistory = useRef(true);
+  const topbarRef = useRef<HTMLElement>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [liveAnnouncements, setLiveAnnouncements] = useState(user.announcements || []);
@@ -443,6 +444,18 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         audit: "Internal audit workspace",
       } as Record<string, string>
     )[user.workspace] || t.overview;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (topbarRef.current && !topbarRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+        setProfileOpen(false);
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
@@ -1088,7 +1101,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         </aside>
         {sidebarOpen && <button className="backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
         <main className="main-area">
-            <header className="topbar">
+            <header className="topbar" ref={topbarRef}>
                 <button className="icon-btn menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
                     <Menu size={21} />
                 </button>
