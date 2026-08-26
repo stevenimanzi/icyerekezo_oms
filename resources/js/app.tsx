@@ -101,6 +101,9 @@ type AuthUser = {
   school?: { id: number; name: string; district?: string; sector?: string; contact_name?: string; phone?: string; email?: string } | null;
   active_assignments: { id: number; assignment_type: string; title: string; priority: string; status: string; due_at?: string }[];
   announcements?: { id: number; title: string; message: string; severity: string; published_at: string }[];
+  notifications?: AppNotificationItem[];
+  unread_notifications_count?: number;
+  pending_orders_count?: number;
   subscription?: { id: number; status: string; plan?: { id: number; name: string; code: string; features: string[] } } | null;
   system?: { name: string; tagline?: string; logo_url?: string; support_email?: string; support_phone?: string; currency_code?: string; timezone?: string };
 };
@@ -895,31 +898,29 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     // ─── Nav Grouping Logic ───
     // Some roles see their flat nav collapsed into labelled groups (e.g. warehouse keepers
     // get one "Stock Management" group instead of three separate top-level items).
-    const navGroupDefs: Record<string, { label: string; icon: any; children: string[] }> = useMemo(() => {
+    const navGroupDefs = useMemo<Record<string, { label: string; icon: any; children: string[] }>>(() => {
+        let defs: Record<string, { label: string; icon: any; children: string[] }> = {};
         if (isSchoolUser) {
-            return {
+            defs = {
                 orders: { label: locale === "en" ? "Orders" : "Commandes", icon: ShoppingCart, children: ["new-order", "order-history"] },
                 returns: { label: locale === "en" ? "Returns" : "Retours", icon: RotateCcw, children: ["return-items", "returns-history"] },
             };
-        }
-        if (isWarehouseUser) {
-            return {
+        } else if (isWarehouseUser) {
+            defs = {
                 stock: { label: locale === "en" ? "Stock Management" : "Gestion de stock", icon: Warehouse, children: ["incoming-requests", "inventory", "products"] },
             };
-        }
-        if (isLogisticsUser && !isNoguchiFactory) {
-            return {
+        } else if (isLogisticsUser && !isNoguchiFactory) {
+            defs = {
                 delivery: { label: locale === "en" ? "Deliveries" : "Livraisons", icon: Truck, children: ["logistics", "dispatch", "vehicles", "delivery-confirmation"] },
             };
-        }
-        if (isFactoryAdmin || isFactoryOwner) {
-            return {
+        } else if (isFactoryAdmin || isFactoryOwner) {
+            defs = {
                 supply: { label: locale === "en" ? "Supply Chain" : "Chaîne d'approvisionnement", icon: ShoppingCart, children: ["procurement", "inventory", "products"] },
                 operations: { label: locale === "en" ? "Operations" : "Opérations", icon: Gauge, children: ["production", "quality", "machines"] },
                 commercial: { label: locale === "en" ? "Commercial" : "Commercial", icon: PackageOpen, children: ["sales", "logistics"] },
             };
         }
-        return {};
+        return defs;
     }, [locale, isSchoolUser, isWarehouseUser, isLogisticsUser, isNoguchiFactory, isFactoryAdmin, isFactoryOwner]);
 
     // Build grouped nav structure
@@ -983,7 +984,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                                     {lowStockCount}
                                 </i>
                             )}
-                            {group.key === "sales" && user.pending_orders_count > 0 && (
+                            {group.key === "sales" && (user.pending_orders_count ?? 0) > 0 && (
                                 <i className="bg-blue-500" title={locale === "en" ? "Pending incoming orders" : "Commandes entrantes en attente"}>
                                     {user.pending_orders_count}
                                 </i>
@@ -1013,7 +1014,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                                                 {lowStockCount}
                                             </i>
                                         )}
-                                        {key === "sales" && user.pending_orders_count > 0 && (
+                                        {key === "sales" && (user.pending_orders_count ?? 0) > 0 && (
                                             <i className="bg-blue-500" title={locale === "en" ? "Pending incoming orders" : "Commandes entrantes en attente"}>
                                                 {user.pending_orders_count}
                                             </i>
@@ -1147,7 +1148,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                                                 if (!item.read_at) {
                                                     api("/api/notifications/" + item.id + "/read", { method: "POST" }).then(() => {
                                                         setLiveNotifications((current) => current.map((n) => (n.id === item.id ? { ...n, read_at: new Date().toISOString() } : n)));
-                                                        setUnreadNotificationCount((count) => Math.max(0, count - 1));
+                                                        setUnreadNotificationCount((count: number) => Math.max(0, count - 1));
                                                     }).catch(() => {});
                                                 }
                                                 setNotificationsOpen(false);
@@ -1226,7 +1227,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                                 onMarkRead={(id) => {
                                     api("/api/notifications/" + id + "/read", { method: "POST" }).then(() => {
                                         setLiveNotifications((current) => current.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)));
-                                        setUnreadNotificationCount((count) => Math.max(0, count - 1));
+                                        setUnreadNotificationCount((count: number) => Math.max(0, count - 1));
                                     }).catch(() => {});
                                 }}
                                 onMarkAllRead={() => {
