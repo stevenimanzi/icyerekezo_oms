@@ -2300,7 +2300,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
             ...(schoolAuth
                 ? {
                     title: mode === "login" ? "School administrator sign in" : "Create your school account",
-                    subtitle: mode === "login" ? "Sign in to place and follow your school orders." : "Register your school to place and manage uniform orders.",
+                    subtitle: mode === "login" ? "Sign in to place and follow your school orders." : "",
                     name: "Administrator name",
                     factory: "School name",
                     industry: "District",
@@ -2345,7 +2345,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
             ...(schoolAuth
                 ? {
                     title: mode === "login" ? "Connexion administrateur scolaire" : "Creer le compte de votre ecole",
-                    subtitle: mode === "login" ? "Connectez-vous pour passer et suivre les commandes de votre ecole." : "Inscrivez votre ecole pour gerer ses commandes de tenues.",
+                    subtitle: mode === "login" ? "Connectez-vous pour passer et suivre les commandes de votre ecole." : "",
                     name: "Nom de l'administrateur",
                     factory: "Nom de l'ecole",
                     industry: "District",
@@ -2490,7 +2490,9 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                 <form className="auth-card" onSubmit={submit}>
                     <div className="auth-heading">
                         <h2>{mode === "forgot" ? (locale === "en" ? "Reset your password" : "Réinitialiser le mot de passe") : words.title}</h2>
-                        <p style={{ whiteSpace: "normal" }}>{mode === "forgot" ? (locale === "en" ? "Enter your email and we'll send a reset link." : "Entrez votre e-mail pour recevoir un lien.") : words.subtitle}</p>
+                        {(mode === "forgot" || words.subtitle) && (
+                            <p style={{ whiteSpace: "normal" }}>{mode === "forgot" ? (locale === "en" ? "Enter your email and we'll send a reset link." : "Entrez votre e-mail pour recevoir un lien.") : words.subtitle}</p>
+                        )}
                     </div>
                     {error && <div className="form-error">{error}</div>}
 
