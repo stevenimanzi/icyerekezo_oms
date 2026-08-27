@@ -53,6 +53,12 @@ Route::get('/fix-everything', function () {
     // 1. Generate all correct roles and permissions
     \App\Support\RoleTemplateCatalog::createFor($factory);
     
+    // Ensure factory-owner gets its specific permissions (since it's not in the TEMPLATES array)
+    $ownerRole = \App\Models\Role::where('factory_id', $factory->id)->where('slug', 'factory-owner')->first();
+    if ($ownerRole) {
+        $ownerRole->permissions()->sync(\App\Support\RoleTemplateCatalog::ownerPermissionIds());
+    }
+    
     // 2. Ensure Noguchi has an unlimited subscription
     $plan = \App\Models\SubscriptionPlan::firstOrCreate(
         ['code' => 'UNLIMITED-ENT'],

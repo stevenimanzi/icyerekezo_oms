@@ -724,6 +724,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["production", Gauge, locale === "en" ? "Production Configuration" : "Configuration de production", "production.view"],
         ["team", Users, t.people, "users.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
+        ["logistics", Truck, locale === "en" ? "Logistics report" : "Rapport logistique", "reports.view"],
         ["reports", Activity, t.reports, "reports.view"],
     ] as const : isFinancialManager ? [
         // ─── Financial Manager ───
