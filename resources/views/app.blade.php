@@ -8,6 +8,19 @@
     @php($systemName = \App\Models\SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'))
     @php($systemLogo = \App\Models\SystemSetting::valueFor('logo_url', '/assets/images/icyerekezo_oms_logo.svg'))
     <title>{{ $systemName }}</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="ICYEREKEZO OMS is the leading Factory Management System in Rwanda. Streamline order management, garment manufacturing, production tracking, and logistics with our comprehensive ERP solution.">
+    <meta name="keywords" content="factory management system in rwanda, order management system, garment manufacturing software, production tracking software, school uniform manufacturing, ERP for factories, logistics software rwanda, textile factory management, Icyerekezo OMS, factory software rwanda">
+    <meta name="author" content="Steven IMANZI">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $systemName }} - Factory Management System in Rwanda">
+    <meta property="og:description" content="Streamline your factory operations, orders, and manufacturing processes with the best factory management system in Rwanda.">
+    <meta property="og:image" content="{{ $systemLogo }}">
+    <meta property="og:site_name" content="{{ $systemName }}">
+    
     <link rel="icon" href="{{ $systemLogo }}">
     <link rel="apple-touch-icon" href="/assets/images/pwa/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">

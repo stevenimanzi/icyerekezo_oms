@@ -994,3 +994,10 @@ small, .caption, .meta, .eyebrow, .factory-card span, .workspace-banner small {
   .summary-report-sheet th, .summary-report-sheet td { border: 1px solid #64748b; padding: 4px 3px; }
   .summary-report-sheet th { background: #dbeafe !important; color: #17366f !important; font-size: 8px; text-transform: uppercase; }
 }
+
+[data-theme='dark'] .brand-logo { filter: brightness(0) invert(1); opacity: 0.95; }
+[data-theme='dark'] .metric-icon.blue { background: rgba(37,99,235, 0.2); }
+[data-theme='dark'] .metric-icon.amber { background: rgba(223, 123, 29, 0.2); }
+[data-theme='dark'] .metric-icon.violet { background: rgba(124, 58, 237, 0.2); }
+[data-theme='dark'] .metric-icon.green { background: rgba(21, 155, 102, 0.2); }
+[data-theme='dark'] .metric-icon.red { background: rgba(220, 38, 38, 0.2); }
