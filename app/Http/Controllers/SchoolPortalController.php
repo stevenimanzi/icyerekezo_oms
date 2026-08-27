@@ -62,14 +62,16 @@ class SchoolPortalController extends Controller
         $school=$this->school($request); $factoryId=(int)$request->user()->current_factory_id;
         $data=$request->validate(['academic_year'=>['required',Rule::in(['2025-2026','2026-2027','2027-2028','2028-2029','2029-2030','2030-2031'])],'lines'=>['required','array','min:1'],'lines.*.class_level'=>['required','string','max:30'],'lines.*.garment_category'=>['required',Rule::in(['Uniform','Sweater','Sport Uniform','T-shirt','Overall'])],'lines.*.gender'=>['required',Rule::in(['Boy','Girl','Unisex'])],'lines.*.size'=>['required','string','max:20'],'lines.*.color'=>['nullable','string','max:255'],'lines.*.quantity_ordered'=>['required','integer','min:1']]);
         foreach($data['lines'] as $line){abort_if($line['garment_category']==='T-shirt'&&!preg_match('/^S[1-6]$/',$line['class_level']),422,'T-Shirts are available only for S1 to S6.');abort_if($line['garment_category']==='Overall'&&!preg_match('/^S[4-6]$/',$line['class_level']),422,'Overalls are available only for S4 to S6.');}
-        abort_if(SalesDocument::withoutGlobalScopes()->where('factory_id',$factoryId)->where('school_id',$school->id)->where('academic_year',$data['academic_year'])->where('document_type','customer_order')->where('status','!=','rejected')->exists(),422,'This school already has an active order for the selected academic year.');
+        if (SalesDocument::withoutGlobalScopes()->where('factory_id',$factoryId)->where('school_id',$school->id)->where('academic_year',$data['academic_year'])->where('document_type','customer_order')->where('status','!=','rejected')->exists()) {
+            return response()->json(['message' => 'This school already has an active order for the selected academic year. Please edit your existing order instead of placing a new one.'], 400);
+        }
         $total=collect($data['lines'])->sum(function($line){$level=str_starts_with($line['class_level'],'P')?'Primary':(str_starts_with($line['class_level'],'S')?'Secondary':'Nursery');return $line['quantity_ordered']*(self::PRICES[$level][$line['garment_category']]??0);});
         $order=DB::transaction(function()use($data,$school,$factoryId,$request,$total){$order=SalesDocument::withoutGlobalScopes()->create(['factory_id'=>$factoryId,'school_id'=>$school->id,'document_type'=>'customer_order','document_number'=>'SCH-'.now()->format('YmdHis').'-'.$school->id,'customer_name'=>$school->name,'customer_email'=>$school->email,'academic_year'=>$data['academic_year'],'status'=>'pending','currency_code'=>'RWF','total_amount'=>$total,'item_count'=>collect($data['lines'])->sum('quantity_ordered'),'document_date'=>today(),'created_by'=>$request->user()->id]);$order->lines()->createMany(array_map(fn($line)=>$line+['factory_id'=>$factoryId,'item_id'=>\App\Models\Item::resolveFinishedGood($factoryId,$line['garment_category'])->id],$data['lines']));return $order;});
         
         if ($order->customer_email) {
             try {
                 \Illuminate\Support\Facades\Mail::to($order->customer_email)->send(new \App\Mail\SchoolOrderNotificationMail($order, 'placed'));
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 report($e);
             }
         }

@@ -53,7 +53,7 @@ class Item extends Model
             [
                 'unit_id' => Unit::withoutGlobalScopes()->where('factory_id', $factoryId)
                     ->where(fn ($query) => $query->where('dimension', 'count')->orWhere('symbol', 'pcs'))
-                    ->value('id') ?? Unit::withoutGlobalScopes()->where('factory_id', $factoryId)->value('id'),
+                    ->value('id') ?? Unit::withoutGlobalScopes()->where('factory_id', $factoryId)->value('id') ?? Unit::withoutGlobalScopes()->create(['factory_id' => $factoryId, 'name' => 'Pieces', 'symbol' => 'pcs', 'dimension' => 'count', 'precision' => 0])->id,
                 'sku' => self::generateSku($factoryId, 'finished_good'),
                 'is_active' => true,
             ]
