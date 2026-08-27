@@ -45,6 +45,7 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState<Record<string, any>>({});
     const [auditFilters, setAuditFilters] = useState({ search: '', event: '', factory_id: '', from: '', to: '' });
+    const [usersFilters, setUsersFilters] = useState({ tab: 'all', search: '', active: '', page: 1 });
     const [Icon, title, description] = pageInfo[page] || pageInfo['platform-dashboard'];
     const endpoint = ({
         'platform-dashboard': '/api/platform/overview', factories: '/api/platform/factories', 'platform-users': '/api/platform/users',
@@ -56,9 +57,12 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
         setBusy(true);
         setError('');
         try {
-            const url = page === 'audit-logs'
-                ? `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(auditFilters).filter(([, v]) => v)))}`
-                : endpoint;
+            let url = endpoint;
+            if (page === 'audit-logs') {
+                url = `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(auditFilters).filter(([, v]) => v)))}`;
+            } else if (page === 'platform-users') {
+                url = `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(usersFilters).filter(([, v]) => v)))}`;
+            }
             setData(await request(url));
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Unable to load.');
@@ -66,6 +70,7 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
     };
     useEffect(() => { setShowForm(false); setForm({}); load(); }, [page]);
     useEffect(() => { if (page === 'audit-logs') load(); }, [auditFilters]);
+    useEffect(() => { if (page === 'platform-users') load(); }, [usersFilters]);
     useEffect(() => {
         if (!['support-center', 'platform-dashboard', 'backups'].includes(page)) return;
         const timer = window.setInterval(() => request(endpoint).then(setData).catch(() => {}), 5000);
@@ -136,15 +141,50 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
 
             {page === 'platform-users' && (
                 <>
+                    <div className="admin-form" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, padding: 16, marginBottom: 14 }}>
+                        <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
+                            {['all', 'factories', 'schools'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    type="button"
+                                    onClick={() => setUsersFilters({ ...usersFilters, tab, page: 1 })}
+                                    className={`table-action ${usersFilters.tab === tab ? 'active' : ''}`}
+                                    style={usersFilters.tab === tab ? { background: 'var(--primary)', color: 'white', borderColor: 'var(--primary)' } : {}}
+                                >
+                                    {tab === 'all' ? 'All users' : tab === 'factories' ? 'Factory users' : 'School users'}
+                                </button>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <input placeholder="Search users by name or email" value={usersFilters.search} onChange={(e) => setUsersFilters({ ...usersFilters, search: e.target.value, page: 1 })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 7, background: 'var(--panel)', color: 'var(--text)' }} />
+                            <select value={usersFilters.active} onChange={(e) => setUsersFilters({ ...usersFilters, active: e.target.value, page: 1 })}>
+                                <option value="">Any status</option>
+                                <option value="1">Active only</option>
+                                <option value="0">Suspended only</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <UserForm open={showForm} factories={data?.factories || []} submit={(values: any) => run('/api/platform/users', 'POST', values, 'Factory user created successfully.')} />
                     <AdminTable
-                        headers={['User', 'Email', 'Factories', 'Active', 'Password']}
+                        headers={['User', 'Email', 'Assignment', 'Active', 'Password']}
                         rows={records.map((item: any) => [
-                            <b>{item.name}</b>, item.email, item.factories?.map((f: any) => f.name).join(', ') || 'Not assigned',
+                            <b>{item.name}</b>, item.email, 
+                            item.school ? `School: ${item.school.name}` : (item.factories?.map((f: any) => f.name).join(', ') || 'Not assigned'),
                             <Toggle checked={item.is_active} onChange={value => run(`/api/platform/users/${item.id}`, 'PATCH', { is_active: value })} />,
                             <button className="table-action" onClick={() => { const password = window.prompt(`Enter a new secure password for ${item.email}`); if (password) run(`/api/platform/users/${item.id}/password`, 'PUT', { password, password_confirmation: password }, 'Password reset successfully.'); }}>Reset password</button>,
                         ])}
                     />
+                    
+                    {data?.users && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+                            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Showing page {data.users.current_page || 1} of {data.users.last_page || 1} ({data.users.total || 0} total)</span>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button type="button" className="secondary-btn" disabled={!data.users.current_page || data.users.current_page === 1} onClick={() => setUsersFilters({ ...usersFilters, page: (data.users.current_page || 1) - 1 })}>Previous</button>
+                                <button type="button" className="secondary-btn" disabled={!data.users.last_page || data.users.current_page === data.users.last_page} onClick={() => setUsersFilters({ ...usersFilters, page: (data.users.current_page || 1) + 1 })}>Next</button>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
 

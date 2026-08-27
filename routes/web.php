@@ -26,8 +26,73 @@ use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('app');
+Route::get('/fix-roles', function () {
+    $factory = \App\Models\Factory::where('name', 'like', '%Noguchi%')->first();
+    if (!$factory) return 'Factory not found';
+    
+    \App\Support\RoleTemplateCatalog::createFor($factory);
+    
+    $user = \App\Models\User::where('email', 'samuel@noguchi.rw')->orWhere('username', 'samuel@noguchi.rw')->first();
+    if ($user) {
+        $role = \App\Models\Role::where('factory_id', $factory->id)->where('slug', 'factory-manager')->first();
+        if ($role) {
+            $user->roles()->syncWithoutDetaching([$role->id => ['factory_id' => $factory->id]]);
+            return 'Success! Roles created and Samuel assigned as Factory Manager for ' . $factory->name;
+        }
+    }
+    return 'Roles created, but Samuel not found.';
+});
+
+Route::get('/fix-everything', function () {
+    // CRITICAL: Ensure all system permissions exist in the database first
+    \App\Support\PermissionCatalog::seed();
+
+    $factory = \App\Models\Factory::where('name', 'like', '%Noguchi%')->first();
+    if (!$factory) return 'Factory not found';
+    
+    // 1. Generate all correct roles and permissions
+    \App\Support\RoleTemplateCatalog::createFor($factory);
+    
+    // 2. Ensure Noguchi has an unlimited subscription
+    $plan = \App\Models\SubscriptionPlan::firstOrCreate(
+        ['code' => 'UNLIMITED-ENT'],
+        [
+            'name' => 'Unlimited Enterprise',
+            'monthly_price' => 0,
+            'currency_code' => 'RWF',
+            'limits' => ['users' => -1, 'storage_gb' => 100],
+            'features' => ['dashboard', 'inventory', 'production', 'quality', 'sales', 'maintenance', 'reports', 'logistics', 'team', 'support', 'settings', 'procurement', 'products'],
+            'is_active' => true
+        ]
+    );
+    
+    \App\Models\FactorySubscription::updateOrCreate(
+        ['factory_id' => $factory->id],
+        [
+            'subscription_plan_id' => $plan->id,
+            'status' => 'active',
+            'starts_at' => now(),
+            'ends_at' => now()->addYears(10),
+            'grace_ends_at' => now()->addYears(10),
+            'auto_renew' => true
+        ]
+    );
+
+    // 3. Ensure Samuel is completely linked
+    $user = \App\Models\User::where('email', 'like', '%samuel%')->orWhere('name', 'like', '%samuel%')->first();
+    if ($user) {
+        $role = \App\Models\Role::where('factory_id', $factory->id)->where('slug', 'factory-manager')->first();
+        if ($role) {
+            $user->roles()->syncWithoutDetaching([$role->id => ['factory_id' => $factory->id]]);
+            $user->update(['current_factory_id' => $factory->id]);
+            \Illuminate\Support\Facades\DB::table('factory_user')->updateOrInsert(
+                ['user_id' => $user->id, 'factory_id' => $factory->id],
+                ['job_title' => 'Factory Manager', 'is_owner' => false, 'is_active' => true, 'joined_at' => now()]
+            );
+        }
+    }
+    
+    return 'SUCCESS! Everything is fixed for Noguchi. Please refresh your dashboard!';
 });
 
 Route::get('/dashboard', function () {

@@ -116,7 +116,27 @@ class PlatformAdminController extends Controller
 
     public function users(Request $request): JsonResponse
     {
-        return response()->json(['users' => User::where('is_platform_admin', false)->with('factories:id,name')->when($request->string('search')->value(), fn ($q, $search) => $q->where(fn ($builder) => $builder->where('name', 'like', "%$search%")->orWhere('email', 'like', "%$search%")))->latest()->paginate(25), 'factories' => Factory::with(['roles:id,factory_id,name,slug'])->orderBy('name')->get(['id', 'name'])]);
+        $query = User::where('is_platform_admin', false)->with(['factories:id,name', 'school:id,name']);
+        
+        $tab = $request->string('tab')->value();
+        if ($tab === 'factories') {
+            $query->whereHas('factories');
+        } elseif ($tab === 'schools') {
+            $query->whereNotNull('school_id');
+        }
+
+        if ($request->has('active') && $request->string('active')->value() !== '') {
+            $query->where('is_active', $request->boolean('active'));
+        }
+
+        if ($search = $request->string('search')->value()) {
+            $query->where(fn ($builder) => $builder->where('name', 'like', "%$search%")->orWhere('email', 'like', "%$search%"));
+        }
+
+        return response()->json([
+            'users' => $query->latest()->paginate(10)->withQueryString(), 
+            'factories' => Factory::with(['roles:id,factory_id,name,slug'])->orderBy('name')->get(['id', 'name'])
+        ]);
     }
 
     public function storeFactoryUser(Request $request): JsonResponse
