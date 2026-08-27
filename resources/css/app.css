@@ -986,3 +986,11 @@ small, .caption, .meta, .eyebrow, .factory-card span, .workspace-banner small {
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     }
 }
+@media print {
+  .summary-report-sheet { display: block !important; border:0; box-shadow:none; }
+  .summary-report-sheet > header { display: none; }
+  .summary-report-sheet .admin-table-wrap { overflow: visible !important; }
+  .summary-report-sheet table { font-size: 9px; color: #0f172a; width: 100%; border-collapse: collapse; }
+  .summary-report-sheet th, .summary-report-sheet td { border: 1px solid #64748b; padding: 4px 3px; }
+  .summary-report-sheet th { background: #dbeafe !important; color: #17366f !important; font-size: 8px; text-transform: uppercase; }
+}

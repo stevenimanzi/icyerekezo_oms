@@ -45,8 +45,7 @@ class AuthController extends Controller
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'School registration is currently closed. Please contact support.');
         $this->reclaimUnverifiedEmail($request->input('email', ''));
         $locations = app(RwandaLocationService::class)->northernDistrictsAndSectors();
-        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
-        if (app()->isProduction()) $passwordRule->uncompromised();
+        $passwordRule = PasswordRule::min(4);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'], 'school_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email'], 'phone' => ['required', 'string', 'max:40'],
@@ -91,10 +90,7 @@ class AuthController extends Controller
     {
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'New factory registration is currently closed. Please contact support.');
         $this->reclaimUnverifiedEmail($request->input('email', ''));
-        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
-        if (app()->isProduction()) {
-            $passwordRule->uncompromised();
-        }
+        $passwordRule = PasswordRule::min(4);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -251,10 +247,7 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request): JsonResponse
     {
-        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
-        if (app()->isProduction()) {
-            $passwordRule->uncompromised();
-        }
+        $passwordRule = PasswordRule::min(4);
         $data = $request->validate([
             'current_password' => ['required', 'string'],
             'password' => ['required', 'confirmed', $passwordRule],
@@ -290,10 +283,7 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request): JsonResponse
     {
-        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
-        if (app()->isProduction()) {
-            $passwordRule->uncompromised();
-        }
+        $passwordRule = PasswordRule::min(4);
 
         $data = $request->validate([
             'token'    => ['required', 'string'],

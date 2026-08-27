@@ -103,16 +103,57 @@ class DepartmentDashboardController extends Controller
             ->orderBy('items.name')
             ->limit(20)
             ->get(['items.id', 'items.name', 'items.sku', 'items.reorder_level', 'units.symbol as unit', DB::raw('SUM(stock_balances.quantity_on_hand) as quantity_on_hand')]);
-        $stockTrends = collect(range(6, 0))->map(function (int $daysAgo) use ($stockTransactions) {
-            $day = today()->subDays($daysAgo);
-            $dayTransactions = (clone $stockTransactions)->whereDate('occurred_at', $day);
-
-            return [
-                'date' => $day->format('M j'),
-                'received' => (float) (clone $dayTransactions)->where('quantity_delta', '>', 0)->sum('quantity_delta'),
-                'issued' => abs((float) (clone $dayTransactions)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
-            ];
-        })->values();
+        $period = $request->query('period', 'all_time');
+        $now = now();
+        
+        $stockTrends = match ($period) {
+            'daily' => collect(range(23, 0))->map(function (int $hoursAgo) use ($stockTransactions, $now) {
+                $time = $now->copy()->subHours($hoursAgo);
+                $hourTransactions = (clone $stockTransactions)->whereBetween('occurred_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()]);
+                return [
+                    'date' => $time->format('H:00'),
+                    'received' => (float) (clone $hourTransactions)->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+                    'issued' => abs((float) (clone $hourTransactions)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+                ];
+            })->values(),
+            'weekly' => collect(range(6, 0))->map(function (int $daysAgo) use ($stockTransactions, $now) {
+                $day = $now->copy()->subDays($daysAgo);
+                $dayTransactions = (clone $stockTransactions)->whereDate('occurred_at', $day);
+                return [
+                    'date' => $day->format('M j'),
+                    'received' => (float) (clone $dayTransactions)->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+                    'issued' => abs((float) (clone $dayTransactions)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+                ];
+            })->values(),
+            'monthly' => collect(range(3, 0))->map(function (int $weeksAgo) use ($stockTransactions, $now) {
+                $start = $now->copy()->subWeeks($weeksAgo)->startOfWeek();
+                $end = $start->copy()->endOfWeek();
+                $weekTransactions = (clone $stockTransactions)->whereBetween('occurred_at', [$start, $end]);
+                return [
+                    'date' => $start->format('d M') . ' - ' . $end->format('d M'),
+                    'received' => (float) (clone $weekTransactions)->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+                    'issued' => abs((float) (clone $weekTransactions)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+                ];
+            })->values(),
+            'yearly' => collect(range(11, 0))->map(function (int $monthsAgo) use ($stockTransactions, $now) {
+                $month = $now->copy()->subMonths($monthsAgo);
+                $monthTransactions = (clone $stockTransactions)->whereYear('occurred_at', $month->year)->whereMonth('occurred_at', $month->month);
+                return [
+                    'date' => $month->format('M Y'),
+                    'received' => (float) (clone $monthTransactions)->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+                    'issued' => abs((float) (clone $monthTransactions)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+                ];
+            })->values(),
+            default => collect(range(4, 0))->map(function (int $yearsAgo) use ($stockTransactions, $now) {
+                $year = $now->copy()->subYears($yearsAgo);
+                $yearTransactions = (clone $stockTransactions)->whereYear('occurred_at', $year->year);
+                return [
+                    'date' => $year->format('Y'),
+                    'received' => (float) (clone $yearTransactions)->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+                    'issued' => abs((float) (clone $yearTransactions)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+                ];
+            })->values(),
+        };
 
         $activeOrderStatuses = ['draft', 'pending', 'confirmed', 'approved', 'processing', 'ready'];
         $incomingOrdersQuery = SalesDocument::withoutGlobalScopes()
@@ -128,23 +169,64 @@ class DepartmentDashboardController extends Controller
             'delayed' => (clone $shipmentsQuery)->whereNotIn('status', ['delivered', 'cancelled'])->whereNotNull('planned_dispatch_at')->where('planned_dispatch_at', '<', now())->count(),
             'available_vehicles' => DeliveryVehicle::withoutGlobalScopes()->where('factory_id', $factoryId)->where('status', 'available')->count(),
         ];
-        $logisticsTrends = collect(range(5, 0))->map(function (int $monthsAgo) use ($factoryId) {
-            $month = now()->startOfMonth()->subMonths($monthsAgo);
-            $orders = SalesDocument::withoutGlobalScopes()
-                ->where('factory_id', $factoryId)
-                ->where('document_type', 'customer_order')
-                ->whereBetween('document_date', [$month->toDateString(), $month->copy()->endOfMonth()->toDateString()]);
-            $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
-
-            return [
-                'month' => $month->format('M'),
-                'month_number' => $month->month,
-                'orders' => (clone $orders)->count(),
-                'order_value' => (float) (clone $orders)->sum('total_amount'),
-                'dispatched' => (clone $shipments)->whereBetween('dispatched_at', [$month, $month->copy()->endOfMonth()])->count(),
-                'delivered' => (clone $shipments)->whereBetween('delivered_at', [$month, $month->copy()->endOfMonth()])->count(),
-            ];
-        })->values();
+        $logisticsTrends = match ($period) {
+            'daily' => collect(range(23, 0))->map(function (int $hoursAgo) use ($factoryId, $now) {
+                $time = $now->copy()->subHours($hoursAgo);
+                $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereBetween('document_date', [$time->copy()->startOfHour()->toDateString(), $time->copy()->endOfHour()->toDateString()]);
+                $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
+                return [
+                    'month' => $time->format('H:00'), 'month_number' => $time->hour,
+                    'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
+                    'dispatched' => (clone $shipments)->whereBetween('dispatched_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()])->count(),
+                    'delivered' => (clone $shipments)->whereBetween('delivered_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()])->count(),
+                ];
+            })->values(),
+            'weekly' => collect(range(6, 0))->map(function (int $daysAgo) use ($factoryId, $now) {
+                $day = $now->copy()->subDays($daysAgo);
+                $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereDate('document_date', $day);
+                $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
+                return [
+                    'month' => $day->format('M j'), 'month_number' => $day->dayOfYear,
+                    'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
+                    'dispatched' => (clone $shipments)->whereDate('dispatched_at', $day)->count(),
+                    'delivered' => (clone $shipments)->whereDate('delivered_at', $day)->count(),
+                ];
+            })->values(),
+            'monthly' => collect(range(3, 0))->map(function (int $weeksAgo) use ($factoryId, $now) {
+                $start = $now->copy()->subWeeks($weeksAgo)->startOfWeek();
+                $end = $start->copy()->endOfWeek();
+                $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereBetween('document_date', [$start->toDateString(), $end->toDateString()]);
+                $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
+                return [
+                    'month' => $start->format('d M') . ' - ' . $end->format('d M'), 'month_number' => $start->weekOfYear,
+                    'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
+                    'dispatched' => (clone $shipments)->whereBetween('dispatched_at', [$start, $end])->count(),
+                    'delivered' => (clone $shipments)->whereBetween('delivered_at', [$start, $end])->count(),
+                ];
+            })->values(),
+            'yearly' => collect(range(11, 0))->map(function (int $monthsAgo) use ($factoryId, $now) {
+                $month = $now->copy()->startOfMonth()->subMonths($monthsAgo);
+                $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereBetween('document_date', [$month->toDateString(), $month->copy()->endOfMonth()->toDateString()]);
+                $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
+                return [
+                    'month' => $month->format('M'), 'month_number' => $month->month,
+                    'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
+                    'dispatched' => (clone $shipments)->whereBetween('dispatched_at', [$month, $month->copy()->endOfMonth()])->count(),
+                    'delivered' => (clone $shipments)->whereBetween('delivered_at', [$month, $month->copy()->endOfMonth()])->count(),
+                ];
+            })->values(),
+            default => collect(range(4, 0))->map(function (int $yearsAgo) use ($factoryId, $now) {
+                $year = $now->copy()->subYears($yearsAgo);
+                $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereYear('document_date', $year->year);
+                $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
+                return [
+                    'month' => $year->format('Y'), 'month_number' => $year->year,
+                    'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
+                    'dispatched' => (clone $shipments)->whereYear('dispatched_at', $year->year)->count(),
+                    'delivered' => (clone $shipments)->whereYear('delivered_at', $year->year)->count(),
+                ];
+            })->values(),
+        };
         $incomingOrders = (clone $incomingOrdersQuery)
             ->latest('document_date')->latest('id')->limit(12)
             ->get(['id', 'document_number', 'customer_name', 'status', 'currency_code', 'total_amount', 'item_count', 'document_date', 'due_date']);
@@ -153,17 +235,49 @@ class DepartmentDashboardController extends Controller
             ->latest('updated_at')->limit(15)
             ->get(['id', 'shipment_number', 'sales_document_id', 'delivery_vehicle_id', 'customer_name', 'destination', 'status', 'package_count', 'planned_dispatch_at', 'dispatched_at', 'delivered_at', 'proof_reference', 'updated_at']);
 
-        $productionTrends = collect(range(5, 0))->map(function (int $monthsAgo) use ($stageExecutions) {
-            $month = now()->startOfMonth()->subMonths($monthsAgo);
-            $executions = (clone $stageExecutions)->whereBetween('updated_at', [$month, $month->copy()->endOfMonth()]);
-            return [
-                'month' => $month->format('M'),
-                'month_number' => $month->month,
-                'output' => (float) (clone $executions)->sum('output_quantity'),
-                'rejected' => (float) (clone $executions)->sum('rejected_quantity'),
-                'waste' => (float) (clone $executions)->sum('waste_quantity'),
-            ];
-        })->values();
+        $productionTrends = match ($period) {
+            'daily' => collect(range(23, 0))->map(function (int $hoursAgo) use ($stageExecutions, $now) {
+                $time = $now->copy()->subHours($hoursAgo);
+                $executions = (clone $stageExecutions)->whereBetween('updated_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()]);
+                return [
+                    'month' => $time->format('H:00'), 'month_number' => $time->hour,
+                    'output' => (float) (clone $executions)->sum('output_quantity'), 'rejected' => (float) (clone $executions)->sum('rejected_quantity'), 'waste' => (float) (clone $executions)->sum('waste_quantity'),
+                ];
+            })->values(),
+            'weekly' => collect(range(6, 0))->map(function (int $daysAgo) use ($stageExecutions, $now) {
+                $day = $now->copy()->subDays($daysAgo);
+                $executions = (clone $stageExecutions)->whereDate('updated_at', $day);
+                return [
+                    'month' => $day->format('M j'), 'month_number' => $day->dayOfYear,
+                    'output' => (float) (clone $executions)->sum('output_quantity'), 'rejected' => (float) (clone $executions)->sum('rejected_quantity'), 'waste' => (float) (clone $executions)->sum('waste_quantity'),
+                ];
+            })->values(),
+            'monthly' => collect(range(3, 0))->map(function (int $weeksAgo) use ($stageExecutions, $now) {
+                $start = $now->copy()->subWeeks($weeksAgo)->startOfWeek();
+                $end = $start->copy()->endOfWeek();
+                $executions = (clone $stageExecutions)->whereBetween('updated_at', [$start, $end]);
+                return [
+                    'month' => $start->format('d M') . ' - ' . $end->format('d M'), 'month_number' => $start->weekOfYear,
+                    'output' => (float) (clone $executions)->sum('output_quantity'), 'rejected' => (float) (clone $executions)->sum('rejected_quantity'), 'waste' => (float) (clone $executions)->sum('waste_quantity'),
+                ];
+            })->values(),
+            'yearly' => collect(range(11, 0))->map(function (int $monthsAgo) use ($stageExecutions, $now) {
+                $month = $now->copy()->startOfMonth()->subMonths($monthsAgo);
+                $executions = (clone $stageExecutions)->whereBetween('updated_at', [$month, $month->copy()->endOfMonth()]);
+                return [
+                    'month' => $month->format('M'), 'month_number' => $month->month,
+                    'output' => (float) (clone $executions)->sum('output_quantity'), 'rejected' => (float) (clone $executions)->sum('rejected_quantity'), 'waste' => (float) (clone $executions)->sum('waste_quantity'),
+                ];
+            })->values(),
+            default => collect(range(4, 0))->map(function (int $yearsAgo) use ($stageExecutions, $now) {
+                $year = $now->copy()->subYears($yearsAgo);
+                $executions = (clone $stageExecutions)->whereYear('updated_at', $year->year);
+                return [
+                    'month' => $year->format('Y'), 'month_number' => $year->year,
+                    'output' => (float) (clone $executions)->sum('output_quantity'), 'rejected' => (float) (clone $executions)->sum('rejected_quantity'), 'waste' => (float) (clone $executions)->sum('waste_quantity'),
+                ];
+            })->values(),
+        };
 
         $finishingProgress = [];
         if ($isFinishingUser) {

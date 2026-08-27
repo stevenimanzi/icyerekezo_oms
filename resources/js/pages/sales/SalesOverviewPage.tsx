@@ -201,7 +201,7 @@ export default function SalesOverviewPage() {
                                         <td>
                                             <div className="workflow-actions school-icon-actions">
                                                 {special && item.lines?.length > 0 && <button className="school-action-icon view" title="See order details" aria-label="See order details" onClick={() => setSelected(item)}><Eye size={18} /></button>}
-                                                {cap.review && ['draft', 'pending', 'submitted'].includes(item.status) && (
+                                                {cap.review && ['draft', 'pending', 'submitted'].includes(String(item.status).toLowerCase()) && (
                                                     <>
                                                         <button className="school-action-icon accept" title="Accept this order" aria-label="Accept this order" disabled={busy === item.id} onClick={() => decide(item, 'accept')}><Check size={19} /></button>
                                                         <button className="school-action-icon reject" title="Reject this order" aria-label="Reject this order" disabled={busy === item.id} onClick={() => decide(item, 'reject')}><X size={19} /></button>

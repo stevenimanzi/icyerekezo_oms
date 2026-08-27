@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, Boxes, ChevronRight, Factory, PackageOpen, ShieldCheck, ShoppingCart, Zap } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
-async function loadDashboard() {
-    const response = await fetch('/api/executive/dashboard', { headers: { Accept: 'application/json' } });
+async function loadDashboard(period: string) {
+    const response = await fetch(`/api/executive/dashboard?period=${period}`, { headers: { Accept: 'application/json' } });
     const text = await response.text();
     let payload: any;
     try {
@@ -20,12 +20,13 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState('');
     const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+    const [period, setPeriod] = useState('all_time');
     const isOwner = user.roles?.some((role: any) => role.slug === 'factory-owner');
 
-    const load = () => loadDashboard()
+    const load = () => loadDashboard(period)
         .then(result => { setData(result); setError(''); setUpdatedAt(new Date()); })
         .catch(reason => setError(reason.message));
-    useEffect(() => { load(); const timer = window.setInterval(load, 5000); return () => window.clearInterval(timer); }, []);
+    useEffect(() => { load(); const timer = window.setInterval(load, 5000); return () => window.clearInterval(timer); }, [period]);
 
     const metrics = data?.metrics || {};
     const orders = data?.orders || [];
@@ -41,7 +42,16 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                     <h1>{isOwner ? (locale === 'fr' ? "Performances de l'usine" : 'Factory performance') : (locale === 'fr' ? "Opérations de l'usine" : 'Factory operations')}</h1>
                     <p>{greeting}</p>
                 </div>
-                {!isOwner && <button className="primary-btn" onClick={() => onNavigate('production')}><Zap size={17} />{locale === 'fr' ? 'Nouvel ordre de production' : 'New production order'}</button>}
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <select className="admin-input" value={period} onChange={(e) => setPeriod(e.target.value)} style={{ padding: '0.4rem 2rem 0.4rem 1rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                        <option value="daily">{locale === 'fr' ? 'Quotidien' : 'Daily'}</option>
+                        <option value="weekly">{locale === 'fr' ? 'Hebdomadaire' : 'Weekly'}</option>
+                        <option value="monthly">{locale === 'fr' ? 'Mensuel' : 'Monthly'}</option>
+                        <option value="yearly">{locale === 'fr' ? 'Annuel' : 'Yearly'}</option>
+                        <option value="all_time">{locale === 'fr' ? 'Tout le temps' : 'All Time'}</option>
+                    </select>
+                    {!isOwner && <button className="primary-btn" onClick={() => onNavigate('production')}><Zap size={17} />{locale === 'fr' ? 'Nouvel ordre de production' : 'New production order'}</button>}
+                </div>
             </div>
 
             {error && <div className="admin-alert error">{error}</div>}

@@ -132,6 +132,116 @@ function NoguchiPrintOrderTable({ rows }: any) {
   );
 }
 
+function NoguchiSummaryReportTable({ rows }: any) {
+  const summary: Record<string, Record<string, Record<string, number>>> = {};
+  
+  rows.forEach((order: any) => {
+    const district = order.school?.district || "Unknown District";
+    if (!summary[district]) summary[district] = {};
+    
+    (order.lines || []).forEach((line: any) => {
+      const classLevel = String(line.class_level || "").trim();
+      let level = "Unknown Level";
+      if (classLevel.match(/^Nursery/i)) level = "Nursery";
+      else if (classLevel.match(/^Primary/i)) level = "Primary";
+      else if (classLevel.match(/^Secondary/i)) level = "Secondary";
+      else if (classLevel.match(/^TVET/i)) level = "TVET";
+      else level = classLevel.split(" ")[0] || "Unknown Level";
+      
+      if (!summary[district][level]) summary[district][level] = {};
+      
+      const aliases: Record<string, string> = {
+        "tvet": "TVET", "overall": "TVET", "overcoat": "TVET",
+        "sport": "Sport Uniform", "sport uniform": "Sport Uniform",
+        "rain coat": "Rain Coat", "raincoat": "Rain Coat",
+        "polo": "Polo", "polo lacoste": "Polo",
+        "t-shirt": "T-shirt", "t shirt": "T-shirt"
+      };
+      
+      const rawCategory = String(line.garment_category || "").toLowerCase();
+      const category = aliases[rawCategory] || (printCategories.find(c => c.toLowerCase() === rawCategory) ? printCategories.find(c => c.toLowerCase() === rawCategory)! : (line.garment_category || "Other"));
+      
+      if (!summary[district][level][category]) summary[district][level][category] = 0;
+      summary[district][level][category] += Number(line.quantity_ordered || 0);
+    });
+  });
+
+  const districts = Object.keys(summary).sort();
+  let grandTotals: Record<string, number> = {};
+
+  return (
+    <section className="panel legacy-order-sheet summary-report-sheet">
+      <header>
+        <div>
+          <h2>School order summary report</h2>
+          <p>Aggregated order quantities by district and school level.</p>
+        </div>
+      </header>
+      <div className="admin-table-wrap">
+        <table className="admin-table legacy-order-table">
+          <thead>
+            <tr>
+              <th>District</th>
+              <th>School Level</th>
+              {printCategories.map(cat => <th key={cat}>{cat}</th>)}
+              <th>Total Items</th>
+            </tr>
+          </thead>
+          <tbody>
+          {districts.map(district => {
+            const levels = Object.keys(summary[district]).sort();
+            const districtTotals: Record<string, number> = {};
+            
+            return (
+              <React.Fragment key={district}>
+                {levels.map((level, i) => {
+                  let rowTotal = 0;
+                  return (
+                    <tr key={`${district}-${level}`}>
+                      {i === 0 ? <td rowSpan={levels.length + 1}><b>{district}</b></td> : null}
+                      <td>{level}</td>
+                      {printCategories.map(cat => {
+                        const val = summary[district][level][cat] || 0;
+                        rowTotal += val;
+                        districtTotals[cat] = (districtTotals[cat] || 0) + val;
+                        grandTotals[cat] = (grandTotals[cat] || 0) + val;
+                        return <td key={cat}>{val > 0 ? number(val) : "—"}</td>;
+                      })}
+                      <td><b>{rowTotal > 0 ? number(rowTotal) : "—"}</b></td>
+                    </tr>
+                  );
+                })}
+                <tr style={{ backgroundColor: "var(--light)", fontWeight: "600" }}>
+                  <td>{district} Total</td>
+                  {printCategories.map(cat => (
+                    <td key={cat}>{districtTotals[cat] > 0 ? number(districtTotals[cat]) : "—"}</td>
+                  ))}
+                  <td>{Object.values(districtTotals).reduce((a, b) => a + b, 0) > 0 ? number(Object.values(districtTotals).reduce((a, b) => a + b, 0)) : "—"}</td>
+                </tr>
+              </React.Fragment>
+            );
+          })}
+          {districts.length === 0 && (
+            <tr><td colSpan={printCategories.length + 3}>No orders found for the selected filters.</td></tr>
+          )}
+        </tbody>
+        {districts.length > 0 && (
+          <tfoot>
+            <tr style={{ backgroundColor: "#2563eb", color: "white", fontWeight: "bold" }}>
+              <td colSpan={2} style={{ color: "white" }}>GRAND TOTAL</td>
+              {printCategories.map(cat => (
+                <td key={cat} style={{ color: "white" }}>{grandTotals[cat] > 0 ? number(grandTotals[cat]) : "—"}</td>
+              ))}
+              <td style={{ color: "white" }}>{Object.values(grandTotals).reduce((a, b) => a + b, 0) > 0 ? number(Object.values(grandTotals).reduce((a, b) => a + b, 0)) : "—"}</td>
+            </tr>
+          </tfoot>
+        )}
+      </table>
+      </div>
+    </section>
+  );
+}
+
 function DailyRegister({ data }: any) {
   const days = data.daily_activity || [];
 
@@ -1143,6 +1253,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false }: 
   const [updated, setUpdated] = useState<Date | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [reportPage, setReportPage] = useState(1);
+  const [reportTab, setReportTab] = useState<'quantity' | 'summary'>('quantity');
 
   // Only apply the server's default period if the user didn't request one via the URL.
   const hasInitialPeriod = useRef(searchParams.has("period"));
@@ -1256,7 +1367,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false }: 
           </div>
           <div className="workflow-actions report-action-row">
             {noguchiOrdersOnly && (
-              <a className="secondary-btn" href={`/api/reports/orders.xlsx?${new URLSearchParams(filters)}`}>
+              <a className="secondary-btn" href={reportTab === 'summary' ? `/api/reports/summary.xlsx?${new URLSearchParams(filters)}` : `/api/reports/orders.xlsx?${new URLSearchParams(filters)}`}>
                 Export Excel
               </a>
             )}
@@ -1369,7 +1480,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false }: 
             <span>ICYEREKEZO OMS · School Garment Logistics</span>
           </div>
           <div>
-            <h1>School Order Quantity Report</h1>
+            <h1>{reportTab === 'summary' ? 'School Order Summary Report' : 'School Order Quantity Report'}</h1>
             <p>
               {data.report.from} to {data.report.to}
             </p>
@@ -1390,27 +1501,38 @@ export default function ClearReportsPage({ canExport, productionOnly = false }: 
           </section>
         </header>
       )}
-      {noguchiOrdersOnly && data && <NoguchiPrintOrderTable rows={reportOrders} />}
-      {logisticsOnly && data && (
-        <LegacyOrderMatrix rows={noguchiOrdersOnly ? visibleReportOrders : reportOrders} open={setSelectedOrder} />
+      {noguchiOrdersOnly && data && (
+        <div className="no-print" style={{ marginBottom: "24px", display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "16px" }}>
+          <button className={reportTab === 'quantity' ? "primary-btn" : "secondary-btn"} onClick={() => setReportTab('quantity')}>Quantity sheet</button>
+          <button className={reportTab === 'summary' ? "primary-btn" : "secondary-btn"} onClick={() => setReportTab('summary')}>Summary report</button>
+        </div>
       )}
-      {noguchiOrdersOnly && reportLastPage > 1 && (
-        <nav className="school-pagination no-print" aria-label="School order report pages">
-          <button className="secondary-btn" disabled={reportPage <= 1} onClick={() => changeReportPage(reportPage - 1)}>
-            Previous
-          </button>
-          <span>
-            Page {reportPage} of {reportLastPage} · {reportOrders.length.toLocaleString()} orders
-          </span>
-          <button
-            className="secondary-btn"
-            disabled={reportPage >= reportLastPage}
-            onClick={() => changeReportPage(reportPage + 1)}
-          >
-            Next
-          </button>
-        </nav>
-      )}
+      <div className={noguchiOrdersOnly && reportTab !== 'quantity' ? 'hidden' : ''}>
+        {noguchiOrdersOnly && data && <NoguchiPrintOrderTable rows={reportOrders} />}
+        {logisticsOnly && data && (
+          <LegacyOrderMatrix rows={noguchiOrdersOnly ? visibleReportOrders : reportOrders} open={setSelectedOrder} />
+        )}
+        {noguchiOrdersOnly && reportLastPage > 1 && (
+          <nav className="school-pagination no-print" aria-label="School order report pages">
+            <button className="secondary-btn" disabled={reportPage <= 1} onClick={() => changeReportPage(reportPage - 1)}>
+              Previous
+            </button>
+            <span>
+              Page {reportPage} of {reportLastPage} · {reportOrders.length.toLocaleString()} orders
+            </span>
+            <button
+              className="secondary-btn"
+              disabled={reportPage >= reportLastPage}
+              onClick={() => changeReportPage(reportPage + 1)}
+            >
+              Next
+            </button>
+          </nav>
+        )}
+      </div>
+      <div className={noguchiOrdersOnly && reportTab !== 'summary' ? 'hidden' : ''}>
+        {noguchiOrdersOnly && data && <NoguchiSummaryReportTable rows={reportOrders} />}
+      </div>
       {noguchiOrdersOnly && data && (
         <footer className="noguchi-print-footer">
           <span>{data.factory.name} · Confidential operational report</span>

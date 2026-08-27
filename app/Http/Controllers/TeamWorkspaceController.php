@@ -76,7 +76,7 @@ class TeamWorkspaceController extends Controller
         }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email:rfc', 'max:190'],
-            'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()->symbols()],
+            'password' => ['required', 'confirmed', Password::min(4)],
             'role_id' => ['required', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
             'school_id' => ['nullable', Rule::exists('schools', 'id')->where('factory_id', $factoryId)],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
@@ -218,7 +218,7 @@ class TeamWorkspaceController extends Controller
         $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
         abort_if($membership->is_owner, 422, 'The factory owner account cannot be changed here.');
         $data = $request->validate([
-            'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()->symbols()],
+            'password' => ['required', 'confirmed', Password::min(4)],
         ]);
         
         $user->update(['password' => bcrypt($data['password'])]);

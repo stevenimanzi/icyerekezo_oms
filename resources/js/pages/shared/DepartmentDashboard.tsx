@@ -9,8 +9,9 @@ const frenchStatus:Record<string,string>={draft:'Brouillon',pending:'En attente'
 
 export default function DepartmentDashboard({user,locale,onNavigate}:any){
  const [data,setData]=useState<any>(null),[error,setError]=useState(''),[busy,setBusy]=useState<number|null>(null),[loading,setLoading]=useState(true),[updated,setUpdated]=useState<Date|null>(null);
- const load=async(silent=false)=>{if(!silent)setLoading(true);try{setData(await api('/api/department/dashboard'));setError('');setUpdated(new Date())}catch(reason:any){setError(reason.message)}finally{if(!silent)setLoading(false)}};
- useEffect(()=>{load();const timer=window.setInterval(()=>load(true),5000);return()=>window.clearInterval(timer)},[]);
+ const [period, setPeriod] = useState('all_time');
+ const load=async(silent=false)=>{if(!silent)setLoading(true);try{setData(await api(`/api/department/dashboard?period=${period}`));setError('');setUpdated(new Date())}catch(reason:any){setError(reason.message)}finally{if(!silent)setLoading(false)}};
+ useEffect(()=>{load();const timer=window.setInterval(()=>load(true),5000);return()=>window.clearInterval(timer)},[period]);
  const update=async(id:number,statusValue:string)=>{setBusy(id);setError('');try{await api('/api/team/assignments/'+id,{method:'PATCH',body:JSON.stringify({status:statusValue})});await load()}catch(reason:any){setError(reason.message)}finally{setBusy(null)}};
  const department=data?.department,metrics=data?.metrics||{},warehouseMetrics=data?.warehouse_metrics||{},logisticsMetrics=data?.logistics_metrics||{},logisticsTrends=data?.logistics_trends||[],assignments=data?.assignments||[],stages=data?.stage_activity||[],stock=data?.recent_stock||[],stockStatus=data?.stock_status||[];
  const fr=locale==='fr',production=user.workspace==='production',warehouse=data?.dashboard_type==='warehouse',logistics=data?.dashboard_type==='logistics';
@@ -40,9 +41,18 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
   <section className={`department-dashboard ${user.workspace === 'cutting' ? 'cutting-dashboard' : ''}`}>
    <div className="page-heading">
     <div><h1>{title}</h1><p>{description}</p></div>
-    <button className="secondary-btn" disabled={loading} onClick={() => load()}>
-     <RefreshCw className={loading ? 'spin' : ''} size={16} />{loading ? (fr ? 'Actualisation…' : 'Refreshing…') : (fr ? 'Actualiser' : 'Refresh')}
-    </button>
+    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+     <select className="admin-input" value={period} onChange={(e) => setPeriod(e.target.value)} style={{ padding: '0.4rem 2rem 0.4rem 1rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+      <option value="daily">{fr ? 'Quotidien' : 'Daily'}</option>
+      <option value="weekly">{fr ? 'Hebdomadaire' : 'Weekly'}</option>
+      <option value="monthly">{fr ? 'Mensuel' : 'Monthly'}</option>
+      <option value="yearly">{fr ? 'Annuel' : 'Yearly'}</option>
+      <option value="all_time">{fr ? 'Tout le temps' : 'All Time'}</option>
+     </select>
+     <button className="secondary-btn" disabled={loading} onClick={() => load()}>
+      <RefreshCw className={loading ? 'spin' : ''} size={16} />{loading ? (fr ? 'Actualisation…' : 'Refreshing…') : (fr ? 'Actualiser' : 'Refresh')}
+     </button>
+    </div>
    </div>
    {error && <div className="admin-alert error">{error}</div>}
 

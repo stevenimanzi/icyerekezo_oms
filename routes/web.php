@@ -194,6 +194,7 @@ Route::prefix('api')->group(function () {
             Route::get('/reports', ReportController::class)->middleware('permission:reports.view');
             Route::get('/reports/daily.xlsx', [ReportController::class, 'exportDaily'])->middleware('permission:reports.view');
             Route::get('/reports/orders.xlsx', [ReportController::class, 'exportOrders'])->middleware('permission:reports.view');
+            Route::get('/reports/summary.xlsx', [ReportController::class, 'exportSummary'])->middleware('permission:reports.view');
             Route::get('/inventory/overview', [InventoryController::class, 'overview'])->middleware('permission:inventory.view');
             Route::get('/inventory/items', [InventoryController::class, 'items'])->middleware('permission:products.view');
             Route::get('/products/overview', ProductCatalogController::class)->middleware('permission:products.view');

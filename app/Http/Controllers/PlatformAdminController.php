@@ -71,7 +71,7 @@ class PlatformAdminController extends Controller
 
     public function storeFactory(Request $request): JsonResponse
     {
-        $data = $request->validate(['factory_name' => ['required', 'string', 'max:160'], 'industry_type' => ['required', 'string', 'max:80'], 'owner_name' => ['required', 'string', 'max:120'], 'owner_email' => ['required', 'email', 'unique:users,email'], 'owner_password' => ['required', Password::min(10)->mixedCase()->numbers()->symbols()], 'manager_name' => ['nullable', 'required_with:manager_email', 'string', 'max:120'], 'manager_email' => ['nullable', 'required_with:manager_name', 'email', 'different:owner_email', 'unique:users,email'], 'manager_password' => ['nullable', 'required_with:manager_email', Password::min(10)->mixedCase()->numbers()->symbols()]]);
+        $data = $request->validate(['factory_name' => ['required', 'string', 'max:160'], 'industry_type' => ['required', 'string', 'max:80'], 'owner_name' => ['required', 'string', 'max:120'], 'owner_email' => ['required', 'email', 'unique:users,email'], 'owner_password' => ['required', Password::min(4)], 'manager_name' => ['nullable', 'required_with:manager_email', 'string', 'max:120'], 'manager_email' => ['nullable', 'required_with:manager_name', 'email', 'different:owner_email', 'unique:users,email'], 'manager_password' => ['nullable', 'required_with:manager_email', Password::min(4)]]);
         [$factory, $owner, $manager] = DB::transaction(function () use ($data) {
             PermissionCatalog::seed();
             $base = Str::slug($data['factory_name']) ?: 'factory';
@@ -141,7 +141,7 @@ class PlatformAdminController extends Controller
 
     public function storeFactoryUser(Request $request): JsonResponse
     {
-        $data = $request->validate(['factory_id' => ['required', 'exists:factories,id'], 'role_id' => ['required', Rule::exists('roles', 'id')->where(fn ($q) => $q->where('factory_id', $request->integer('factory_id')))], 'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email', 'unique:users,email'], 'password' => ['required', Password::min(10)->mixedCase()->numbers()->symbols()], 'job_title' => ['nullable', 'string', 'max:120'], 'employee_number' => ['required', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $request->integer('factory_id'))]]);
+        $data = $request->validate(['factory_id' => ['required', 'exists:factories,id'], 'role_id' => ['required', Rule::exists('roles', 'id')->where(fn ($q) => $q->where('factory_id', $request->integer('factory_id')))], 'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email', 'unique:users,email'], 'password' => ['required', Password::min(4)], 'job_title' => ['nullable', 'string', 'max:120'], 'employee_number' => ['required', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $request->integer('factory_id'))]]);
         $user = DB::transaction(function () use ($data) {
             $user = User::create(['current_factory_id' => $data['factory_id'], 'name' => $data['name'], 'email' => Str::lower($data['email']), 'password' => $data['password']]);
             $user->factories()->attach($data['factory_id'], ['is_active' => true, 'is_owner' => false, 'joined_at' => now(), 'job_title' => $data['job_title'] ?? null]);
@@ -157,7 +157,7 @@ class PlatformAdminController extends Controller
 
     public function resetPassword(Request $request, User $user): JsonResponse
     {
-        $data = $request->validate(['password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()->symbols()]]);
+        $data = $request->validate(['password' => ['required', 'confirmed', Password::min(4)]]);
         $user->update(['password' => $data['password']]);
         AuditLog::record('platform.password_reset', "Reset password for {$user->email}", $user);
 
