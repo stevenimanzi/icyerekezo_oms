@@ -321,20 +321,10 @@ class AuthController extends Controller
      */
     private function completeRegistration(Request $request, User $user, string $message): JsonResponse
     {
-        if (! config('features.otp_verification')) {
-            Auth::login($user);
-            $request->session()->regenerate();
+        Auth::login($user);
+        $request->session()->regenerate();
 
-            return response()->json(['message' => $message, 'user' => $this->userPayload($user)], 201);
-        }
-
-        $this->issueOtp($user);
-
-        return response()->json([
-            'status' => 'verification_required',
-            'email' => $user->email,
-            'message' => "We sent a 4-digit code to {$user->email}. Enter it to finish creating your account.",
-        ], 201);
+        return response()->json(['message' => $message, 'user' => $this->userPayload($user)], 201);
     }
 
     private function issueOtp(User $user): void

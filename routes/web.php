@@ -25,6 +25,15 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/storage/{path}', function (string $path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+    return response()->file($fullPath);
+})->where('path', '.*');
 
 Route::get('/fix-roles', function () {
     $factory = \App\Models\Factory::where('name', 'like', '%Noguchi%')->first();
