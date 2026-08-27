@@ -401,6 +401,7 @@ function SubscriptionPanel({ data, open, busy, submitPlan, updatePlan, assign, c
     const [editingId, setEditingId] = useState<number | null>(null);
     const [subscription, setSubscription] = useState<any>({ starts_at: today, ends_at: dateAfter(today, 1), grace_ends_at: dateAfter(today, 1, 7) });
     const [changes, setChanges] = useState<Record<number, string>>({});
+    const [dateChanges, setDateChanges] = useState<Record<number, string>>({});
     const selectedPlan = (data?.plans || []).find((item: any) => String(item.id) === String(subscription.subscription_plan_id));
 
     const updateStart = (starts_at: string) => setSubscription({ ...subscription, starts_at, ends_at: dateAfter(starts_at, 1), grace_ends_at: dateAfter(starts_at, 1, 7) });
@@ -498,12 +499,12 @@ function SubscriptionPanel({ data, open, busy, submitPlan, updatePlan, assign, c
             <AdminTable
                 headers={['Factory', 'Current type', 'Status', 'Starts', 'Payment due', 'Change subscription type']}
                 rows={(data?.subscriptions?.data || []).map((item: any) => [
-                    item.factory?.name, item.plan?.name, <Status value={item.status} />, new Date(item.starts_at).toLocaleDateString(), new Date(item.ends_at).toLocaleDateString(),
+                    item.factory?.name, item.plan?.name, <Status value={item.status} />, new Date(item.starts_at).toLocaleDateString(), <input type="date" value={dateChanges[item.id] || item.ends_at.substring(0, 10)} onChange={e => setDateChanges({ ...dateChanges, [item.id]: e.target.value })} style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: '8px', background: 'var(--panel)', color: 'var(--text)' }} />,
                     <div className="subscription-change">
                         <select value={changes[item.id] || item.subscription_plan_id} onChange={e => setChanges({ ...changes, [item.id]: e.target.value })}>
                             {(data?.plans || []).map((plan: any) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}
                         </select>
-                        <button className="table-action" disabled={busy || String(changes[item.id] || item.subscription_plan_id) === String(item.subscription_plan_id)} onClick={() => changeSubscription(item.id, { subscription_plan_id: changes[item.id] })}>Save</button>
+                        <button className="table-action" disabled={busy || (String(changes[item.id] || item.subscription_plan_id) === String(item.subscription_plan_id) && String(dateChanges[item.id] || item.ends_at.substring(0, 10)) === String(item.ends_at.substring(0, 10)))} onClick={() => changeSubscription(item.id, { subscription_plan_id: changes[item.id] || item.subscription_plan_id, ends_at: dateChanges[item.id] || item.ends_at.substring(0, 10) })}>Save</button>
                     </div>,
                 ])}
             />

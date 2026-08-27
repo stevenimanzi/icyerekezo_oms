@@ -49,4 +49,5 @@ Artisan::command('database:backup', function () {
 
 Schedule::command('subscriptions:enforce')->hourly()->withoutOverlapping();
 Schedule::command('subscriptions:notify-expiring')->dailyAt('08:00')->withoutOverlapping();
+Schedule::command('subscriptions:remind')->dailyAt('08:00')->withoutOverlapping();
 Schedule::command('database:backup')->dailyAt('02:00')->withoutOverlapping();

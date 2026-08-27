@@ -201,7 +201,7 @@ class PlatformAdminController extends Controller
 
     public function updateSubscription(Request $request, FactorySubscription $subscription): JsonResponse
     {
-        $data = $request->validate(['subscription_plan_id' => ['required', 'exists:subscription_plans,id'], 'status' => ['sometimes', Rule::in(['trial', 'active', 'past_due', 'suspended', 'cancelled'])]]);
+        $data = $request->validate(['subscription_plan_id' => ['required', 'exists:subscription_plans,id'], 'status' => ['sometimes', Rule::in(['trial', 'active', 'past_due', 'suspended', 'cancelled'])], 'ends_at' => ['sometimes', 'date']]);
         $subscription->update($data);
         AuditLog::record('platform.subscription_changed', "Changed subscription for {$subscription->factory->name}", $subscription);
 

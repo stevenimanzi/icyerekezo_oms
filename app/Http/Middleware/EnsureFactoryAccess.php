@@ -19,7 +19,7 @@ class EnsureFactoryAccess
         $membership = $user->factories()->whereKey($user->current_factory_id)->wherePivot('is_active', true)->first();
         abort_unless($membership, 403, 'Factory access denied.');
         $factory = Factory::whereKey($user->current_factory_id)->where('status', 'active')->first();
-        abort_unless($factory, 402, 'This factory is suspended. Contact the platform administrator.');
+        abort_unless($factory, 402, $user->school_id ? 'Access removed please contact factory' : 'Access removed due to unpaying subscription');
         $roles = $user->roles()->wherePivot('factory_id', $factory->id)->get();
         abort_unless($user->is_platform_admin || $roles->isNotEmpty(), 403, 'No role is assigned for this factory.');
 
