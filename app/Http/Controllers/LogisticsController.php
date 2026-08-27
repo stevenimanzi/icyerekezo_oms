@@ -186,7 +186,7 @@ class LogisticsController extends Controller
     {
         $factoryId = (int) $request->user()->current_factory_id;
         $data = $request->validate(['agreement' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:15360']]);
-        $path = $data['agreement']->store('agreements/'.$factoryId, 'public');
+        $path = $data['agreement']->store('agreement/'.$factoryId, 'public');
         $document = AgreementDocument::create([
             'factory_id' => $factoryId, 'file_path' => $path,
             'original_name' => $data['agreement']->getClientOriginalName(), 'uploaded_by' => $request->user()->id,

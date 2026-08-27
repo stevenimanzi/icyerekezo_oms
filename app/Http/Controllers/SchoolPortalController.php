@@ -48,7 +48,7 @@ class SchoolPortalController extends Controller
         if ($existing) {
             Storage::disk('public')->delete($existing->file_path);
         }
-        $path = $data['signed_agreement']->store('agreement-signatures/'.$factoryId, 'public');
+        $path = $data['signed_agreement']->store('agreement/signatures/'.$factoryId, 'public');
         $signature = SchoolAgreementSignature::updateOrCreate(
             ['agreement_document_id' => $current->id, 'school_id' => $school->id],
             ['factory_id' => $factoryId, 'file_path' => $path, 'original_name' => $data['signed_agreement']->getClientOriginalName(), 'submitted_at' => now()]
@@ -67,7 +67,11 @@ class SchoolPortalController extends Controller
         $order=DB::transaction(function()use($data,$school,$factoryId,$request,$total){$order=SalesDocument::withoutGlobalScopes()->create(['factory_id'=>$factoryId,'school_id'=>$school->id,'document_type'=>'customer_order','document_number'=>'SCH-'.now()->format('YmdHis').'-'.$school->id,'customer_name'=>$school->name,'customer_email'=>$school->email,'academic_year'=>$data['academic_year'],'status'=>'pending','currency_code'=>'RWF','total_amount'=>$total,'item_count'=>collect($data['lines'])->sum('quantity_ordered'),'document_date'=>today(),'created_by'=>$request->user()->id]);$order->lines()->createMany(array_map(fn($line)=>$line+['factory_id'=>$factoryId,'item_id'=>\App\Models\Item::resolveFinishedGood($factoryId,$line['garment_category'])->id],$data['lines']));return $order;});
         
         if ($order->customer_email) {
-            \Illuminate\Support\Facades\Mail::to($order->customer_email)->send(new \App\Mail\SchoolOrderNotificationMail($order, 'placed'));
+            try {
+                \Illuminate\Support\Facades\Mail::to($order->customer_email)->send(new \App\Mail\SchoolOrderNotificationMail($order, 'placed'));
+            } catch (\Exception $e) {
+                report($e);
+            }
         }
 
         return response()->json(['message'=>'Your order was sent to the factory for review.','order'=>$order->load('lines')],201);
