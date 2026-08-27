@@ -151,12 +151,20 @@ class SalesController extends Controller
 
         $delivered = $document->lines->sum('quantity_delivered');
         $ordered = $document->lines->sum('quantity_ordered');
+        $oldStatus = $document->status;
+        
         if ($delivered >= $ordered) $document->update(['status' => 'delivered']);
         elseif ($delivered > 0) $document->update(['status' => 'partial']);
         elseif ($document->status !== 'pending') $document->update(['status' => 'accepted']);
+        
+        $document->refresh();
+        if ($oldStatus !== $document->status && $document->customer_email) {
+            \Illuminate\Support\Facades\Mail::to($document->customer_email)->send(new \App\Mail\SchoolOrderNotificationMail($document, 'status_updated'));
+        }
+        
         AuditLog::record('sales.school_order_line_updated', "Updated fulfilment for {$document->document_number}", $line);
 
-        return response()->json(['message' => 'Garment quantities updated.', 'line' => $line->fresh(), 'document_status' => $document->fresh()->status]);
+        return response()->json(['message' => 'Garment quantities updated.', 'line' => $line->fresh(), 'document_status' => $document->status]);
     }
 
     /**
