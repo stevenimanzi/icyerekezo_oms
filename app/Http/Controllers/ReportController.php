@@ -93,6 +93,7 @@ class ReportController extends Controller
         $departmentOnly = ! $isExecutive && ! $logisticsOnly && ! $warehouseOnly;
         $operationalScope = OperationalScope::for($request->user());
         $data = $request->validate([
+            'scope' => ['nullable', Rule::in(['factory', 'logistics', 'warehouse', 'department'])],
             'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'year', 'custom'])],
             'type' => ['nullable', Rule::in(['all', 'departments', 'production', 'inventory', 'activity'])],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factory->id)],
@@ -102,6 +103,13 @@ class ReportController extends Controller
             'district' => ['nullable', 'string', 'max:80'],
             'sector' => ['nullable', 'string', 'max:80'],
         ]);
+        
+        if ($isExecutive && isset($data['scope']) && $data['scope'] === 'logistics') {
+            $logisticsOnly = true;
+            $warehouseOnly = false;
+            $departmentOnly = false;
+        }
+
         [$from, $to] = $this->range($data);
         $type = $departmentOnly ? 'production' : (($logisticsOnly || $warehouseOnly) ? 'inventory' : ($data['type'] ?? 'all'));
         $departmentId = isset($data['department_id']) ? (int) $data['department_id'] : null;

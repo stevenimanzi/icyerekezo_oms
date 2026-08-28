@@ -724,7 +724,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["production", Gauge, locale === "en" ? "Production Configuration" : "Configuration de production", "production.view"],
         ["team", Users, t.people, "users.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
-        ["logistics", Truck, locale === "en" ? "Logistics report" : "Rapport logistique", "reports.view"],
+        ["logistics-reports", Truck, locale === "en" ? "Logistics report" : "Rapport logistique", "reports.view"],
         ["reports", Activity, t.reports, "reports.view"],
     ] as const : isFinancialManager ? [
         // ─── Financial Manager ───
@@ -1323,8 +1323,8 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                             <FactorySettingsPage />
                         ) : activePage === "team" ? (
                             <TeamManagementPage />
-                        ) : activePage === "reports" ? (
-                            <ReportsPage canExport={can("reports.export")} productionOnly={user.workspace === "production" && !isExecutiveUser} />
+                        ) : activePage === "reports" || activePage === "logistics-reports" ? (
+                            <ReportsPage canExport={can("reports.export")} productionOnly={user.workspace === "production" && !isExecutiveUser} forcedScope={activePage === "logistics-reports" ? "logistics" : undefined} />
                         ) : activePage === "quality" ? (
                             <QualityControlPage can={can} />
                         ) : activePage === "machines" ? (
