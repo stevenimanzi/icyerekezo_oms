@@ -255,7 +255,7 @@ export default function SalesOverviewPage() {
 // historically on paper, matching garment_category strings against a fixed set of aliases
 // (legacy data used inconsistent naming for the same category).
 const legacyColumns = [
-    ['Uniform', ['uniform']], ['Sweater', ['sweater']], ['Sport uniform', ['sport', 'sport uniform']], ['TVET', ['tvet', 'overall', 'overcoat']],
+    ['Uniform', ['uniform']], ['Sweater', ['sweater']], ['Sport uniform', ['sport', 'sport uniform']], ['TVET', ['tvet', 'overall', 'overcoat', 'overall coat']],
     ['Tourism', ['tourism']], ['Polo', ['polo', 'polo lacoste']], ['T-shirt', ['t-shirt', 't shirt']], ['Rain coat', ['rain coat', 'raincoat']], ['Jumper', ['jumper']],
 ] as [string, string[]][];
 

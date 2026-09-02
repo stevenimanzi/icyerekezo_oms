@@ -20,7 +20,7 @@ class SchoolPortalController extends Controller
     private const PRICES = [
         'Nursery'   => ['Sweater' => 6500, 'Uniform' => 6000,  'Sport' => 9000, 'Overall' => 15000, 'Polo Lacoste' => 12000, 'T-shirt' => 4000, 'Jumper' => 12000],
         'Primary'   => ['Sweater' => 8000, 'Uniform' => 7500,  'Sport' => 9000, 'Overall' => 15000, 'Polo Lacoste' => 12000, 'T-shirt' => 4000, 'Jumper' => 12000],
-        'Secondary' => ['Sweater' => 8500, 'Uniform' => 12000, 'Sport' => 12000, 'Overall' => 15000, 'Polo Lacoste' => 12000, 'T-shirt' => 4000, 'Jumper' => 12000]
+        'Secondary' => ['Sweater' => 8500, 'Uniform' => 12000, 'Sport' => 12000, 'Overall' => 15000, 'Overall Coat' => 9000, 'Polo Lacoste' => 12000, 'T-shirt' => 4000, 'Jumper' => 12000]
     ];
 
     public function overview(Request $request): JsonResponse

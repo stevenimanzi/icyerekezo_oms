@@ -71,7 +71,7 @@ const printCategories = [
 
 function getCategoryTotal(order: any, category: string) {
   const aliases: Record<string, string[]> = {
-    TVET: ["tvet", "overall", "overcoat"],
+    TVET: ["tvet", "overall", "overcoat", "overall coat"],
     "Sport Uniform": ["sport", "sport uniform"],
     "Rain Coat": ["rain coat", "raincoat"],
     Polo: ["polo", "polo lacoste"],
@@ -173,7 +173,7 @@ function NoguchiSummaryReportTable({ rows }: any) {
       if (!summary[district][level]) summary[district][level] = {};
       
       const aliases: Record<string, string> = {
-        "tvet": "TVET", "overall": "TVET", "overcoat": "TVET",
+        "tvet": "TVET", "overall": "TVET", "overcoat": "TVET", "overall coat": "TVET",
         "sport": "Sport Uniform", "sport uniform": "Sport Uniform",
         "rain coat": "Rain Coat", "raincoat": "Rain Coat",
         "polo": "Polo", "polo lacoste": "Polo",

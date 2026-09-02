@@ -179,7 +179,7 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
     const categoriesFor = (classLevel: string) => [
         ...baseCategories,
         ...(/^S[1-6]$/.test(classLevel) ? [['T-shirt', 'T-Shirts']] : []),
-        ...(/^S[4-6]$/.test(classLevel) ? [['Overall', 'Overalls']] : []),
+        ...(/^S[4-6]$/.test(classLevel) ? [['Overall', 'Overalls'], ['Overall Coat', 'Overall Coats']] : []),
     ];
     const makeLines = (classLevel: string) => categoriesFor(classLevel).flatMap(([garment_category]) => genders.flatMap(gender => sizes.map(size => ({ class_level: classLevel, garment_category, gender, size, color: '', quantity_ordered: 0 }))));
 
