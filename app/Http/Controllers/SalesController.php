@@ -106,7 +106,7 @@ class SalesController extends Controller
             'document_date' => ['required', 'date'], 'due_date' => ['nullable', 'date', 'after_or_equal:document_date'],
             'total_amount' => ['nullable', 'numeric', 'min:0'], 'currency_code' => ['nullable', 'string', 'size:3'],
             'lines' => ['required', 'array', 'min:1'], 'lines.*.class_level' => ['required', 'string', 'max:30'],
-            'lines.*.garment_category' => ['required', Rule::in(['Uniform', 'Sweater', 'Sport Uniform', 'TVET', 'Tourism', 'Polo', 'T-shirt', 'Rain Coat', 'Overall', 'Jumper'])],
+            'lines.*.garment_category' => ['required', Rule::in(['Uniform', 'Sweater', 'Sport Uniform', 'TVET', 'Tourism', 'Polo', 'T-shirt', 'Rain Coat', 'Overall', 'Overall Coat', 'Jumper'])],
             'lines.*.gender' => ['nullable', Rule::in(['Boy', 'Girl', 'Unisex'])], 'lines.*.size' => ['nullable', 'string', 'max:20'],
             'lines.*.color' => ['nullable', 'string', 'max:255'], 'lines.*.quantity_ordered' => ['required', 'integer', 'min:1'],
         ]);
