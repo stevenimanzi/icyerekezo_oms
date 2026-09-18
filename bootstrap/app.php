@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureFactoryAccess;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsurePlatformAvailable;
 use App\Http\Middleware\RequirePermission;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [EnsurePlatformAvailable::class]);
+        $middleware->append(SecurityHeaders::class);
         $middleware->alias([
             'tenant' => EnsureFactoryAccess::class,
             'permission' => RequirePermission::class,

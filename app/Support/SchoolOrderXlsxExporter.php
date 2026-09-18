@@ -32,7 +32,7 @@ class SchoolOrderXlsxExporter
 
     private static function categoryTotal(Collection $lines, string $category): int
     {
-        $aliases = ['TVET' => ['tvet', 'overall', 'overcoat'], 'Sport Uniform' => ['sport', 'sport uniform'], 'Rain Coat' => ['rain coat', 'raincoat'], 'Polo' => ['polo', 'polo lacoste'], 'T-shirt' => ['t-shirt', 't shirt']];
+        $aliases = ['TVET' => ['tvet', 'overall', 'overcoat', 'overall coat'], 'Sport Uniform' => ['sport', 'sport uniform'], 'Rain Coat' => ['rain coat', 'raincoat'], 'Polo' => ['polo', 'polo lacoste'], 'T-shirt' => ['t-shirt', 't shirt']];
         $names = $aliases[$category] ?? [strtolower($category)];
         return (int) $lines->filter(fn ($line) => in_array(strtolower((string) $line->garment_category), $names, true))->sum('quantity_ordered');
     }

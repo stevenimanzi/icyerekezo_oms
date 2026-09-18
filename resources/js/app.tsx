@@ -619,6 +619,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
     quality: "quality",
     sales: "sales",
     logistics: "logistics",
+    "logistics-reports": "logistics",
     dispatch: "logistics",
     vehicles: "logistics",
     "delivery-confirmation": "logistics",
@@ -1961,8 +1962,8 @@ function ForgotPasswordPage() {
                                 {locale === "en" ? "✓ Reset link sent!" : "✓ Lien envoyé !"}
                             </strong>
                             {locale === "en"
-                                ? `If ${email} is registered, a reset link has been sent from support@icyerekezooms.com. Check your spam folder too.`
-                                : `Si ${email} est enregistré, un lien a été envoyé depuis support@icyerekezooms.com.`}
+                                ? `If an account exists for ${email}, we've sent a reset link from support@icyerekezooms.com. It can take a few minutes to arrive — check your spam or junk folder if you don't see it.`
+                                : `Si un compte existe pour ${email}, nous avons envoyé un lien depuis support@icyerekezooms.com. Cela peut prendre quelques minutes — vérifiez votre dossier spam si vous ne le voyez pas.`}
                         </div>
                     ) : (
                         <>
@@ -1979,7 +1980,6 @@ function ForgotPasswordPage() {
                             </AuthInput>
                             <button className="auth-submit" disabled={busy}>
                                 <span>{busy ? (locale === "en" ? "Sending..." : "Envoi...") : (locale === "en" ? "Send reset link" : "Envoyer le lien")}</span>
-                                <i><ChevronRight size={18} /></i>
                             </button>
                         </>
                     )}
@@ -2659,7 +2659,6 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                             </AuthInput>
                             <button className="auth-submit" disabled={busy}>
                                 <span>{busy ? (locale === "en" ? "Sending..." : "Envoi...") : (locale === "en" ? "Send reset link" : "Envoyer le lien")}</span>
-                                <i><ChevronRight size={18} /></i>
                             </button>
                         </>
                     )}
@@ -2667,8 +2666,8 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                         <div style={{ padding: "16px", borderRadius: "14px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "14px", lineHeight: "1.6" }}>
                             <strong style={{ display: "block", marginBottom: "4px" }}>{locale === "en" ? "Check your inbox" : "Vérifiez votre boîte mail"}</strong>
                             {locale === "en"
-                                ? "If that email is registered, a reset link has been sent from support@icyerekezooms.com. Check your spam folder if you don't see it."
-                                : "Si cet email est enregistré, un lien de réinitialisation a été envoyé depuis support@icyerekezooms.com."}
+                                ? "If an account exists for that email, we've sent a reset link from support@icyerekezooms.com. It can take a few minutes to arrive — check your spam or junk folder if you don't see it."
+                                : "Si un compte existe pour cet email, nous avons envoyé un lien depuis support@icyerekezooms.com. Cela peut prendre quelques minutes — vérifiez votre dossier spam si vous ne le voyez pas."}
                         </div>
                     )}
                     {mode !== "forgot" && (
@@ -2760,6 +2759,10 @@ function ActivityItem({ icon, tone, title, text, time }: { icon: React.ReactNode
             <time>{time}</time>
         </div>
     );
+}
+
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
 }
 
 createRoot(document.getElementById("app")!).render(

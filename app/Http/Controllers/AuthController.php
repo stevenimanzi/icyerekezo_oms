@@ -277,7 +277,7 @@ class AuthController extends Controller
         );
 
         return response()->json([
-            'message' => 'If that email is registered, a password reset link has been sent from support@icyerekezooms.com.',
+            'message' => "If an account exists for that email, we've sent a reset link from support@icyerekezooms.com. It can take a few minutes to arrive — check your spam or junk folder if you don't see it.",
         ]);
     }
 

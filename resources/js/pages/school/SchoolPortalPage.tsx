@@ -186,7 +186,6 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
     const [year, setYear] = useState(data.academic_years[0]);
     const [step, setStep] = useState(0);
     const [lines, setLines] = useState<any[]>(() => data.classes.flatMap((x: string) => makeLines(x)));
-    const [filledClasses, setFilledClasses] = useState<Set<string>>(() => new Set());
     const [review, setReview] = useState(false);
     const [busy, setBusy] = useState(false);
 
@@ -203,12 +202,9 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
         return sum + Number(line.quantity_ordered) * (data.prices[level]?.[line.garment_category] || 0);
     }, 0);
 
-    const classIsFilled = (classLevel: string) => filledClasses.has(classLevel);
+    const classIsFilled = (classLevel: string) => lines.some(line => line.class_level === classLevel && Number(line.quantity_ordered) > 0);
     const goTo = (next: number) => { setError(''); setStep(next); };
-    const saveAndNext = () => {
-        if (current.some(line => Number(line.quantity_ordered) > 0)) setFilledClasses(previous => new Set(previous).add(cls));
-        goTo(step + 1);
-    };
+    const saveAndNext = () => goTo(step + 1);
     const reviewOrder = () => {
         const invalid = validLines.find(line => !line.color?.trim() || !line.size);
         if (invalid) {

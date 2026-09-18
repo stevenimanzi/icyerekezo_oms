@@ -34,7 +34,7 @@ class SchoolSummaryXlsxExporter
                 }
 
                 $aliases = [
-                    'tvet' => 'TVET', 'overall' => 'TVET', 'overcoat' => 'TVET',
+                    'tvet' => 'TVET', 'overall' => 'TVET', 'overcoat' => 'TVET', 'overall coat' => 'TVET',
                     'sport' => 'Sport Uniform', 'sport uniform' => 'Sport Uniform',
                     'rain coat' => 'Rain Coat', 'raincoat' => 'Rain Coat',
                     'polo' => 'Polo', 'polo lacoste' => 'Polo',
