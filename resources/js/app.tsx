@@ -1374,10 +1374,10 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                                     )}
                                 </section>
                                 <section className="metric-grid">
-                                    <Metric icon={<Factory />} label={t.production} value="1,842" suffix="units" detail={t.productionHint} trend="+12.4%" tone="blue" />
-                                    <Metric icon={<ShoppingCart />} label={t.orders} value="38" detail={t.ordersHint} trend="+5" tone="amber" />
-                                    <Metric icon={<CircleDollarSign />} label={t.inventory} value="RWF 284.6M" detail={t.inventoryHint} trend="+3.2%" tone="violet" />
-                                    <Metric icon={<ShieldCheck />} label={t.quality} value="97.6%" detail={t.qualityHint} trend="+1.8%" tone="green" />
+                                    <Metric label={t.production} value="1,842" suffix="units" detail={t.productionHint} trend="+12.4%" tone="blue" />
+                                    <Metric label={t.orders} value="38" detail={t.ordersHint} trend="+5" tone="amber" />
+                                    <Metric label={t.inventory} value="RWF 284.6M" detail={t.inventoryHint} trend="+3.2%" tone="violet" />
+                                    <Metric label={t.quality} value="97.6%" detail={t.qualityHint} trend="+1.8%" tone="green" />
                                 </section>
                                 <section className="dashboard-grid">
                                     <article className="panel chart-panel">
@@ -2190,6 +2190,8 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
     const [pendingOtpEmail, setPendingOtpEmail] = useState("");
     const [otpCode, setOtpCode] = useState("");
     const [resendCooldown, setResendCooldown] = useState(0);
+    const [schoolStep, setSchoolStep] = useState(0);
+    useEffect(() => { setSchoolStep(0); }, [mode]);
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -2218,8 +2220,27 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
 
     const update = (key: string, value: string | boolean) => setForm((current) => ({ ...current, [key]: value }));
 
+    const passwordChecks = {
+        length: form.password.length >= 10,
+        upper: /[A-Z]/.test(form.password),
+        lower: /[a-z]/.test(form.password),
+        number: /[0-9]/.test(form.password),
+        symbol: /[^A-Za-z0-9]/.test(form.password),
+    };
+    const passwordStrong = Object.values(passwordChecks).every(Boolean);
+    const schoolStepValid =
+        schoolStep === 0
+            ? Boolean(form.email) && passwordStrong && form.password === form.password_confirmation && form.password_confirmation.length > 0
+            : schoolStep === 1
+              ? Boolean(form.name) && Boolean(form.phone)
+              : true;
+
     const submit = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (mode === "school_register" && schoolStep < 2) {
+            if (schoolStepValid) setSchoolStep((current) => current + 1);
+            return;
+        }
         setBusy(true);
         setError("");
         try {
@@ -2329,7 +2350,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                     emailPlaceholder: mode === "login" ? "admin@school.rw or username" : "admin@school.rw",
                     passwordPlaceholder: "Enter your password",
                     confirmPlaceholder: "Enter the password again",
-                    action: mode === "login" ? "Sign in" : "Create school account",
+                    action: mode === "login" ? "Sign in" : "Create account",
                     switchText: mode === "login" ? "Need a school account?" : "Already have a school account?",
                     switchAction: mode === "login" ? "Sign up" : "Sign in",
                 }
@@ -2374,7 +2395,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                     emailPlaceholder: mode === "login" ? "admin@ecole.rw ou nom d'utilisateur" : "admin@ecole.rw",
                     passwordPlaceholder: "Saisissez votre mot de passe",
                     confirmPlaceholder: "Saisissez encore le mot de passe",
-                    action: mode === "login" ? "Se connecter" : "Creer le compte de l'ecole",
+                    action: mode === "login" ? "Se connecter" : "Creer le compte",
                     switchText: mode === "login" ? "Besoin d'un compte scolaire ?" : "Vous avez deja un compte scolaire ?",
                     switchAction: mode === "login" ? "S'inscrire" : "Se connecter",
                 }
@@ -2507,10 +2528,24 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                         {(mode === "forgot" || words.subtitle) && (
                             <p style={{ whiteSpace: "normal" }}>{mode === "forgot" ? (locale === "en" ? "Enter your email and we'll send a reset link." : "Entrez votre e-mail pour recevoir un lien.") : words.subtitle}</p>
                         )}
+                        {mode === "school_register" && (
+                            <div className="auth-steps" role="list" aria-label={locale === "en" ? "Signup steps" : "Étapes d'inscription"}>
+                                {[
+                                    locale === "en" ? "Account" : "Compte",
+                                    locale === "en" ? "Head teacher" : "Directeur/trice",
+                                    locale === "en" ? "School" : "École",
+                                ].map((label, index) => (
+                                    <div key={label} role="listitem" className={"auth-step" + (index === schoolStep ? " active" : index < schoolStep ? " done" : "")}>
+                                        <span>{index < schoolStep ? "✓" : index + 1}</span>
+                                        {label}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     {error && <div className="form-error">{error}</div>}
 
-                    {(mode === "register" || mode === "school_register") && (
+                    {mode === "register" && (
                         <>
                             <AuthInput icon={<UserRound />} label={words.name}>
                                 <input placeholder={words.namePlaceholder} value={form.name} onChange={(e) => update("name", e.target.value)} required autoComplete="name" />
@@ -2518,40 +2553,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                             <AuthInput icon={<Building2 />} label={words.factory}>
                                 <input placeholder={words.factoryPlaceholder} value={form.factory_name} onChange={(e) => update("factory_name", e.target.value)} required />
                             </AuthInput>
-                            {mode === "school_register" ? (
-                                <>
-                                    <AuthInput icon={<Building2 />} label={words.industry}>
-                                        <select
-                                            aria-label={words.industry}
-                                            value={form.district}
-                                            onChange={(e) => setForm((current) => ({ ...current, district: e.target.value, sector: "" }))}
-                                            required
-                                        >
-                                            <option value="">{locale === "en" ? "Choose a district" : "Choisissez un district"}</option>
-                                            {Object.keys(schoolOptions.locations).map((district) => (
-                                                <option key={district} value={district}>{district}</option>
-                                            ))}
-                                        </select>
-                                    </AuthInput>
-                                    <AuthInput icon={<Building2 />} label={words.specifyIndustry}>
-                                        <select
-                                            aria-label={words.specifyIndustry}
-                                            value={form.sector}
-                                            onChange={(e) => update("sector", e.target.value)}
-                                            required
-                                            disabled={!form.district}
-                                        >
-                                            <option value="">{locale === "en" ? "Choose a sector" : "Choisissez un secteur"}</option>
-                                            {(schoolOptions.locations[form.district] || []).map((sector) => (
-                                                <option key={sector} value={sector}>{sector}</option>
-                                            ))}
-                                        </select>
-                                    </AuthInput>
-                                    <AuthInput icon={<UserRound />} label={locale === "en" ? "Phone number" : "Numero de telephone"}>
-                                        <input type="tel" placeholder="0780 000 000" value={form.phone} onChange={(e) => update("phone", e.target.value)} required />
-                                    </AuthInput>
-                                </>
-                            ) : (
+                            {(
                                 <label className="auth-field auth-select-field">
                                     <span>{words.industry}</span>
                                     <div>
@@ -2593,7 +2595,102 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                             )}
                         </>
                     )}
-                    {mode !== "forgot" && (
+                    {mode === "school_register" && schoolStep === 0 && (
+                        <>
+                            <AuthInput icon={<Mail />} label={words.email}>
+                                <input placeholder={words.emailPlaceholder} type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required autoComplete="email" autoFocus />
+                            </AuthInput>
+                            <AuthInput
+                                icon={<LockKeyhole />}
+                                label={words.password}
+                                action={
+                                    <button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>
+                                        {showPassword ? <EyeOff /> : <Eye />}
+                                    </button>
+                                }
+                            >
+                                <input
+                                    placeholder={words.passwordPlaceholder}
+                                    type={showPassword ? "text" : "password"}
+                                    value={form.password}
+                                    onChange={(e) => update("password", e.target.value)}
+                                    required
+                                    autoComplete="new-password"
+                                />
+                            </AuthInput>
+                            {form.password && (
+                                <ul className="password-strength">
+                                    {[
+                                        [passwordChecks.length, locale === "en" ? "At least 10 characters" : "Au moins 10 caractères"],
+                                        [passwordChecks.upper, locale === "en" ? "An uppercase letter" : "Une majuscule"],
+                                        [passwordChecks.lower, locale === "en" ? "A lowercase letter" : "Une minuscule"],
+                                        [passwordChecks.number, locale === "en" ? "A number" : "Un chiffre"],
+                                        [passwordChecks.symbol, locale === "en" ? "A symbol" : "Un symbole"],
+                                    ].map(([met, text]) => (
+                                        <li key={text as string} className={met ? "met" : ""}>{met ? "✓" : "•"} {text}</li>
+                                    ))}
+                                </ul>
+                            )}
+                            <AuthInput icon={<LockKeyhole />} label={words.confirm}>
+                                <input
+                                    placeholder={words.confirmPlaceholder}
+                                    type={showPassword ? "text" : "password"}
+                                    value={form.password_confirmation}
+                                    onChange={(e) => update("password_confirmation", e.target.value)}
+                                    required
+                                    autoComplete="new-password"
+                                />
+                            </AuthInput>
+                            {form.password_confirmation.length > 0 && form.password !== form.password_confirmation && (
+                                <div className="form-error">{locale === "en" ? "Passwords do not match." : "Les mots de passe ne correspondent pas."}</div>
+                            )}
+                        </>
+                    )}
+                    {mode === "school_register" && schoolStep === 1 && (
+                        <>
+                            <AuthInput icon={<UserRound />} label={locale === "en" ? "Head teacher name" : "Nom du directeur/trice"}>
+                                <input placeholder={words.namePlaceholder} value={form.name} onChange={(e) => update("name", e.target.value)} required autoComplete="name" autoFocus />
+                            </AuthInput>
+                            <AuthInput icon={<UserRound />} label={locale === "en" ? "Phone number" : "Numero de telephone"}>
+                                <input type="tel" placeholder="0780 000 000" value={form.phone} onChange={(e) => update("phone", e.target.value)} required />
+                            </AuthInput>
+                        </>
+                    )}
+                    {mode === "school_register" && schoolStep === 2 && (
+                        <>
+                            <AuthInput icon={<Building2 />} label={words.factory}>
+                                <input placeholder={words.factoryPlaceholder} value={form.factory_name} onChange={(e) => update("factory_name", e.target.value)} required autoFocus />
+                            </AuthInput>
+                            <AuthInput icon={<Building2 />} label={words.industry}>
+                                <select
+                                    aria-label={words.industry}
+                                    value={form.district}
+                                    onChange={(e) => setForm((current) => ({ ...current, district: e.target.value, sector: "" }))}
+                                    required
+                                >
+                                    <option value="">{locale === "en" ? "Choose a district" : "Choisissez un district"}</option>
+                                    {Object.keys(schoolOptions.locations).map((district) => (
+                                        <option key={district} value={district}>{district}</option>
+                                    ))}
+                                </select>
+                            </AuthInput>
+                            <AuthInput icon={<Building2 />} label={words.specifyIndustry}>
+                                <select
+                                    aria-label={words.specifyIndustry}
+                                    value={form.sector}
+                                    onChange={(e) => update("sector", e.target.value)}
+                                    required
+                                    disabled={!form.district}
+                                >
+                                    <option value="">{locale === "en" ? "Choose a sector" : "Choisissez un secteur"}</option>
+                                    {(schoolOptions.locations[form.district] || []).map((sector) => (
+                                        <option key={sector} value={sector}>{sector}</option>
+                                    ))}
+                                </select>
+                            </AuthInput>
+                        </>
+                    )}
+                    {mode !== "forgot" && mode !== "school_register" && (
                         <>
                             <AuthInput icon={<Mail />} label={words.email}>
                                 <input placeholder={words.emailPlaceholder} type={mode === "login" ? "text" : "email"} value={form.email} onChange={(e) => update("email", e.target.value)} required autoComplete={mode === "login" ? "username" : "email"} />
@@ -2616,7 +2713,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                                     autoComplete={mode === "login" ? "current-password" : "new-password"}
                                 />
                             </AuthInput>
-                            {(mode === "register" || mode === "school_register") && (
+                            {mode === "register" && (
                                 <AuthInput icon={<LockKeyhole />} label={words.confirm}>
                                     <input
                                         placeholder={words.confirmPlaceholder}
@@ -2670,7 +2767,24 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                                 : "Si un compte existe pour cet email, nous avons envoyé un lien depuis support@icyerekezooms.com. Cela peut prendre quelques minutes — vérifiez votre dossier spam si vous ne le voyez pas."}
                         </div>
                     )}
-                    {mode !== "forgot" && (
+                    {mode === "school_register" ? (
+                        <div style={{ display: "flex", gap: "10px" }}>
+                            {schoolStep > 0 && (
+                                <button type="button" className="auth-submit" style={{ background: "transparent", color: "var(--auth-blue, #225eea)", border: "1px solid #dce4f2", boxShadow: "none" }} onClick={() => setSchoolStep((current) => current - 1)} disabled={busy}>
+                                    <span>{locale === "en" ? "Back" : "Retour"}</span>
+                                </button>
+                            )}
+                            <button className="auth-submit" disabled={busy || !schoolStepValid}>
+                                <span>
+                                    {busy
+                                        ? (locale === "en" ? "Please wait..." : "Veuillez patienter...")
+                                        : schoolStep < 2
+                                          ? (locale === "en" ? "Continue" : "Continuer")
+                                          : words.action}
+                                </span>
+                            </button>
+                        </div>
+                    ) : mode !== "forgot" && (
                         <button className="auth-submit" disabled={busy}>
                             <span>{busy ? (locale === "en" ? "Please wait..." : "Veuillez patienter...") : words.action}</span>
                         </button>
@@ -2720,10 +2834,9 @@ function AuthInput({ icon, label, action, children }: { icon: React.ReactNode; l
     );
 }
 
-function Metric({ icon, label, value, suffix, detail, trend, tone }: { icon: React.ReactNode; label: string; value: string; suffix?: string; detail: string; trend: string; tone: string }) {
+function Metric({ label, value, suffix, detail, trend, tone }: { label: string; value: string; suffix?: string; detail: string; trend: string; tone: string }) {
     return (
         <article className="metric-card">
-            <div className={`metric-icon ${tone}`}>{icon}</div>
             <div className="metric-copy">
                 <span>{label}</span>
                 <div>

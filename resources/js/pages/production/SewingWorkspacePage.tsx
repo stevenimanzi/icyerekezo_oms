@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FileText, Package, RefreshCw, Scissors } from 'lucide-react';
+import { AlertTriangle, FileText, Package, RefreshCw, Scissors } from 'lucide-react';
 import { EditRecordModal, EditRecordForm, Locale, productionApi, StockPopupModal } from './shared';
 
 type SewingTab = 'request' | 'sew' | 'damaged' | 'report';
@@ -471,10 +471,10 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
             ) : (
                 <div className="cutting-tab-content">
                     <div className="cutting-report-metrics">
-                        <article className="panel cutting-metric"><div className="cutting-metric-icon blue"><Package size={22} /></div><div><small>{t.pendingReqs}</small><strong>{num(totalAcceptedQty)}</strong><p>{locale === 'en' ? 'Accepted today' : 'Acceptés aujourd\'hui'}</p></div></article>
-                        <article className="panel cutting-metric"><div className="cutting-metric-icon green"><Scissors size={22} /></div><div><small>{t.totalSew}</small><strong>{num(totalSewnQty)}</strong><p>{locale === 'en' ? 'Sewn today' : 'Cousus aujourd\'hui'}</p></div></article>
-                        <article className="panel cutting-metric"><div className="cutting-metric-icon amber"><AlertTriangle size={22} /></div><div><small>{t.totalDamaged}</small><strong>{num(totalDamagedQty)}</strong><p>{t.period}</p></div></article>
-                        <article className="panel cutting-metric"><div className="cutting-metric-icon violet"><CheckCircle2 size={22} /></div><div><small>{t.wasteRate}</small><strong>{wastePercent}%</strong><p>{Number(wastePercent) < 5 ? 'Excellent' : Number(wastePercent) < 10 ? (locale === 'en' ? 'Good' : 'Bon') : (locale === 'en' ? 'Needs attention' : 'À surveiller')}</p></div></article>
+                        <article className="panel cutting-metric"><div><small>{t.pendingReqs}</small><strong>{num(totalAcceptedQty)}</strong><p>{locale === 'en' ? 'Accepted today' : 'Acceptés aujourd\'hui'}</p></div></article>
+                        <article className="panel cutting-metric"><div><small>{t.totalSew}</small><strong>{num(totalSewnQty)}</strong><p>{locale === 'en' ? 'Sewn today' : 'Cousus aujourd\'hui'}</p></div></article>
+                        <article className="panel cutting-metric"><div><small>{t.totalDamaged}</small><strong>{num(totalDamagedQty)}</strong><p>{t.period}</p></div></article>
+                        <article className="panel cutting-metric"><div><small>{t.wasteRate}</small><strong>{wastePercent}%</strong><p>{Number(wastePercent) < 5 ? 'Excellent' : Number(wastePercent) < 10 ? (locale === 'en' ? 'Good' : 'Bon') : (locale === 'en' ? 'Needs attention' : 'À surveiller')}</p></div></article>
                     </div>
                     <section className="panel cutting-report-filters no-print">
                         <div>

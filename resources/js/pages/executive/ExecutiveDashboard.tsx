@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Boxes, ChevronRight, Factory, PackageOpen, ShieldCheck, ShoppingCart, Zap } from 'lucide-react';
+import { Boxes, ChevronRight, Factory, PackageOpen } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 async function loadDashboard(period: string) {
@@ -50,7 +50,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                         <option value="yearly">{locale === 'fr' ? 'Annuel' : 'Yearly'}</option>
                         <option value="all_time">{locale === 'fr' ? 'Tout le temps' : 'All Time'}</option>
                     </select>
-                    {!isOwner && <button className="primary-btn" onClick={() => onNavigate('production')}><Zap size={17} />{locale === 'fr' ? 'Nouvel ordre de production' : 'New production order'}</button>}
+                    {!isOwner && <button className="primary-btn" onClick={() => onNavigate('production')}>{locale === 'fr' ? 'Nouvel ordre de production' : 'New production order'}</button>}
                 </div>
             </div>
 
@@ -62,10 +62,10 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
             </div>
 
             <section className="department-metrics cols-4">
-                <Metric icon={<Factory />} label={locale === 'fr' ? 'Production aujourd’hui' : 'Production today'} value={number(metrics.productionToday)} tone="blue" />
-                <Metric icon={<ShoppingCart />} label={locale === 'fr' ? 'Ordres ouverts' : 'Open production orders'} value={number(metrics.openOrders)} tone="amber" />
-                <Metric icon={<AlertTriangle />} label={locale === 'fr' ? 'Stock à surveiller' : 'Low-stock materials'} value={number(metrics.lowStock)} tone="violet" />
-                <Metric icon={<ShieldCheck />} label={locale === 'fr' ? 'Achèvement production' : 'Production completion'} value={number(metrics.completionRate) + '%'} tone="green" />
+                <Metric label={locale === 'fr' ? 'Production aujourd’hui' : 'Production today'} value={number(metrics.productionToday)} />
+                <Metric label={locale === 'fr' ? 'Ordres ouverts' : 'Open production orders'} value={number(metrics.openOrders)} />
+                <Metric label={locale === 'fr' ? 'Stock à surveiller' : 'Low-stock materials'} value={number(metrics.lowStock)} />
+                <Metric label={locale === 'fr' ? 'Achèvement production' : 'Production completion'} value={number(metrics.completionRate) + '%'} />
             </section>
 
             <article className="panel chart-panel executive-chart-panel">
@@ -127,10 +127,9 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
     );
 }
 
-function Metric({ icon, label, value, tone }: any) {
+function Metric({ label, value }: any) {
     return (
         <article className="department-metric panel">
-            <span className={'metric-icon ' + tone}>{icon}</span>
             <div><small>{label}</small><strong>{value}</strong></div>
         </article>
     );

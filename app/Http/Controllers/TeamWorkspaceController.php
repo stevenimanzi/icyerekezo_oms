@@ -5,12 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\EmployeeProfile;
-use App\Models\Permission;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
 use App\Models\WorkAssignment;
-use App\Models\Workstation;
 use App\Services\DepartmentDeduplicationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -59,10 +57,8 @@ class TeamWorkspaceController extends Controller
             ],
             'users' => User::where('is_platform_admin', false)->whereNull('school_id')->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_owner', false))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
             'roles' => $roles->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
-            'permissions' => Permission::orderBy('module')->orderBy('name')->get(['id', 'name', 'slug', 'module']),
             'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get()
                 ->unique(fn (Department $department) => Str::lower(trim($department->name)))->values(),
-            'workstations' => Workstation::where('is_active', true)->get(),
             'schools' => School::where('factory_id', $factoryId)->orderBy('name')->get(),
             'school_users' => User::where('is_platform_admin', false)->whereNotNull('school_id')->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['school', 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId)])->get(),
         ]);
@@ -116,35 +112,6 @@ class TeamWorkspaceController extends Controller
         );
 
         return response()->json($user->load('employeeProfile.department', 'employeeProfile.workstation'), 201);
-    }
-
-    public function storeRole(Request $request): JsonResponse
-    {
-        $factoryId = $request->user()->current_factory_id;
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'dashboard_key' => ['required', Rule::in(['executive', 'production', 'warehouse', 'procurement', 'quality', 'cutting', 'workstation', 'logistics', 'sales', 'finance'])],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'permission_ids' => ['required', 'array', 'min:1'],
-            'permission_ids.*' => ['integer', 'exists:permissions,id'],
-        ]);
-        $permissions = Permission::whereIn('id', $data['permission_ids'])->get();
-        $this->assertCanGrantPermissions($request->user(), $permissions->pluck('slug')->all());
-        $role = DB::transaction(function () use ($data, $permissions, $factoryId) {
-            $base = Str::slug($data['name']) ?: 'custom-role';
-            $slug = $base;
-            $counter = 2;
-            while (Role::where('factory_id', $factoryId)->where('slug', $slug)->exists()) {
-                $slug = $base.'-'.$counter++;
-            }
-            $role = Role::create(['factory_id' => $factoryId, 'name' => $data['name'], 'slug' => $slug, 'dashboard_key' => $data['dashboard_key'], 'description' => $data['description'] ?? null, 'is_system' => false]);
-            $role->permissions()->sync($permissions->pluck('id'));
-
-            return $role;
-        });
-        AuditLog::record('team.role_created', "Created custom role {$role->name}", $role);
-
-        return response()->json($role->load('permissions:id,name,slug,module'), 201);
     }
 
     public function updateUser(Request $request, User $user): JsonResponse
@@ -225,24 +192,6 @@ class TeamWorkspaceController extends Controller
         AuditLog::record('team.user_password_reset', "Reset password for {$user->name}", $user);
         
         return response()->json(['message' => 'Password reset successfully']);
-    }
-
-    public function storeWorkstation(Request $request): JsonResponse
-    {
-        $factoryId = $request->user()->current_factory_id;
-        $data = $request->validate(['name' => ['required', 'string', 'max:120'], 'code' => ['required', 'string', 'max:40', Rule::unique('workstations')->where('factory_id', $factoryId)], 'type' => ['required', Rule::in(['cutting', 'sewing', 'mixing', 'processing', 'bottling', 'packaging', 'quality', 'warehouse', 'dispatch', 'machine', 'other'])], 'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)], 'description' => ['nullable', 'string', 'max:1000']]);
-
-        return response()->json(Workstation::create($data), 201);
-    }
-
-    public function storeDepartment(Request $request): JsonResponse
-    {
-        $factoryId = $request->user()->current_factory_id;
-        $data = $request->validate(['name' => ['required', 'string', 'max:120'], 'code' => ['required', 'string', 'max:40', Rule::unique('departments')->where('factory_id', $factoryId)]]);
-        $department = Department::create($data + ['factory_id' => $factoryId, 'is_active' => true]);
-        AuditLog::record('team.department_created', "Created department {$department->name}", $department);
-
-        return response()->json($department, 201);
     }
 
     public function updateDepartment(Request $request, Department $department): JsonResponse

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ClipboardCheck, HardHat, ListChecks, RefreshCw, ShieldAlert } from 'lucide-react';
+import { ClipboardCheck, HardHat, ListChecks, RefreshCw, ShieldAlert } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 async function api(url: string, options: RequestInit = {}) {
@@ -121,10 +121,10 @@ export default function SafetyOverviewPage() {
             {success && <div className="admin-alert success">{success}</div>}
 
             <section className="department-metrics cols-4">
-                <article className="department-metric panel"><span className="metric-icon red"><ShieldAlert /></span><div><small>Open incidents</small><strong>{stats.open_incidents || 0}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon amber"><AlertTriangle /></span><div><small>Incidents this month</small><strong>{stats.incidents_this_month || 0}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon violet"><ClipboardCheck /></span><div><small>Failed inspections (month)</small><strong>{stats.failed_inspections || 0}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon blue"><ListChecks /></span><div><small>Open corrective actions</small><strong>{stats.open_actions || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Open incidents</small><strong>{stats.open_incidents || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Incidents this month</small><strong>{stats.incidents_this_month || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Failed inspections (month)</small><strong>{stats.failed_inspections || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Open corrective actions</small><strong>{stats.open_actions || 0}</strong></div></article>
             </section>
 
             <article className="panel chart-panel">

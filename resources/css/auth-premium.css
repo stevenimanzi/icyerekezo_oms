@@ -264,6 +264,84 @@
     word-wrap: break-word;
 }
 
+.auth-steps {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.auth-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px 7px 7px;
+    border-radius: 999px;
+    background: #f1f4fa;
+    color: #8391ab;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.auth-step span {
+    display: grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border-radius: 50%;
+    background: #dce4f2;
+    color: #6a7998;
+    font-size: 11px;
+}
+
+.auth-step.active {
+    background: rgba(34, 94, 234, .1);
+    color: var(--auth-blue, #225eea);
+}
+
+.auth-step.active span {
+    background: var(--auth-blue, #225eea);
+    color: #fff;
+}
+
+.auth-step.done span {
+    background: #16a34a;
+    color: #fff;
+}
+
+.password-strength {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 12px;
+    margin: -8px 0 17px;
+    padding: 0;
+    list-style: none;
+}
+
+.password-strength li {
+    color: #9aa7bc;
+    font-size: 12px;
+}
+
+.password-strength li.met {
+    color: #16a34a;
+}
+
+@media (max-width: 560px) {
+    .auth-steps {
+        flex-wrap: wrap;
+    }
+
+    .auth-step {
+        font-size: 11px;
+        padding: 6px 10px 6px 6px;
+    }
+
+    .password-strength {
+        grid-template-columns: 1fr;
+    }
+}
+
 .auth-field {
     display: block;
     margin: 0 0 17px;
@@ -284,12 +362,7 @@
 }
 
 .auth-field > div > svg:first-child {
-    position: absolute;
-    z-index: 1;
-    left: 17px;
-    width: 19px;
-    color: #8391ab;
-    pointer-events: none;
+    display: none;
 }
 
 .auth-card .auth-field input,
@@ -297,7 +370,7 @@
     width: 100%;
     min-height: 57px;
     margin: 0;
-    padding: 0 50px;
+    padding: 0 18px;
     border: 1px solid #dce4f2;
     border-radius: 17px;
     outline: none;
@@ -305,6 +378,10 @@
     color: var(--auth-navy);
     font-size: 14px;
     transition: border-color .18s, box-shadow .18s, background .18s, transform .18s;
+}
+
+.auth-field:has(.password-toggle) input {
+    padding-right: 50px;
 }
 
 /* Hide Edge / IE native password-reveal button — we have our own toggle */
@@ -640,7 +717,10 @@
     .auth-page {
         min-height: 100svh;
         padding: clamp(18px, 4vw, 64px);
-        display: block;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         gap: 0;
         background: #ffffff;
     }

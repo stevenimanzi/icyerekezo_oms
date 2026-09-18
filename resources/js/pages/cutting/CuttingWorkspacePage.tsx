@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FileText, Package, RefreshCw, Scissors, Send } from 'lucide-react';
+import { AlertTriangle, FileText, Package, RefreshCw, Scissors, Send } from 'lucide-react';
 import { Locale, productionApi, StockPopupModal } from '../production/shared';
 
 type CuttingTab = 'request' | 'cut' | 'damaged' | 'report';
@@ -481,10 +481,10 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
             ) : (
                 <div className="cutting-tab-content">
                     <div className="cutting-report-metrics">
-                        <article className="panel cutting-metric"><div className="cutting-metric-icon blue"><Scissors size={22} /></div><div><small>{t.totalCut}</small><strong>{num(totalCutQty)}</strong><p>{t.period}</p></div></article>
-                        <article className="panel cutting-metric"><div className="cutting-metric-icon amber"><AlertTriangle size={22} /></div><div><small>{t.totalDamaged}</small><strong>{num(totalDamagedQty)}</strong><p>{t.period}</p></div></article>
-                        <article className="panel cutting-metric"><div className="cutting-metric-icon green"><CheckCircle2 size={22} /></div><div><small>{t.wasteRate}</small><strong>{wastePercent}%</strong><p>{Number(wastePercent) < 5 ? 'Excellent' : Number(wastePercent) < 10 ? (locale === 'en' ? 'Good' : 'Bon') : (locale === 'en' ? 'Needs attention' : 'À surveiller')}</p></div></article>
-                        <article className="panel cutting-metric"><div className="cutting-metric-icon violet"><Package size={22} /></div><div><small>{t.pendingReqs}</small><strong>{pendingRequests.length}</strong><p>{locale === 'en' ? 'Awaiting' : 'En attente'}</p></div></article>
+                        <article className="panel cutting-metric"><div><small>{t.totalCut}</small><strong>{num(totalCutQty)}</strong><p>{t.period}</p></div></article>
+                        <article className="panel cutting-metric"><div><small>{t.totalDamaged}</small><strong>{num(totalDamagedQty)}</strong><p>{t.period}</p></div></article>
+                        <article className="panel cutting-metric"><div><small>{t.wasteRate}</small><strong>{wastePercent}%</strong><p>{Number(wastePercent) < 5 ? 'Excellent' : Number(wastePercent) < 10 ? (locale === 'en' ? 'Good' : 'Bon') : (locale === 'en' ? 'Needs attention' : 'À surveiller')}</p></div></article>
+                        <article className="panel cutting-metric"><div><small>{t.pendingReqs}</small><strong>{pendingRequests.length}</strong><p>{locale === 'en' ? 'Awaiting' : 'En attente'}</p></div></article>
                     </div>
                     <section className="panel cutting-report-filters no-print">
                         <div>

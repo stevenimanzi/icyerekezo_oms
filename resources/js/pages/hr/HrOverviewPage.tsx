@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CalendarCheck, CalendarClock, GraduationCap, RefreshCw, UserCheck, Users } from 'lucide-react';
+import { CalendarCheck, CalendarClock, GraduationCap, RefreshCw } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 async function api(url: string, options: RequestInit = {}) {
@@ -102,10 +102,10 @@ export default function HrOverviewPage() {
             {success && <div className="admin-alert success">{success}</div>}
 
             <section className="department-metrics cols-4">
-                <article className="department-metric panel"><span className="metric-icon green"><UserCheck /></span><div><small>Present today</small><strong>{stats.present_today || 0}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon red"><Users /></span><div><small>Absent today</small><strong>{stats.absent_today || 0}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon amber"><CalendarClock /></span><div><small>Pending leave requests</small><strong>{stats.pending_leave || 0}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon blue"><GraduationCap /></span><div><small>Upcoming trainings</small><strong>{stats.upcoming_trainings || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Present today</small><strong>{stats.present_today || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Absent today</small><strong>{stats.absent_today || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Pending leave requests</small><strong>{stats.pending_leave || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Upcoming trainings</small><strong>{stats.upcoming_trainings || 0}</strong></div></article>
             </section>
 
             <article className="panel chart-panel">

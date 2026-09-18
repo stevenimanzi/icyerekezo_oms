@@ -273,7 +273,7 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
 
             {selectedOrder && (
                 <OrderDetailsModal
-                    order={selectedOrder} editable={can('sales.fulfill') && selectedOrder.status !== 'rejected'}
+                    order={selectedOrder} mode="confirm" editable={can('logistics.deliver') && selectedOrder.status !== 'rejected'}
                     busy={busy} run={runLine} close={() => setSelectedOrder(null)}
                 />
             )}
@@ -284,32 +284,35 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
 function SchoolDeliveryTable({ rows, page, lastPage, setPage, view }: any) {
     return (
         <section className="panel sales-records">
-            <header><div><h2>Confirm deliveries</h2><p>Open an order to record how many of each garment were actually delivered — the remaining quantity and order status update automatically.</p></div></header>
+            <header><div><h2>Confirm deliveries</h2><p>Open an order to review what the packing manager has packed, then deliver it — the remaining quantity and order status update automatically.</p></div></header>
             <div className="admin-table-wrap">
                 <table className="admin-table">
-                    <thead><tr><th>Order number</th><th>School</th><th>Ordered</th><th>Delivered</th><th>Remaining</th><th>Status</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Order number</th><th>School</th><th>Ordered</th><th>Packed</th><th>Delivered</th><th>Remaining</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
                         {rows.length ? rows.map((order: any) => {
                             const ordered = Number(order.item_count || 0);
+                            const packed = (order.lines || []).reduce((sum: number, line: any) => sum + Number(line.quantity_packed || 0), 0);
                             const delivered = (order.lines || []).reduce((sum: number, line: any) => sum + Number(line.quantity_delivered || 0), 0);
                             const remaining = Math.max(0, ordered - delivered);
+                            const readyToDeliver = packed > delivered;
                             return (
                                 <tr key={order.id}>
                                     <td><b>{orderNumber(order.document_number)}</b></td>
                                     <td><b>{order.school?.name || order.customer_name}</b><small>{[order.school?.district, order.school?.sector, order.academic_year].filter(Boolean).join(' · ')}</small></td>
                                     <td>{ordered.toLocaleString()}</td>
+                                    <td>{packed.toLocaleString()}</td>
                                     <td>{delivered.toLocaleString()}</td>
                                     <td><b>{remaining.toLocaleString()}</b></td>
                                     <td><span className={'admin-status ' + order.status}>{orderStatusLabel[order.status] || order.status}</span></td>
                                     <td>
                                         <div className="workflow-actions school-icon-actions">
-                                            <button className="school-action-icon accept" title="Record delivery" aria-label={`Record delivery for order ${order.document_number}`} onClick={() => view(order)}><Truck size={18} /></button>
+                                            <button className={'school-action-icon' + (readyToDeliver ? ' accept' : '')} title={readyToDeliver ? 'Review packed items and deliver' : 'Nothing packed yet'} aria-label={`Review order ${order.document_number}`} onClick={() => view(order)}><Truck size={18} /></button>
                                         </div>
                                     </td>
                                 </tr>
                             );
                         }) : (
-                            <tr><td colSpan={7}><Empty text="No school orders are ready for delivery yet." /></td></tr>
+                            <tr><td colSpan={8}><Empty text="No school orders are ready for delivery yet." /></td></tr>
                         )}
                     </tbody>
                 </table>

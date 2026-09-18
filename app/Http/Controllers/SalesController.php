@@ -50,7 +50,7 @@ class SalesController extends Controller
                 ->when($request->string('academic_year')->trim()->value(), fn ($query, $value) => $query->where('academic_year', $value));
         }
 
-        $paginatedDocuments = $list->latest('document_date')->latest('id')->paginate($specialized ? 5 : 50);
+        $paginatedDocuments = $list->latest('document_date')->latest('id')->paginate($specialized ? 10 : 50);
         if ($specialized) {
             $paginatedDocuments->getCollection()->each(function (SalesDocument $document) {
                 $document->setAttribute('document_number', preg_replace('/^LEGACY-NOGUCHI-/i', '', $document->document_number));
@@ -90,6 +90,8 @@ class SalesController extends Controller
                 'review' => $request->user()->hasPermission('sales.fulfill'),
                 'create' => $request->user()->hasPermission('sales.create') || $request->user()->hasPermission('sales.fulfill'),
                 'invoice' => $request->user()->hasPermission('sales.fulfill'),
+                'pack' => $request->user()->hasPermission('sales.pack'),
+                'deliver' => $request->user()->hasPermission('logistics.deliver') || $request->user()->hasPermission('sales.fulfill'),
             ],
             'updated_at' => now()->toIso8601String(),
         ]);
@@ -129,17 +131,33 @@ class SalesController extends Controller
         return response()->json(['message' => 'School garment order received.', 'document' => $order->load('lines')], 201);
     }
 
-    public function updateSchoolOrderLine(Request $request, SalesDocumentLine $line, InventoryLedger $ledger): JsonResponse
+    /**
+     * Packing records how much of a line is physically packed and ready for logistics.
+     * It never touches delivered quantity, stock, or the order's status — packing is
+     * preparation, not fulfilment.
+     */
+    public function packSchoolOrderLine(Request $request, SalesDocumentLine $line): JsonResponse
     {
         $this->ensureNoguchi($request);
         $data = $request->validate([
-            'quantity_packed' => ['nullable', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
-            'quantity_delivered' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
-            'quantity_rejected' => ['nullable', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
-            'rejection_reason' => ['nullable', 'string', 'max:255'],
+            'quantity_packed' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_ordered],
         ]);
-        $data['quantity_packed'] = max((int) ($data['quantity_packed'] ?? $line->quantity_packed), (int) $data['quantity_delivered']);
-        $data['quantity_rejected'] ??= $line->quantity_rejected;
+        $line->update($data);
+        AuditLog::record('sales.school_order_line_packed', "Updated packed quantity for {$line->document->document_number}", $line);
+
+        return response()->json(['message' => 'Packed quantity updated.', 'line' => $line->fresh()]);
+    }
+
+    /**
+     * Delivery can never exceed what packing has actually prepared — logistics delivers
+     * packed items, it does not decide what gets packed.
+     */
+    public function deliverSchoolOrderLine(Request $request, SalesDocumentLine $line, InventoryLedger $ledger): JsonResponse
+    {
+        $this->ensureNoguchi($request);
+        $data = $request->validate([
+            'quantity_delivered' => ['required', 'integer', 'min:0', 'max:'.$line->quantity_packed],
+        ]);
         $previouslyDelivered = (int) $line->quantity_delivered;
         $line->update($data);
         $document = $line->document()->with('lines')->firstOrFail();
@@ -165,6 +183,48 @@ class SalesController extends Controller
         AuditLog::record('sales.school_order_line_updated', "Updated fulfilment for {$document->document_number}", $line);
 
         return response()->json(['message' => 'Garment quantities updated.', 'line' => $line->fresh(), 'document_status' => $document->status]);
+    }
+
+    /**
+     * Delivers everything packing has prepared for this order in one action — each line's
+     * delivered quantity is raised to its packed quantity, nothing more.
+     */
+    public function deliverSchoolOrder(Request $request, SalesDocument $document, InventoryLedger $ledger): JsonResponse
+    {
+        $this->ensureNoguchi($request);
+        abort_unless($document->document_type === 'customer_order', 422, 'Only customer orders can be delivered.');
+        $factoryId = (int) $request->user()->current_factory_id;
+
+        DB::transaction(function () use ($document, $ledger, $factoryId) {
+            $document->load('lines');
+            foreach ($document->lines as $line) {
+                $newlyDelivered = (int) $line->quantity_packed - (int) $line->quantity_delivered;
+                if ($newlyDelivered <= 0) {
+                    continue;
+                }
+                $line->update(['quantity_delivered' => $line->quantity_packed]);
+                if ($line->item_id) {
+                    $this->releaseDeliveredStock($ledger, $factoryId, $line, $document, $newlyDelivered);
+                }
+            }
+        });
+
+        $document->refresh()->load('lines');
+        $delivered = $document->lines->sum('quantity_delivered');
+        $ordered = $document->lines->sum('quantity_ordered');
+        $oldStatus = $document->status;
+
+        if ($delivered >= $ordered) $document->update(['status' => 'delivered']);
+        elseif ($delivered > 0) $document->update(['status' => 'partial']);
+
+        $document->refresh();
+        if ($oldStatus !== $document->status && $document->customer_email) {
+            \Illuminate\Support\Facades\Mail::to($document->customer_email)->send(new \App\Mail\SchoolOrderNotificationMail($document, 'status_updated'));
+        }
+
+        AuditLog::record('sales.school_order_delivered', "Delivered packed items for {$document->document_number}", $document);
+
+        return response()->json(['message' => 'Order delivered.', 'document' => $document->load('lines')]);
     }
 
     /**

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, Boxes, CheckCircle2, CircleAlert, Clock3, Factory, FileText, ListChecks, PackageCheck, PackageOpen, RefreshCw, Scissors, TrendingDown, Truck, Users, Warehouse, ClipboardCheck } from 'lucide-react';
+import { Activity, Boxes, Factory, FileText, PackageCheck, PackageOpen, RefreshCw, Truck, Users, Warehouse, ClipboardCheck } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 async function api(url:string,options:RequestInit={}){const response=await fetch(url,{...options,headers:{Accept:'application/json','Content-Type':'application/json',...(options.headers||{})}});const text=await response.text();let data:any;try{data=JSON.parse(text)}catch{throw new Error('The dashboard could not read the server response.')}if(!response.ok)throw new Error(data.message||'The dashboard could not load current data.');return data}
@@ -92,7 +92,7 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
  );
 }
 
-function LogisticsMetrics({values,fr}:any){return <section className="department-metrics"><Metric icon={<PackageOpen/>} label={fr?'Commandes entrantes':'Incoming orders'} value={number(values.incoming_orders)} tone="blue"/><Metric icon={<PackageCheck/>} label={fr?'PrÃªtes Ã  expÃ©dier':'Ready to dispatch'} value={number(values.ready_to_dispatch)} tone="violet"/><Metric icon={<Truck/>} label={fr?'En cours de livraison':'In transit'} value={number(values.in_transit)} tone="amber"/><Metric icon={<CheckCircle2/>} label={fr?'LivrÃ©es aujourdâ€™hui':'Delivered today'} value={number(values.delivered_today)} tone="green"/><Metric icon={<CircleAlert/>} label={fr?'Livraisons en retard':'Delayed deliveries'} value={number(values.delayed)} tone="red"/><Metric icon={<Truck/>} label={fr?'VÃ©hicules disponibles':'Available vehicles'} value={number(values.available_vehicles)} tone="blue"/></section>}
+function LogisticsMetrics({values,fr}:any){return <section className="department-metrics"><Metric label={fr?'Commandes entrantes':'Incoming orders'} value={number(values.incoming_orders)} tone="blue"/><Metric label={fr?'PrÃªtes Ã  expÃ©dier':'Ready to dispatch'} value={number(values.ready_to_dispatch)} tone="violet"/><Metric label={fr?'En cours de livraison':'In transit'} value={number(values.in_transit)} tone="amber"/><Metric label={fr?'LivrÃ©es aujourdâ€™hui':'Delivered today'} value={number(values.delivered_today)} tone="green"/><Metric label={fr?'Livraisons en retard':'Delayed deliveries'} value={number(values.delayed)} tone="red"/><Metric label={fr?'VÃ©hicules disponibles':'Available vehicles'} value={number(values.available_vehicles)} tone="blue"/></section>}
 function LogisticsCharts({trends,fr,money}:any){
  const monthNames=fr?['Jan','FÃ©v','Mar','Avr','Mai','Juin','Juil','AoÃ»','Sep','Oct','Nov','DÃ©c']:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
  const chartData=trends.map((item:any)=>({...item,month:monthNames[Number(item.month_number)-1]||item.month}));
@@ -112,18 +112,18 @@ function ProductionCharts({trends,fr}:any){
   <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Taux de rejet':'Rejection rate'}</h2><p>{fr?'PiÃ¨ces endommagÃ©es ou rejetÃ©es par mois':'Damaged or rejected pieces each month'}</p></div><Activity size={20}/></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle}/><Bar dataKey="rejected" name={fr?'EndommagÃ©':'Damaged'} fill="#ef4444" radius={[5,5,0,0]}/><Bar dataKey="waste" name={fr?'DÃ©chets':'Waste'} fill="#f59e0b" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer></div></article>
  </section>
 }
-function WarehouseMetrics({values,fr,money}:any){return <section className="department-metrics"><Metric icon={<PackageCheck/>} label={fr?'Articles en stock':'Stock items'} value={number(values.stock_items)} tone="blue"/><Metric icon={<TrendingDown/>} label={fr?'Articles en stock faible':'Low-stock items'} value={number(values.low_stock)} tone="red"/><Metric icon={<Warehouse/>} label={fr?'EntrepÃ´ts actifs':'Active warehouses'} value={number(values.warehouses)} tone="violet"/><Metric icon={<Activity/>} label={fr?'Valeur du stock':'Stock value'} value={money(values.stock_value)} tone="green"/><Metric icon={<CheckCircle2/>} label={fr?'QuantitÃ© reÃ§ue aujourdâ€™hui':'Quantity received today'} value={number(values.received_today)} tone="blue"/><Metric icon={<TrendingDown/>} label={fr?'QuantitÃ© sortie aujourdâ€™hui':'Quantity issued today'} value={number(values.issued_today)} tone="amber"/></section>}
+function WarehouseMetrics({values,fr,money}:any){return <section className="department-metrics"><Metric label={fr?'Articles en stock':'Stock items'} value={number(values.stock_items)} tone="blue"/><Metric label={fr?'Articles en stock faible':'Low-stock items'} value={number(values.low_stock)} tone="red"/><Metric label={fr?'EntrepÃ´ts actifs':'Active warehouses'} value={number(values.warehouses)} tone="violet"/><Metric label={fr?'Valeur du stock':'Stock value'} value={money(values.stock_value)} tone="green"/><Metric label={fr?'QuantitÃ© reÃ§ue aujourdâ€™hui':'Quantity received today'} value={number(values.received_today)} tone="blue"/><Metric label={fr?'QuantitÃ© sortie aujourdâ€™hui':'Quantity issued today'} value={number(values.issued_today)} tone="amber"/></section>}
 function ProductionMetrics({values,fr,user}:any){
     const isNoguchiFactory = user?.current_factory?.name?.trim().toLowerCase()==='noguchi holdings ltd';
     if (isNoguchiFactory && user?.workspace === 'sewing') {
         return <section className="department-metrics cols-4">
-            <Metric icon={<Scissors/>} label={fr?'Articles coupÃ©s non cousus':'Items from cutting not used in sewing'} value={number(values.cutting_not_sewn)} tone="blue"/>
-            <Metric icon={<PackageCheck/>} label={fr?'UnitÃ©s produites':'Produced'} value={number(values.output_today)} tone="green"/>
-            <Metric icon={<Activity/>} label={fr?'EndommagÃ© (RejetÃ©)':'Damaged'} value={number(values.rejected_today)} tone="red"/>
-            <Metric icon={<Clock3/>} label={fr?'Travaux en cours':'Work in progress'} value={number(values.work_in_progress)} tone="amber"/>
+            <Metric label={fr?'Articles coupÃ©s non cousus':'Items from cutting not used in sewing'} value={number(values.cutting_not_sewn)} tone="blue"/>
+            <Metric label={fr?'UnitÃ©s produites':'Produced'} value={number(values.output_today)} tone="green"/>
+            <Metric label={fr?'EndommagÃ© (RejetÃ©)':'Damaged'} value={number(values.rejected_today)} tone="red"/>
+            <Metric label={fr?'Travaux en cours':'Work in progress'} value={number(values.work_in_progress)} tone="amber"/>
         </section>;
     }
-    return <section className="department-metrics"><Metric icon={<ListChecks/>} label={fr?'Travaux Ã  commencer':'Work to start'} value={number(values.assigned_work)} tone="blue"/><Metric icon={<Clock3/>} label={fr?'Travaux en cours':'Work in progress'} value={number(values.work_in_progress)} tone="amber"/><Metric icon={<CheckCircle2/>} label={fr?'TerminÃ© aujourdâ€™hui':'Completed today'} value={number(values.completed_today)} tone="green"/><Metric icon={<Factory/>} label={fr?'Ã‰tapes de production actives':'Active production steps'} value={number(values.stages_in_progress)} tone="violet"/><Metric icon={<PackageCheck/>} label={fr?'UnitÃ©s produites aujourdâ€™hui':'Units produced today'} value={number(values.output_today)} tone="blue"/><Metric icon={<Activity/>} label={fr?'UnitÃ©s rejetÃ©es aujourdâ€™hui':'Units rejected today'} value={number(values.rejected_today)} tone="red"/></section>
+    return <section className="department-metrics"><Metric label={fr?'Travaux Ã  commencer':'Work to start'} value={number(values.assigned_work)} tone="blue"/><Metric label={fr?'Travaux en cours':'Work in progress'} value={number(values.work_in_progress)} tone="amber"/><Metric label={fr?'TerminÃ© aujourdâ€™hui':'Completed today'} value={number(values.completed_today)} tone="green"/><Metric label={fr?'Ã‰tapes de production actives':'Active production steps'} value={number(values.stages_in_progress)} tone="violet"/><Metric label={fr?'UnitÃ©s produites aujourdâ€™hui':'Units produced today'} value={number(values.output_today)} tone="blue"/><Metric label={fr?'UnitÃ©s rejetÃ©es aujourdâ€™hui':'Units rejected today'} value={number(values.rejected_today)} tone="red"/></section>
 }
 
 function WarehouseStockChart({ trends, fr, number }: any) {
@@ -256,7 +256,7 @@ function StockStatusPanel({ items, fr, number }: any) {
         </article>
     );
 }
-function Metric({icon,label,value,tone}:any){return <article className="department-metric panel"><span className={'metric-icon '+tone}>{icon}</span><div><small>{label}</small><strong>{value}</strong></div></article>}
+function Metric({label,value}:any){return <article className="department-metric panel"><div><small>{label}</small><strong>{value}</strong></div></article>}
 function Empty({text}:{text:string}){return <div className="department-empty"><PackageCheck size={26}/><span>{text}</span></div>}
 function FinishingCharts({data, fr, number}:any){
  const [filter, setFilter] = useState<'weekly'|'monthly'|'annually'>('weekly');
@@ -293,18 +293,18 @@ function FinishingCharts({data, fr, number}:any){
 function FinishingMetrics({values,fr}:any){
     const number=(value:any)=>Number(value||0).toLocaleString(undefined,{maximumFractionDigits:3});
     return <section className="department-metrics">
-        <Metric icon={<ListChecks/>} label={fr?"Pièces en attente":"Pending from Sewing"} value={number(values.pending_finishing)} tone="amber"/>
-        <Metric icon={<PackageCheck/>} label={fr?"Finition aujourd'hui":"Finished today"} value={number(values.finished_today)} tone="blue"/>
-        <Metric icon={<Activity/>} label={fr?"Rejeté aujourd'hui":"Rejected today"} value={number(values.rejected_today)} tone="red"/>
+        <Metric label={fr?"Pièces en attente":"Pending from Sewing"} value={number(values.pending_finishing)} tone="amber"/>
+        <Metric label={fr?"Finition aujourd'hui":"Finished today"} value={number(values.finished_today)} tone="blue"/>
+        <Metric label={fr?"Rejeté aujourd'hui":"Rejected today"} value={number(values.rejected_today)} tone="red"/>
     </section>;
 }
 
 function PackingMetrics({values,fr}:any){
     const number=(value:any)=>Number(value||0).toLocaleString(undefined,{maximumFractionDigits:3});
     return <section className="department-metrics">
-        <Metric icon={<PackageOpen/>} label={fr?"Pièces en attente":"Pending Sewing/Finishing"} value={number(values.pending_packing)} tone="amber"/>
-        <Metric icon={<PackageCheck/>} label={fr?"Emballé aujourd'hui":"Packed today"} value={number(values.packed_today)} tone="blue"/>
-        <Metric icon={<Warehouse/>} label={fr?"Déposé à l'entrepôt":"Deposited to warehouse"} value={number(values.deposited_to_warehouse)} tone="green"/>
+        <Metric label={fr?"Pièces en attente":"Pending Sewing/Finishing"} value={number(values.pending_packing)} tone="amber"/>
+        <Metric label={fr?"Emballé aujourd'hui":"Packed today"} value={number(values.packed_today)} tone="blue"/>
+        <Metric label={fr?"Déposé à l'entrepôt":"Deposited to warehouse"} value={number(values.deposited_to_warehouse)} tone="green"/>
     </section>;
 }
 
@@ -382,10 +382,10 @@ function PackingCharts({data, fr, number}:any){
 function QualityMetrics({values,fr}:any){
     const number=(value:any)=>Number(value||0).toLocaleString(undefined,{maximumFractionDigits:3});
     return <section className="department-metrics quality-metrics">
-        <Metric icon={<ClipboardCheck/>} label={fr?"Inspections en attente":"Pending inspections"} value={number(values.pending_inspections)} tone="amber"/>
-        <Metric icon={<CheckCircle2/>} label={fr?"Articles inspectés aujourd'hui":"Items inspected today"} value={number(values.inspections_today)} tone="blue"/>
-        <Metric icon={<CircleAlert/>} label={fr?"Articles rejetés aujourd'hui":"Items failed today"} value={number(values.failed_today)} tone="red"/>
-        <Metric icon={<PackageCheck/>} label={fr?"Taux de réussite (Mois)":"Pass rate (Month)"} value={`${values.pass_rate}%`} tone="green"/>
+        <Metric label={fr?"Inspections en attente":"Pending inspections"} value={number(values.pending_inspections)} tone="amber"/>
+        <Metric label={fr?"Articles inspectés aujourd'hui":"Items inspected today"} value={number(values.inspections_today)} tone="blue"/>
+        <Metric label={fr?"Articles rejetés aujourd'hui":"Items failed today"} value={number(values.failed_today)} tone="red"/>
+        <Metric label={fr?"Taux de réussite (Mois)":"Pass rate (Month)"} value={`${values.pass_rate}%`} tone="green"/>
     </section>;
 }
 

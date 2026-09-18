@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Check, Download, Eye, FileUp, Plus, Printer, RefreshCw, Search, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Check, Download, Eye, FileUp, Plus, Printer, RefreshCw, Search, SlidersHorizontal, Trash2, Truck, X } from 'lucide-react';
 
 async function api(url: string, options: RequestInit = {}) {
     const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
@@ -272,7 +272,7 @@ function LegacyOrderMatrix({ rows, open }: any) {
 
     return (
         <section className="panel legacy-order-sheet">
-            <header><div><h2>School order quantity sheet</h2><p>The familiar district and sector layout, now with live delivery progress and instant order details.</p></div><span className="legacy-live-label"><i />Records</span></header>
+            <header><div><h2>School order quantity sheet</h2><p>The familiar district and sector layout, with instant order details.</p></div><span className="legacy-live-label"><i />Records</span></header>
             <div className="admin-table-wrap">
                 <table className="admin-table legacy-order-table">
                     <thead><tr><th>School</th>{legacyColumns.map(([label]) => <th key={label}>{label}</th>)}<th>Total</th><th>Given</th><th>Remaining</th><th>Value</th><th>Status</th><th>View</th></tr></thead>
@@ -285,14 +285,13 @@ function LegacyOrderMatrix({ rows, open }: any) {
                                     const ordered = Number(row.item_count || 0);
                                     const given = Number((row.lines || []).reduce((sum: number, line: any) => sum + Number(line.quantity_delivered || 0), 0));
                                     const remaining = Math.max(0, ordered - given);
-                                    const progress = ordered ? Math.round(given / ordered * 100) : 0;
                                     return (
                                         <tr key={row.id}>
                                             <td className="legacy-school-cell"><b>{row.school?.name || row.customer_name}</b><small>{row.school?.phone || orderNumber(row.document_number)}</small></td>
                                             {legacyColumns.map(([label, names]) => <td key={label}>{categoryTotal(row, names as string[]) || '—'}</td>)}
                                             <td><b>{ordered.toLocaleString()}</b></td>
                                             <td>{given.toLocaleString()}</td>
-                                            <td><b>{remaining.toLocaleString()}</b><small className="legacy-progress"><i style={{ width: `${progress}%` }} />{progress}% delivered</small></td>
+                                            <td><b>{remaining.toLocaleString()}</b></td>
                                             <td>{money(row.total_amount, row.currency_code)}</td>
                                             <td><span className={'admin-status ' + row.status}>{plainStatus(row.status)}</span></td>
                                             <td><button className="school-action-icon view" title="See order details" aria-label={`See ${row.school?.name || row.customer_name} order details`} onClick={() => open(row)}><Eye size={17} /></button></td>
@@ -341,7 +340,20 @@ function ConfirmDialog({ config, onCancel }: any) {
     );
 }
 
-function OrderDetailsModal({ order, editable, busy, run, close }: any) {
+const modeCopy: Record<string, string> = {
+    deliver: 'Update how many were given to the school. The remaining quantity is calculated automatically.',
+    pack: 'Record how many of each garment have been packed and are ready for logistics to collect.',
+    confirm: 'Review what packing has prepared below, then use Deliver above to ship exactly what has been packed.',
+};
+
+function OrderDetailsModal({ order, editable, mode = 'deliver', busy, run, close }: any) {
+    const deliverable = mode === 'confirm'
+        ? (order.lines || []).reduce((sum: number, line: any) => sum + Math.max(0, Number(line.quantity_packed) - Number(line.quantity_delivered)), 0)
+        : 0;
+    const deliverOrder = async () => {
+        const ok = await run('deliver-order', `/api/sales/school-orders/${order.id}/deliver`, 'PATCH', {});
+        if (ok) close();
+    };
     return (
         <div className="school-modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
             <section className="school-order-modal" role="dialog" aria-modal="true" aria-labelledby="school-order-title">
@@ -353,6 +365,11 @@ function OrderDetailsModal({ order, editable, busy, run, close }: any) {
                     </div>
                     <div className="workflow-actions">
                         <a className="secondary-btn school-print-btn" href={`/api/sales/orders/${order.id}/pdf`} target="_blank" rel="noreferrer"><Printer size={17} />Print PDF</a>
+                        {mode === 'confirm' && editable && (
+                            <button className="primary-btn" disabled={busy === 'deliver-order' || deliverable <= 0} onClick={deliverOrder}>
+                                <Truck size={17} />{deliverable <= 0 ? 'Nothing to deliver' : `Deliver ${deliverable.toLocaleString()} item${deliverable === 1 ? '' : 's'}`}
+                            </button>
+                        )}
                         <button className="icon-btn" aria-label="Close order details" title="Close" onClick={close}><X size={20} /></button>
                     </div>
                 </header>
@@ -364,8 +381,8 @@ function OrderDetailsModal({ order, editable, busy, run, close }: any) {
                 </div>
                 <div className="school-modal-body">
                     <h3>Clothes in this order</h3>
-                    <p>Update how many were given to the school. The remaining quantity is calculated automatically.</p>
-                    <GarmentLines lines={order.lines || []} editable={editable} busy={busy} run={run} />
+                    <p>{editable ? modeCopy[mode] : 'Ordered, delivered and remaining quantities for this order.'}</p>
+                    <GarmentLines lines={order.lines || []} editable={editable} mode={mode} busy={busy} run={run} />
                 </div>
             </section>
         </div>
@@ -453,30 +470,66 @@ function SchoolOrderForm({ order, setOrder, setLine, submit, busy, categories }:
         </form>
     );
 }
-function GarmentLines({ lines, editable, busy, run }: any) {
+function GarmentLines({ lines, editable, mode = 'deliver', busy, run }: any) {
+    const headers = mode === 'pack'
+        ? ['Class', 'Type of clothing', 'For', 'Size', 'Color', 'Quantity', 'Packed', 'Remaining to pack', ...(editable ? ['Save'] : [])]
+        : mode === 'confirm'
+            ? ['Class', 'Type of clothing', 'For', 'Size', 'Color', 'Quantity', 'Packed', 'Delivered']
+            : ['Class', 'Type of clothing', 'For', 'Size', 'Color', 'Quantity', 'Delivered', 'Remains', ...(editable ? ['Save'] : [])];
     return (
         <div className="admin-table-wrap">
             <table className="admin-table">
-                <thead><tr><th>Class</th><th>Type of clothing</th><th>For</th><th>Size</th><th>Color</th><th>Number ordered</th><th>Given to school</th><th>Remaining to be delivered</th><th>Save</th></tr></thead>
-                <tbody>{lines.map((line: any) => <GarmentLine key={line.id} line={line} editable={editable} busy={busy} run={run} />)}</tbody>
+                <thead><tr>{headers.map(h => <th key={h}>{h}</th>)}</tr></thead>
+                <tbody>{lines.map((line: any) => <GarmentLine key={line.id} line={line} editable={editable} mode={mode} busy={busy} run={run} />)}</tbody>
             </table>
         </div>
     );
 }
-function GarmentLine({ line, editable, busy, run }: any) {
-    const [values, setValues] = useState({ quantity_packed: line.quantity_packed, quantity_delivered: line.quantity_delivered, quantity_rejected: line.quantity_rejected, rejection_reason: line.rejection_reason || '' });
-    const remaining = Math.max(0, Number(line.quantity_ordered) - Number(values.quantity_delivered));
-    return (
-        <tr>
+function GarmentLine({ line, editable, mode = 'deliver', busy, run }: any) {
+    const [packed, setPacked] = useState(line.quantity_packed);
+    const [delivered, setDelivered] = useState(line.quantity_delivered);
+    const key = `line-${line.id}`;
+
+    const identity = (
+        <>
             <td>{line.class_level}</td>
             <td><b>{line.garment_category}</b></td>
             <td>{line.gender || '—'}</td>
             <td>{line.size || '—'}</td>
             <td>{line.color || '—'}</td>
             <td><b>{line.quantity_ordered}</b></td>
-            <td>{editable ? <input style={{ width: 75 }} min="0" max={line.quantity_ordered} type="number" value={values.quantity_delivered} onChange={e => setValues({ ...values, quantity_delivered: Number(e.target.value) })} /> : line.quantity_delivered}</td>
+        </>
+    );
+
+    if (mode === 'pack') {
+        const remaining = Math.max(0, Number(line.quantity_ordered) - Number(packed));
+        return (
+            <tr>
+                {identity}
+                <td>{editable ? <input style={{ width: 75 }} min="0" max={line.quantity_ordered} type="number" value={packed} onChange={e => setPacked(Number(e.target.value))} /> : line.quantity_packed}</td>
+                <td><strong>{remaining.toLocaleString()}</strong></td>
+                {editable && <td><button className="secondary-btn" disabled={busy === key} onClick={() => run(key, `/api/sales/school-order-lines/${line.id}/pack`, 'PATCH', { quantity_packed: packed })}>Save</button></td>}
+            </tr>
+        );
+    }
+
+    if (mode === 'confirm') {
+        return (
+            <tr>
+                {identity}
+                <td>{line.quantity_packed}</td>
+                <td>{line.quantity_delivered}</td>
+            </tr>
+        );
+    }
+
+    const remaining = Math.max(0, Number(line.quantity_ordered) - Number(delivered));
+    return (
+        <tr>
+            {identity}
+            <td>{editable ? <input style={{ width: 75 }} min="0" max={line.quantity_packed} type="number" value={delivered} onChange={e => setDelivered(Number(e.target.value))} /> : line.quantity_delivered}</td>
             <td><strong>{remaining.toLocaleString()}</strong></td>
-            <td>{editable ? <button className="secondary-btn" disabled={busy === `line-${line.id}`} onClick={() => run(`line-${line.id}`, `/api/sales/school-order-lines/${line.id}`, 'PATCH', values)}>Save</button> : 'Read only'}</td>
+            {editable && <td><button className="secondary-btn" disabled={busy === key} onClick={() => run(key, `/api/sales/school-order-lines/${line.id}/deliver`, 'PATCH', { quantity_delivered: delivered })}>Save</button></td>}
         </tr>
     );
 }

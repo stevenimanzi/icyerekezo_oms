@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Activity, ArrowDown, ArrowUp, Edit3, Factory, FileText, Plus, Printer, RefreshCw, Save, Settings, Trash2, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-const workspaceLabels: Record<string, string> = { executive: 'Owner overview', production: 'Production', warehouse: 'Stock', procurement: 'Purchasing', quality: 'Quality control', cutting: 'Cutting', workstation: 'Machine work', logistics: 'Delivery', sales: 'Sales', finance: 'Finance' };
 async function api(url: string, options: RequestInit = {}) {
     const response = await fetch(url, { ...options, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), ...(options.headers || {}) } });
     const text = await response.text();
@@ -212,16 +211,6 @@ export function TeamManagementPage() {
     const [savingProfile, setSavingProfile] = useState(false);
     const [removingId, setRemovingId] = useState<number | null>(null);
 
-    const emptyRole = { name: '', dashboard_key: 'production', description: '', permission_ids: [] as number[] };
-    const emptyDepartment = { name: '', code: '' };
-    const emptyWorkstation = { name: '', code: '', type: 'other', department_id: '' };
-    const [roleForm, setRoleForm] = useState<any>(emptyRole);
-    const [departmentForm, setDepartmentForm] = useState<any>(emptyDepartment);
-    const [workstationForm, setWorkstationForm] = useState<any>(emptyWorkstation);
-    const [savingRole, setSavingRole] = useState(false);
-    const [savingDepartment, setSavingDepartment] = useState(false);
-    const [savingWorkstation, setSavingWorkstation] = useState(false);
-
     const [schoolSearch, setSchoolSearch] = useState('');
     const [schoolDistrict, setSchoolDistrict] = useState('');
     const [schoolSector, setSchoolSector] = useState('');
@@ -286,51 +275,6 @@ export function TeamManagementPage() {
         } finally { setRemovingId(null); }
     };
 
-    const createRole = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSavingRole(true);
-        setError('');
-        setSuccess('');
-        try {
-            await api('/api/team/roles', { method: 'POST', body: JSON.stringify(roleForm) });
-            setSuccess('Custom role created.');
-            setRoleForm(emptyRole);
-            await load();
-        } catch (reason: any) {
-            setError(reason.message);
-        } finally { setSavingRole(false); }
-    };
-
-    const createDepartment = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSavingDepartment(true);
-        setError('');
-        setSuccess('');
-        try {
-            await api('/api/team/departments', { method: 'POST', body: JSON.stringify(departmentForm) });
-            setSuccess('Department created.');
-            setDepartmentForm(emptyDepartment);
-            await load();
-        } catch (reason: any) {
-            setError(reason.message);
-        } finally { setSavingDepartment(false); }
-    };
-
-    const createWorkstation = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSavingWorkstation(true);
-        setError('');
-        setSuccess('');
-        try {
-            await api('/api/team/workstations', { method: 'POST', body: JSON.stringify({ ...workstationForm, department_id: workstationForm.department_id || null }) });
-            setSuccess('Workstation created.');
-            setWorkstationForm(emptyWorkstation);
-            await load();
-        } catch (reason: any) {
-            setError(reason.message);
-        } finally { setSavingWorkstation(false); }
-    };
-
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (resetPassword !== resetPasswordConfirmation) {
@@ -388,7 +332,6 @@ export function TeamManagementPage() {
             <div className="tab-navigation" style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid var(--line)', paddingBottom: '10px' }}>
                 <button className={activeTab === 'employees' ? 'active' : ''} onClick={() => setActiveTab('employees')} style={{ background: activeTab === 'employees' ? 'var(--brand)' : 'transparent', color: activeTab === 'employees' ? 'white' : 'var(--text)', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Factory Employees</button>
                 <button className={activeTab === 'schools' ? 'active' : ''} onClick={() => setActiveTab('schools')} style={{ background: activeTab === 'schools' ? 'var(--brand)' : 'transparent', color: activeTab === 'schools' ? 'white' : 'var(--text)', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>School Accounts</button>
-                <button className={activeTab === 'setup' ? 'active' : ''} onClick={() => setActiveTab('setup')} style={{ background: activeTab === 'setup' ? 'var(--brand)' : 'transparent', color: activeTab === 'setup' ? 'white' : 'var(--text)', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Roles &amp; Workspace Setup</button>
             </div>
 
             {activeTab === 'employees' && (
@@ -471,98 +414,6 @@ export function TeamManagementPage() {
                             }) : <tr><td className="empty-cell" colSpan={5}>No school accounts match your filters.</td></tr>}
                         </tbody>
                     </table>
-                </div>
-            )}
-
-            {activeTab === 'setup' && (
-                <div style={{ display: 'grid', gap: 20 }}>
-                    <article className="panel">
-                        <header className="department-panel-head"><div><h2>Create a custom role</h2><p>Name the role, choose the workspace it lands on, and pick exactly what it can do.</p></div></header>
-                        <form className="admin-form" onSubmit={createRole}>
-                            <div className="form-grid">
-                                <label>Role name<input required value={roleForm.name} onChange={e => setRoleForm({ ...roleForm, name: e.target.value })} placeholder="e.g. Shift Coordinator" /></label>
-                                <label>
-                                    Workspace
-                                    <select value={roleForm.dashboard_key} onChange={e => setRoleForm({ ...roleForm, dashboard_key: e.target.value })}>
-                                        {['executive', 'production', 'warehouse', 'procurement', 'quality', 'cutting', 'workstation', 'logistics', 'sales', 'finance'].map(key => <option key={key} value={key}>{workspaceLabels[key]}</option>)}
-                                    </select>
-                                </label>
-                                <label style={{ gridColumn: '1 / -1' }}>Description<input value={roleForm.description} onChange={e => setRoleForm({ ...roleForm, description: e.target.value })} placeholder="Optional" /></label>
-                                <label style={{ gridColumn: '1 / -1' }}>
-                                    Permissions
-                                    <select multiple required value={roleForm.permission_ids.map(String)} onChange={e => setRoleForm({ ...roleForm, permission_ids: Array.from(e.target.selectedOptions).map(o => Number(o.value)) })} style={{ minHeight: 140 }}>
-                                        {(data?.permissions || []).map((perm: any) => <option key={perm.id} value={perm.id}>{perm.module} · {perm.name}</option>)}
-                                    </select>
-                                </label>
-                            </div>
-                            <footer><button className="primary-btn" disabled={savingRole || !roleForm.permission_ids.length}>{savingRole ? 'Creating…' : 'Create role'}</button></footer>
-                        </form>
-                        <div className="admin-table-wrap">
-                            <table className="admin-table">
-                                <thead><tr><th>Role</th><th>Workspace</th><th>Permissions</th></tr></thead>
-                                <tbody>
-                                    {(data?.roles || []).length ? data.roles.map((role: any) => (
-                                        <tr key={role.id}><td>{role.name}</td><td>{workspaceLabels[role.dashboard_key] || role.dashboard_key}</td><td>{role.permissions?.length || 0} granted</td></tr>
-                                    )) : <tr><td className="empty-cell" colSpan={3}>No roles yet.</td></tr>}
-                                </tbody>
-                            </table>
-                        </div>
-                    </article>
-
-                    <article className="panel">
-                        <header className="department-panel-head"><div><h2>Create a department</h2><p>Group employees and workstations under a department.</p></div></header>
-                        <form className="admin-form" onSubmit={createDepartment}>
-                            <div className="form-grid">
-                                <label>Department name<input required value={departmentForm.name} onChange={e => setDepartmentForm({ ...departmentForm, name: e.target.value })} placeholder="e.g. Dyeing" /></label>
-                                <label>Code<input required value={departmentForm.code} onChange={e => setDepartmentForm({ ...departmentForm, code: e.target.value.toUpperCase() })} placeholder="e.g. DYE" /></label>
-                            </div>
-                            <footer><button className="primary-btn" disabled={savingDepartment}>{savingDepartment ? 'Creating…' : 'Create department'}</button></footer>
-                        </form>
-                        <div className="admin-table-wrap">
-                            <table className="admin-table">
-                                <thead><tr><th>Department</th><th>Manager</th><th>Employees</th></tr></thead>
-                                <tbody>
-                                    {(data?.departments || []).length ? data.departments.map((dept: any) => (
-                                        <tr key={dept.id}><td>{dept.name}</td><td>{dept.manager?.name || '—'}</td><td>{dept.employees_count ?? 0}</td></tr>
-                                    )) : <tr><td className="empty-cell" colSpan={3}>No departments yet.</td></tr>}
-                                </tbody>
-                            </table>
-                        </div>
-                    </article>
-
-                    <article className="panel">
-                        <header className="department-panel-head"><div><h2>Create a workstation</h2><p>A specific station or line employees can be assigned to.</p></div></header>
-                        <form className="admin-form" onSubmit={createWorkstation}>
-                            <div className="form-grid">
-                                <label>Workstation name<input required value={workstationForm.name} onChange={e => setWorkstationForm({ ...workstationForm, name: e.target.value })} placeholder="e.g. Line 3 Sewing Station" /></label>
-                                <label>Code<input required value={workstationForm.code} onChange={e => setWorkstationForm({ ...workstationForm, code: e.target.value.toUpperCase() })} placeholder="e.g. SEW-03" /></label>
-                                <label>
-                                    Type
-                                    <select value={workstationForm.type} onChange={e => setWorkstationForm({ ...workstationForm, type: e.target.value })}>
-                                        {['cutting', 'sewing', 'mixing', 'processing', 'bottling', 'packaging', 'quality', 'warehouse', 'dispatch', 'machine', 'other'].map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
-                                </label>
-                                <label>
-                                    Department
-                                    <select value={workstationForm.department_id} onChange={e => setWorkstationForm({ ...workstationForm, department_id: e.target.value })}>
-                                        <option value="">Not assigned</option>
-                                        {(data?.departments || []).map((dept: any) => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
-                                    </select>
-                                </label>
-                            </div>
-                            <footer><button className="primary-btn" disabled={savingWorkstation}>{savingWorkstation ? 'Creating…' : 'Create workstation'}</button></footer>
-                        </form>
-                        <div className="admin-table-wrap">
-                            <table className="admin-table">
-                                <thead><tr><th>Workstation</th><th>Type</th><th>Department</th></tr></thead>
-                                <tbody>
-                                    {(data?.workstations || []).length ? data.workstations.map((ws: any) => (
-                                        <tr key={ws.id}><td>{ws.name}</td><td>{ws.type}</td><td>{(data?.departments || []).find((d: any) => d.id === ws.department_id)?.name || '—'}</td></tr>
-                                    )) : <tr><td className="empty-cell" colSpan={3}>No workstations yet.</td></tr>}
-                                </tbody>
-                            </table>
-                        </div>
-                    </article>
                 </div>
             )}
 

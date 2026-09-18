@@ -154,22 +154,31 @@ function NoguchiPrintOrderTable({ rows }: any) {
   );
 }
 
-function NoguchiSummaryReportTable({ rows }: any) {
+function schoolLevelGroup(classLevel: string): "Nursery" | "Primary" | "Secondary" | "Other" {
+  const value = String(classLevel || "").trim();
+  if (/^nursery/i.test(value)) return "Nursery";
+  if (/^p\d/i.test(value)) return "Primary";
+  if (/^s\d/i.test(value)) return "Secondary";
+  return "Other";
+}
+
+function NoguchiSummaryReportTable({ rows, schoolLevelFilter }: any) {
   const summary: Record<string, Record<string, Record<string, number>>> = {};
-  
+
   rows.forEach((order: any) => {
     const district = order.school?.district || "Unknown District";
-    if (!summary[district]) summary[district] = {};
-    
+
     (order.lines || []).forEach((line: any) => {
       const classLevel = String(line.class_level || "").trim();
+      if (schoolLevelFilter && schoolLevelGroup(classLevel) !== schoolLevelFilter) return;
+      if (!summary[district]) summary[district] = {};
       let level = "Unknown Level";
       if (classLevel.match(/^Nursery/i)) level = "Nursery";
       else if (classLevel.match(/^Primary/i)) level = "Primary";
       else if (classLevel.match(/^Secondary/i)) level = "Secondary";
       else if (classLevel.match(/^TVET/i)) level = "TVET";
       else level = classLevel.split(" ")[0] || "Unknown Level";
-      
+
       if (!summary[district][level]) summary[district][level] = {};
       
       const aliases: Record<string, string> = {
@@ -221,7 +230,7 @@ function NoguchiSummaryReportTable({ rows }: any) {
                   return (
                     <tr key={`${district}-${level}`}>
                       {i === 0 ? <td rowSpan={levels.length + 1}><b>{district}</b></td> : null}
-                      <td>{level}</td>
+                      <td className="summary-level-cell">{level}</td>
                       {printCategories.map(cat => {
                         const val = summary[district][level][cat] || 0;
                         rowTotal += val;
@@ -233,12 +242,12 @@ function NoguchiSummaryReportTable({ rows }: any) {
                     </tr>
                   );
                 })}
-                <tr style={{ backgroundColor: "var(--light)", fontWeight: "600" }}>
-                  <td>{district} Total</td>
+                <tr className="district-total-row">
+                  <td><b>{district} Total</b></td>
                   {printCategories.map(cat => (
-                    <td key={cat}>{districtTotals[cat] > 0 ? number(districtTotals[cat]) : "—"}</td>
+                    <td key={cat}><b>{districtTotals[cat] > 0 ? number(districtTotals[cat]) : "—"}</b></td>
                   ))}
-                  <td>{Object.values(districtTotals).reduce((a, b) => a + b, 0) > 0 ? number(Object.values(districtTotals).reduce((a, b) => a + b, 0)) : "—"}</td>
+                  <td><b>{Object.values(districtTotals).reduce((a, b) => a + b, 0) > 0 ? number(Object.values(districtTotals).reduce((a, b) => a + b, 0)) : "—"}</b></td>
                 </tr>
               </React.Fragment>
             );
@@ -1267,6 +1276,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
     status: searchParams.get("status") || "",
     district: searchParams.get("district") || "",
     sector: searchParams.get("sector") || "",
+    school_level: searchParams.get("school_level") || "",
   };
   const [filters, setFilters] = useState(initialFilters);
   const [data, setData] = useState<any>(null);
@@ -1481,6 +1491,17 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                   ))}
                 </select>
               </label>
+              {noguchiOrdersOnly && reportTab === 'summary' && (
+                <label>
+                  School level
+                  <select value={filters.school_level} onChange={(event) => setFilters({ ...filters, school_level: event.target.value })}>
+                    <option value="">All levels</option>
+                    <option value="Nursery">Nursery</option>
+                    <option value="Primary">Primary</option>
+                    <option value="Secondary">Secondary</option>
+                  </select>
+                </label>
+              )}
             </>
           )}
           {filters.period === "custom" && (
@@ -1562,7 +1583,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
         )}
       </div>
       <div className={noguchiOrdersOnly && reportTab !== 'summary' ? 'hidden' : ''}>
-        {noguchiOrdersOnly && data && <NoguchiSummaryReportTable rows={reportOrders} />}
+        {noguchiOrdersOnly && data && <NoguchiSummaryReportTable rows={reportOrders} schoolLevelFilter={filters.school_level} />}
       </div>
       {noguchiOrdersOnly && data && (
         <footer className="noguchi-print-footer">

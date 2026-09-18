@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, CheckCircle2, FileText, PackageOpen, RefreshCw, Wallet, XCircle } from 'lucide-react';
+import { Activity, CheckCircle2, PackageOpen, RefreshCw, XCircle } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 async function api(url: string, options: RequestInit = {}) {
@@ -82,10 +82,10 @@ export default function FinanceOverviewPage({ compact = false, onNavigate }: { c
             {success && <div className="admin-alert success">{success}</div>}
 
             <section className="department-metrics cols-4">
-                <article className="department-metric panel"><span className="metric-icon blue"><Wallet /></span><div><small>Invoiced</small><strong>{money(summary.invoiced_amount, currency)}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon green"><CheckCircle2 /></span><div><small>Paid</small><strong>{money(summary.paid_amount, currency)}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon amber"><FileText /></span><div><small>Outstanding</small><strong>{money(summary.outstanding_amount, currency)}</strong></div></article>
-                <article className="department-metric panel"><span className="metric-icon red"><XCircle /></span><div><small>Receipts to review</small><strong>{summary.pending_receipts || 0}</strong></div></article>
+                <article className="department-metric panel"><div><small>Invoiced</small><strong>{money(summary.invoiced_amount, currency)}</strong></div></article>
+                <article className="department-metric panel"><div><small>Paid</small><strong>{money(summary.paid_amount, currency)}</strong></div></article>
+                <article className="department-metric panel"><div><small>Outstanding</small><strong>{money(summary.outstanding_amount, currency)}</strong></div></article>
+                <article className="department-metric panel"><div><small>Receipts to review</small><strong>{summary.pending_receipts || 0}</strong></div></article>
             </section>
 
             <article className="panel chart-panel">

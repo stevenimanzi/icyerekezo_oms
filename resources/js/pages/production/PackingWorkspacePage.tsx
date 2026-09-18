@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Package, PackageCheck, RefreshCw, Scissors } from 'lucide-react';
+import { Package, PackageCheck, RefreshCw, Scissors, Truck } from 'lucide-react';
 import { EditRecordModal, EditRecordForm, Locale, productionApi, StockPopupModal } from './shared';
+import { OrderDetailsModal } from '../sales/SalesOverviewPage';
 
-type PackingTab = 'request' | 'finish';
+type PackingTab = 'request' | 'finish' | 'orders';
 type AuthUser = {
     id: number; name: string;
     current_factory: { name?: string; currency_code?: string } | null;
@@ -14,7 +15,7 @@ const copy = {
         title: 'Packing workspace',
         subtitle: 'Manage received pieces, record packing output.',
         eyebrow: 'PACKING DATA',
-        tabs: { request: 'Receive pieces', finish: 'Pack pieces' },
+        tabs: { request: 'Receive pieces', finish: 'Pack pieces', orders: 'School orders' },
         requestTitle: 'Receive pieces from Finishing',
         selectItem: 'Select piece/material', quantity: 'Quantity received', reason: 'Reason / Notes',
         pendingRequests: 'Accepted items', noRequests: 'No items accepted yet.',
@@ -29,7 +30,7 @@ const copy = {
         title: 'Espace d\'emballage',
         subtitle: 'Gérez les pièces reçues et enregistrez l\'emballage.',
         eyebrow: 'DONNÉES D\'EMBALLAGE',
-        tabs: { request: 'Réceptionner', finish: 'Emballer' },
+        tabs: { request: 'Réceptionner', finish: 'Emballer', orders: 'Commandes des écoles' },
         requestTitle: 'Réceptionner les pièces de la finition',
         selectItem: 'Sélectionner la pièce', quantity: 'Quantité reçue', reason: 'Motif / Notes',
         pendingRequests: 'Articles acceptés', noRequests: 'Aucun article accepté.',
@@ -62,6 +63,11 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
     const [newProductName, setNewProductName] = useState('');
     const [addingProduct, setAddingProduct] = useState(false);
 
+    const [schoolOrders, setSchoolOrders] = useState<any>(null);
+    const [schoolOrdersPage, setSchoolOrdersPage] = useState(1);
+    const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [packBusy, setPackBusy] = useState<string | null>(null);
+
     useEffect(() => { setTab(initialTab); }, [initialTab]);
 
     const load = async (silent = false) => {
@@ -83,6 +89,37 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
     };
 
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 10000); return () => window.clearInterval(timer); }, []);
+
+    const loadSchoolOrders = async (silent = false) => {
+        try {
+            const result = await productionApi<any>(`/api/sales/overview?page=${schoolOrdersPage}`);
+            setSchoolOrders(result);
+        } catch (reason: any) {
+            if (!silent) setError(reason.message);
+        }
+    };
+    useEffect(() => { void loadSchoolOrders(); }, [schoolOrdersPage]);
+
+    const specialized = schoolOrders?.specialization?.type === 'noguchi_school_garments';
+    const canPack = Boolean(schoolOrders?.capabilities?.pack);
+    const schoolOrderRows = (schoolOrders?.documents?.data || []).filter((x: any) => x.document_type === 'customer_order');
+    const schoolOrdersLastPage = schoolOrders?.documents?.last_page || 1;
+
+    const runLine = async (key: any, url: string, method: string, payload: any) => {
+        setPackBusy(key);
+        clearMsg();
+        try {
+            const result = await productionApi<any>(url, { method, body: JSON.stringify(payload) });
+            setSuccess(result.message);
+            await loadSchoolOrders(true);
+            return true;
+        } catch (reason: any) {
+            setError(reason.message);
+            return false;
+        } finally {
+            setPackBusy(null);
+        }
+    };
 
     const packingWarehouseId = warehouses.find(w => w.code === 'SEW' || /packing/i.test(w.name))?.id || 1;
     const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
@@ -235,10 +272,11 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
             {success && <div className="admin-alert success">{success}</div>}
 
             <div className="module-tabs" role="tablist">
-                {(['request', 'finish'] as PackingTab[]).map(key => (
+                {((specialized ? ['request', 'finish', 'orders'] : ['request', 'finish']) as PackingTab[]).map(key => (
                     <button key={key} className={tab === key ? 'active' : ''} onClick={() => { setTab(key); clearMsg(); }}>
                         {key === 'request' && <Package size={16} />}
                         {key === 'finish' && <PackageCheck size={16} />}
+                        {key === 'orders' && <Truck size={16} />}
                         <span>{t.tabs[key]}</span>
                     </button>
                 ))}
@@ -246,6 +284,50 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
 
             {loading && !stock.length ? (
                 <div className="panel" style={{ padding: '3rem', textAlign: 'center', opacity: .7 }}>{t.loading}</div>
+            ) : tab === 'orders' ? (
+                <div className="sewing-tab-content">
+                    <article className="panel sales-records">
+                        <header><div><h2>{locale === 'en' ? 'Pack school orders' : 'Emballer les commandes des écoles'}</h2><p>{locale === 'en' ? 'Open an order to record how many of each garment have been packed and are ready for logistics.' : 'Ouvrez une commande pour enregistrer les quantités emballées, prêtes pour la logistique.'}</p></div></header>
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead><tr><th>{locale === 'en' ? 'Order number' : 'N° de commande'}</th><th>{locale === 'en' ? 'School' : 'École'}</th><th>{locale === 'en' ? 'Ordered' : 'Commandé'}</th><th>{locale === 'en' ? 'Packed' : 'Emballé'}</th><th>{locale === 'en' ? 'Remaining to pack' : 'Restant à emballer'}</th><th>{locale === 'en' ? 'Status' : 'Statut'}</th><th>{locale === 'en' ? 'Actions' : 'Actions'}</th></tr></thead>
+                                <tbody>
+                                    {schoolOrderRows.length ? schoolOrderRows.map((order: any) => {
+                                        const ordered = Number(order.item_count || 0);
+                                        const packed = (order.lines || []).reduce((sum: number, line: any) => sum + Number(line.quantity_packed || 0), 0);
+                                        const remaining = Math.max(0, ordered - packed);
+                                        return (
+                                            <tr key={order.id}>
+                                                <td><b>{String(order.document_number || '').replace(/^LEGACY-NOGUCHI-/i, '')}</b></td>
+                                                <td><b>{order.school?.name || order.customer_name}</b></td>
+                                                <td>{ordered.toLocaleString()}</td>
+                                                <td>{packed.toLocaleString()}</td>
+                                                <td><b>{remaining.toLocaleString()}</b></td>
+                                                <td><span className={'admin-status ' + order.status}>{order.status}</span></td>
+                                                <td><button className="secondary-btn" onClick={() => setSelectedOrder(order)}><PackageCheck size={15} />{locale === 'en' ? 'Pack' : 'Emballer'}</button></td>
+                                            </tr>
+                                        );
+                                    }) : (
+                                        <tr><td colSpan={7} className="empty-cell">{locale === 'en' ? 'No school orders yet.' : 'Aucune commande pour le moment.'}</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        {schoolOrdersLastPage > 1 && (
+                            <div className="school-pagination">
+                                <button className="secondary-btn" disabled={schoolOrdersPage <= 1} onClick={() => setSchoolOrdersPage(schoolOrdersPage - 1)}>{locale === 'en' ? 'Previous' : 'Précédent'}</button>
+                                <span>{locale === 'en' ? `Page ${schoolOrdersPage} of ${schoolOrdersLastPage}` : `Page ${schoolOrdersPage} sur ${schoolOrdersLastPage}`}</span>
+                                <button className="secondary-btn" disabled={schoolOrdersPage >= schoolOrdersLastPage} onClick={() => setSchoolOrdersPage(schoolOrdersPage + 1)}>{locale === 'en' ? 'Next' : 'Suivant'}</button>
+                            </div>
+                        )}
+                    </article>
+                    {selectedOrder && (
+                        <OrderDetailsModal
+                            order={selectedOrder} mode="pack" editable={canPack && selectedOrder.status !== 'rejected'}
+                            busy={packBusy} run={runLine} close={() => setSelectedOrder(null)}
+                        />
+                    )}
+                </div>
             ) : tab === 'request' ? (
                 <div className="sewing-tab-content">
                     <article className="panel">

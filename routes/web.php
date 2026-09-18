@@ -222,9 +222,6 @@ Route::prefix('api')->group(function () {
             Route::patch('/team/users/{user}', [TeamWorkspaceController::class, 'updateUser'])->middleware('permission:users.update');
             Route::post('/team/users/{user}/reset-password', [TeamWorkspaceController::class, 'resetPassword'])->middleware('permission:users.update');
             Route::delete('/team/users/{user}', [TeamWorkspaceController::class, 'destroyUser'])->middleware('permission:users.update');
-            Route::post('/team/roles', [TeamWorkspaceController::class, 'storeRole'])->middleware('permission:users.assign_roles');
-            Route::post('/team/workstations', [TeamWorkspaceController::class, 'storeWorkstation'])->middleware('permission:factory.manage');
-            Route::post('/team/departments', [TeamWorkspaceController::class, 'storeDepartment'])->middleware('permission:factory.manage|users.update');
             Route::patch('/team/departments/{department}', [TeamWorkspaceController::class, 'updateDepartment'])->middleware('permission:factory.manage|users.update');
             Route::post('/team/assignments', [TeamWorkspaceController::class, 'assign'])->middleware('permission:users.update');
             Route::patch('/team/assignments/{assignment}', [TeamWorkspaceController::class, 'updateAssignment']);
@@ -252,7 +249,9 @@ Route::prefix('api')->group(function () {
             Route::delete('/sales/orders/{document}', [SalesController::class, 'destroy'])->middleware('permission:sales.fulfill');
             Route::post('/sales/orders/{document}/invoice', [SalesController::class, 'uploadInvoice'])->middleware('permission:sales.fulfill');
             Route::post('/sales/school-orders', [SalesController::class, 'storeSchoolOrder'])->middleware('permission:sales.create|sales.fulfill');
-            Route::patch('/sales/school-order-lines/{line}', [SalesController::class, 'updateSchoolOrderLine'])->middleware('permission:sales.fulfill');
+            Route::patch('/sales/school-order-lines/{line}/pack', [SalesController::class, 'packSchoolOrderLine'])->middleware('permission:sales.pack');
+            Route::patch('/sales/school-order-lines/{line}/deliver', [SalesController::class, 'deliverSchoolOrderLine'])->middleware('permission:sales.fulfill|logistics.deliver');
+            Route::patch('/sales/school-orders/{document}/deliver', [SalesController::class, 'deliverSchoolOrder'])->middleware('permission:sales.fulfill|logistics.deliver');
             Route::get('/school/overview', [SchoolPortalController::class, 'overview']);
             Route::post('/school/orders', [SchoolPortalController::class, 'storeOrder']);
             Route::post('/school/orders/{document}/payments', [SchoolPortalController::class, 'payment']);

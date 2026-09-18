@@ -159,21 +159,18 @@ export default function IncomingRequestsPage() {
             <div className="module-content">
                 <section className="metric-grid">
                     <article className="metric-card">
-                        <div className="metric-icon blue"><Package /></div>
                         <div className="metric-copy">
                             <span>{locale === 'en' ? 'Cutting Floor Requests' : 'Demandes Coupe'}</span>
                             <div><strong>{cuttingRequests.length}</strong></div>
                         </div>
                     </article>
                     <article className="metric-card">
-                        <div className="metric-icon amber"><Inbox /></div>
                         <div className="metric-copy">
                             <span>{locale === 'en' ? 'Production Line Requests' : 'Demandes Production'}</span>
                             <div><strong>{productionRequests.length}</strong></div>
                         </div>
                     </article>
                     <article className="metric-card">
-                        <div className="metric-icon green"><Package /></div>
                         <div className="metric-copy">
                             <span>{locale === 'en' ? 'Dispatch & Sales Requests' : 'Demandes Ventes'}</span>
                             <div><strong>{salesRequests.length}</strong></div>

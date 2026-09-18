@@ -109,7 +109,7 @@ function Dashboard({ data, onNavigate, setSelected }: any) {
 }
 
 function Kpi({ label, value, tone }: any) {
-    return <article className={`panel school-kpi ${tone}`}><small>{label}</small><b>{n(value)}</b><PackageOpen /></article>;
+    return <article className={`panel school-kpi ${tone}`}><small>{label}</small><b>{n(value)}</b></article>;
 }
 
 function Orders({ title, rows, setSelected }: any) {
@@ -173,7 +173,7 @@ function History({ data, setSelected }: any) {
 // quantities per class), then reviewed as a flat line list before submission — this
 // keeps the form manageable for schools ordering dozens of garment/size combinations.
 function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
-    const sizes = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    const sizesFor = (classLevel: string) => /^P[1-6]$/.test(classLevel) ? ['S', 'M', 'L', 'XL'] : /^S[1-6]$/.test(classLevel) ? ['S', 'M', 'L', 'XL', 'XXL'] : ['XXS', 'XS', 'S'];
     const baseCategories = [['Uniform', 'Daily Uniforms'], ['Sport Uniform', 'Sport Wear'], ['Sweater', 'Sweaters']];
     const genders = ['Boy', 'Girl'];
     const categoriesFor = (classLevel: string) => [
@@ -181,7 +181,7 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
         ...(/^S[1-6]$/.test(classLevel) ? [['T-shirt', 'T-Shirts']] : []),
         ...(/^S[4-6]$/.test(classLevel) ? [['Overall', 'Overalls'], ['Overall Coat', 'Overall Coats']] : []),
     ];
-    const makeLines = (classLevel: string) => categoriesFor(classLevel).flatMap(([garment_category]) => genders.flatMap(gender => sizes.map(size => ({ class_level: classLevel, garment_category, gender, size, color: '', quantity_ordered: 0 }))));
+    const makeLines = (classLevel: string) => categoriesFor(classLevel).flatMap(([garment_category]) => genders.flatMap(gender => sizesFor(classLevel).map(size => ({ class_level: classLevel, garment_category, gender, size, color: '', quantity_ordered: 0 }))));
 
     const [year, setYear] = useState(data.academic_years[0]);
     const [step, setStep] = useState(0);
@@ -254,7 +254,7 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
                                     const group = current.filter(x => x.garment_category === category && x.gender === gender);
                                     const { top: topColor, bottom: bottomColor } = splitUniformColor(group[0]?.color);
                                     return (
-                                        <div className="school-size-row" key={gender}>
+                                        <div className="school-size-row" key={gender} style={{ '--size-count': sizesFor(cls).length } as React.CSSProperties}>
                                             <div className="school-size-person">
                                                 <b>{gender === 'Boy' ? 'Boys' : 'Girls'}</b>
                                                 {category === 'Uniform' ? (
@@ -266,12 +266,12 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
                                                     <label>Color<input placeholder="Main color" value={group[0]?.color || ''} onChange={e => updateColor(category, gender, e.target.value)} /></label>
                                                 )}
                                             </div>
-                                            {sizes.map(size => {
+                                            {sizesFor(cls).map(size => {
                                                 const line = group.find(x => x.size === size);
                                                 return (
                                                     <label className="school-size-quantity" key={size}>
                                                         <span>{size}</span>
-                                                        <input aria-label={`${label} ${gender} ${size}`} type="number" min="0" value={Number(line?.quantity_ordered) > 0 ? line.quantity_ordered : ''} onChange={e => updateQuantity(category, gender, size, Number(e.target.value))} />
+                                                        <input aria-label={`${label} ${gender} ${size}`} placeholder="Qty" type="number" min="0" value={Number(line?.quantity_ordered) > 0 ? line.quantity_ordered : ''} onChange={e => updateQuantity(category, gender, size, Number(e.target.value))} />
                                                     </label>
                                                 );
                                             })}

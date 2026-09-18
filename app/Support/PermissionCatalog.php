@@ -14,7 +14,7 @@ final class PermissionCatalog
         'inventory' => ['view', 'receive', 'issue', 'transfer', 'adjust', 'count'],
         'production' => ['view', 'plan', 'approve', 'execute', 'close'],
         'quality' => ['view', 'inspect', 'approve', 'reject'],
-        'sales' => ['view', 'create', 'approve', 'fulfill'],
+        'sales' => ['view', 'create', 'approve', 'fulfill', 'pack'],
         'finance' => ['view', 'invoice', 'receive_payment', 'approve'],
         'logistics' => ['view', 'plan', 'dispatch', 'deliver'],
         'maintenance' => ['view', 'create', 'execute', 'close'],
