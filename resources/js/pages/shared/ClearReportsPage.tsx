@@ -191,7 +191,8 @@ function NoguchiSummaryReportTable({ rows, schoolLevelFilter }: any) {
       };
       
       const rawCategory = String(line.garment_category || "").toLowerCase();
-      const category = aliases[rawCategory] || (printCategories.find(c => c.toLowerCase() === rawCategory) ? printCategories.find(c => c.toLowerCase() === rawCategory)! : (line.garment_category || "Other"));
+      const matchedCategory = printCategories.find(c => c.toLowerCase() === rawCategory);
+      const category = aliases[rawCategory] || (matchedCategory ?? (line.garment_category || "Other"));
       
       if (!summary[district][level][category]) summary[district][level][category] = 0;
       summary[district][level][category] += Number(line.quantity_ordered || 0);
@@ -246,9 +247,18 @@ function NoguchiSummaryReportTable({ rows, schoolLevelFilter }: any) {
                 <tr className="district-total-row">
                   <td><b>{district} Total</b></td>
                   {printCategories.map(cat => (
-                    <td key={cat}><b>{districtTotals[cat] > 0 ? number(districtTotals[cat]) : "—"}</b></td>
+                    <td key={cat}>
+                      <b>{districtTotals[cat] > 0 ? number(districtTotals[cat]) : "—"}</b>
+                    </td>
                   ))}
-                  <td><b>{Object.values(districtTotals).reduce((a, b) => a + b, 0) > 0 ? number(Object.values(districtTotals).reduce((a, b) => a + b, 0)) : "—"}</b></td>
+                  <td>
+                    <b>
+                      {(() => {
+                        const sum = Object.values(districtTotals).reduce((a, b) => a + b, 0);
+                        return sum > 0 ? number(sum) : "—";
+                      })()}
+                    </b>
+                  </td>
                 </tr>
               </React.Fragment>
             );
@@ -262,9 +272,16 @@ function NoguchiSummaryReportTable({ rows, schoolLevelFilter }: any) {
             <tr style={{ backgroundColor: "#2563eb", color: "white", fontWeight: "bold" }}>
               <td colSpan={2} style={{ color: "white" }}>GRAND TOTAL</td>
               {printCategories.map(cat => (
-                <td key={cat} style={{ color: "white" }}>{grandTotals[cat] > 0 ? number(grandTotals[cat]) : "—"}</td>
+                <td key={cat} style={{ color: "white" }}>
+                  {grandTotals[cat] > 0 ? number(grandTotals[cat]) : "—"}
+                </td>
               ))}
-              <td style={{ color: "white" }}>{Object.values(grandTotals).reduce((a, b) => a + b, 0) > 0 ? number(Object.values(grandTotals).reduce((a, b) => a + b, 0)) : "—"}</td>
+              <td style={{ color: "white" }}>
+                {(() => {
+                  const grandSum = Object.values(grandTotals).reduce((a, b) => a + b, 0);
+                  return grandSum > 0 ? number(grandSum) : "—";
+                })()}
+              </td>
             </tr>
           </tfoot>
         )}
@@ -596,7 +613,15 @@ const splitItem = (name: any) => {
 };
 
 function emptyRegisterMessage(report: any, department?: string) {
-  const show = (value?: string) => (value ? new Date(`${String(value).slice(0, 10)}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "");
+  const show = (value?: string) => {
+    if (!value) return "";
+    const dateStr = `${String(value).slice(0, 10)}T00:00:00`;
+    return new Date(dateStr).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
   const range = `${show(report?.from)} – ${show(report?.to)}`;
   const when: Record<string, string> = {
     day: `today (${show(report?.to)})`,
@@ -606,10 +631,13 @@ function emptyRegisterMessage(report: any, department?: string) {
     custom: `between ${show(report?.from)} and ${show(report?.to)}`,
     all: "on any date",
   };
-  const subject = department ? `${department} entries` : "warehouse, cutting, production or finishing entries";
+  const subject = department
+    ? `${department} entries`
+    : "warehouse, cutting, production or finishing entries";
   const period = String(report?.period || "");
+  const timeDesc = when[period] || `between ${show(report?.from)} and ${show(report?.to)}`;
   return {
-    title: `No ${subject} were recorded ${when[period] || `between ${show(report?.from)} and ${show(report?.to)}`}.`,
+    title: `No ${subject} were recorded ${timeDesc}.`,
     hint: period === "all"
       ? "Entries appear here as soon as stock movements or production steps are recorded."
       : "Choose a longer period, or All dates, to see earlier records.",
@@ -617,7 +645,9 @@ function emptyRegisterMessage(report: any, department?: string) {
 }
 
 function NoguchiDailyDocument({ data, departmentId }: any) {
-  const department = (data.filters?.departments || []).find((item: any) => String(item.id) === String(departmentId || ""));
+  const department = (data.filters?.departments || []).find(
+    (item: any) => String(item.id) === String(departmentId || "")
+  );
   const sections = sectionsForDepartment(department?.name);
   const hasRegister = sections.length > 0;
   const days = React.useMemo(() => buildDays(data, department?.name || ""), [data, department?.name]);
@@ -632,7 +662,10 @@ function NoguchiDailyDocument({ data, departmentId }: any) {
         emptyMessage={
           hasRegister
             ? emptyRegisterMessage(data.report, department?.name)
-            : { title: `${department?.name || "This department"} has no entries in the daily register.`, hint: "Only departments that record stock movements or production steps appear in this report." }
+            : {
+                title: `${department?.name || "This department"} has no entries in the daily register.`,
+                hint: "Only departments that record stock movements or production steps appear in this report.",
+              }
         }
       />
     </article>
@@ -820,7 +853,14 @@ function Document({ data, departmentId }: any) {
 
   return (
     <article className={`report-document report-${data.standard.orientation || "landscape"}`}>
-      <style>{`@media print{@page{size:A4 ${data.standard.orientation === "portrait" ? "portrait" : "landscape"};margin:10mm}}`}</style>
+      <style>{
+        `@media print {
+          @page {
+            size: A4 ${data.standard.orientation === "portrait" ? "portrait" : "landscape"};
+            margin: 10mm;
+          }
+        }`
+      }</style>
       <header>
         <div>
           <h1>{data.factory.name}</h1>
@@ -880,8 +920,14 @@ function Document({ data, departmentId }: any) {
       {data.standard.show_guidance && (
         <section className="report-guidance">
           <h2>Information used for this industry</h2>
-          <p>Record these details on products, batches and orders when they apply: {data.standard.attributes.join(", ")}.</p>
-          <p>Typical units: {data.standard.unit_examples.join(", ")}. The report always shows the unit saved with each product.</p>
+          <p>
+            Record these details on products, batches and orders when they apply:{" "}
+            {data.standard.attributes.join(", ")}.
+          </p>
+          <p>
+            Typical units: {data.standard.unit_examples.join(", ")}.{" "}
+            The report always shows the unit saved with each product.
+          </p>
         </section>
       )}
 
@@ -942,14 +988,20 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
 
   // A department that is not part of the register (e.g. from an old link) falls back to all departments.
   useEffect(() => {
-    if (data && noguchiFactoryWide && filters.department_id && !registerDepartments.some((department) => String(department.id) === String(filters.department_id))) {
+    const isValidDept = registerDepartments.some(
+      (dept) => String(dept.id) === String(filters.department_id)
+    );
+    if (data && noguchiFactoryWide && filters.department_id && !isValidDept) {
       setFilters((current) => ({ ...current, department_id: "" }));
     }
   }, [data, filters.department_id]);
 
   useEffect(() => {
     setReportPage(1);
-  }, [filters.period, filters.status, filters.district, filters.sector, filters.school_id, filters.from, filters.to]);
+  }, [
+    filters.period, filters.status, filters.district, filters.sector,
+    filters.school_id, filters.from, filters.to,
+  ]);
 
   const changeReportPage = (nextPage: number) => {
     setReportPage(nextPage);
@@ -983,9 +1035,13 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
           setUpdated(new Date());
 
           const noguchiResult = noguchiFactoryName(result.factory?.name);
-          const emptyRegister = result.report?.scope === "factory" && noguchiResult && !(result.inventory?.length || result.production?.length);
-          const emptyOrders = result.report?.scope === "logistics" && noguchiResult && !(result.logistics?.orders?.length);
-          if (!emptyFallbackDone.current && !periodChosen.current && filters.period !== "all" && (emptyRegister || emptyOrders)) {
+          const hasEntries = Boolean(result.inventory?.length || result.production?.length);
+          const emptyRegister = result.report?.scope === "factory" && noguchiResult && !hasEntries;
+          const emptyOrders = result.report?.scope === "logistics" && noguchiResult
+            && !result.logistics?.orders?.length;
+
+          if (!emptyFallbackDone.current && !periodChosen.current && filters.period !== "all"
+            && (emptyRegister || emptyOrders)) {
             emptyFallbackDone.current = true;
             setFilters((current) => ({ ...current, period: "all" }));
           }
@@ -993,8 +1049,9 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
           // Apply the server's suggested default period only once, and only if the user didn't pick one.
           if (!defaultPeriodApplied.current) {
             defaultPeriodApplied.current = true;
-            if (!hasInitialPeriod.current && result.standard?.default_period && result.standard.default_period !== filters.period) {
-              setFilters((current) => ({ ...current, period: result.standard.default_period }));
+            const suggested = result.standard?.default_period;
+            if (!hasInitialPeriod.current && suggested && suggested !== filters.period) {
+              setFilters((current) => ({ ...current, period: suggested }));
             }
           }
         }
@@ -1009,7 +1066,11 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
       active = false;
       clearTimeout(wait);
     };
-  }, [forcedScope, filters.period, filters.type, filters.department_id, filters.from, filters.to, filters.status, filters.district, filters.sector, filters.school_id]);
+  }, [
+    forcedScope, filters.period, filters.type, filters.department_id,
+    filters.from, filters.to, filters.status, filters.district,
+    filters.sector, filters.school_id,
+  ]);
 
   return (
     <section className="module-page report-page">
@@ -1043,7 +1104,8 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 {noguchiOrdersOnly
                   ? "Review school order quantities, delivery progress, values and statuses by district and sector."
                   : noguchiFactoryWide
-                    ? "Warehouse, cutting, production, finishing and closing stock in the official Noguchi daily register format."
+                    ? "Warehouse, cutting, production, finishing and closing stock in the official Noguchi daily "
+                      + "register format."
                     : logisticsOnly
                       ? "See only goods received, goods issued and warehouse balances handled by logistics."
                       : warehouseOnly
@@ -1114,7 +1176,10 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
             <>
               <label>
                 Order status
-                <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}>
+                <select
+                  value={filters.status}
+                  onChange={(event) => setFilters({ ...filters, status: event.target.value })}
+                >
                   <option value="">All order statuses</option>
                   <option value="pending">Incoming / pending</option>
                   <option value="accepted">Accepted</option>
@@ -1131,7 +1196,14 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 District
                 <select
                   value={filters.district}
-                  onChange={(event) => setFilters({ ...filters, district: event.target.value, sector: "", school_id: "" })}
+                  onChange={(event) =>
+                    setFilters({
+                      ...filters,
+                      district: event.target.value,
+                      sector: "",
+                      school_id: "",
+                    })
+                  }
                 >
                   <option value="">All districts</option>
                   {(data?.filters?.districts || []).map((district: string) => (
@@ -1144,12 +1216,18 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 <select
                   disabled={!filters.district}
                   value={filters.sector}
-                  onChange={(event) => setFilters({ ...filters, sector: event.target.value, school_id: "" })}
+                  onChange={(event) =>
+                    setFilters({ ...filters, sector: event.target.value, school_id: "" })
+                  }
                 >
-                  <option value="">{filters.district ? "All sectors" : "Choose district first"}</option>
-                  {(data?.filters?.sectors_by_district?.[filters.district] || []).map((sector: string) => (
-                    <option key={sector}>{sector}</option>
-                  ))}
+                  <option value="">
+                    {filters.district ? "All sectors" : "Choose district first"}
+                  </option>
+                  {(data?.filters?.sectors_by_district?.[filters.district] || []).map(
+                    (sector: string) => (
+                      <option key={sector}>{sector}</option>
+                    )
+                  )}
                 </select>
               </label>
               <label>
@@ -1157,18 +1235,31 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 <select
                   disabled={!filters.sector}
                   value={filters.school_id}
-                  onChange={(event) => setFilters({ ...filters, school_id: event.target.value })}
+                  onChange={(event) =>
+                    setFilters({ ...filters, school_id: event.target.value })
+                  }
                 >
-                  <option value="">{filters.sector ? "All schools" : "Choose sector first"}</option>
-                  {(data?.filters?.schools_by_sector?.[filters.sector] || []).map((school: any) => (
-                    <option key={school.id} value={school.id}>{school.name}</option>
-                  ))}
+                  <option value="">
+                    {filters.sector ? "All schools" : "Choose sector first"}
+                  </option>
+                  {(data?.filters?.schools_by_sector?.[filters.sector] || []).map(
+                    (school: any) => (
+                      <option key={school.id} value={school.id}>
+                        {school.name}
+                      </option>
+                    )
+                  )}
                 </select>
               </label>
               {isNoguchi && reportTab === "summary" && (
                 <label>
                   School level
-                  <select value={filters.school_level} onChange={(event) => setFilters({ ...filters, school_level: event.target.value })}>
+                  <select
+                    value={filters.school_level}
+                    onChange={(event) =>
+                      setFilters({ ...filters, school_level: event.target.value })
+                    }
+                  >
                     <option value="">All levels</option>
                     <option value="Nursery">Nursery</option>
                     <option value="Primary">Primary</option>
@@ -1182,17 +1273,27 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
             <>
               <label>
                 From
-                <input type="date" value={filters.from} onChange={(event) => setFilters({ ...filters, from: event.target.value })} />
+                <input
+                  type="date"
+                  value={filters.from}
+                  onChange={(event) => setFilters({ ...filters, from: event.target.value })}
+                />
               </label>
               <label>
                 To
-                <input type="date" value={filters.to} onChange={(event) => setFilters({ ...filters, to: event.target.value })} />
+                <input
+                  type="date"
+                  value={filters.to}
+                  onChange={(event) => setFilters({ ...filters, to: event.target.value })}
+                />
               </label>
             </>
           )}
           <div className="live-report-status">
             <i />
-            <span>{loading ? "Updating…" : updated ? `Live · ${updated.toLocaleTimeString()}` : "Connecting…"}</span>
+            <span>
+              {loading ? "Updating…" : updated ? `Live · ${updated.toLocaleTimeString()}` : "Connecting…"}
+            </span>
           </div>
         </div>
       </div>
@@ -1221,7 +1322,10 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
               <strong>Sector:</strong> {filters.sector || "All sectors"}
             </span>
             <span>
-              <strong>School:</strong> {(data?.filters?.schools_by_sector?.[filters.sector] || []).find((s: any) => String(s.id) === String(filters.school_id))?.name || "All schools"}
+              <strong>School:</strong>{" "}
+              {(data?.filters?.schools_by_sector?.[filters.sector] || []).find(
+                (s: any) => String(s.id) === String(filters.school_id)
+              )?.name || "All schools"}
             </span>
             <span>
               <strong>Generated:</strong> {new Date(data.report.generated_at).toLocaleString()}
@@ -1231,20 +1335,48 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
         </>
       )}
       {isNoguchi && data && (
-        <div className="no-print" style={{ marginBottom: "24px", display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "16px" }}>
-          <button className={reportTab === 'quantity' ? "primary-btn" : "secondary-btn"} onClick={() => setReportTab('quantity')}>Quantity sheet</button>
-          <button className={reportTab === 'summary' ? "primary-btn" : "secondary-btn"} onClick={() => setReportTab('summary')}>Summary report</button>
-          <button className={reportTab === 'daily_sheet' ? "primary-btn" : "secondary-btn"} onClick={() => setReportTab('daily_sheet')}>Daily register sheet</button>
+        <div
+          className="no-print"
+          style={{
+            marginBottom: "24px",
+            display: "flex",
+            gap: "12px",
+            borderBottom: "1px solid var(--border)",
+            paddingBottom: "16px",
+          }}
+        >
+          <button
+            className={reportTab === "quantity" ? "primary-btn" : "secondary-btn"}
+            onClick={() => setReportTab("quantity")}
+          >
+            Quantity sheet
+          </button>
+          <button
+            className={reportTab === "summary" ? "primary-btn" : "secondary-btn"}
+            onClick={() => setReportTab("summary")}
+          >
+            Summary report
+          </button>
+          <button
+            className={reportTab === "daily_sheet" ? "primary-btn" : "secondary-btn"}
+            onClick={() => setReportTab("daily_sheet")}
+          >
+            Daily register sheet
+          </button>
         </div>
       )}
-      <div className={isNoguchi && reportTab !== 'quantity' ? 'hidden' : ''}>
+      <div className={isNoguchi && reportTab !== "quantity" ? "hidden" : ""}>
         {isNoguchi && data && <NoguchiPrintOrderTable rows={reportOrders} />}
         {isNoguchi && data && (
           <LegacyOrderMatrix rows={visibleReportOrders} open={setSelectedOrder} />
         )}
         {isNoguchi && reportLastPage > 1 && (
           <nav className="school-pagination no-print" aria-label="School order report pages">
-            <button className="secondary-btn" disabled={reportPage <= 1} onClick={() => changeReportPage(reportPage - 1)}>
+            <button
+              className="secondary-btn"
+              disabled={reportPage <= 1}
+              onClick={() => changeReportPage(reportPage - 1)}
+            >
               Previous
             </button>
             <span>
@@ -1260,11 +1392,21 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
           </nav>
         )}
       </div>
-      <div className={isNoguchi && reportTab !== 'summary' ? 'hidden' : ''}>
-        {isNoguchi && data && <NoguchiSummaryReportTable rows={reportOrders} schoolLevelFilter={filters.school_level} />}
+      <div className={isNoguchi && reportTab !== "summary" ? "hidden" : ""}>
+        {isNoguchi && data && (
+          <NoguchiSummaryReportTable
+            rows={reportOrders}
+            schoolLevelFilter={filters.school_level}
+          />
+        )}
       </div>
-      <div className={isNoguchi && reportTab !== 'daily_sheet' ? 'hidden' : ''}>
-        {isNoguchi && data && <NoguchiDailyDocument data={data} departmentId={filters.department_id} />}
+      <div className={isNoguchi && reportTab !== "daily_sheet" ? "hidden" : ""}>
+        {isNoguchi && data && (
+          <NoguchiDailyDocument
+            data={data}
+            departmentId={filters.department_id}
+          />
+        )}
       </div>
       {isNoguchi && data && (
         <footer className="noguchi-print-footer">

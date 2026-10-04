@@ -14,21 +14,26 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Artisan::command('subscriptions:enforce', function () {
-    FactorySubscription::with('factory')->whereIn('status', ['trial', 'active', 'past_due'])->get()->each(function ($subscription) {
-        if (! $subscription->ends_at || ! $subscription->ends_at->isPast()) {
-            return;
-        }
+    FactorySubscription::with('factory')
+        ->whereIn('status', ['trial', 'active', 'past_due'])
+        ->get()
+        ->each(function ($subscription) {
+            if (! $subscription->ends_at || ! $subscription->ends_at->isPast()) {
+                return;
+            }
 
-        $graceIsValid = $subscription->grace_ends_at
-            && $subscription->grace_ends_at->diffInDays($subscription->ends_at, false) <= 30
-            && $subscription->grace_ends_at->isFuture();
+            $graceIsValid = $subscription->grace_ends_at
+                && $subscription->grace_ends_at->diffInDays($subscription->ends_at, false) <= 30
+                && $subscription->grace_ends_at->isFuture();
 
-        if (! $graceIsValid) {
-            $subscription->update(['status' => 'expired', 'suspended_at' => now()]);
-            $subscription->factory?->update(['status' => 'suspended']);
-            $this->info("Suspended: {$subscription->factory?->name} (expired {$subscription->ends_at->toDateString()})");
-        }
-    });
+            if (! $graceIsValid) {
+                $subscription->update(['status' => 'expired', 'suspended_at' => now()]);
+                $subscription->factory?->update(['status' => 'suspended']);
+                $name = $subscription->factory?->name;
+                $date = $subscription->ends_at->toDateString();
+                $this->info("Suspended: {$name} (expired {$date})");
+            }
+        });
     $this->info('Enforcement complete.');
 })->purpose('Suspend factories whose subscriptions have expired');
 
@@ -42,10 +47,15 @@ Artisan::command('subscriptions:notify-expiring', function () {
         ->where('ends_at', '>', now())
         ->get()
         ->each(function (FactorySubscription $subscription) {
-            $owners = \App\Models\User::whereHas('factories', fn ($query) => $query->where('factories.id', $subscription->factory_id)->where('factory_user.is_owner', true))->get();
+            $owners = \App\Models\User::whereHas('factories', function ($query) use ($subscription) {
+                $query->where('factories.id', $subscription->factory_id)
+                    ->where('factory_user.is_owner', true);
+            })->get();
+
             if ($owners->isNotEmpty()) {
                 Notification::send($owners, new SubscriptionExpiringSoon($subscription));
             }
+
             Notification::route('mail', 'info@noguchi.rw')->notify(new SubscriptionExpiringSoon($subscription));
             $subscription->update(['expiry_reminder_sent_at' => now()]);
         });

@@ -252,7 +252,15 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                         <thead>
                             <tr>
                                 <th>{locale === 'fr' ? 'Numéro' : 'Order'}</th>
-                                <th>{isSpecialized ? (locale === 'fr' ? 'École / Client' : 'School / Customer') : (locale === 'fr' ? 'Produit' : 'Product')}</th>
+                                <th>
+                                    {isSpecialized
+                                        ? locale === 'fr'
+                                            ? 'École / Client'
+                                            : 'School / Customer'
+                                        : locale === 'fr'
+                                            ? 'Produit'
+                                            : 'Product'}
+                                </th>
                                 <th>{locale === 'fr' ? 'Statut' : 'Status'}</th>
                                 <th>{locale === 'fr' ? 'Progression' : 'Progress'}</th>
                                 <th>{locale === 'fr' ? 'Échéance' : 'Due date'}</th>

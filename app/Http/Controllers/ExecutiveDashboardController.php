@@ -130,7 +130,10 @@ class ExecutiveDashboardController extends Controller
                     $orders = SalesDocument::withoutGlobalScopes()
                         ->where('factory_id', $factoryId)
                         ->where('document_type', 'customer_order')
-                        ->whereBetween('document_date', [$date->toDateString(), $date->copy()->endOfMonth()->toDateString()]);
+                        ->whereBetween('document_date', [
+                            $date->toDateString(),
+                            $date->copy()->endOfMonth()->toDateString(),
+                        ]);
 
                     return [
                         'date' => $date->format('M Y'),
@@ -138,24 +141,28 @@ class ExecutiveDashboardController extends Controller
                         'target' => (float) (clone $orders)->count(),
                     ];
                 }),
-                default => collect(range(max(0, $now->year - 2025), 0))->map(function (int $yearsAgo) use ($factoryId, $now) {
-                    $date = $now->copy()->subYears($yearsAgo);
+                default => collect(range(max(0, $now->year - 2025), 0))
+                    ->map(function (int $yearsAgo) use ($factoryId, $now) {
+                        $date = $now->copy()->subYears($yearsAgo);
 
-                    $orders = SalesDocument::withoutGlobalScopes()
-                        ->where('factory_id', $factoryId)
-                        ->where('document_type', 'customer_order')
-                        ->whereYear('document_date', $date->year);
+                        $orders = SalesDocument::withoutGlobalScopes()
+                            ->where('factory_id', $factoryId)
+                            ->where('document_type', 'customer_order')
+                            ->whereYear('document_date', $date->year);
 
-                    return [
-                        'date' => $date->format('Y'),
-                        'actual' => (float) (clone $orders)->whereIn('status', ['partial', 'delivered'])->count(),
-                        'target' => (float) (clone $orders)->count(),
-                    ];
-                }),
+                        return [
+                            'date' => $date->format('Y'),
+                            'actual' => (float) (clone $orders)->whereIn('status', ['partial', 'delivered'])->count(),
+                            'target' => (float) (clone $orders)->count(),
+                        ];
+                    }),
             };
 
             $orders = (clone $customerOrders)
-                ->with(['school:id,name,district,sector', 'lines:id,sales_document_id,quantity_ordered,quantity_delivered,quantity_packed'])
+                ->with([
+                    'school:id,name,district,sector',
+                    'lines:id,sales_document_id,quantity_ordered,quantity_delivered,quantity_packed',
+                ])
                 ->latest('document_date')
                 ->latest('id')
                 ->limit(10)
@@ -301,21 +308,22 @@ class ExecutiveDashboardController extends Controller
                         ->sum('planned_quantity'),
                 ];
             }),
-            default => collect(range(max(0, $now->year - 2025), 0))->map(function (int $yearsAgo) use ($factoryId, $now) {
-                $date = $now->copy()->subYears($yearsAgo);
-                return [
-                    'date' => $date->format('Y'),
-                    'actual' => (float) ProductionStageExecution::withoutGlobalScopes()
-                        ->where('factory_id', $factoryId)
-                        ->where('status', 'completed')
-                        ->whereYear('completed_at', $date->year)
-                        ->sum('output_quantity'),
-                    'target' => (float) ProductionOrder::withoutGlobalScopes()
-                        ->where('factory_id', $factoryId)
-                        ->whereYear('planned_end', $date->year)
-                        ->sum('planned_quantity'),
-                ];
-            }),
+            default => collect(range(max(0, $now->year - 2025), 0))
+                ->map(function (int $yearsAgo) use ($factoryId, $now) {
+                    $date = $now->copy()->subYears($yearsAgo);
+                    return [
+                        'date' => $date->format('Y'),
+                        'actual' => (float) ProductionStageExecution::withoutGlobalScopes()
+                            ->where('factory_id', $factoryId)
+                            ->where('status', 'completed')
+                            ->whereYear('completed_at', $date->year)
+                            ->sum('output_quantity'),
+                        'target' => (float) ProductionOrder::withoutGlobalScopes()
+                            ->where('factory_id', $factoryId)
+                            ->whereYear('planned_end', $date->year)
+                            ->sum('planned_quantity'),
+                    ];
+                }),
         };
 
         return response()->json([
@@ -339,7 +347,15 @@ class ExecutiveDashboardController extends Controller
                 ->whereIn('status', $openStatuses)
                 ->latest()
                 ->limit(10)
-                ->get(['id', 'order_number', 'item_id', 'planned_quantity', 'completed_quantity', 'status', 'planned_end']),
+                ->get([
+                    'id',
+                    'order_number',
+                    'item_id',
+                    'planned_quantity',
+                    'completed_quantity',
+                    'status',
+                    'planned_end',
+                ]),
         ]);
     }
 }
