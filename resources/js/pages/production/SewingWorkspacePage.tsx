@@ -98,6 +98,11 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
     };
 
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 10000); return () => window.clearInterval(timer); }, []);
+    useEffect(() => {
+        if (!success) return;
+        const timer = window.setTimeout(() => setSuccess(''), 5000);
+        return () => window.clearTimeout(timer);
+    }, [success]);
 
     const sewingWarehouseId = warehouses.find(w => w.code === 'SEW' || /sewing/i.test(w.name))?.id || 1;
     const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });

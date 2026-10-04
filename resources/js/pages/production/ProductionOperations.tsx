@@ -70,6 +70,11 @@ export default function ProductionOperations({ can }: any) {
         }
     };
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 15000); return () => window.clearInterval(timer); }, []);
+    useEffect(() => {
+        if (!success) return;
+        const timer = window.setTimeout(() => setSuccess(''), 5000);
+        return () => window.clearTimeout(timer);
+    }, [success]);
 
     const orders = data?.orders?.data || [];
     const summary = data?.summary || {};
@@ -187,18 +192,25 @@ export default function ProductionOperations({ can }: any) {
                 </div>
                 <div className="workflow-actions">
                     <button className="secondary-btn" disabled={loading} onClick={() => load()}><RefreshCw className={loading ? 'spin' : ''} size={16} />{loading ? 'Refreshing…' : 'Refresh data'}</button>
-                    {canPlan && <button className="secondary-btn" disabled={!items.length} onClick={() => setBomOpen(!bomOpen)}><Plus size={16} />{bomOpen ? 'Close recipe form' : 'Create product recipe'}</button>}
-                    {canPlan && <button className="primary-btn" disabled={!recipes.length || !processes.length || !warehouses.length} onClick={() => setOpen(!open)}><Plus size={16} />{open ? 'Close form' : 'Create production order'}</button>}
+                    {canPlan && <button className="secondary-btn" onClick={() => items.length ? setBomOpen(!bomOpen) : setError('You must add at least one product in the Materials section first.')}><Plus size={16} />{bomOpen ? 'Close recipe form' : 'Create product recipe'}</button>}
+                    {canPlan && <button className="primary-btn" onClick={() => { if (!recipes.length) setError('Please create a product recipe first.'); else if (!processes.length) setError('The Factory Manager must activate a production process first.'); else if (!warehouses.length) setError('No warehouse is available.'); else setOpen(!open); }}><Plus size={16} />{open ? 'Close form' : 'Create production order'}</button>}
                 </div>
             </div>
 
             {error && <div className="admin-alert error"><AlertTriangle size={18} /><span>{error}</span></div>}
             {success && <div className="admin-alert success"><CheckCircle2 size={18} /><span>{success}</span></div>}
 
-            {(!recipes.length || !processes.length || !warehouses.length) && !loading && !readOnly && (
+            {(!recipes.length || !processes.length || !warehouses.length || !items.length) && !loading && !readOnly && (
                 <div className="production-setup-warning">
                     <AlertTriangle />
-                    <div><b>Production setup is not complete</b><p>{!recipes.length ? 'Create a product recipe before adding an order. ' : ''}{!processes.length ? 'The Factory Manager must activate a production process. ' : ''}{!warehouses.length ? 'No warehouse is available to receive finished output.' : ''}</p></div>
+                    <div><b>Production setup is incomplete</b>
+                        <p>
+                            {!items.length ? 'You need to add products in the Materials section. ' : ''}
+                            {items.length && !recipes.length ? 'Create a product recipe before adding an order. ' : ''}
+                            {!processes.length ? 'The Factory Manager must activate a production process. ' : ''}
+                            {!warehouses.length ? 'No warehouse is available to receive output.' : ''}
+                        </p>
+                    </div>
                 </div>
             )}
 

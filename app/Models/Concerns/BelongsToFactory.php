@@ -17,4 +17,9 @@ trait BelongsToFactory
             $model->factory_id ??= auth()->user()?->current_factory_id;
         });
     }
+
+    public function factory()
+    {
+        return $this->belongsTo(\App\Models\Factory::class);
+    }
 }

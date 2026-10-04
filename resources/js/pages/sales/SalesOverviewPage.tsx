@@ -299,7 +299,7 @@ function LegacyOrderMatrix({ rows, open }: any) {
                                     );
                                 }),
                             ];
-                        }) : <tr><td colSpan={16}>No school orders match these filters.</td></tr>}
+                        }) : <tr><td colSpan={16}>No school orders were found for these filters. Try a longer period or "All order dates", or clear the status, district and sector.</td></tr>}
                     </tbody>
                 </table>
             </div>
@@ -429,8 +429,6 @@ function OrderFilters({ criteria, setCriteria, options, clear }: any) {
     );
 }
 
-// Not currently reachable from the UI (no button sets showCreate) — kept intact rather
-// than removed, since it's a complete feature, not obviously dead experimental code.
 function SchoolOrderForm({ order, setOrder, setLine, submit, busy, categories }: any) {
     return (
         <form className="panel admin-form quality-form" onSubmit={submit}>
@@ -561,8 +559,6 @@ function Metric({ label, value }: any) {
     return <article className="panel"><small>{label}</small><strong>{Number(value || 0).toLocaleString()}</strong></article>;
 }
 
-// LegacyOrderMatrix (paginated for print) is reused by ClearReportsPage for the printable
-// school-order report, so it's exported here alongside OrderDetailsModal rather than duplicated.
 function PaginatedLegacyOrderMatrix({ rows, open }: any) {
     const pageSize = 10;
     const [page, setPage] = useState(1);

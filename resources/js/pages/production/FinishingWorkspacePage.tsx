@@ -86,6 +86,11 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
     };
 
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 10000); return () => window.clearInterval(timer); }, []);
+    useEffect(() => {
+        if (!success) return;
+        const timer = window.setTimeout(() => setSuccess(''), 5000);
+        return () => window.clearTimeout(timer);
+    }, [success]);
 
     const finishingWarehouseId = warehouses.find(w => w.code === 'SEW' || /finishing/i.test(w.name))?.id || 1;
     const mainWarehouseId = warehouses.find(w => w.code === 'MAIN' || /main/i.test(w.name))?.id || 1;

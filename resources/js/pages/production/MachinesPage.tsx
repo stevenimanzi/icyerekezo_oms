@@ -285,5 +285,5 @@ export default function MachinesPage({ can }: any) {
 }
 
 function K({ label, value }: any) {
-    return <article className="panel quality-kpi"><span><Activity /></span><div><small>{label}</small><b>{Number(value || 0).toLocaleString()}</b></div></article>;
+    return <article className="panel quality-kpi"><div><small>{label}</small><b>{Number(value || 0).toLocaleString()}</b></div></article>;
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, FileText, Printer } from "lucide-react";
 import { LegacyOrderMatrix, OrderDetailsModal } from "../sales/SalesOverviewPage";
+import NoguchiDailySheet, { buildDays, sectionsForDepartment } from "./NoguchiDailySheet";
 
 const csrf = () =>
   document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? "";
@@ -570,7 +571,7 @@ function NoguchiLogisticsDocument({ data }: any) {
   );
 }
 
-const noguchiFactoryName = (value: any) => String(value || "").trim().toLowerCase() === "noguchi holdings ltd";
+const noguchiFactoryName = (value: any) => String(value || "").trim().toLowerCase().includes("noguchi");
 const itemKind = (name: any) =>
   /thread|zip|button|elastic|label|accessor/i.test(String(name || "")) ? "accessory" : "fabric";
 
@@ -594,418 +595,46 @@ const splitItem = (name: any) => {
   return { style, color, size };
 };
 
-function NoguchiEntry({ rows, mode = "inventory" }: any) {
-  if (!rows.length) return <span className="noguchi-daily-empty">—</span>;
-  return (
-    <>
-      {rows.map((row: any, index: number) => {
-        const info = splitItem(row.item_name || row.product_name);
-        const qty = Math.abs(
-          Number(mode === "inventory" ? row.quantity_delta : row.output_quantity || row.input_quantity || 0),
-        );
-        return (
-          <span className="noguchi-daily-entry" key={`${row.id}-${index}`}>
-            <b>{info.style}</b>
-            <small>
-              {info.color} · {info.size}
-            </small>
-            <strong>{number(qty)}</strong>
-          </span>
-        );
-      })}
-    </>
-  );
+function emptyRegisterMessage(report: any, department?: string) {
+  const show = (value?: string) => (value ? new Date(`${String(value).slice(0, 10)}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "");
+  const range = `${show(report?.from)} – ${show(report?.to)}`;
+  const when: Record<string, string> = {
+    day: `today (${show(report?.to)})`,
+    week: `in the last 7 days (${range})`,
+    month: `so far this month (${range})`,
+    year: `so far this year (${range})`,
+    custom: `between ${show(report?.from)} and ${show(report?.to)}`,
+    all: "on any date",
+  };
+  const subject = department ? `${department} entries` : "warehouse, cutting, production or finishing entries";
+  const period = String(report?.period || "");
+  return {
+    title: `No ${subject} were recorded ${when[period] || `between ${show(report?.from)} and ${show(report?.to)}`}.`,
+    hint: period === "all"
+      ? "Entries appear here as soon as stock movements or production steps are recorded."
+      : "Choose a longer period, or All dates, to see earlier records.",
+  };
 }
 
-function NoguchiFieldCell({ rows, field, mode = "production" }: any) {
-  return (
-    <td>
-      {rows.length ? (
-        rows.map((row: any, index: number) => {
-          const info = splitItem(row.item_name || row.product_name);
-          const value =
-            field === "quantity"
-              ? number(
-                  Math.abs(
-                    Number(mode === "inventory" ? row.quantity_delta : row.output_quantity || row.input_quantity || 0),
-                  ),
-                )
-              : info[field as "style" | "color" | "size"];
-          return (
-            <span className={`noguchi-field-value ${field === "quantity" ? "quantity" : ""}`} key={`${row.id}-${field}-${index}`}>
-              {value}
-            </span>
-          );
-        })
-      ) : (
-        <span className="noguchi-daily-empty">—</span>
-      )}
-    </td>
-  );
-}
-
-const printField = (rows: any[], field: string, mode = "production") =>
-  rows.length
-    ? rows
-        .map((row: any) => {
-          const info = splitItem(row.item_name || row.product_name);
-          return field === "quantity"
-            ? number(Math.abs(Number(mode === "inventory" ? row.quantity_delta : row.output_quantity || row.input_quantity || 0)))
-            : info[field as "style" | "color" | "size"];
-        })
-        .join("\n")
-    : "—";
-
-function NoguchiPrintSection({ title, headers, rows }: any) {
-  return (
-    <section className="noguchi-print-section">
-      <h3>{title}</h3>
-      <table>
-        <thead>
-          <tr>
-            {headers.map((header: string) => (
-              <th key={header}>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row: any[], index: number) => (
-            <tr key={index}>
-              {row.map((cell: any, cellIndex: number) => (
-                <td key={cellIndex}>{cell}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
-  );
-}
-
-function NoguchiDailyDocument({ data }: any) {
-  const inventory = data.inventory || [];
-  const production = data.production || [];
-  const stock = data.stock_register || [];
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const dates = Array.from(
-    new Set(
-      [
-        ...inventory.map((row: any) => reportDate(row.occurred_at)),
-        ...production.map((row: any) => reportDate(row.updated_at)),
-      ].filter(Boolean),
-    ),
-  ).sort();
-  const reportDates = dates.length ? dates : [data.report.to];
-  const byDate = (rows: any[], field: string, date: string) => rows.filter((row) => reportDate(row[field]) === date);
-  const stageRows = (rows: any[], area: string) => rows.filter((row) => stageArea(row.stage_name) === area);
-  const inventoryRows = (rows: any[], direction: "in" | "out", kind: "fabric" | "accessory") =>
-    rows.filter(
-      (row) =>
-        (direction === "in" ? Number(row.quantity_delta) > 0 : Number(row.quantity_delta) < 0) &&
-        itemKind(row.item_name) === kind,
-    );
-  const fields = (rows: any[], mode = "production", names = ["style", "color", "size", "quantity"]) => (
-    <>
-      {names.map((field) => (
-        <NoguchiFieldCell key={field} rows={rows} field={field} mode={mode} />
-      ))}
-    </>
-  );
-  const sum = (rows: any[], key: string) =>
-    rows.reduce((total: number, row: any) => total + Math.abs(Number(row[key] || 0)), 0);
-  const summary = [
-    ["Warehouse received", sum(inventory.filter((row: any) => Number(row.quantity_delta) > 0), "quantity_delta")],
-    ["Warehouse issued", sum(inventory.filter((row: any) => Number(row.quantity_delta) < 0), "quantity_delta")],
-    ["Factory output", sum(production, "output_quantity")],
-    ["Closing stock", stock.reduce((total: number, row: any) => total + Number(row.closing_balance || 0), 0)],
-  ];
-  const dailyRows = reportDates.map((date: string, index: number) => ({
-    date,
-    label: new Date(`${date}T00:00:00`).toLocaleDateString(),
-    inventory: byDate(inventory, "occurred_at", date),
-    production: byDate(production, "updated_at", date),
-    stock:
-      index === reportDates.length - 1
-        ? stock.map((row: any) => ({
-            ...row,
-            id: `stock-${row.sku}-${row.warehouse}`,
-            item_name: row.item,
-            quantity_delta: row.closing_balance,
-          }))
-        : [],
-  }));
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
-  }, [data.report.from, data.report.to, data.report.department_id]);
-
-  const move = (direction: number) =>
-    scrollRef.current?.scrollBy({
-      left: direction * Math.max(420, scrollRef.current.clientWidth * 0.72),
-      behavior: "smooth",
-    });
+function NoguchiDailyDocument({ data, departmentId }: any) {
+  const department = (data.filters?.departments || []).find((item: any) => String(item.id) === String(departmentId || ""));
+  const sections = sectionsForDepartment(department?.name);
+  const hasRegister = sections.length > 0;
+  const days = React.useMemo(() => buildDays(data, department?.name || ""), [data, department?.name]);
 
   return (
-    <article className="noguchi-daily-document">
-      <style>{"@media print{@page{size:landscape;margin:8mm}}"}</style>
-      <header>
-        <div>
-          <span className="noguchi-report-kicker">OFFICIAL FACTORY REGISTER</span>
-          <h1>{data.factory.name.toUpperCase()}</h1>
-          <h2>Daily operations report</h2>
-        </div>
-        <section>
-          <span>
-            <small>Reporting period</small>
-            <b>
-              {data.report.from} — {data.report.to}
-            </b>
-          </span>
-          <span>
-            <small>Prepared by</small>
-            <b>{data.report.generated_by}</b>
-          </span>
-          <span>
-            <small>Generated</small>
-            <b>{new Date(data.report.generated_at).toLocaleString()}</b>
-          </span>
-        </section>
-      </header>
-      <section className="noguchi-daily-summary">
-        {summary.map(([label, value]) => (
-          <div key={String(label)}>
-            <span>{label}</span>
-            <b>{number(value)}</b>
-          </div>
-        ))}
-      </section>
-      <div className="noguchi-table-toolbar no-print">
-        <div>
-          <b>Daily movement register</b>
-          <span>Scroll across to review every factory section</span>
-        </div>
-        <div>
-          <button type="button" onClick={() => move(-1)} aria-label="View previous report columns">
-            <ChevronLeft />
-          </button>
-          <button type="button" onClick={() => move(1)} aria-label="View next report columns">
-            <ChevronRight />
-          </button>
-        </div>
-      </div>
-      <div className="noguchi-daily-scroll" ref={scrollRef}>
-        <table>
-          <thead>
-            <tr>
-              <th rowSpan={3}>DATE</th>
-              <th colSpan={8}>WAREHOUSE</th>
-              <th colSpan={6}>CUTTING</th>
-              <th colSpan={8}>PRODUCTION</th>
-              <th colSpan={8}>FINISHING</th>
-              <th colSpan={4}>WAREHOUSE</th>
-            </tr>
-            <tr>
-              <th colSpan={4}>INPUT</th>
-              <th colSpan={4}>OUTPUT</th>
-              <th colSpan={2}>INPUT</th>
-              <th colSpan={4}>OUTPUT</th>
-              <th colSpan={4}>INPUT</th>
-              <th colSpan={4}>OUTPUT</th>
-              <th colSpan={4}>INPUT</th>
-              <th colSpan={4}>OUTPUT</th>
-              <th colSpan={4}>QTY IN STOCK</th>
-            </tr>
-            <tr>
-              <th>COLOR</th>
-              <th>METERS</th>
-              <th>COLOR</th>
-              <th>QTY</th>
-              <th>COLOR</th>
-              <th>METERS</th>
-              <th>COLOR</th>
-              <th>QTY</th>
-              <th>COLOR</th>
-              <th>METERS</th>
-              <th>STYLE</th>
-              <th>COLOR</th>
-              <th>SIZE</th>
-              <th>QTY</th>
-              <th>STYLE</th>
-              <th>COLOR</th>
-              <th>SIZE</th>
-              <th>QTY</th>
-              <th>STYLE</th>
-              <th>COLOR</th>
-              <th>SIZE</th>
-              <th>QTY</th>
-              <th>STYLE</th>
-              <th>COLOR</th>
-              <th>SIZE</th>
-              <th>QTY</th>
-              <th>STYLE</th>
-              <th>COLOR</th>
-              <th>SIZE</th>
-              <th>QTY</th>
-              <th>STYLE</th>
-              <th>COLOR</th>
-              <th>SIZE</th>
-              <th>QTY</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reportDates.map((date: string, index: number) => {
-              const dayInventory = byDate(inventory, "occurred_at", date);
-              const dayProduction = byDate(production, "updated_at", date);
-              return (
-                <tr key={date}>
-                  <td>{new Date(`${date}T00:00:00`).toLocaleDateString()}</td>
-                  {fields(inventoryRows(dayInventory, "in", "fabric"), "inventory", ["color", "quantity"])}
-                  {fields(inventoryRows(dayInventory, "in", "accessory"), "inventory", ["color", "quantity"])}
-                  {fields(inventoryRows(dayInventory, "out", "fabric"), "inventory", ["color", "quantity"])}
-                  {fields(inventoryRows(dayInventory, "out", "accessory"), "inventory", ["color", "quantity"])}
-                  {fields(stageRows(dayProduction, "cutting"), "production", ["color", "quantity"])}
-                  {fields(stageRows(dayProduction, "cutting"))}
-                  {fields(stageRows(dayProduction, "production"))}
-                  {fields(stageRows(dayProduction, "production"))}
-                  {fields(stageRows(dayProduction, "finishing"))}
-                  {fields(stageRows(dayProduction, "finishing"))}
-                  {fields(
-                    index === reportDates.length - 1
-                      ? stock.map((row: any) => ({
-                          ...row,
-                          id: `stock-${row.sku}-${row.warehouse}`,
-                          item_name: row.item,
-                          quantity_delta: row.closing_balance,
-                        }))
-                      : [],
-                    "inventory",
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <div className="noguchi-print-register">
-        <NoguchiPrintSection
-          title="Warehouse movement"
-          headers={[
-            "Date",
-            "Input fabric color",
-            "Input metres",
-            "Input accessory color",
-            "Input qty",
-            "Output fabric color",
-            "Output metres",
-            "Output accessory color",
-            "Output qty",
-          ]}
-          rows={dailyRows.map((day) => {
-            const inFabric = inventoryRows(day.inventory, "in", "fabric");
-            const inAccessory = inventoryRows(day.inventory, "in", "accessory");
-            const outFabric = inventoryRows(day.inventory, "out", "fabric");
-            const outAccessory = inventoryRows(day.inventory, "out", "accessory");
-            return [
-              day.label,
-              printField(inFabric, "color", "inventory"),
-              printField(inFabric, "quantity", "inventory"),
-              printField(inAccessory, "color", "inventory"),
-              printField(inAccessory, "quantity", "inventory"),
-              printField(outFabric, "color", "inventory"),
-              printField(outFabric, "quantity", "inventory"),
-              printField(outAccessory, "color", "inventory"),
-              printField(outAccessory, "quantity", "inventory"),
-            ];
-          })}
-        />
-        <NoguchiPrintSection
-          title="Cutting"
-          headers={["Date", "Input color", "Input metres", "Output style", "Output color", "Output size", "Output qty"]}
-          rows={dailyRows.map((day) => {
-            const records = stageRows(day.production, "cutting");
-            return [
-              day.label,
-              printField(records, "color"),
-              printField(records, "quantity"),
-              printField(records, "style"),
-              printField(records, "color"),
-              printField(records, "size"),
-              printField(records, "quantity"),
-            ];
-          })}
-        />
-        <NoguchiPrintSection
-          title="Production"
-          headers={[
-            "Date",
-            "Input style",
-            "Input color",
-            "Input size",
-            "Input qty",
-            "Output style",
-            "Output color",
-            "Output size",
-            "Output qty",
-          ]}
-          rows={dailyRows.map((day) => {
-            const records = stageRows(day.production, "production");
-            return [
-              day.label,
-              printField(records, "style"),
-              printField(records, "color"),
-              printField(records, "size"),
-              printField(records, "quantity"),
-              printField(records, "style"),
-              printField(records, "color"),
-              printField(records, "size"),
-              printField(records, "quantity"),
-            ];
-          })}
-        />
-        <NoguchiPrintSection
-          title="Finishing"
-          headers={[
-            "Date",
-            "Input style",
-            "Input color",
-            "Input size",
-            "Input qty",
-            "Output style",
-            "Output color",
-            "Output size",
-            "Output qty",
-          ]}
-          rows={dailyRows.map((day) => {
-            const records = stageRows(day.production, "finishing");
-            return [
-              day.label,
-              printField(records, "style"),
-              printField(records, "color"),
-              printField(records, "size"),
-              printField(records, "quantity"),
-              printField(records, "style"),
-              printField(records, "color"),
-              printField(records, "size"),
-              printField(records, "quantity"),
-            ];
-          })}
-        />
-        <NoguchiPrintSection
-          title="Warehouse closing stock"
-          headers={["Date", "Style / item", "Color", "Size", "Quantity"]}
-          rows={dailyRows.map((day) => [
-            day.label,
-            printField(day.stock, "style", "inventory"),
-            printField(day.stock, "color", "inventory"),
-            printField(day.stock, "size", "inventory"),
-            printField(day.stock, "quantity", "inventory"),
-          ])}
-        />
-      </div>
-      <footer>
-        <span>NOGUCHI HOLDINGS LTD · DAILY FACTORY OPERATIONS</span>
-        <span>Generated by ICYEREKEZO OMS</span>
-      </footer>
+    <article className="noguchi-paper">
+      <style>{"@media print{@page{size:A3 landscape;margin:6mm}}"}</style>
+      <NoguchiDailySheet
+        department={department?.name}
+        days={hasRegister ? days : []}
+        sections={sections}
+        emptyMessage={
+          hasRegister
+            ? emptyRegisterMessage(data.report, department?.name)
+            : { title: `${department?.name || "This department"} has no entries in the daily register.`, hint: "Only departments that record stock movements or production steps appear in this report." }
+        }
+      />
     </article>
   );
 }
@@ -1178,14 +807,14 @@ function LogisticsDocument({ data }: any) {
   );
 }
 
-function Document({ data }: any) {
+function Document({ data, departmentId }: any) {
   if (data.report.scope === "logistics") {
-    return String(data.factory?.name || "").trim().toLowerCase() === "noguchi holdings ltd"
+    return String(data.factory?.name || "").trim().toLowerCase().includes("noguchi")
       ? null
       : <LogisticsDocument data={data} />;
   }
   if (data.report.scope === "factory" && noguchiFactoryName(data.factory?.name)) {
-    return <NoguchiDailyDocument data={data} />;
+    return <NoguchiDailyDocument data={data} departmentId={departmentId} />;
   }
   const departmentOnly = data.report.scope === "department";
 
@@ -1276,6 +905,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
     status: searchParams.get("status") || "",
     district: searchParams.get("district") || "",
     sector: searchParams.get("sector") || "",
+    school_id: searchParams.get("school_id") || "",
     school_level: searchParams.get("school_level") || "",
   };
   const [filters, setFilters] = useState(initialFilters);
@@ -1285,28 +915,41 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
   const [updated, setUpdated] = useState<Date | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [reportPage, setReportPage] = useState(1);
-  const [reportTab, setReportTab] = useState<'quantity' | 'summary'>('quantity');
+  const [reportTab, setReportTab] = useState<'quantity' | 'summary' | 'daily_sheet'>('quantity');
 
-  // Only apply the server's default period if the user didn't request one via the URL.
   const hasInitialPeriod = useRef(searchParams.has("period"));
   const defaultPeriodApplied = useRef(false);
+  const periodChosen = useRef(false);
+  const emptyFallbackDone = useRef(false);
 
   const reportScope = data?.report?.scope;
   const logisticsOnly = reportScope === "logistics";
   const warehouseOnly = reportScope === "warehouse";
-  const noguchiOrdersOnly =
-    logisticsOnly && String(data?.factory?.name || "").trim().toLowerCase() === "noguchi holdings ltd";
   const departmentOnly = reportScope === "department";
   const factoryWide = reportScope === "factory";
-  const noguchiFactoryWide = factoryWide && noguchiFactoryName(data?.factory?.name);
+  const isNoguchi = noguchiFactoryName(data?.factory?.name);
+  const noguchiOrdersOnly = isNoguchi && reportTab !== 'daily_sheet';
+  const noguchiFactoryWide = factoryWide && isNoguchi;
+
+  const allDepartments: any[] = data?.filters?.departments || [];
+  const registerDepartments = noguchiFactoryWide
+    ? allDepartments.filter((department) => sectionsForDepartment(department.name).length > 0)
+    : allDepartments;
   const reportOrders = data?.logistics?.orders || [];
   const reportPageSize = 10;
   const reportLastPage = Math.max(1, Math.ceil(reportOrders.length / reportPageSize));
   const visibleReportOrders = reportOrders.slice((reportPage - 1) * reportPageSize, reportPage * reportPageSize);
 
+  // A department that is not part of the register (e.g. from an old link) falls back to all departments.
+  useEffect(() => {
+    if (data && noguchiFactoryWide && filters.department_id && !registerDepartments.some((department) => String(department.id) === String(filters.department_id))) {
+      setFilters((current) => ({ ...current, department_id: "" }));
+    }
+  }, [data, filters.department_id]);
+
   useEffect(() => {
     setReportPage(1);
-  }, [filters.period, filters.status, filters.district, filters.sector, filters.from, filters.to]);
+  }, [filters.period, filters.status, filters.district, filters.sector, filters.school_id, filters.from, filters.to]);
 
   const changeReportPage = (nextPage: number) => {
     setReportPage(nextPage);
@@ -1339,6 +982,14 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
           setError("");
           setUpdated(new Date());
 
+          const noguchiResult = noguchiFactoryName(result.factory?.name);
+          const emptyRegister = result.report?.scope === "factory" && noguchiResult && !(result.inventory?.length || result.production?.length);
+          const emptyOrders = result.report?.scope === "logistics" && noguchiResult && !(result.logistics?.orders?.length);
+          if (!emptyFallbackDone.current && !periodChosen.current && filters.period !== "all" && (emptyRegister || emptyOrders)) {
+            emptyFallbackDone.current = true;
+            setFilters((current) => ({ ...current, period: "all" }));
+          }
+
           // Apply the server's suggested default period only once, and only if the user didn't pick one.
           if (!defaultPeriodApplied.current) {
             defaultPeriodApplied.current = true;
@@ -1358,7 +1009,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
       active = false;
       clearTimeout(wait);
     };
-  }, [filters.period, filters.type, filters.department_id, filters.from, filters.to, filters.status, filters.district, filters.sector]);
+  }, [forcedScope, filters.period, filters.type, filters.department_id, filters.from, filters.to, filters.status, filters.district, filters.sector, filters.school_id]);
 
   return (
     <section className="module-page report-page">
@@ -1404,13 +1055,17 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
             </div>
           </div>
           <div className="workflow-actions report-action-row">
-            {noguchiOrdersOnly && (
-              <a className="secondary-btn" href={reportTab === 'summary' ? `/api/reports/summary.xlsx?${new URLSearchParams(filters)}` : `/api/reports/orders.xlsx?${new URLSearchParams(filters)}`}>
-                Export Excel
-              </a>
-            )}
-            {noguchiFactoryWide && (
-              <a className="secondary-btn" href={`/api/reports/daily.xlsx?${new URLSearchParams(filters)}`}>
+            {isNoguchi && (
+              <a
+                className="secondary-btn"
+                href={
+                  reportTab === "summary"
+                    ? `/api/reports/summary.xlsx?${new URLSearchParams(filters)}`
+                    : reportTab === "daily_sheet"
+                      ? `/api/reports/daily.xlsx?${new URLSearchParams(filters)}`
+                      : `/api/reports/orders.xlsx?${new URLSearchParams(filters)}`
+                }
+              >
                 Export Excel
               </a>
             )}
@@ -1424,8 +1079,14 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
         <div className="panel report-filters">
           <label>
             Report period
-            <select value={filters.period} onChange={(event) => setFilters({ ...filters, period: event.target.value })}>
-              {noguchiOrdersOnly && <option value="all">All order dates</option>}
+            <select
+              value={filters.period}
+              onChange={(event) => {
+                periodChosen.current = true;
+                setFilters({ ...filters, period: event.target.value });
+              }}
+            >
+              {isNoguchi && <option value="all">All order dates</option>}
               <option value="day">Today</option>
               <option value="week">Last 7 days</option>
               <option value="month">This month</option>
@@ -1433,7 +1094,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
               <option value="custom">Choose dates</option>
             </select>
           </label>
-          {factoryWide && (
+          {factoryWide && (!isNoguchi || reportTab === "daily_sheet") && (
             <label>
               Department
               <select
@@ -1441,7 +1102,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 onChange={(event) => setFilters({ ...filters, department_id: event.target.value })}
               >
                 <option value="">All departments</option>
-                {(data?.filters?.departments || []).map((department: any) => (
+                {registerDepartments.map((department: any) => (
                   <option key={department.id} value={department.id}>
                     {department.name}
                   </option>
@@ -1449,7 +1110,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
               </select>
             </label>
           )}
-          {logisticsOnly && (
+          {(logisticsOnly || (isNoguchi && reportTab !== "daily_sheet")) && (
             <>
               <label>
                 Order status
@@ -1470,7 +1131,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 District
                 <select
                   value={filters.district}
-                  onChange={(event) => setFilters({ ...filters, district: event.target.value, sector: "" })}
+                  onChange={(event) => setFilters({ ...filters, district: event.target.value, sector: "", school_id: "" })}
                 >
                   <option value="">All districts</option>
                   {(data?.filters?.districts || []).map((district: string) => (
@@ -1483,7 +1144,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 <select
                   disabled={!filters.district}
                   value={filters.sector}
-                  onChange={(event) => setFilters({ ...filters, sector: event.target.value })}
+                  onChange={(event) => setFilters({ ...filters, sector: event.target.value, school_id: "" })}
                 >
                   <option value="">{filters.district ? "All sectors" : "Choose district first"}</option>
                   {(data?.filters?.sectors_by_district?.[filters.district] || []).map((sector: string) => (
@@ -1491,7 +1152,20 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                   ))}
                 </select>
               </label>
-              {noguchiOrdersOnly && reportTab === 'summary' && (
+              <label>
+                School
+                <select
+                  disabled={!filters.sector}
+                  value={filters.school_id}
+                  onChange={(event) => setFilters({ ...filters, school_id: event.target.value })}
+                >
+                  <option value="">{filters.sector ? "All schools" : "Choose sector first"}</option>
+                  {(data?.filters?.schools_by_sector?.[filters.sector] || []).map((school: any) => (
+                    <option key={school.id} value={school.id}>{school.name}</option>
+                  ))}
+                </select>
+              </label>
+              {isNoguchi && reportTab === "summary" && (
                 <label>
                   School level
                   <select value={filters.school_level} onChange={(event) => setFilters({ ...filters, school_level: event.target.value })}>
@@ -1547,24 +1221,28 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
               <strong>Sector:</strong> {filters.sector || "All sectors"}
             </span>
             <span>
+              <strong>School:</strong> {(data?.filters?.schools_by_sector?.[filters.sector] || []).find((s: any) => String(s.id) === String(filters.school_id))?.name || "All schools"}
+            </span>
+            <span>
               <strong>Generated:</strong> {new Date(data.report.generated_at).toLocaleString()}
             </span>
           </section>
         </header>
         </>
       )}
-      {noguchiOrdersOnly && data && (
+      {isNoguchi && data && (
         <div className="no-print" style={{ marginBottom: "24px", display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "16px" }}>
           <button className={reportTab === 'quantity' ? "primary-btn" : "secondary-btn"} onClick={() => setReportTab('quantity')}>Quantity sheet</button>
           <button className={reportTab === 'summary' ? "primary-btn" : "secondary-btn"} onClick={() => setReportTab('summary')}>Summary report</button>
+          <button className={reportTab === 'daily_sheet' ? "primary-btn" : "secondary-btn"} onClick={() => setReportTab('daily_sheet')}>Daily register sheet</button>
         </div>
       )}
-      <div className={noguchiOrdersOnly && reportTab !== 'quantity' ? 'hidden' : ''}>
-        {noguchiOrdersOnly && data && <NoguchiPrintOrderTable rows={reportOrders} />}
-        {logisticsOnly && data && (
-          <LegacyOrderMatrix rows={noguchiOrdersOnly ? visibleReportOrders : reportOrders} open={setSelectedOrder} />
+      <div className={isNoguchi && reportTab !== 'quantity' ? 'hidden' : ''}>
+        {isNoguchi && data && <NoguchiPrintOrderTable rows={reportOrders} />}
+        {isNoguchi && data && (
+          <LegacyOrderMatrix rows={visibleReportOrders} open={setSelectedOrder} />
         )}
-        {noguchiOrdersOnly && reportLastPage > 1 && (
+        {isNoguchi && reportLastPage > 1 && (
           <nav className="school-pagination no-print" aria-label="School order report pages">
             <button className="secondary-btn" disabled={reportPage <= 1} onClick={() => changeReportPage(reportPage - 1)}>
               Previous
@@ -1582,16 +1260,19 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
           </nav>
         )}
       </div>
-      <div className={noguchiOrdersOnly && reportTab !== 'summary' ? 'hidden' : ''}>
-        {noguchiOrdersOnly && data && <NoguchiSummaryReportTable rows={reportOrders} schoolLevelFilter={filters.school_level} />}
+      <div className={isNoguchi && reportTab !== 'summary' ? 'hidden' : ''}>
+        {isNoguchi && data && <NoguchiSummaryReportTable rows={reportOrders} schoolLevelFilter={filters.school_level} />}
       </div>
-      {noguchiOrdersOnly && data && (
+      <div className={isNoguchi && reportTab !== 'daily_sheet' ? 'hidden' : ''}>
+        {isNoguchi && data && <NoguchiDailyDocument data={data} departmentId={filters.department_id} />}
+      </div>
+      {isNoguchi && data && (
         <footer className="noguchi-print-footer">
-          <span>{data.factory.name} · Confidential operational report</span>
-          <span>Powered by ICYEREKEZO OPERATIONAM MANAGEMENT SYSTEM</span>
+          <span>{data.factory.name} · Operational report</span>
+          <span>Powered by ICYEREKEZO OMS</span>
         </footer>
       )}
-      {data && <Document data={data} />}
+      {!isNoguchi && data && <Document data={data} departmentId={data.report?.department_id ?? ""} />}
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}

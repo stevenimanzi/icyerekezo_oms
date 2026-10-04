@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, Building2, CheckCircle2, CreditCard, Database, Megaphone, MessageSquare, Plus, RefreshCw, Save, Settings, ShieldCheck, Users } from 'lucide-react';
+import { Activity, Building2, CheckCircle2, CreditCard, Database, Megaphone, MessageSquare, Plus, RefreshCw, Save, Settings, ShieldCheck, Users, Pencil, Trash2, Eye, X } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import SystemSettingsPanel from '../system/SystemSettingsPanel';
 
@@ -43,9 +43,15 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showForm, setShowForm] = useState(false);
+    const [editUser, setEditUser] = useState<any>(null);
+    const [viewUser, setViewUser] = useState<any>(null);
+    const [viewFactory, setViewFactory] = useState<any>(null);
+    const [subscriptionFactory, setSubscriptionFactory] = useState<any>(null);
+    const [subPlans, setSubPlans] = useState([]);
+    useEffect(() => { if (subscriptionFactory && subPlans.length === 0) { request('/api/platform/subscriptions').then(res => setSubPlans(res.plans || [])); } }, [subscriptionFactory]);
     const [form, setForm] = useState<Record<string, any>>({});
     const [auditFilters, setAuditFilters] = useState({ search: '', event: '', factory_id: '', from: '', to: '' });
-    const [usersFilters, setUsersFilters] = useState({ tab: 'all', search: '', active: '', page: 1 });
+    const [usersFilters, setUsersFilters] = useState({ tab: 'all', search: '', active: '', role: '', page: 1 });
     const [Icon, title, description] = pageInfo[page] || pageInfo['platform-dashboard'];
     const endpoint = ({
         'platform-dashboard': '/api/platform/overview', factories: '/api/platform/factories', 'platform-users': '/api/platform/users',
@@ -61,14 +67,27 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
             if (page === 'audit-logs') {
                 url = `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(auditFilters).filter(([, v]) => v)))}`;
             } else if (page === 'platform-users') {
-                url = `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(usersFilters).filter(([, v]) => v)))}`;
+                url = `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(usersFilters).filter(([, v]) => v).map(([k, v]) => [k, String(v)])))}`;
             }
             setData(await request(url));
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Unable to load.');
         } finally { setBusy(false); }
     };
-    useEffect(() => { setShowForm(false); setForm({}); load(); }, [page]);
+    useEffect(() => { 
+        setShowForm(false); 
+        setForm({}); 
+        setSuccess('');
+        setError('');
+        load(); 
+    }, [page]);
+    
+    useEffect(() => {
+        if (!success) return;
+        const timer = window.setTimeout(() => setSuccess(''), 5000);
+        return () => window.clearTimeout(timer);
+    }, [success]);
+    
     useEffect(() => { if (page === 'audit-logs') load(); }, [auditFilters]);
     useEffect(() => { if (page === 'platform-users') load(); }, [usersFilters]);
     useEffect(() => {
@@ -131,11 +150,63 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                         headers={['Factory', 'Industry', 'Users', 'Status', 'Action']}
                         rows={records.map((item: any) => [
                             <b>{item.name}</b>, item.industry_type || '—', item.users_count, <Status value={item.status} />,
-                            <select value={item.status} onChange={event => run(`/api/platform/factories/${item.id}`, 'PATCH', { status: event.target.value }, 'Factory status updated.')}>
-                                <option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option>
-                            </select>,
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%' }}>
+                                <select value={item.status} onChange={event => run(`/api/platform/factories/${item.id}`, 'PATCH', { status: event.target.value }, 'Factory status updated.')}>
+                                    <option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option>
+                                </select>
+                                <div style={{ flex: 1 }}></div>
+                                <button type="button" className="table-action" title="Change subscription" onClick={() => setSubscriptionFactory(item)}><CreditCard size={16} /></button>
+                                <button type="button" className="table-action" title="View details" onClick={() => setViewFactory(item)}><Eye size={16} /></button>
+                                <button type="button" className="table-action" title="Delete factory" onClick={() => { if(window.confirm('Are you sure you want to completely delete this factory?')) run(`/api/platform/factories/${item.id}`, 'DELETE', undefined, 'Factory deleted.') }}><Trash2 size={16} color="red" /></button>
+                            </div>
                         ])}
                     />
+                    {subscriptionFactory && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setSubscriptionFactory(null)}>
+                            <form className="panel admin-form" style={{ width: '100%', maxWidth: 500, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }} onClick={e => e.stopPropagation()} onSubmit={e => { e.preventDefault(); run(`/api/platform/factories/${subscriptionFactory.id}/subscriptions`, 'POST', { subscription_plan_id: e.currentTarget.plan_id.value, starts_at: e.currentTarget.starts_at.value, ends_at: e.currentTarget.ends_at.value, status: 'active' }, 'Subscription extended').then(() => setSubscriptionFactory(null)); }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h2 style={{ margin: 0 }}>Extend Subscription</h2>
+                                    <button type="button" className="secondary-btn" onClick={() => setSubscriptionFactory(null)}>Close</button>
+                                </div>
+                                <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                                    <label>Plan
+                                        <select name="plan_id" defaultValue={subscriptionFactory.subscriptions?.[0]?.subscription_plan_id || ''} required>
+                                            <option value="">Select plan</option>
+                                            {subPlans.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>Start Date
+                                        <input type="date" name="starts_at" defaultValue={subscriptionFactory.subscriptions?.[0]?.starts_at ? new Date(subscriptionFactory.subscriptions[0].starts_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)} required />
+                                    </label>
+                                    <label>End Date
+                                        <input type="date" name="ends_at" defaultValue={subscriptionFactory.subscriptions?.[0]?.ends_at ? new Date(subscriptionFactory.subscriptions[0].ends_at).toISOString().slice(0, 10) : ''} required />
+                                    </label>
+                                </div>
+                                <button className="primary-btn">Save Changes</button>
+                            </form>
+                        </div>
+                    )}
+                    {viewFactory && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setViewFactory(null)}>
+                            <div className="panel" style={{ width: '100%', maxWidth: 500, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }} onClick={e => e.stopPropagation()}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h2 style={{ margin: 0 }}>Factory Details</h2>
+                                    <button type="button" className="secondary-btn" onClick={() => setViewFactory(null)}>Close</button>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Name</small><b>{viewFactory.name}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Industry</small><b>{viewFactory.industry_type || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Email</small><b>{viewFactory.email || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Phone</small><b>{viewFactory.phone || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Currency</small><b>{viewFactory.currency_code || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Timezone</small><b>{viewFactory.timezone || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Users Count</small><b>{viewFactory.users_count || 0}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Status</small><b>{viewFactory.status || '-'}</b></div>
+                                    <div style={{ gridColumn: '1 / -1' }}><small style={{ color: 'var(--muted)', display: 'block' }}>Created at</small><b>{new Date(viewFactory.created_at).toLocaleString()}</b></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
 
@@ -149,7 +220,7 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                                     type="button"
                                     onClick={() => setUsersFilters({ ...usersFilters, tab, page: 1 })}
                                     className={`table-action ${usersFilters.tab === tab ? 'active' : ''}`}
-                                    style={usersFilters.tab === tab ? { background: 'var(--primary)', color: 'white', borderColor: 'var(--primary)' } : {}}
+                                    style={usersFilters.tab === tab ? { background: '#2563eb', color: '#ffffff', borderColor: '#2563eb', fontWeight: 'bold' } : {}}
                                 >
                                     {tab === 'all' ? 'All users' : tab === 'factories' ? 'Factory users' : 'School users'}
                                 </button>
@@ -157,6 +228,12 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
                             <input placeholder="Search users by name or email" value={usersFilters.search} onChange={(e) => setUsersFilters({ ...usersFilters, search: e.target.value, page: 1 })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 7, background: 'var(--panel)', color: 'var(--text)' }} />
+                            <select value={usersFilters.role} onChange={(e) => setUsersFilters({ ...usersFilters, role: e.target.value, page: 1 })}>
+                                <option value="">Any position / role</option>
+                                {data?.roles?.map((r: any) => (
+                                    <option key={r.slug} value={r.slug}>{r.name}</option>
+                                ))}
+                            </select>
                             <select value={usersFilters.active} onChange={(e) => setUsersFilters({ ...usersFilters, active: e.target.value, page: 1 })}>
                                 <option value="">Any status</option>
                                 <option value="1">Active only</option>
@@ -165,14 +242,49 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                         </div>
                     </div>
 
-                    <UserForm open={showForm} factories={data?.factories || []} submit={(values: any) => run('/api/platform/users', 'POST', values, 'Factory user created successfully.')} />
+                    {viewUser && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setViewUser(null)}>
+                            <div className="panel" style={{ width: '100%', maxWidth: 500, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }} onClick={e => e.stopPropagation()}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h2 style={{ margin: 0 }}>User Details</h2>
+                                    <button type="button" className="secondary-btn" onClick={() => setViewUser(null)}>Close</button>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div style={{ gridColumn: '1 / -1' }}><small style={{ color: 'var(--muted)', display: 'block' }}>Name</small><b>{viewUser.name}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Email</small><b>{viewUser.email || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Username</small><b>{viewUser.username || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Phone</small><b>{viewUser.phone || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Role / Position</small><b>{viewUser.roles && viewUser.roles.length > 0 ? viewUser.roles.map((r: any) => r.name).join(', ') : 'No role'}</b></div>
+                                    <div style={{ gridColumn: '1 / -1' }}><small style={{ color: 'var(--muted)', display: 'block' }}>Assignment</small><b>{viewUser.school ? `School: ${viewUser.school.name} (Factory: ${viewUser.school.factory?.name || 'Unknown'})` : (viewUser.factories?.map((f: any) => f.name).join(', ') || 'Not assigned')}</b></div>
+                                    <div style={{ gridColumn: '1 / -1' }}><small style={{ color: 'var(--muted)', display: 'block' }}>Created at</small><b>{new Date(viewUser.created_at).toLocaleString()}</b></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <UserForm 
+                        open={showForm || !!editUser} 
+                        factories={data?.factories || []} 
+                        roles={data?.roles || []}
+                        editUser={editUser}
+                        cancel={() => { setShowForm(false); setEditUser(null); }}
+                        submit={(values: any) => editUser 
+                            ? run(`/api/platform/users/${editUser.id}`, 'PATCH', values, 'User updated successfully.').then(() => setEditUser(null))
+                            : run('/api/platform/users', 'POST', values, 'Factory user created successfully.').then(() => setShowForm(false))
+                        } 
+                    />
                     <AdminTable
-                        headers={['User', 'Email', 'Assignment', 'Active', 'Password']}
+                        headers={['User', 'Email', 'Role / Position', 'Assignment', 'Active', 'Actions']}
                         rows={records.map((item: any) => [
                             <b>{item.name}</b>, item.email, 
-                            item.school ? `School: ${item.school.name}` : (item.factories?.map((f: any) => f.name).join(', ') || 'Not assigned'),
+                            item.roles && item.roles.length > 0 ? item.roles.map((r: any) => r.name).join(', ') : <span style={{color: 'var(--muted)'}}>No role</span>,
+                            item.school ? <div style={{ display: 'flex', flexDirection: 'column' }}><span>School: {item.school.name}</span><span style={{ fontSize: 11, color: 'var(--muted)' }}>Factory: {item.school.factory?.name || 'Unknown'}</span></div> : (item.factories?.map((f: any) => f.name).join(', ') || 'Not assigned'),
                             <Toggle checked={item.is_active} onChange={value => run(`/api/platform/users/${item.id}`, 'PATCH', { is_active: value })} />,
-                            <button className="table-action" onClick={() => { const password = window.prompt(`Enter a new secure password for ${item.email}`); if (password) run(`/api/platform/users/${item.id}/password`, 'PUT', { password, password_confirmation: password }, 'Password reset successfully.'); }}>Reset password</button>,
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <button className="table-action" style={{ border: 'none', background: 'transparent', padding: 4 }} title="View details" onClick={() => setViewUser(item)}><Eye size={16} /></button>
+                                <button className="table-action" title="Edit User" onClick={() => setEditUser(item)}><Pencil size={16} /></button>
+                                <button className="table-action" style={{ border: 'none', background: 'transparent', padding: 4 }} title="Delete user" onClick={() => { if (window.confirm(`Are you sure you want to completely delete ${item.email}? This action cannot be undone.`)) run(`/api/platform/users/${item.id}`, 'DELETE', null, 'User deleted successfully.'); }}><Trash2 size={16} color="red" /></button>
+                            </div>
                         ])}
                     />
                     
@@ -269,8 +381,8 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
 function Dashboard({ data }: { data: any }) {
     const s = data?.statistics || {};
     const growth = data?.growth || [];
-    const cards: [string, number, React.ElementType][] = [
-        ['Factories', s.factories || 0, Building2], ['Active subscriptions', s.active_subscriptions || 0, CreditCard],
+    const cards: [string, string | number, React.ElementType][] = [
+        ['Factories', s.factories || 0, Building2], ['Total revenue', s.revenue ? 'RWF ' + Number(s.revenue).toLocaleString() : 'RWF 0', CreditCard],
         ['Platform users', s.users || 0, Users], ['Open support tickets', s.open_tickets || 0, MessageSquare],
     ];
 
@@ -283,7 +395,7 @@ function Dashboard({ data }: { data: any }) {
             </div>
             <article className="panel platform-growth">
                 <header>
-                    <div><span className="platform-kicker">14-DAY TREND</span><h2>Platform growth</h2><p>Cumulative factories, users and subscriptions from live platform records.</p></div>
+                    <div><span className="platform-kicker">12-MONTH TREND</span><h2>Platform growth</h2><p>Cumulative factories, users and subscriptions from live platform records.</p></div>
                     <div className="growth-live"><i></i><span>Current data</span></div>
                 </header>
                 <div className="platform-growth-chart">
@@ -347,34 +459,63 @@ function FactoryForm({ open, form, setForm, submit }: any) {
         </form>
     );
 }
-function UserForm({ open, factories, submit }: any) {
+function UserForm({ open, factories, roles, submit, editUser, cancel }: any) {
     const [values, setValues] = useState<any>({});
+    
+    useEffect(() => {
+        if (open && editUser) {
+            const factory = editUser.factories?.[0] || editUser.school;
+            setValues({
+                id: editUser.id,
+                name: editUser.name,
+                email: editUser.email,
+                factory_id: factory?.id || '',
+                role_slug: editUser.roles?.[0]?.slug || '',
+            });
+        } else if (open && !editUser) {
+            setValues({});
+        }
+    }, [open, editUser]);
+
     const selected = factories.find((f: any) => String(f.id) === String(values.factory_id));
     if (!open) return null;
-    const userFields: [string, string, string][] = [
-        ['name', 'Full name', 'text'], ['email', 'Email address', 'email'], ['employee_number', 'Employee number', 'text'], ['job_title', 'Job title', 'text'], ['password', 'Temporary password', 'password'],
+
+    const userFields: [string, string, string, boolean][] = [
+        ['name', 'Full name', 'text', true], 
+        ['email', 'Email address', 'email', true], 
+        ...(!editUser ? [['employee_number', 'Employee number', 'text', true], ['job_title', 'Job title', 'text', false]] as any : []),
+        ['password', editUser ? 'New Password (leave blank to keep current)' : 'Temporary password', 'password', !editUser],
     ];
+
     return (
         <form className="admin-form panel" onSubmit={e => { e.preventDefault(); submit(values); }}>
-            <h2>Create factory user</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h2 style={{ margin: 0 }}>{editUser ? 'Edit user' : 'Create factory user'}</h2>
+                <button type="button" className="secondary-btn" onClick={cancel}>Cancel</button>
+            </div>
             <div className="form-grid">
                 <label>
-                    Factory
-                    <select required value={values.factory_id || ''} onChange={e => setValues({ ...values, factory_id: e.target.value, role_id: '' })}>
-                        <option value="">Select factory</option>
+                    Factory / Assignment
+                    <select required={!editUser} disabled={!!editUser} value={values.factory_id || ''} onChange={e => setValues({ ...values, factory_id: e.target.value, role_slug: '', role_id: '' })}>
+                        <option value="">{editUser && values.factory_id ? 'Assigned' : 'Select factory'}</option>
                         {factories.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
                     </select>
                 </label>
                 <label>
                     Role
-                    <select required value={values.role_id || ''} onChange={e => setValues({ ...values, role_id: e.target.value })}>
+                    <select required={!editUser} value={values.role_slug || values.role_id || ''} onChange={e => setValues({ ...values, [editUser ? 'role_slug' : 'role_id']: e.target.value })}>
                         <option value="">Select role</option>
-                        {(selected?.roles || []).map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        {(editUser ? roles : (selected?.roles || [])).map((r: any) => <option key={r.slug || r.id} value={editUser ? r.slug : r.id}>{r.name}</option>)}
                     </select>
                 </label>
-                {userFields.map(([key, label, type]) => <label key={key}>{label}<input required={key !== 'job_title'} type={type} value={values[key] || ''} onChange={e => setValues({ ...values, [key]: e.target.value })} /></label>)}
+                {userFields.map(([key, label, type, req]) => (
+                    <label key={key}>
+                        {label}
+                        <input required={req} type={type as string} value={values[key] || ''} onChange={e => setValues({ ...values, [key]: e.target.value })} />
+                    </label>
+                ))}
             </div>
-            <button className="primary-btn"><Save size={16} />Create user account</button>
+            <button className="primary-btn"><Save size={16} /> {editUser ? 'Save changes' : 'Create user account'}</button>
         </form>
     );
 }
@@ -488,7 +629,6 @@ function SubscriptionPanel({ data, open, busy, submitPlan, updatePlan, assign, c
                 {(data?.plans || []).map((item: any) => (
                     <article className="panel subscription-plan-card" key={item.id}>
                         <header><span><CreditCard size={20} /></span><button className="table-action" onClick={() => edit(item)}>Edit plan</button></header>
-                        <small>{item.code}</small>
                         <h3>{item.name}</h3>
                         <strong>{item.currency_code} {Number(item.monthly_price).toLocaleString()}<em>/month</em></strong>
                         <div className="plan-features">{(item.features || []).map((key: string) => <span key={key}><CheckCircle2 size={13} />{(data?.feature_catalog || {})[key] || key}</span>)}</div>
@@ -571,9 +711,6 @@ function BackupAction({ open, busy, submit }: any) {
     );
 }
 
-// Superseded by the imported SystemSettingsPanel (used for the 'system-settings' page
-// above) — kept intact rather than removed since nothing currently references it, but
-// deleting unreferenced code wasn't part of this pass's scope.
 function SettingsPanel({ settings, editing, submit, busy }: any) {
     const [values, setValues] = useState<any>({});
     const update = (key: string, value: any) => setValues((current: any) => ({ ...current, [key]: value }));

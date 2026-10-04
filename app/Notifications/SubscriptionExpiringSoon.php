@@ -47,7 +47,7 @@ class SubscriptionExpiringSoon extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Your ICYEREKEZO OMS subscription expires in '.$daysLeft.' days')
             ->view('emails.subscription-expiring', [
-                'recipientName' => $notifiable->name,
+                'recipientName' => $notifiable->name ?? 'Administrator',
                 'factoryName' => $this->subscription->factory?->name ?? 'your factory',
                 'endsAt' => $this->subscription->ends_at,
                 'daysLeft' => $daysLeft,

@@ -21,7 +21,7 @@
     <meta property="og:image" content="{{ $systemLogo }}">
     <meta property="og:site_name" content="{{ $systemName }}">
     
-    <link rel="icon" href="{{ $systemLogo }}">
+    <link rel="icon" type="image/svg+xml" href="{{ $systemLogo }}">
     <link rel="apple-touch-icon" href="/assets/images/pwa/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
     <meta name="mobile-web-app-capable" content="yes">

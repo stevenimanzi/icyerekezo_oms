@@ -178,7 +178,7 @@ export function ProductionFlowPage() {
                     </article>
                 )) : (
                     <div className="panel empty-state">
-                        <span><Factory size={28} /></span>
+                        
                         <h3>No workflow configured</h3>
                         <p>Use the recommended industry flow or create your own working flow on this page.</p>
                         <div className="empty-actions">
@@ -499,9 +499,6 @@ export function TeamManagementPage() {
     );
 }
 
-// Superseded by the ReportsPage in ../shared/ClearReportsPage (that's the one app.tsx
-// actually imports) — kept intact rather than removed, matching the same call made for
-// PlatformAdminPage's unreferenced SettingsPanel.
 export function ReportsPage({ canExport, productionOnly = false }: { canExport: boolean; productionOnly?: boolean }) {
     const today = new Date().toISOString().slice(0, 10);
     const [filters, setFilters] = useState({ period: 'week', type: productionOnly ? 'production' : 'all', department_id: '', from: today, to: today });

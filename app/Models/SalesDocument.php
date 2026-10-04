@@ -27,6 +27,6 @@ class SalesDocument extends Model
 
     protected function invoiceUrl(): Attribute
     {
-        return Attribute::get(fn () => $this->invoice_path ? Storage::disk('public')->url($this->invoice_path) : null);
+        return Attribute::get(fn () => \App\Support\PrivateFile::url($this->invoice_path));
     }
 }

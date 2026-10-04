@@ -87,8 +87,8 @@ class SalesController extends Controller
                 ],
             ] : null,
             'capabilities' => [
-                'review' => $request->user()->hasPermission('sales.fulfill'),
-                'create' => $request->user()->hasPermission('sales.create') || $request->user()->hasPermission('sales.fulfill'),
+                'review' => $request->user()->hasPermission('sales.fulfill') || $request->user()->hasPermission('logistics.plan') || $request->user()->hasPermission('logistics.dispatch') || $request->user()->hasPermission('logistics.deliver'),
+                'create' => $request->user()->hasPermission('sales.create') || $request->user()->hasPermission('sales.fulfill') || $request->user()->hasPermission('logistics.plan'),
                 'invoice' => $request->user()->hasPermission('sales.fulfill'),
                 'pack' => $request->user()->hasPermission('sales.pack'),
                 'deliver' => $request->user()->hasPermission('logistics.deliver') || $request->user()->hasPermission('sales.fulfill'),
@@ -261,9 +261,9 @@ class SalesController extends Controller
             'invoice' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:15360'],
         ]);
         if ($document->invoice_path) {
-            Storage::disk('public')->delete($document->invoice_path);
+            \App\Support\PrivateFile::delete($document->invoice_path);
         }
-        $path = $data['invoice']->store('invoices/'.$document->factory_id, 'public');
+        $path = \App\Support\PrivateFile::store($data['invoice'], 'invoices/'.$document->factory_id);
         $document->update([
             'invoice_path' => $path,
             'invoice_original_name' => $data['invoice']->getClientOriginalName(),

@@ -1,21 +1,14 @@
+# Only /public may be reached from the web. If the document root is this folder,
+# everything is routed into public/ so .env, database dumps, logs and source stay private.
 <IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
-
     RewriteEngine On
 
-    # Handle Authorization Header
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    # Never serve dotfiles (except .well-known) or sensitive extensions.
+    RewriteRule (^|/)\.(?!well-known) - [F,L]
+    RewriteRule \.(env|sql|log|lock|md|ts|tsx|yml|yaml|sqlite|bak|sh)$ - [F,L,NC]
+    RewriteRule ^(composer|package|package-lock|tsconfig)\.json$ - [F,L]
+    RewriteRule ^(app|bootstrap|config|database|node_modules|resources|routes|storage|stubs|vendor)(/|$) - [F,L]
 
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
-
-    # Send Requests To Front Controller...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>

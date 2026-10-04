@@ -89,6 +89,11 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
     };
 
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 10000); return () => window.clearInterval(timer); }, []);
+    useEffect(() => {
+        if (!success) return;
+        const timer = window.setTimeout(() => setSuccess(''), 5000);
+        return () => window.clearTimeout(timer);
+    }, [success]);
 
     const loadSchoolOrders = async (silent = false) => {
         try {

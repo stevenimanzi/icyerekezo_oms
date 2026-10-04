@@ -30,6 +30,11 @@ class Factory extends Model
         return $this->hasMany(Role::class);
     }
 
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(FactorySubscription::class);
+    }
+
     public function hasNoguchiSchoolOrders(): bool
     {
         return $this->industry_type === 'clothing_textiles'

@@ -45,7 +45,7 @@ class FinanceController extends Controller
             'pending_receipts' => SchoolPaymentSubmission::where('factory_id', $factoryId)->where('status', 'pending')
                 ->with(['school:id,name', 'salesDocument:id,document_number,total_amount,paid_amount,payment_status'])
                 ->latest()->get()
-                ->map(fn ($submission) => [...$submission->toArray(), 'proof_url' => $submission->proof_path ? Storage::disk('public')->url($submission->proof_path) : null]),
+                ->map(fn ($submission) => [...$submission->toArray(), 'proof_url' => \App\Support\PrivateFile::url($submission->proof_path)]),
             'recent_decisions' => SchoolPaymentSubmission::where('factory_id', $factoryId)->whereIn('status', ['approved', 'rejected'])
                 ->with(['school:id,name', 'salesDocument:id,document_number', 'reviewer:id,name'])
                 ->latest('reviewed_at')->limit(30)->get(),

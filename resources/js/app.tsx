@@ -322,8 +322,6 @@ function pathForPage(user: AuthUser, page: string): string {
   return page === "dashboard" ? `/${workspace}` : `/${workspace}/${page}`;
 }
 
-// Wraps each page in an error boundary that silently retries a transient render failure
-// twice (e.g. a race on freshly-fetched data) before showing a manual "try again" state.
 class PageBoundary extends React.Component<
   { resetKey: string; children: React.ReactNode },
   { failed: boolean; attempts: number; error: string }
@@ -705,7 +703,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["quality", ClipboardCheck, locale === "en" ? "Quality results" : "R\u00e9sultats qualit\u00e9", "quality.view"],
         ["sales", PackageOpen, locale === "en" ? "Sales overview" : "Vue des ventes", "sales.view"],
         ["logistics", Truck, locale === "en" ? "Delivery overview" : "Vue des livraisons", "logistics.view"],
-        ["reports", Activity, locale === "en" ? "Factory reports" : "Rapports de l\u2019usine", "reports.view"],
+        ["reports", FileText, locale === "en" ? "Factory reports" : "Rapports de l\u2019usine", "reports.view"],
     ] as const : isFactoryAdmin ? [
         // ─── Factory Administrator ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
@@ -718,7 +716,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["logistics", Truck, t.logistics, "logistics.view"],
         ["team", Users, t.people, "users.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isFactoryManager ? [
         // ─── Factory Manager ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
@@ -726,34 +724,34 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["team", Users, t.people, "users.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
         ["logistics-reports", Truck, locale === "en" ? "Logistics report" : "Rapport logistique", "reports.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isFinancialManager ? [
         // ─── Financial Manager ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["finance", Wallet, locale === "en" ? "Finance overview" : "Vue financière", "finance.view"],
         ["sales", PackageOpen, locale === "en" ? "Orders & invoices" : "Commandes et factures", "sales.view"],
-        ["finance-reports", Activity, locale === "en" ? "Financial reports" : "Rapports financiers", "reports.view"],
+        ["finance-reports", FileText, locale === "en" ? "Financial reports" : "Rapports financiers", "reports.view"],
     ] as const : isProductionPlanner ? [
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["production", Gauge, locale === "en" ? "Production planning" : "Planification de production", "production.view"],
         ["products", Boxes, t.products, "products.view"],
         ["inventory", Warehouse, locale === "en" ? "Material availability" : "Disponibilite des matieres", "inventory.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isProductionSupervisor ? [
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["production", Gauge, locale === "en" ? "Daily production control" : "Controle quotidien de production", "production.view"],
         ["quality", ClipboardCheck, t.control, "quality.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isMaintenanceTechnician ? [
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["machines", Wrench, locale === "en" ? "Maintenance work orders" : "Ordres de maintenance", "maintenance.view"],
         ["inventory", Warehouse, locale === "en" ? "Spare parts" : "Pieces de rechange", "inventory.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isQualityManager ? [
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["quality", ClipboardCheck, locale === "en" ? "Quality management" : "Gestion de la qualite", "quality.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isHrOfficer ? [
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["team", Users, locale === "en" ? "People and workforce" : "Personnel", "users.view"],
@@ -779,7 +777,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["inventory", Warehouse, locale === "en" ? "Materials" : "Matières", "inventory.view"],
         ["quality", ClipboardCheck, t.control, "quality.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isCuttingUser ? [
         // ─── Cutting Operator / Cutting Manager ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
@@ -789,17 +787,17 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         // ─── Noguchi Sewing Operator ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["sewing-workspace", Gauge, locale === "en" ? "Record sewing" : "Enregistrer la couture", "production.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : (isNoguchiFactory && isFinishingUser) ? [
         // ─── Noguchi Finishing Manager ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["finishing-workspace", Gauge, locale === "en" ? "Record finishing" : "Enregistrer la finition", "production.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : (isNoguchiFactory && isPackagingUser) ? [
         // ─── Noguchi Packing Manager ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["packing-workspace", Gauge, locale === "en" ? "Record packing" : "Enregistrer l'emballage", "production.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isMachineOperator ? [
         // ─── Machine Operator ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
@@ -813,24 +811,24 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["inventory", Warehouse, t.warehouse, "inventory.view"],
         ["products", Boxes, t.products, "products.view"],
         ["procurement", ShoppingCart, locale === "en" ? "Incoming goods" : "Réceptions", "procurement.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isProcurementUser ? [
         // ─── Procurement Officer ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["procurement", ShoppingCart, t.procurement, "procurement.view"],
         ["inventory", Warehouse, locale === "en" ? "Stock levels" : "Niveaux de stock", "inventory.view"],
         ["products", Boxes, t.products, "products.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : (isNoguchiFactory && isQualityUser) ? [
         // ─── Noguchi Quality Control Officer ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["quality", ClipboardCheck, t.control, "quality.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isQualityUser ? [
         // ─── Regular Quality Control Officer ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["quality", ClipboardCheck, t.control, "quality.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isSchoolUser ? [
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["new-order", Plus, t.placeNewOrder, "*"],
@@ -844,28 +842,28 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         // ─── Logistics Officer ───
         ["dashboard", LayoutDashboard, locale === "en" ? "Dashboard" : "Tableau de bord", "*"],
         ["sales", PackageOpen, locale === "en" ? "Incoming orders" : "Commandes entrantes", "sales.view"],
-        ["inventory", Warehouse, locale === "en" ? "Available goods" : "Produits disponibles", "inventory.view"],
         ...(!isNoguchiFactory ? [
+            ["inventory", Warehouse, locale === "en" ? "Available goods" : "Produits disponibles", "inventory.view"],
             ["logistics", Truck, locale === "en" ? "Shipments" : "Expéditions", "logistics.view"],
             ["dispatch", Activity, locale === "en" ? "Dispatch board" : "Planification", "logistics.dispatch"],
             ["vehicles", Truck, locale === "en" ? "Vehicles & drivers" : "Véhicules et chauffeurs", "logistics.view"],
         ] as const : []),
         ["delivery-confirmation", PackageCheck, locale === "en" ? "Delivery confirmation" : "Confirmation de livraison", "logistics.deliver"],
         ["agreement", FileSignature, locale === "en" ? "Agreement" : "Accord", "logistics.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isSalesUser ? [
         // ─── Sales Officer ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["sales", PackageOpen, t.sales, "sales.view"],
         ["products", Boxes, t.products, "products.view"],
         ["inventory", Warehouse, locale === "en" ? "Stock availability" : "Disponibilité du stock", "inventory.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : isFinanceUser ? [
         // ─── Accountant / Finance ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
         ["sales", PackageOpen, t.sales, "sales.view"],
         ["procurement", ShoppingCart, t.procurement, "procurement.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const : [
         // ─── Default / Fallback (all items, permission-gated) ───
         ["dashboard", LayoutDashboard, t.dashboard, "*"],
@@ -878,7 +876,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["logistics", Truck, t.logistics, "logistics.view"],
         ["team", Users, t.people, "users.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
-        ["reports", Activity, t.reports, "reports.view"],
+        ["reports", FileText, t.reports, "reports.view"],
     ] as const).filter(
         ([page, , , permission]) =>
             (permission === "*" || can(permission)) && (user.is_platform_admin || isSchoolUser || hasFeature(page)),
@@ -966,7 +964,6 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         return result;
     }, [nav, navGroupDefs]);
 
-    // Auto-expand the group that contains the active page.
     useEffect(() => {
         Object.entries(navGroupDefs).forEach(([groupKey, def]) => {
             if (def.children.includes(activePage)) {
@@ -1325,7 +1322,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                         ) : activePage === "team" ? (
                             <TeamManagementPage />
                         ) : activePage === "reports" || activePage === "logistics-reports" ? (
-                            <ReportsPage canExport={can("reports.export")} productionOnly={user.workspace === "production" && !isExecutiveUser} forcedScope={activePage === "logistics-reports" ? "logistics" : undefined} />
+                            <ReportsPage key={activePage} canExport={can("reports.export")} productionOnly={user.workspace === "production" && !isExecutiveUser} forcedScope={activePage === "logistics-reports" ? "logistics" : undefined} />
                         ) : activePage === "quality" ? (
                             <QualityControlPage can={can} />
                         ) : activePage === "machines" ? (
@@ -1512,7 +1509,7 @@ const moduleContent = {
     logistics: { icon: Truck, en: ['Logistics', 'Plan packing, dispatch, routes, vehicles and proof of delivery.', ['Shipments', 'Dispatch board', 'Vehicles & drivers', 'Proof of delivery']], fr: ['Logistique', 'Planifiez emballage, expédition, routes, véhicules et preuve de livraison.', ['Expéditions', 'Tableau d’envoi', 'Véhicules et chauffeurs', 'Preuve de livraison']] },
     team: { icon: Users, en: ['Employees and work schedules', 'Manage employees, access, departments, schedules and attendance.', ['Employees', 'Roles and access', 'Work assignments', 'Schedules and attendance']], fr: ['Employés et horaires', 'Gérez les employés, accès, départements, horaires et présences.', ['Employés', 'Rôles et accès', 'Affectations', 'Horaires et présence']] },
     machines: { icon: Wrench, en: ['Machines & maintenance', 'Track machine availability, maintenance plans, breakdowns and downtime.', ['Machine register', 'Maintenance schedule', 'Repair requests', 'Downtime']], fr: ['Machines et maintenance', 'Suivez disponibilité, maintenance, pannes et temps d’arrêt.', ['Registre machines', 'Plan de maintenance', 'Demandes de réparation', 'Temps d’arrêt']] },
-    reports: { icon: Activity, en: ['Factory reports', 'View completed work and save clear business reports.', ['Factory summary', 'Stock reports', 'Production reports', 'Money reports']], fr: ['Rapports de l’usine', 'Consultez le travail effectué et enregistrez des rapports clairs.', ['Résumé de l’usine', 'Rapports de stock', 'Rapports de production', 'Rapports financiers']] },
+    reports: { icon: FileText, en: ['Factory reports', 'View completed work and save clear business reports.', ['Factory summary', 'Stock reports', 'Production reports', 'Money reports']], fr: ['Rapports de l’usine', 'Consultez le travail effectué et enregistrez des rapports clairs.', ['Résumé de l’usine', 'Rapports de stock', 'Rapports de production', 'Rapports financiers']] },
     settings: { icon: Settings, en: ['Factory settings', 'Configure factory identity, branches, departments, approvals and numbering.', ['Factory profile', 'Branches & departments', 'Approval rules', 'Security settings']], fr: ['Paramètres de l’usine', 'Configurez identité, sites, départements, validations et numérotation.', ['Profil usine', 'Sites et départements', 'Règles de validation', 'Paramètres de sécurité']] },
     support: { icon: HelpCircle, en: ['Help & support', 'Find guidance, report a problem or contact the ICYEREKEZO support team.', ['Getting started', 'User guide', 'Support tickets', 'System status']], fr: ['Aide et support', 'Consultez les guides, signalez un problème ou contactez le support.', ['Bien démarrer', 'Guide utilisateur', 'Tickets support', 'État du système']] },
 } as const;
@@ -1996,7 +1993,6 @@ function ForgotPasswordPage() {
     );
 }
 
-// ─── Dedicated Reset-Password Page (/reset-password/{token}?email=...) ────────
 function ResetPasswordPage() {
     const token = window.location.pathname.split("/reset-password/")[1] ?? "";
     const params = new URLSearchParams(window.location.search);
@@ -2232,12 +2228,12 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
         schoolStep === 0
             ? Boolean(form.email) && passwordStrong && form.password === form.password_confirmation && form.password_confirmation.length > 0
             : schoolStep === 1
-              ? Boolean(form.name) && Boolean(form.phone)
+              ? Boolean(form.name) && (mode === "register" || Boolean(form.phone))
               : true;
 
     const submit = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (mode === "school_register" && schoolStep < 2) {
+        if ((mode === "school_register" || mode === "register") && schoolStep < 2) {
             if (schoolStepValid) setSchoolStep((current) => current + 1);
             return;
         }
@@ -2271,6 +2267,12 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                 method: "POST",
                 body: JSON.stringify(payload),
             });
+            if ("requires_approval" in data) {
+                setMode("login");
+                setSchoolStep(0);
+                setError(locale === "en" ? "Account created. Your factory is pending administrator approval." : "Compte créé. Votre usine est en attente d'approbation.");
+                return;
+            }
             if (!("user" in data)) {
                 setPendingOtpEmail(data.email);
                 setOtpCode("");
@@ -2528,12 +2530,12 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                         {(mode === "forgot" || words.subtitle) && (
                             <p style={{ whiteSpace: "normal" }}>{mode === "forgot" ? (locale === "en" ? "Enter your email and we'll send a reset link." : "Entrez votre e-mail pour recevoir un lien.") : words.subtitle}</p>
                         )}
-                        {mode === "school_register" && (
+                        {(mode === "school_register" || mode === "register") && (
                             <div className="auth-steps" role="list" aria-label={locale === "en" ? "Signup steps" : "Étapes d'inscription"}>
                                 {[
                                     locale === "en" ? "Account" : "Compte",
-                                    locale === "en" ? "Head teacher" : "Directeur/trice",
-                                    locale === "en" ? "School" : "École",
+                                    mode === "school_register" ? (locale === "en" ? "Head teacher" : "Directeur/trice") : (locale === "en" ? "Owner" : "Propriétaire"),
+                                    mode === "school_register" ? (locale === "en" ? "School" : "École") : (locale === "en" ? "Factory" : "Usine"),
                                 ].map((label, index) => (
                                     <div key={label} role="listitem" className={"auth-step" + (index === schoolStep ? " active" : index < schoolStep ? " done" : "")}>
                                         <span>{index < schoolStep ? "✓" : index + 1}</span>
@@ -2545,13 +2547,17 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                     </div>
                     {error && <div className="form-error">{error}</div>}
 
-                    {mode === "register" && (
+                    {mode === "register" && schoolStep === 1 && (
                         <>
                             <AuthInput icon={<UserRound />} label={words.name}>
-                                <input placeholder={words.namePlaceholder} value={form.name} onChange={(e) => update("name", e.target.value)} required autoComplete="name" />
+                                <input placeholder={words.namePlaceholder} value={form.name} onChange={(e) => update("name", e.target.value)} required autoComplete="name" autoFocus />
                             </AuthInput>
+                        </>
+                    )}
+                    {mode === "register" && schoolStep === 2 && (
+                        <>
                             <AuthInput icon={<Building2 />} label={words.factory}>
-                                <input placeholder={words.factoryPlaceholder} value={form.factory_name} onChange={(e) => update("factory_name", e.target.value)} required />
+                                <input placeholder={words.factoryPlaceholder} value={form.factory_name} onChange={(e) => update("factory_name", e.target.value)} required autoFocus />
                             </AuthInput>
                             {(
                                 <label className="auth-field auth-select-field">
@@ -2595,7 +2601,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                             )}
                         </>
                     )}
-                    {mode === "school_register" && schoolStep === 0 && (
+                    {(mode === "school_register" || mode === "register") && schoolStep === 0 && (
                         <>
                             <AuthInput icon={<Mail />} label={words.email}>
                                 <input placeholder={words.emailPlaceholder} type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required autoComplete="email" autoFocus />
@@ -2690,7 +2696,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                             </AuthInput>
                         </>
                     )}
-                    {mode !== "forgot" && mode !== "school_register" && (
+                    {mode === "login" && (
                         <>
                             <AuthInput icon={<Mail />} label={words.email}>
                                 <input placeholder={words.emailPlaceholder} type={mode === "login" ? "text" : "email"} value={form.email} onChange={(e) => update("email", e.target.value)} required autoComplete={mode === "login" ? "username" : "email"} />
@@ -2713,18 +2719,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                                     autoComplete={mode === "login" ? "current-password" : "new-password"}
                                 />
                             </AuthInput>
-                            {mode === "register" && (
-                                <AuthInput icon={<LockKeyhole />} label={words.confirm}>
-                                    <input
-                                        placeholder={words.confirmPlaceholder}
-                                        type={showPassword ? "text" : "password"}
-                                        value={form.password_confirmation}
-                                        onChange={(e) => update("password_confirmation", e.target.value)}
-                                        required
-                                        autoComplete="new-password"
-                                    />
-                                </AuthInput>
-                            )}
+
                         </>
                     )}
                     {mode === "login" && (
@@ -2767,7 +2762,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                                 : "Si un compte existe pour cet email, nous avons envoyé un lien depuis support@icyerekezooms.com. Cela peut prendre quelques minutes — vérifiez votre dossier spam si vous ne le voyez pas."}
                         </div>
                     )}
-                    {mode === "school_register" ? (
+                    {(mode === "school_register" || mode === "register") ? (
                         <div style={{ display: "flex", gap: "10px" }}>
                             {schoolStep > 0 && (
                                 <button type="button" className="auth-submit" style={{ background: "transparent", color: "var(--auth-blue, #225eea)", border: "1px solid #dce4f2", boxShadow: "none" }} onClick={() => setSchoolStep((current) => current - 1)} disabled={busy}>
@@ -2884,3 +2879,5 @@ createRoot(document.getElementById("app")!).render(
         <App />
     </React.StrictMode>,
 );
+
+

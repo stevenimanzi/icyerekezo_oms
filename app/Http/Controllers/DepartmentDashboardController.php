@@ -23,6 +23,11 @@ class DepartmentDashboardController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $user = $request->user();
+        $period = $request->query('period', 'all_time');
+        $dateParam = $request->query('date');
+        $specificDate = $dateParam ? \Carbon\Carbon::parse($dateParam)->endOfDay() : today();
+        $now = $dateParam ? $specificDate->copy() : now();
+        if ($dateParam) $period = 'specific_date';
         $factoryId = $user->current_factory_id;
         $profile = EmployeeProfile::withoutGlobalScopes()
             ->where('factory_id', $factoryId)
@@ -85,8 +90,8 @@ class DepartmentDashboardController extends Controller
             'warehouses' => Warehouse::withoutGlobalScopes()->where('factory_id', $factoryId)->where('is_active', true)->count(),
             'low_stock' => (clone $stockBalances)->join('items', 'items.id', '=', 'stock_balances.item_id')->whereColumn('stock_balances.quantity_on_hand', '<=', 'items.reorder_level')->count(),
             'stock_value' => (float) (clone $stockBalances)->join('items', 'items.id', '=', 'stock_balances.item_id')->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost), 0) AS value')->value('value'),
-            'received_today' => (float) (clone $stockTransactions)->whereDate('occurred_at', today())->where('quantity_delta', '>', 0)->sum('quantity_delta'),
-            'issued_today' => abs((float) (clone $stockTransactions)->whereDate('occurred_at', today())->where('quantity_delta', '<', 0)->sum('quantity_delta')),
+            'received_today' => (float) (clone $stockTransactions)->whereDate('occurred_at', $specificDate)->where('quantity_delta', '>', 0)->sum('quantity_delta'),
+            'issued_today' => abs((float) (clone $stockTransactions)->whereDate('occurred_at', $specificDate)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
         ];
         $recentStock = (clone $stockTransactions)
             ->join('items', 'items.id', '=', 'stock_transactions.item_id')
@@ -103,8 +108,7 @@ class DepartmentDashboardController extends Controller
             ->orderBy('items.name')
             ->limit(20)
             ->get(['items.id', 'items.name', 'items.sku', 'items.reorder_level', 'units.symbol as unit', DB::raw('SUM(stock_balances.quantity_on_hand) as quantity_on_hand')]);
-        $period = $request->query('period', 'all_time');
-        $now = now();
+        
         
         $stockTrends = match ($period) {
             'daily' => collect(range(23, 0))->map(function (int $hoursAgo) use ($stockTransactions, $now) {
@@ -144,7 +148,7 @@ class DepartmentDashboardController extends Controller
                     'issued' => abs((float) (clone $monthTransactions)->where('quantity_delta', '<', 0)->sum('quantity_delta')),
                 ];
             })->values(),
-            default => collect(range(4, 0))->map(function (int $yearsAgo) use ($stockTransactions, $now) {
+            default => collect(range(max(0, $now->year - 2025), 0))->map(function (int $yearsAgo) use ($stockTransactions, $now) {
                 $year = $now->copy()->subYears($yearsAgo);
                 $yearTransactions = (clone $stockTransactions)->whereYear('occurred_at', $year->year);
                 return [
@@ -165,34 +169,48 @@ class DepartmentDashboardController extends Controller
             'incoming_orders' => (clone $incomingOrdersQuery)->count(),
             'ready_to_dispatch' => (clone $shipmentsQuery)->whereIn('status', ['planned', 'ready'])->count(),
             'in_transit' => (clone $shipmentsQuery)->whereIn('status', ['dispatched', 'in_transit'])->count(),
-            'delivered_today' => (clone $shipmentsQuery)->where('status', 'delivered')->whereDate('delivered_at', today())->count(),
+            'delivered_today' => (clone $shipmentsQuery)->where('status', 'delivered')->whereDate('delivered_at', $specificDate)->count(),
             'delayed' => (clone $shipmentsQuery)->whereNotIn('status', ['delivered', 'cancelled'])->whereNotNull('planned_dispatch_at')->where('planned_dispatch_at', '<', now())->count(),
             'available_vehicles' => DeliveryVehicle::withoutGlobalScopes()->where('factory_id', $factoryId)->where('status', 'available')->count(),
         ];
+
+        if ($isNoguchiFactory) {
+            $ordersQ = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order');
+            if ($period === 'specific_date') {
+                $ordersQ->whereDate('document_date', $specificDate);
+            }
+            $logisticsMetrics['noguchi_total_orders'] = (clone $ordersQ)->count();
+            $logisticsMetrics['noguchi_pending'] = (clone $ordersQ)->where('status', 'pending')->count();
+            $logisticsMetrics['noguchi_accepted'] = (clone $ordersQ)->whereNotIn('status', ['pending', 'rejected', 'cancelled', 'delivered'])->count();
+            $logisticsMetrics['noguchi_rejected'] = (clone $ordersQ)->where('status', 'rejected')->count();
+            $logisticsMetrics['noguchi_delivered'] = (clone $ordersQ)->where('status', 'delivered')->count();
+            $logisticsMetrics['noguchi_revenue'] = (clone $ordersQ)->whereNotIn('status', ['rejected', 'cancelled'])->sum('total_amount');
+        }
+
         $logisticsTrends = match ($period) {
-            'daily' => collect(range(23, 0))->map(function (int $hoursAgo) use ($factoryId, $now) {
+            'daily' => collect(range(23, 0))->map(function (int $hoursAgo) use ($factoryId, $now, $isNoguchiFactory) {
                 $time = $now->copy()->subHours($hoursAgo);
                 $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereBetween('document_date', [$time->copy()->startOfHour()->toDateString(), $time->copy()->endOfHour()->toDateString()]);
                 $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
                 return [
                     'month' => $time->format('H:00'), 'month_number' => $time->hour,
                     'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
-                    'dispatched' => (clone $shipments)->whereBetween('dispatched_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()])->count(),
-                    'delivered' => (clone $shipments)->whereBetween('delivered_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()])->count(),
+                    'dispatched' => $isNoguchiFactory ? 0 : (clone $shipments)->whereBetween('dispatched_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()])->count(),
+                    'delivered' => $isNoguchiFactory ? (clone $orders)->whereIn('status', ['partial', 'delivered'])->whereBetween('updated_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()])->count() : (clone $shipments)->whereBetween('delivered_at', [$time->copy()->startOfHour(), $time->copy()->endOfHour()])->count(),
                 ];
             })->values(),
-            'weekly' => collect(range(6, 0))->map(function (int $daysAgo) use ($factoryId, $now) {
+            'weekly' => collect(range(6, 0))->map(function (int $daysAgo) use ($factoryId, $now, $isNoguchiFactory) {
                 $day = $now->copy()->subDays($daysAgo);
                 $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereDate('document_date', $day);
                 $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
                 return [
                     'month' => $day->format('M j'), 'month_number' => $day->dayOfYear,
                     'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
-                    'dispatched' => (clone $shipments)->whereDate('dispatched_at', $day)->count(),
-                    'delivered' => (clone $shipments)->whereDate('delivered_at', $day)->count(),
+                    'dispatched' => $isNoguchiFactory ? 0 : (clone $shipments)->whereDate('dispatched_at', $day)->count(),
+                    'delivered' => $isNoguchiFactory ? (clone $orders)->whereIn('status', ['partial', 'delivered'])->whereDate('updated_at', $day)->count() : (clone $shipments)->whereDate('delivered_at', $day)->count(),
                 ];
             })->values(),
-            'monthly' => collect(range(3, 0))->map(function (int $weeksAgo) use ($factoryId, $now) {
+            'monthly' => collect(range(3, 0))->map(function (int $weeksAgo) use ($factoryId, $now, $isNoguchiFactory) {
                 $start = $now->copy()->subWeeks($weeksAgo)->startOfWeek();
                 $end = $start->copy()->endOfWeek();
                 $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereBetween('document_date', [$start->toDateString(), $end->toDateString()]);
@@ -200,30 +218,30 @@ class DepartmentDashboardController extends Controller
                 return [
                     'month' => $start->format('d M') . ' - ' . $end->format('d M'), 'month_number' => $start->weekOfYear,
                     'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
-                    'dispatched' => (clone $shipments)->whereBetween('dispatched_at', [$start, $end])->count(),
-                    'delivered' => (clone $shipments)->whereBetween('delivered_at', [$start, $end])->count(),
+                    'dispatched' => $isNoguchiFactory ? 0 : (clone $shipments)->whereBetween('dispatched_at', [$start, $end])->count(),
+                    'delivered' => $isNoguchiFactory ? (clone $orders)->whereIn('status', ['partial', 'delivered'])->whereBetween('updated_at', [$start, $end])->count() : (clone $shipments)->whereBetween('delivered_at', [$start, $end])->count(),
                 ];
             })->values(),
-            'yearly' => collect(range(11, 0))->map(function (int $monthsAgo) use ($factoryId, $now) {
+            'yearly' => collect(range(11, 0))->map(function (int $monthsAgo) use ($factoryId, $now, $isNoguchiFactory) {
                 $month = $now->copy()->startOfMonth()->subMonths($monthsAgo);
                 $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereBetween('document_date', [$month->toDateString(), $month->copy()->endOfMonth()->toDateString()]);
                 $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
                 return [
                     'month' => $month->format('M'), 'month_number' => $month->month,
                     'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
-                    'dispatched' => (clone $shipments)->whereBetween('dispatched_at', [$month, $month->copy()->endOfMonth()])->count(),
-                    'delivered' => (clone $shipments)->whereBetween('delivered_at', [$month, $month->copy()->endOfMonth()])->count(),
+                    'dispatched' => $isNoguchiFactory ? 0 : (clone $shipments)->whereBetween('dispatched_at', [$month, $month->copy()->endOfMonth()])->count(),
+                    'delivered' => $isNoguchiFactory ? (clone $orders)->whereIn('status', ['partial', 'delivered'])->whereBetween('updated_at', [$month, $month->copy()->endOfMonth()])->count() : (clone $shipments)->whereBetween('delivered_at', [$month, $month->copy()->endOfMonth()])->count(),
                 ];
             })->values(),
-            default => collect(range(4, 0))->map(function (int $yearsAgo) use ($factoryId, $now) {
+            default => collect(range(max(0, $now->year - 2025), 0))->map(function (int $yearsAgo) use ($factoryId, $now, $isNoguchiFactory) {
                 $year = $now->copy()->subYears($yearsAgo);
                 $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factoryId)->where('document_type', 'customer_order')->whereYear('document_date', $year->year);
                 $shipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
                 return [
                     'month' => $year->format('Y'), 'month_number' => $year->year,
                     'orders' => (clone $orders)->count(), 'order_value' => (float) (clone $orders)->sum('total_amount'),
-                    'dispatched' => (clone $shipments)->whereYear('dispatched_at', $year->year)->count(),
-                    'delivered' => (clone $shipments)->whereYear('delivered_at', $year->year)->count(),
+                    'dispatched' => $isNoguchiFactory ? 0 : (clone $shipments)->whereYear('dispatched_at', $year->year)->count(),
+                    'delivered' => $isNoguchiFactory ? (clone $orders)->whereIn('status', ['partial', 'delivered'])->whereYear('updated_at', $year->year)->count() : (clone $shipments)->whereYear('delivered_at', $year->year)->count(),
                 ];
             })->values(),
         };
@@ -269,7 +287,7 @@ class DepartmentDashboardController extends Controller
                     'output' => (float) (clone $executions)->sum('output_quantity'), 'rejected' => (float) (clone $executions)->sum('rejected_quantity'), 'waste' => (float) (clone $executions)->sum('waste_quantity'),
                 ];
             })->values(),
-            default => collect(range(4, 0))->map(function (int $yearsAgo) use ($stageExecutions, $now) {
+            default => collect(range(max(0, $now->year - 2025), 0))->map(function (int $yearsAgo) use ($stageExecutions, $now) {
                 $year = $now->copy()->subYears($yearsAgo);
                 $executions = (clone $stageExecutions)->whereYear('updated_at', $year->year);
                 return [
@@ -288,14 +306,14 @@ class DepartmentDashboardController extends Controller
 
             $finishingProgress = [
                 'weekly' => collect(range(6, 0))->map(function ($daysAgo) use ($finishingOutputQuery) {
-                    $date = today()->subDays($daysAgo);
+                    $date = $specificDate->subDays($daysAgo);
                     return [
                         'period' => $date->format('D'),
                         'output' => abs((float) (clone $finishingOutputQuery)->whereDate('occurred_at', $date)->sum('quantity_delta')),
                     ];
                 })->values(),
                 'monthly' => collect(range(29, 0))->map(function ($daysAgo) use ($finishingOutputQuery) {
-                    $date = today()->subDays($daysAgo);
+                    $date = $specificDate->subDays($daysAgo);
                     return [
                         'period' => $date->format('d M'),
                         'output' => abs((float) (clone $finishingOutputQuery)->whereDate('occurred_at', $date)->sum('quantity_delta')),
@@ -313,8 +331,8 @@ class DepartmentDashboardController extends Controller
             
             $finishingMetrics = [
                 'pending_finishing' => abs((float) StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)->where('type', 'receipt')->where('reason', 'LIKE', '[Finishing Receipt]%')->sum('quantity_delta')) - abs((float) (clone $finishingOutputQuery)->sum('quantity_delta')),
-                'finished_today' => abs((float) (clone $finishingOutputQuery)->whereDate('occurred_at', today())->sum('quantity_delta')),
-                'rejected_today' => abs((float) StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)->where('type', 'issue')->where('reason', 'LIKE', '[Finishing Waste]%')->whereDate('occurred_at', today())->sum('quantity_delta')),
+                'finished_today' => abs((float) (clone $finishingOutputQuery)->whereDate('occurred_at', $specificDate)->sum('quantity_delta')),
+                'rejected_today' => abs((float) StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)->where('type', 'issue')->where('reason', 'LIKE', '[Finishing Waste]%')->whereDate('occurred_at', $specificDate)->sum('quantity_delta')),
             ];
         }
         
@@ -328,14 +346,14 @@ class DepartmentDashboardController extends Controller
 
             $packingProgress = [
                 'weekly' => collect(range(6, 0))->map(function ($daysAgo) use ($packingOutputQuery) {
-                    $date = today()->subDays($daysAgo);
+                    $date = $specificDate->subDays($daysAgo);
                     return [
                         'period' => $date->format('D'),
                         'output' => abs((float) (clone $packingOutputQuery)->whereDate('occurred_at', $date)->sum('quantity_delta')),
                     ];
                 })->values(),
                 'monthly' => collect(range(29, 0))->map(function ($daysAgo) use ($packingOutputQuery) {
-                    $date = today()->subDays($daysAgo);
+                    $date = $specificDate->subDays($daysAgo);
                     return [
                         'period' => $date->format('d M'),
                         'output' => abs((float) (clone $packingOutputQuery)->whereDate('occurred_at', $date)->sum('quantity_delta')),
@@ -353,8 +371,8 @@ class DepartmentDashboardController extends Controller
             
             $packingMetrics = [
                 'pending_packing' => abs((float) StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)->where('type', 'receipt')->where('reason', 'LIKE', '[Packing Receipt]%')->sum('quantity_delta')) - abs((float) (clone $packingOutputQuery)->sum('quantity_delta')),
-                'packed_today' => abs((float) (clone $packingOutputQuery)->whereDate('occurred_at', today())->sum('quantity_delta')),
-                'deposited_to_warehouse' => abs((float) StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)->where('type', 'receipt')->whereDate('occurred_at', today())->sum('quantity_delta')),
+                'packed_today' => abs((float) (clone $packingOutputQuery)->whereDate('occurred_at', $specificDate)->sum('quantity_delta')),
+                'deposited_to_warehouse' => abs((float) StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)->where('type', 'receipt')->whereDate('occurred_at', $specificDate)->sum('quantity_delta')),
             ];
         }
 
@@ -371,7 +389,7 @@ class DepartmentDashboardController extends Controller
             
             $qualityProgress = [
                 'weekly' => collect(range(6, 0))->map(function ($daysAgo) use ($inspectionsQuery) {
-                    $date = today()->subDays($daysAgo);
+                    $date = $specificDate->subDays($daysAgo);
                     return [
                         'period' => $date->format('D'),
                         'inspections' => (clone $inspectionsQuery)->whereDate('inspected_at', $date)->sum('inspected_quantity'),
@@ -380,7 +398,7 @@ class DepartmentDashboardController extends Controller
                     ];
                 })->values(),
                 'monthly' => collect(range(29, 0))->map(function ($daysAgo) use ($inspectionsQuery) {
-                    $date = today()->subDays($daysAgo);
+                    $date = $specificDate->subDays($daysAgo);
                     return [
                         'period' => $date->format('d M'),
                         'inspections' => (clone $inspectionsQuery)->whereDate('inspected_at', $date)->sum('inspected_quantity'),
@@ -402,8 +420,8 @@ class DepartmentDashboardController extends Controller
 
             $qualityMetrics = [
                 'pending_inspections' => (clone $inspectionsQuery)->where('result', 'pending')->count(),
-                'inspections_today' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', today())->sum('inspected_quantity'),
-                'failed_today' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', today())->sum('rejected_quantity'),
+                'inspections_today' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', $specificDate)->sum('inspected_quantity'),
+                'failed_today' => (float) (clone $inspectionsQuery)->whereDate('inspected_at', $specificDate)->sum('rejected_quantity'),
                 'pass_rate' => $monthTotal > 0 ? round(($monthPassed / $monthTotal) * 100, 1) : 0,
             ];
             
@@ -428,10 +446,10 @@ class DepartmentDashboardController extends Controller
             'metrics' => [
                 'assigned_work' => (clone $assignments)->whereIn('status', ['assigned', 'ready'])->count(),
                 'work_in_progress' => (clone $assignments)->where('status', 'in_progress')->count(),
-                'completed_today' => (clone $assignments)->where('status', 'completed')->whereDate('completed_at', today())->count(),
+                'completed_today' => (clone $assignments)->where('status', 'completed')->whereDate('completed_at', $specificDate)->count(),
                 'stages_in_progress' => (clone $stageExecutions)->where('status', 'in_progress')->count(),
-                'output_today' => (float) (clone $stageExecutions)->whereDate('updated_at', today())->sum('output_quantity'),
-                'rejected_today' => (float) (clone $stageExecutions)->whereDate('updated_at', today())->sum('rejected_quantity'),
+                'output_today' => (float) (clone $stageExecutions)->whereDate('updated_at', $specificDate)->sum('output_quantity'),
+                'rejected_today' => (float) (clone $stageExecutions)->whereDate('updated_at', $specificDate)->sum('rejected_quantity'),
                 'cutting_not_sewn' => (float) ProductionStageExecution::withoutGlobalScopes()
                     ->where('factory_id', $factoryId)->whereHas('stage', fn ($q) => $q->where('code', 'CUTTING'))->sum('output_quantity') 
                     - (float) ProductionStageExecution::withoutGlobalScopes()

@@ -45,7 +45,7 @@ class AuthController extends Controller
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'School registration is currently closed. Please contact support.');
         $this->reclaimUnverifiedEmail($request->input('email', ''));
         $locations = app(RwandaLocationService::class)->northernDistrictsAndSectors();
-        $passwordRule = PasswordRule::min(10)->mixedCase()->numbers()->symbols();
+        $passwordRule = \App\Support\PasswordPolicy::rule();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'], 'school_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email'], 'phone' => ['required', 'string', 'max:40'],
@@ -90,7 +90,7 @@ class AuthController extends Controller
     {
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'New factory registration is currently closed. Please contact support.');
         $this->reclaimUnverifiedEmail($request->input('email', ''));
-        $passwordRule = PasswordRule::min(4);
+        $passwordRule = \App\Support\PasswordPolicy::rule();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -109,6 +109,7 @@ class AuthController extends Controller
                 'slug' => $this->uniqueFactorySlug($data['factory_name']),
                 'industry_type' => $data['industry_type'],
                 'email' => $data['email'],
+                'status' => 'pending',
                 'default_locale' => $data['locale'] ?? SystemSetting::valueFor('default_locale', 'en'),
                 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'),
                 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali'),
@@ -135,7 +136,7 @@ class AuthController extends Controller
 
         AuditLog::record('auth.registered', 'Factory and owner account created', $factory);
 
-        return $this->completeRegistration($request, $user, 'Account created.');
+        return response()->json(['message' => 'Account created. Your factory is pending administrator approval.', 'requires_approval' => true], 201);
     }
 
     public function verifyOtp(Request $request): JsonResponse
@@ -172,7 +173,9 @@ class AuthController extends Controller
     {
         $data = $request->validate(['email' => ['required', 'email']]);
         $user = User::where('email', Str::lower(trim($data['email'])))->whereNull('email_verified_at')->first();
-        if ($user) {
+        $cooldownKey = 'otp-resend:'.sha1(Str::lower($data['email']));
+        if ($user && ! \Illuminate\Support\Facades\Cache::has($cooldownKey)) {
+            \Illuminate\Support\Facades\Cache::put($cooldownKey, true, now()->addSeconds(60));
             $this->issueOtp($user);
         }
 
@@ -188,12 +191,30 @@ class AuthController extends Controller
         $user = User::where('email', $loginField)
             ->orWhere('username', $loginField)
             ->first();
-        if (! $user || ! $user->is_active || ! Hash::check($credentials['password'], $user->password)) {
+        // Always run a hash comparison so response time does not reveal whether the account exists.
+        $passwordOk = Hash::check($credentials['password'], $user?->password ?? '$2y$12$mbYr.q3T92SaLRVbsmQRe.Dy0wvXXDY8d./E1GMS.EKsbEzhiJMCa');
+        if (! $user || ! $user->is_active || ! $passwordOk) {
             return response()->json(['message' => 'The provided credentials are incorrect.'], 422);
+        }
+        if ($user->current_factory_id && $user->currentFactory && $user->currentFactory->status === 'pending') {
+            return response()->json(['message' => 'Your factory workspace is pending administrator approval.'], 403);
         }
         if (! $user->is_platform_admin && SystemSetting::valueFor('maintenance_enabled', false)) {
             return response()->json(['message' => SystemSetting::valueFor('maintenance_message', 'The platform is undergoing scheduled maintenance.')], 503);
         }
+
+        $effectiveFactoryId = $user->current_factory_id;
+        if (!$effectiveFactoryId && $user->school_id) {
+            $effectiveFactoryId = $user->school?->factory_id ?? \App\Models\School::find($user->school_id)?->factory_id;
+        }
+
+        if ($effectiveFactoryId && ! $user->is_platform_admin) {
+            $subscription = \App\Models\FactorySubscription::where('factory_id', $effectiveFactoryId)->latest('ends_at')->first();
+            if (!$subscription || ($subscription->ends_at->isPast() && (! $subscription->grace_ends_at || $subscription->grace_ends_at->isPast()))) {
+                return response()->json(['message' => 'The subscription for your factory has expired. Please contact your administrator or renew the plan.'], 403);
+            }
+        }
+
         Auth::login($user, (bool) ($credentials['remember'] ?? false));
         $request->session()->regenerate();
         $user->update(['last_login_at' => now(), 'last_login_ip' => $request->ip()]);
@@ -247,7 +268,7 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request): JsonResponse
     {
-        $passwordRule = PasswordRule::min(4);
+        $passwordRule = \App\Support\PasswordPolicy::rule();
         $data = $request->validate([
             'current_password' => ['required', 'string'],
             'password' => ['required', 'confirmed', $passwordRule],
@@ -283,7 +304,7 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request): JsonResponse
     {
-        $passwordRule = PasswordRule::min(4);
+        $passwordRule = \App\Support\PasswordPolicy::rule();
 
         $data = $request->validate([
             'token'    => ['required', 'string'],

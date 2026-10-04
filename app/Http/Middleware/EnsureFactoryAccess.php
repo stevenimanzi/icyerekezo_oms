@@ -35,8 +35,21 @@ class EnsureFactoryAccess
         $request->attributes->set('factory_roles', $roles);
         $request->attributes->set('employee_scope', $profile);
         $subscription = FactorySubscription::with('plan')->where('factory_id', $user->current_factory_id)->latest('ends_at')->first();
-        if ($subscription && $subscription->ends_at->isPast() && (! $subscription->grace_ends_at || $subscription->grace_ends_at->isPast())) {
-            abort(402, 'The factory subscription has expired.');
+
+        if ($subscription) {
+            if (in_array($subscription->status, ['expired', 'suspended'], true)) {
+                abort(402, 'The factory subscription has expired. Please renew to regain access.');
+            }
+
+            if ($subscription->ends_at->isPast()) {
+                $graceIsValid = $subscription->grace_ends_at
+                    && $subscription->grace_ends_at->diffInDays($subscription->ends_at, false) <= 30
+                    && $subscription->grace_ends_at->isFuture();
+
+                if (! $graceIsValid) {
+                    abort(402, 'The factory subscription has expired. Please renew to regain access.');
+                }
+            }
         }
         $path = $request->path();
         $feature = match (true) {

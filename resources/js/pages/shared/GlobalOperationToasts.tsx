@@ -70,8 +70,7 @@ export default function GlobalOperationToasts() {
                 if (isApiMutation) {
                     let payload: any = {};
                     try { payload = await response.clone().json(); } catch {}
-                    if (response.ok) show('success', 'Completed', successMessage(method, payload));
-                    else show('error', 'Could not complete action', safeErrorMessage(response, payload));
+                    if (!response.ok) show('error', 'Could not complete action', safeErrorMessage(response, payload));
                 }
                 return response;
             } catch (error) {

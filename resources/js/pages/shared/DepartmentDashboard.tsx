@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Activity, Boxes, Factory, FileText, PackageCheck, PackageOpen, RefreshCw, Truck, Users, Warehouse, ClipboardCheck } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -10,8 +10,12 @@ const frenchStatus:Record<string,string>={draft:'Brouillon',pending:'En attente'
 export default function DepartmentDashboard({user,locale,onNavigate}:any){
  const [data,setData]=useState<any>(null),[error,setError]=useState(''),[busy,setBusy]=useState<number|null>(null),[loading,setLoading]=useState(true),[updated,setUpdated]=useState<Date|null>(null);
  const [period, setPeriod] = useState('all_time');
- const load=async(silent=false)=>{if(!silent)setLoading(true);try{setData(await api(`/api/department/dashboard?period=${period}`));setError('');setUpdated(new Date())}catch(reason:any){setError(reason.message)}finally{if(!silent)setLoading(false)}};
- useEffect(()=>{load();const timer=window.setInterval(()=>load(true),5000);return()=>window.clearInterval(timer)},[period]);
+ const [specificDate, setSpecificDate] = useState(new Date().toISOString().split('T')[0]);
+ const load=async(silent=false)=>{if(!silent)setLoading(true);try{
+  let url = `/api/department/dashboard?period=${period}`;
+  if (period === 'specific_date') url += `&date=${specificDate}`;
+  setData(await api(url));setError('');setUpdated(new Date())}catch(reason:any){setError(reason.message)}finally{if(!silent)setLoading(false)}};
+ useEffect(()=>{load();const timer=window.setInterval(()=>load(true),5000);return()=>window.clearInterval(timer)},[period, specificDate]);
  const update=async(id:number,statusValue:string)=>{setBusy(id);setError('');try{await api('/api/team/assignments/'+id,{method:'PATCH',body:JSON.stringify({status:statusValue})});await load()}catch(reason:any){setError(reason.message)}finally{setBusy(null)}};
  const department=data?.department,metrics=data?.metrics||{},warehouseMetrics=data?.warehouse_metrics||{},logisticsMetrics=data?.logistics_metrics||{},logisticsTrends=data?.logistics_trends||[],assignments=data?.assignments||[],stages=data?.stage_activity||[],stock=data?.recent_stock||[],stockStatus=data?.stock_status||[];
  const fr=locale==='fr',production=user.workspace==='production',warehouse=data?.dashboard_type==='warehouse',logistics=data?.dashboard_type==='logistics';
@@ -41,22 +45,27 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
   <section className={`department-dashboard ${user.workspace === 'cutting' ? 'cutting-dashboard' : ''}`}>
    <div className="page-heading">
     <div><h1>{title}</h1><p>{description}</p></div>
-    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-     <select className="admin-input" value={period} onChange={(e) => setPeriod(e.target.value)} style={{ padding: '0.4rem 2rem 0.4rem 1rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
-      <option value="daily">{fr ? 'Quotidien' : 'Daily'}</option>
-      <option value="weekly">{fr ? 'Hebdomadaire' : 'Weekly'}</option>
-      <option value="monthly">{fr ? 'Mensuel' : 'Monthly'}</option>
-      <option value="yearly">{fr ? 'Annuel' : 'Yearly'}</option>
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--panel)', padding: '6px', borderRadius: '12px', border: '1px solid var(--line)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+     <select value={period} onChange={(e) => setPeriod(e.target.value)} style={{ border: 'none', background: 'transparent', padding: '6px 12px', fontSize: '13px', fontWeight: 600, color: 'var(--text)', outline: 'none', cursor: 'pointer' }}>
+      <option value="daily">{fr ? 'Aujourd\'hui' : 'Today'}</option>
+      <option value="weekly">{fr ? 'Cette semaine' : 'This Week'}</option>
+      <option value="monthly">{fr ? 'Ce mois-ci' : 'This Month'}</option>
+      <option value="yearly">{fr ? 'Cette année' : 'This Year'}</option>
       <option value="all_time">{fr ? 'Tout le temps' : 'All Time'}</option>
+      <option value="specific_date">{fr ? 'Date spécifique' : 'Specific Date'}</option>
      </select>
-     <button className="secondary-btn" disabled={loading} onClick={() => load()}>
-      <RefreshCw className={loading ? 'spin' : ''} size={16} />{loading ? (fr ? 'Actualisation…' : 'Refreshing…') : (fr ? 'Actualiser' : 'Refresh')}
+     {period === 'specific_date' && (
+         <input type="date" className="admin-input" value={specificDate} onChange={(e) => setSpecificDate(e.target.value)} style={{ border: '1px solid var(--line)', borderRadius: '6px', padding: '4px 10px', fontSize: '13px', background: 'var(--soft)' }} />
+     )}
+     <div style={{ width: '1px', height: '24px', background: 'var(--line)', margin: '0 4px' }}></div>
+     <button disabled={loading} onClick={() => load()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: loading ? 'var(--soft)' : '#eef2ff', color: loading ? 'var(--muted)' : '#4f46e5', cursor: loading ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}>
+      <RefreshCw className={loading ? 'spin' : ''} size={15} />
      </button>
     </div>
    </div>
    {error && <div className="admin-alert error">{error}</div>}
 
-   {logistics ? <LogisticsMetrics values={logisticsMetrics} fr={fr} />
+   {logistics ? <LogisticsMetrics values={logisticsMetrics} fr={fr} user={user} money={money} />
     : warehouse ? <WarehouseMetrics values={warehouseMetrics} fr={fr} money={money} />
     : isPackingManager ? <PackingMetrics values={data?.packing_metrics || {}} fr={fr} />
     : isFinishingManager ? <FinishingMetrics values={data?.finishing_metrics || {}} fr={fr} />
@@ -92,14 +101,27 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
  );
 }
 
-function LogisticsMetrics({values,fr}:any){return <section className="department-metrics"><Metric label={fr?'Commandes entrantes':'Incoming orders'} value={number(values.incoming_orders)} tone="blue"/><Metric label={fr?'PrÃªtes Ã  expÃ©dier':'Ready to dispatch'} value={number(values.ready_to_dispatch)} tone="violet"/><Metric label={fr?'En cours de livraison':'In transit'} value={number(values.in_transit)} tone="amber"/><Metric label={fr?'LivrÃ©es aujourdâ€™hui':'Delivered today'} value={number(values.delivered_today)} tone="green"/><Metric label={fr?'Livraisons en retard':'Delayed deliveries'} value={number(values.delayed)} tone="red"/><Metric label={fr?'VÃ©hicules disponibles':'Available vehicles'} value={number(values.available_vehicles)} tone="blue"/></section>}
+function LogisticsMetrics({values,fr,user,money}:any) {
+    const isNoguchiFactory = user?.current_factory?.name?.trim().toLowerCase().includes("noguchi");
+    if (isNoguchiFactory) {
+        return <section className="department-metrics cols-6">
+            <Metric label={fr?"Commandes totales":"Total orders"} value={number(values.noguchi_total_orders)} tone="blue"/>
+            <Metric label={fr?"En attente":"Pending"} value={number(values.noguchi_pending)} tone="amber"/>
+            <Metric label={fr?"AcceptÃ©es":"Accepted"} value={number(values.noguchi_accepted)} tone="violet"/>
+            <Metric label={fr?"RejetÃ©es":"Rejected"} value={number(values.noguchi_rejected)} tone="red"/>
+            <Metric label={fr?"LivrÃ©es":"Delivered"} value={number(values.noguchi_delivered)} tone="green"/>
+            <Metric label={fr?"Revenus totaux":"Total revenue"} value={money ? money(values.noguchi_revenue) : number(values.noguchi_revenue)} tone="green"/>
+        </section>;
+    }
+    return <section className="department-metrics"><Metric label={fr?"Commandes entrantes":"Incoming orders"} value={number(values.incoming_orders)} tone="blue"/><Metric label={fr?"PrÃªtes Ã  expÃ©dier":"Ready to dispatch"} value={number(values.ready_to_dispatch)} tone="violet"/><Metric label={fr?"En cours de livraison":"In transit"} value={number(values.in_transit)} tone="amber"/><Metric label={fr?"LivrÃ©es aujourdâ€™hui":"Delivered today"} value={number(values.delivered_today)} tone="green"/><Metric label={fr?"Livraisons en retard":"Delayed deliveries"} value={number(values.delayed)} tone="red"/><Metric label={fr?"VÃ©hicules disponibles":"Available vehicles"} value={number(values.available_vehicles)} tone="blue"/></section>;
+}
 function LogisticsCharts({trends,fr,money}:any){
  const monthNames=fr?['Jan','FÃ©v','Mar','Avr','Mai','Juin','Juil','AoÃ»','Sep','Oct','Nov','DÃ©c']:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
  const chartData=trends.map((item:any)=>({...item,month:monthNames[Number(item.month_number)-1]||item.month}));
  const tooltipStyle={background:'var(--panel)',border:'1px solid var(--line)',borderRadius:10,boxShadow:'0 12px 30px rgba(15,23,42,.12)',color:'var(--text)'};
  return <section className="department-grid logistics-charts">
-  <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Croissance des commandes':'Monthly order growth'}</h2><p>{fr?'Commandes clients reÃ§ues au cours des six derniers mois':'Customer orders received over the last six months'}</p></div><PackageOpen size={20}/></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><defs><linearGradient id="ordersFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2563eb" stopOpacity={.32}/><stop offset="100%" stopColor="#2563eb" stopOpacity={.03}/></linearGradient></defs><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle} formatter={(value:any,name:any)=>[name==='order_value'?money(value):number(value),name==='order_value'?(fr?'Valeur des commandes':'Order value'):(fr?'Commandes':'Orders')]}/><Area type="monotone" dataKey="orders" name={fr?'Commandes':'Orders'} stroke="#2563eb" fill="url(#ordersFill)" strokeWidth={3}/></AreaChart></ResponsiveContainer></div></article>
-  <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Performance des livraisons':'Delivery performance'}</h2><p>{fr?'ExpÃ©ditions envoyÃ©es et livraisons terminÃ©es par mois':'Shipments dispatched and completed each month'}</p></div><Truck size={20}/></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle}/><Bar dataKey="dispatched" name={fr?'ExpÃ©diÃ©es':'Dispatched'} fill="#8b5cf6" radius={[5,5,0,0]}/><Bar dataKey="delivered" name={fr?'LivrÃ©es':'Delivered'} fill="#10b981" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer></div></article>
+  <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Croissance des commandes':'Monthly order growth'}</h2><p>{fr?'Commandes clients reÃ§ues au cours des six derniers mois':'Customer orders received over the last six months'}</p></div></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><defs><linearGradient id="ordersFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2563eb" stopOpacity={.32}/><stop offset="100%" stopColor="#2563eb" stopOpacity={.03}/></linearGradient></defs><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle} formatter={(value:any,name:any)=>[name==='order_value'?money(value):number(value),name==='order_value'?(fr?'Valeur des commandes':'Order value'):(fr?'Commandes':'Orders')]}/><Area type="monotone" dataKey="orders" name={fr?'Commandes':'Orders'} stroke="#2563eb" fill="url(#ordersFill)" strokeWidth={3}/></AreaChart></ResponsiveContainer></div></article>
+  <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Performance des livraisons':'Delivery performance'}</h2><p>{fr?'ExpÃ©ditions envoyÃ©es et livraisons terminÃ©es par mois':'Shipments dispatched and completed each month'}</p></div></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle}/><Bar dataKey="dispatched" name={fr?'ExpÃ©diÃ©es':'Dispatched'} fill="#8b5cf6" radius={[5,5,0,0]}/><Bar dataKey="delivered" name={fr?'LivrÃ©es':'Delivered'} fill="#10b981" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer></div></article>
  </section>
 }
 
@@ -108,8 +130,8 @@ function ProductionCharts({trends,fr}:any){
  const chartData=trends.map((item:any)=>({...item,month:monthNames[Number(item.month_number)-1]||item.month}));
  const tooltipStyle={background:'var(--panel)',border:'1px solid var(--line)',borderRadius:10,boxShadow:'0 12px 30px rgba(15,23,42,.12)',color:'var(--text)'};
  return <section className="department-grid logistics-charts">
-  <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Production mensuelle':'Monthly production'}</h2><p>{fr?'UnitÃ©s produites au cours des six derniers mois':'Units produced over the last six months'}</p></div><Factory size={20}/></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><defs><linearGradient id="outputFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={.32}/><stop offset="100%" stopColor="#10b981" stopOpacity={.03}/></linearGradient></defs><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle} formatter={(value:any)=>[number(value),fr?'Produit':'Produced']}/><Area type="monotone" dataKey="output" name={fr?'Produit':'Produced'} stroke="#10b981" fill="url(#outputFill)" strokeWidth={3}/></AreaChart></ResponsiveContainer></div></article>
-  <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Taux de rejet':'Rejection rate'}</h2><p>{fr?'PiÃ¨ces endommagÃ©es ou rejetÃ©es par mois':'Damaged or rejected pieces each month'}</p></div><Activity size={20}/></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle}/><Bar dataKey="rejected" name={fr?'EndommagÃ©':'Damaged'} fill="#ef4444" radius={[5,5,0,0]}/><Bar dataKey="waste" name={fr?'DÃ©chets':'Waste'} fill="#f59e0b" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer></div></article>
+  <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Production mensuelle':'Monthly production'}</h2><p>{fr?'UnitÃ©s produites au cours des six derniers mois':'Units produced over the last six months'}</p></div></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><defs><linearGradient id="outputFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={.32}/><stop offset="100%" stopColor="#10b981" stopOpacity={.03}/></linearGradient></defs><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle} formatter={(value:any)=>[number(value),fr?'Produit':'Produced']}/><Area type="monotone" dataKey="output" name={fr?'Produit':'Produced'} stroke="#10b981" fill="url(#outputFill)" strokeWidth={3}/></AreaChart></ResponsiveContainer></div></article>
+  <article className="panel chart-panel"><header className="department-panel-head"><div><h2>{fr?'Taux de rejet':'Rejection rate'}</h2><p>{fr?'PiÃ¨ces endommagÃ©es ou rejetÃ©es par mois':'Damaged or rejected pieces each month'}</p></div></header><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{top:12,right:18,left:-18,bottom:2}}><CartesianGrid vertical={false} stroke="var(--line)"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis allowDecimals={false} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle}/><Bar dataKey="rejected" name={fr?'EndommagÃ©':'Damaged'} fill="#ef4444" radius={[5,5,0,0]}/><Bar dataKey="waste" name={fr?'DÃ©chets':'Waste'} fill="#f59e0b" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer></div></article>
  </section>
 }
 function WarehouseMetrics({values,fr,money}:any){return <section className="department-metrics"><Metric label={fr?'Articles en stock':'Stock items'} value={number(values.stock_items)} tone="blue"/><Metric label={fr?'Articles en stock faible':'Low-stock items'} value={number(values.low_stock)} tone="red"/><Metric label={fr?'EntrepÃ´ts actifs':'Active warehouses'} value={number(values.warehouses)} tone="violet"/><Metric label={fr?'Valeur du stock':'Stock value'} value={money(values.stock_value)} tone="green"/><Metric label={fr?'QuantitÃ© reÃ§ue aujourdâ€™hui':'Quantity received today'} value={number(values.received_today)} tone="blue"/><Metric label={fr?'QuantitÃ© sortie aujourdâ€™hui':'Quantity issued today'} value={number(values.issued_today)} tone="amber"/></section>}
@@ -408,3 +430,6 @@ function QualityRecentInspections({inspections, fr, status}:any){
         </article>
     </section>;
 }
+
+
+

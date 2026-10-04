@@ -44,12 +44,14 @@ class ReportController extends Controller
             'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'year', 'custom'])], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'],
             'status' => ['nullable', Rule::in(['draft', 'pending', 'submitted', 'accepted', 'confirmed', 'processing', 'ready', 'partial', 'delivered', 'completed', 'rejected', 'cancelled'])],
             'district' => ['nullable', 'string', 'max:80'], 'sector' => ['nullable', 'string', 'max:80'],
+            'school_id' => ['nullable', 'integer'],
         ]);
         [$from, $to] = $this->range($data);
         $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factory->id)->where('document_type', 'customer_order')
             ->whereDate('document_date', '>=', $from->toDateString())->whereDate('document_date', '<=', $to->toDateString())
             ->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-            ->when(($data['district'] ?? null) || ($data['sector'] ?? null), function ($query) use ($data, $factory) {
+            ->when(!empty($data['school_id']), fn ($query) => $query->where('school_id', $data['school_id']))
+            ->when(empty($data['school_id']) && (!empty($data['district']) || !empty($data['sector'])), function ($query) use ($data, $factory) {
                 $ids = School::withoutGlobalScopes()->where('factory_id', $factory->id)->when($data['district'] ?? null, fn ($schools, $district) => $schools->where('district', $district))->when($data['sector'] ?? null, fn ($schools, $sector) => $schools->where('sector', $sector))->pluck('id');
                 $query->whereIn('school_id', $ids);
             })->with(['school:id,name,phone,district,sector', 'lines'])->latest('document_date')->latest('id')->get();
@@ -67,12 +69,14 @@ class ReportController extends Controller
             'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'year', 'custom'])], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'],
             'status' => ['nullable', Rule::in(['draft', 'pending', 'submitted', 'accepted', 'confirmed', 'processing', 'ready', 'partial', 'delivered', 'completed', 'rejected', 'cancelled'])],
             'district' => ['nullable', 'string', 'max:80'], 'sector' => ['nullable', 'string', 'max:80'],
+            'school_id' => ['nullable', 'integer'],
         ]);
         [$from, $to] = $this->range($data);
         $orders = SalesDocument::withoutGlobalScopes()->where('factory_id', $factory->id)->where('document_type', 'customer_order')
             ->whereDate('document_date', '>=', $from->toDateString())->whereDate('document_date', '<=', $to->toDateString())
             ->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-            ->when(($data['district'] ?? null) || ($data['sector'] ?? null), function ($query) use ($data, $factory) {
+            ->when(!empty($data['school_id']), fn ($query) => $query->where('school_id', $data['school_id']))
+            ->when(empty($data['school_id']) && (!empty($data['district']) || !empty($data['sector'])), function ($query) use ($data, $factory) {
                 $ids = School::withoutGlobalScopes()->where('factory_id', $factory->id)->when($data['district'] ?? null, fn ($schools, $district) => $schools->where('district', $district))->when($data['sector'] ?? null, fn ($schools, $sector) => $schools->where('sector', $sector))->pluck('id');
                 $query->whereIn('school_id', $ids);
             })->with(['school:id,name,phone,district,sector', 'lines'])->latest('document_date')->latest('id')->get();
@@ -102,6 +106,7 @@ class ReportController extends Controller
             'status' => ['nullable', Rule::in(['draft', 'pending', 'submitted', 'accepted', 'confirmed', 'processing', 'ready', 'partial', 'delivered', 'completed', 'rejected', 'cancelled'])],
             'district' => ['nullable', 'string', 'max:80'],
             'sector' => ['nullable', 'string', 'max:80'],
+            'school_id' => ['nullable', 'integer'],
         ]);
         
         if ($isExecutive && isset($data['scope']) && $data['scope'] === 'logistics') {
@@ -121,6 +126,14 @@ class ReportController extends Controller
                     ->value('id');
             }
         }
+        // For Noguchi, choosing the umbrella "Production" department means every production section
+        // (cutting, sewing, finishing, packing) rather than only stages tied to that one department.
+        $sectionDepartmentId = $departmentId;
+        if ($isExecutive && $departmentId && stripos($factory->name, 'noguchi') !== false
+            && strcasecmp((string) Department::withoutGlobalScopes()->whereKey($departmentId)->value('name'), 'production') === 0) {
+            $sectionDepartmentId = null;
+        }
+        $reversedIds = $this->reversedIds($factory->id);
         $configuredDepartmentIds = collect($factory->settings['report']['department_ids'] ?? [])->map(fn ($id) => (int) $id)->filter()->unique();
 
         $flowDepartmentIds = DB::table('workflow_stages')
@@ -147,12 +160,12 @@ class ReportController extends Controller
             ->leftJoin('units', 'units.id', '=', 'items.unit_id')
             ->when($logisticsOnly || $warehouseOnly || ($departmentOnly && ! $departmentId), fn ($query) => $query->whereRaw('1 = 0'))
             ->when(! $departmentId && $configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('workflow_stages.department_id', $configuredDepartmentIds))
-            ->when($departmentId, fn ($query) => $query->where('workflow_stages.department_id', $departmentId))
+            ->when($sectionDepartmentId, fn ($query) => $query->where('workflow_stages.department_id', $sectionDepartmentId))
             ->select('production_stage_executions.id', 'production_stage_executions.status', 'production_stage_executions.input_quantity', 'production_stage_executions.output_quantity', 'production_stage_executions.waste_quantity', 'production_stage_executions.rejected_quantity', 'production_stage_executions.updated_at', 'workflow_stages.department_id', 'workflow_stages.name as stage_name', 'production_orders.id as production_order_id', 'production_orders.order_number', 'items.name as product_name', 'units.name as unit_name', 'units.symbol as unit_symbol')
             ->latest('production_stage_executions.updated_at')->get();
 
         $rawSewingDept = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('name', 'like', '%sewing%')->first();
-        $isSewingSelected = !isset($departmentId) || (isset($departmentId) && $rawSewingDept && $departmentId == $rawSewingDept->id);
+        $isSewingSelected = ! $sectionDepartmentId || ($rawSewingDept && $sectionDepartmentId == $rawSewingDept->id);
 
         if (stripos($factory->name, 'noguchi') !== false && $isSewingSelected) {
             $sewingDept = $rawSewingDept;
@@ -168,6 +181,7 @@ class ReportController extends Controller
                     ->where('warehouse_id', $sewingWarehouseId)
                     ->whereBetween('occurred_at', [$from, $to])
                     ->where('reason', 'like', '%CutID:%')
+                    ->tap(fn ($query) => $this->withoutReversals($query, $reversedIds))
                     ->join('items', 'items.id', '=', 'stock_transactions.item_id')
                     ->select('stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as product_name')
                     ->get();
@@ -212,7 +226,7 @@ class ReportController extends Controller
         }
 
         $rawFinishingDept = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where(fn($q) => $q->where('name', 'like', '%finishing%')->orWhere('name', 'like', '%finished%'))->first();
-        $isFinishingSelected = !isset($departmentId) || (isset($departmentId) && $rawFinishingDept && $departmentId == $rawFinishingDept->id);
+        $isFinishingSelected = ! $sectionDepartmentId || ($rawFinishingDept && $sectionDepartmentId == $rawFinishingDept->id);
 
         if (stripos($factory->name, 'noguchi') !== false && $isFinishingSelected) {
             $finishingDept = $rawFinishingDept;
@@ -226,6 +240,7 @@ class ReportController extends Controller
                 $finishingTx = StockTransaction::withoutGlobalScopes()->where('stock_transactions.factory_id', $factory->id)
                     ->whereBetween('occurred_at', [$from, $to])
                     ->where(fn($q) => $q->where('reason', 'like', '%[Finishing Output]%')->orWhere('reason', 'like', '%[Finishing Receipt]%'))
+                    ->tap(fn ($query) => $this->withoutReversals($query, $reversedIds))
                     ->join('items', 'items.id', '=', 'stock_transactions.item_id')
                     ->select('stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as product_name')
                     ->get();
@@ -270,7 +285,7 @@ class ReportController extends Controller
         }
         
         $rawPackingDept = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where(fn($q) => $q->where('name', 'like', '%packing%')->orWhere('name', 'like', '%packaging%'))->first();
-        if (stripos($factory->name, 'noguchi') !== false && (!$departmentId || ($rawPackingDept && $departmentId == $rawPackingDept->id))) {
+        if (stripos($factory->name, 'noguchi') !== false && (! $sectionDepartmentId || ($rawPackingDept && $sectionDepartmentId == $rawPackingDept->id))) {
             $packingDept = $rawPackingDept;
             if (!$packingDept && !$departmentOnly) $packingDept = $departments->first();
             
@@ -282,6 +297,7 @@ class ReportController extends Controller
                 $packingTx = StockTransaction::withoutGlobalScopes()->where('stock_transactions.factory_id', $factory->id)
                     ->whereBetween('occurred_at', [$from, $to])
                     ->where(fn($q) => $q->where('reason', 'like', '%[Packing Output]%')->orWhere('reason', 'like', '%[Packing Receipt]%'))
+                    ->tap(fn ($query) => $this->withoutReversals($query, $reversedIds))
                     ->join('items', 'items.id', '=', 'stock_transactions.item_id')
                     ->select('stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as product_name')
                     ->get();
@@ -343,7 +359,7 @@ class ReportController extends Controller
         $inventory = ! $departmentOnly && in_array($type, ['all', 'inventory'], true) ? StockTransaction::withoutGlobalScopes()
             ->where('stock_transactions.factory_id', $factory->id)->whereBetween('occurred_at', [$from, $to])
             ->join('items', 'items.id', '=', 'stock_transactions.item_id')->join('warehouses', 'warehouses.id', '=', 'stock_transactions.warehouse_id')
-            ->select('stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.unit_cost', 'stock_transactions.balance_after', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'items.name as item_name', 'items.sku', 'warehouses.name as warehouse_name')->latest('occurred_at')->get() : collect();
+            ->select('stock_transactions.id', 'stock_transactions.type', 'stock_transactions.quantity_delta', 'stock_transactions.unit_cost', 'stock_transactions.balance_after', 'stock_transactions.reason', 'stock_transactions.occurred_at', 'stock_transactions.reverses_transaction_id', 'items.name as item_name', 'items.sku', 'warehouses.name as warehouse_name', DB::raw('(select d.name from employee_profiles ep join departments d on d.id = ep.department_id where ep.user_id = stock_transactions.performed_by and ep.factory_id = stock_transactions.factory_id limit 1) as performer_department'))->latest('occurred_at')->get() : collect();
 
         $dailyActivity = $executions->groupBy(fn ($record) => $record->updated_at->toDateString())
             ->sortKeys()
@@ -371,30 +387,35 @@ class ReportController extends Controller
                 ];
             })->values();
 
-        $stockRegister = $inventory->groupBy(fn ($record) => implode('|', [$record->item_name, $record->sku, $record->warehouse_name]))
-            ->map(function ($records) {
-                $ordered = $records->sortBy('occurred_at')->values();
-                $first = $ordered->first();
-                $last = $ordered->last();
+        // Balances come from summing the immutable ledger (opening = before the period, closing = up to its end) rather than
+        // from the stored running balance of a single entry, which can drift when stock is booked without a batch or location.
+        $stockRegister = (! $departmentOnly && in_array($type, ['all', 'inventory'], true))
+            ? StockTransaction::withoutGlobalScopes()->where('stock_transactions.factory_id', $factory->id)->where('stock_transactions.occurred_at', '<=', $to)
+                ->join('items', 'items.id', '=', 'stock_transactions.item_id')->join('warehouses', 'warehouses.id', '=', 'stock_transactions.warehouse_id')
+                ->groupBy('items.name', 'items.sku', 'warehouses.name')
+                ->selectRaw('items.name as item, items.sku as sku, warehouses.name as warehouse, '
+                    .'SUM(CASE WHEN stock_transactions.occurred_at < ? THEN stock_transactions.quantity_delta ELSE 0 END) as opening, '
+                    .'SUM(CASE WHEN stock_transactions.occurred_at >= ? AND stock_transactions.quantity_delta > 0 THEN stock_transactions.quantity_delta ELSE 0 END) as qty_in, '
+                    .'SUM(CASE WHEN stock_transactions.occurred_at >= ? AND stock_transactions.quantity_delta < 0 THEN -stock_transactions.quantity_delta ELSE 0 END) as qty_out, '
+                    .'SUM(stock_transactions.quantity_delta) as closing', [$from->toDateTimeString(), $from->toDateTimeString(), $from->toDateTimeString()])
+                ->get()
+                ->filter(fn ($row) => abs((float) $row->closing) > 0 || (float) $row->qty_in > 0 || (float) $row->qty_out > 0)
+                ->map(fn ($row) => [
+                    'item' => $row->item, 'sku' => $row->sku, 'warehouse' => $row->warehouse,
+                    'opening_balance' => (float) $row->opening, 'quantity_in' => (float) $row->qty_in,
+                    'quantity_out' => (float) $row->qty_out, 'closing_balance' => (float) $row->closing,
+                ])->sortBy(['warehouse', 'item'])->values()
+            : collect();
 
-                return [
-                    'item' => $first->item_name,
-                    'sku' => $first->sku,
-                    'warehouse' => $first->warehouse_name,
-                    'opening_balance' => (float) $first->balance_after - (float) $first->quantity_delta,
-                    'quantity_in' => (float) $ordered->where('quantity_delta', '>', 0)->sum('quantity_delta'),
-                    'quantity_out' => abs((float) $ordered->where('quantity_delta', '<', 0)->sum('quantity_delta')),
-                    'closing_balance' => (float) $last->balance_after,
-                ];
-            })->values();
-
+        $shouldIncludeLogistics = $logisticsOnly || $factory->hasNoguchiSchoolOrders() || (isset($data['scope']) && $data['scope'] === 'logistics') || $isExecutive;
         $logistics = null;
-        if ($logisticsOnly) {
+        if ($shouldIncludeLogistics) {
             $orderQuery = SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)
                 ->where('document_type', 'customer_order')->whereDate('document_date', '>=', $from->toDateString())->whereDate('document_date', '<=', $to->toDateString())
                 ->with(['school:id,name,phone,district,sector', 'lines:id,sales_document_id,class_level,garment_category,gender,size,color,quantity_ordered,quantity_packed,quantity_delivered,quantity_rejected,rejection_reason', 'shipments.vehicle']);
-            $orderQuery->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-                ->when(($data['district'] ?? null) || ($data['sector'] ?? null), function ($query) use ($data, $factory) {
+            $orderQuery->when(!empty($data['status']), fn ($query, $status) => $query->where('status', $status))
+                ->when(!empty($data['school_id']), fn ($query) => $query->where('school_id', $data['school_id']))
+                ->when(empty($data['school_id']) && (!empty($data['district']) || !empty($data['sector'])), function ($query) use ($data, $factory) {
                     $schoolIds = School::withoutGlobalScopes()->where('factory_id', $factory->id)
                         ->when($data['district'] ?? null, fn ($schools, $district) => $schools->where('district', $district))
                         ->when($data['sector'] ?? null, fn ($schools, $sector) => $schools->where('sector', $sector))
@@ -430,10 +451,21 @@ class ReportController extends Controller
                 array_filter($factory->settings['report'] ?? [], fn ($value) => $value !== '' && $value !== []),
                 $logisticsOnly ? ['title' => 'Daily logistics report', 'orientation' => 'landscape', 'show_department_totals' => false, 'show_daily_register' => false, 'default_period' => $factory->hasNoguchiSchoolOrders() ? 'all' : 'day']
                     : ($warehouseOnly ? ['title' => 'Daily stock report', 'orientation' => 'landscape', 'show_summary' => false, 'show_department_totals' => false, 'show_daily_register' => false, 'show_stock_register' => true, 'default_period' => 'day']
-                        : ($departmentOnly ? ['title' => ($departments->first()?->name ?? ucfirst($dashboardKey)).' daily report', 'show_stock_register' => false] : []))
+                        : ($departmentOnly ? ['title' => ($departments->first()?->name ?? ucfirst($dashboardKey)).' daily report', 'show_stock_register' => false] : ($isExecutive && ! $logisticsOnly && stripos($factory->name, 'noguchi') !== false ? ['default_period' => 'all'] : [])))
             ),
-            'filters' => ['departments' => $isExecutive ? Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))->orderBy('name')->get(['id', 'name']) : [], 'districts' => $logisticsOnly ? SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->distinct()->orderBy('schools.district')->pluck('schools.district') : [], 'sectors_by_district' => $logisticsOnly ? SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->whereNotNull('schools.sector')->select(['schools.district', 'schools.sector'])->distinct()->orderBy('schools.sector')->get()->groupBy('district')->map(fn ($rows) => $rows->pluck('sector')->values()) : (object) []],
-            'report' => ['scope' => $logisticsOnly ? 'logistics' : ($warehouseOnly ? 'warehouse' : ($departmentOnly ? 'department' : 'factory')), 'scope_label' => $logisticsOnly ? 'Logistics' : ($warehouseOnly ? 'Warehouse stock' : ($departments->first()?->name ?? 'Whole factory')), 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name],
+            'filters' => [
+                'departments' => $isExecutive ? Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->when($configuredDepartmentIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $configuredDepartmentIds))->orderBy('name')->get(['id', 'name']) : [],
+                'districts' => $shouldIncludeLogistics ? collect(['Burera', 'Gakenke', 'Gicumbi', 'Musanze', 'Rulindo'])->merge(SalesDocument::withoutGlobalScopes()->where('sales_documents.factory_id', $factory->id)->where('document_type', 'customer_order')->join('schools', 'schools.id', '=', 'sales_documents.school_id')->whereNotNull('schools.district')->pluck('schools.district'))->unique()->sort()->values() : [],
+                'sectors_by_district' => $shouldIncludeLogistics ? collect([
+                    'Musanze' => collect(['Busogo', 'Cyuve', 'Gacaca', 'Gashaki', 'Gataraga', 'Kimonyi', 'Kinigi', 'Muhoza', 'Muko', 'Musanze', 'Nkotsi', 'Nyange', 'Remera', 'Rwaza', 'Shingiro']),
+                    'Burera' => collect(['Bungwe', 'Butaro', 'Cyanika', 'Cyeru', 'Gahunga', 'Gatebe', 'Gitovu', 'Kagogo', 'Kinoni', 'Kinyababa', 'Kivuye', 'Nemba', 'Rugarama', 'Rugendabari', 'Ruhunde', 'Rusarabuye', 'Rwerere']),
+                    'Gakenke' => collect(['Busengo', 'Coko', 'Cyabingo', 'Gakenke', 'Gashenyi', 'Janja', 'Kamubuga', 'Karambo', 'Kivuruga', 'Mataba', 'Minazi', 'Mugunga', 'Muhondo', 'Muyongwe', 'Muzo', 'Nemba', 'Ruli', 'Rusasa', 'Rushashi']),
+                    'Gicumbi' => collect(['Bukure', 'Bwisige', 'Byumba', 'Cyumba', 'Giti', 'Kageyo', 'Kaniga', 'Kinyamakara', 'Kivu', 'Mutete', 'Nyamiyaga', 'Nyankenke', 'Rubaya', 'Rukomo', 'Rushaki', 'Rutare', 'Ruvune', 'Rwamiko', 'Shangasha']),
+                    'Rulindo' => collect(['Base', 'Burega', 'Bushoki', 'Buyoga', 'Cyinzuzi', 'Cyungo', 'Kinihira', 'Kisaro', 'Masoro', 'Mbogo', 'Murambi', 'Ngoma', 'Ntarabana', 'Rukozo', 'Rusiga', 'Shyorongi', 'Tumba'])
+                ])->mergeRecursive(School::withoutGlobalScopes()->where('factory_id', $factory->id)->whereNotNull('district')->whereNotNull('sector')->select(['district', 'sector'])->distinct()->orderBy('sector')->get()->groupBy('district')->map(fn ($rows) => $rows->pluck('sector')->values()))->map(fn($sectors) => collect($sectors)->unique()->sort()->values()) : (object) [],
+                'schools_by_sector' => $shouldIncludeLogistics ? School::withoutGlobalScopes()->where('factory_id', $factory->id)->whereNotNull('sector')->select(['id', 'name', 'sector'])->orderBy('name')->get()->groupBy('sector') : (object) []
+            ],
+            'report' => ['scope' => $logisticsOnly ? 'logistics' : ($warehouseOnly ? 'warehouse' : ($departmentOnly ? 'department' : 'factory')), 'scope_label' => $logisticsOnly ? 'Logistics' : ($warehouseOnly ? 'Warehouse stock' : ($departments->first()?->name ?? 'Whole factory')), 'type' => $type, 'period' => $data['period'] ?? 'week', 'department_id' => $departmentId, 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'generated_at' => now()->toIso8601String(), 'generated_by' => $request->user()->name, 'department_id' => $departmentId],
             'summary' => array_filter([($departmentOnly ? 'flow_categories' : 'departments') => $departmentActivity->count(), 'production_orders' => $executions->pluck('production_order_id')->unique()->count(), 'work_records' => $executions->count(), 'completed_records' => $executions->where('status', 'completed')->count(), 'quantity_received' => (float) $executions->sum('input_quantity'), 'quantity_completed' => (float) $executions->sum('output_quantity'), 'damaged_quantity' => (float) $executions->sum('rejected_quantity'), 'waste_quantity' => (float) $executions->sum('waste_quantity'), 'stock_movements' => $departmentOnly ? null : $inventory->count()], fn ($value) => $value !== null),
             'department_activity' => $departmentActivity,
             'daily_activity' => $dailyActivity,
@@ -443,6 +475,27 @@ class ReportController extends Controller
             'activities' => [],
             'logistics' => $logistics,
         ]);
+    }
+
+    /**
+     * Ids of entries that were later cancelled by a reversal (recorded either through the reversal link or,
+     * as the warehouse screens do, by a "REVERSAL of transaction N" reason).
+     */
+    private function reversedIds(int $factoryId): array
+    {
+        $rows = StockTransaction::withoutGlobalScopes()->where('factory_id', $factoryId)
+            ->where(fn ($query) => $query->whereNotNull('reverses_transaction_id')->orWhere('reason', 'like', 'REVERSAL of transaction%'))
+            ->get(['reason', 'reverses_transaction_id']);
+
+        return $rows->map(fn ($row) => $row->reverses_transaction_id ?: (int) preg_replace('/\D+/', '', (string) $row->reason))->filter()->unique()->values()->all();
+    }
+
+    /** Ignore corrections: reversal entries and the original entries they cancelled. */
+    private function withoutReversals($query, array $reversedIds)
+    {
+        return $query->whereNull('stock_transactions.reverses_transaction_id')
+            ->where('stock_transactions.reason', 'not like', 'REVERSAL of transaction%')
+            ->whereNotIn('stock_transactions.id', $reversedIds);
     }
 
     private function range(array $data): array

@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['factory_id', 'subscription_plan_id', 'status', 'starts_at', 'ends_at', 'grace_ends_at', 'auto_renew', 'suspended_at'])]
+#[Fillable(['factory_id', 'subscription_plan_id', 'status', 'starts_at', 'ends_at', 'grace_ends_at', 'auto_renew', 'suspended_at', 'expiry_reminder_sent_at'])]
 class FactorySubscription extends Model
 {
     protected function casts(): array

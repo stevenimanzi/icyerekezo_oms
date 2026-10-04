@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Pencil, Plus, RefreshCw, Trash2, Truck } from 'lucide-react';
 import { OrderDetailsModal } from '../sales/SalesOverviewPage';
 
@@ -38,6 +38,7 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     const [updated, setUpdated] = useState<Date | null>(null);
     const [schoolOrders, setSchoolOrders] = useState<any>(null);
     const [schoolOrdersPage, setSchoolOrdersPage] = useState(1);
+    const [schoolOrderStatus, setSchoolOrderStatus] = useState('');
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
     const specialized = data?.specialization?.type === 'noguchi_school_garments';
@@ -64,7 +65,7 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     // so "Delivery confirmation" pulls real order data from Sales instead of Shipment rows.
     const loadSchoolOrders = async (silent = false) => {
         try {
-            const result = await api(`/api/sales/overview?page=${schoolOrdersPage}`);
+            const result = await api(`/api/sales/overview?page=${schoolOrdersPage}&status=${schoolOrderStatus}`);
             setSchoolOrders(result);
         } catch (reason: any) {
             if (!silent) setError(reason.message);
@@ -89,7 +90,7 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     };
     useEffect(() => { load(); const timer = window.setInterval(() => load(true), 15000); return () => window.clearInterval(timer); }, []);
     useEffect(() => setTab(initialTab), [initialTab]);
-    useEffect(() => { if (specialized) void loadSchoolOrders(); }, [schoolOrdersPage]);
+    useEffect(() => { if (specialized) void loadSchoolOrders(); }, [schoolOrdersPage, schoolOrderStatus]);
 
     const summary = data?.summary || {};
     const shipments = data?.shipments?.data || [];
@@ -185,7 +186,13 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
         ['dispatch', 'Dispatch board', Number(summary.ready || 0) + Number(summary.in_transit || 0) + Number(summary.planned || 0)],
         ['vehicles', 'Vehicles and drivers', summary.vehicles],
         ['proof', 'Delivery confirmation', specialized ? (schoolOrders?.documents?.total || 0) : summary.proof_of_delivery],
-    ];
+    ].filter(t => !specialized || t[0] === 'proof');
+
+    useEffect(() => {
+        if (specialized && tab !== 'proof') {
+            setTab('proof');
+        }
+    }, [specialized, tab]);
 
     return (
         <section className="module-page logistics-live-page">
@@ -199,7 +206,7 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
                     </div>
                 </div>
                 <div className="workflow-actions">
-                    {can('logistics.plan') && <button className="primary-btn" onClick={() => setShowCreate(!showCreate)}><Plus size={16} />New shipment</button>}
+                    {!specialized && can('logistics.plan') && <button className="primary-btn" onClick={() => setShowCreate(!showCreate)}><Plus size={16} />New shipment</button>}
                     <button className="secondary-btn" disabled={loading} onClick={() => load()}><RefreshCw className={loading ? 'spin' : ''} size={16} />Refresh</button>
                 </div>
             </div>
@@ -208,14 +215,10 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
             {success && <div className="admin-alert success">{success}</div>}
 
             <div className="sales-metrics">
-                <Metric label="All shipments" value={summary.total_shipments} />
-                <Metric label="Ready" value={summary.ready} />
-                <Metric label="In transit" value={summary.in_transit} />
-                <Metric label="Delivered orders" value={summary.delivered} />
-                <Metric label="Delivered items" value={summary.delivered_items} />
-                <Metric label="Delivered packages" value={summary.delivered_packages} />
-                <Metric label="Delivered today" value={summary.delivered_today} />
-                <Metric label="Delayed" value={summary.delayed} />
+                <Metric label="Pending to be delivered" value={summary.pending_to_be_delivered} />
+                <Metric label="Ready to be delivered" value={summary.ready_to_be_delivered} />
+                <Metric label="Partial delivered" value={summary.partial_delivered} />
+                <Metric label="Delivered" value={summary.delivered_orders} />
             </div>
 
             {showCreate && (
@@ -250,11 +253,11 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
                 </form>
             )}
 
-            <div className="module-tabs sales-tabs">
+            {!specialized && (<div className="module-tabs sales-tabs">
                 {tabs.map(([key, label, count]) => (
                     <button key={key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>{label}<span>{Number(count || 0).toLocaleString()}</span></button>
                 ))}
-            </div>
+            </div>)}
 
             {tab === 'vehicles' && can('logistics.plan') && (
                 <div className="workflow-actions"><button className="primary-btn" onClick={() => setVehicleForm({ ...blankVehicle })}><Plus size={16} />Register vehicle</button></div>
@@ -264,7 +267,7 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
                 <VehicleTable vehicles={data?.vehicles || []} can={can} busy={busy} edit={(item: any) => setVehicleForm({ ...item, capacity: item.capacity || '' })} remove={deleteVehicle} />
             ) : tab === 'proof' && specialized ? (
                 <SchoolDeliveryTable
-                    rows={schoolOrderRows} page={schoolOrdersPage} lastPage={schoolOrdersLastPage}
+                    rows={schoolOrderRows} page={schoolOrdersPage} lastPage={schoolOrdersLastPage} status={schoolOrderStatus} setStatus={setSchoolOrderStatus}
                     setPage={setSchoolOrdersPage} view={(item: any) => setSelectedOrder(item)}
                 />
             ) : (
@@ -281,10 +284,10 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     );
 }
 
-function SchoolDeliveryTable({ rows, page, lastPage, setPage, view }: any) {
+function SchoolDeliveryTable({ rows, page, lastPage, setPage, view, status, setStatus }: any) {
     return (
         <section className="panel sales-records">
-            <header><div><h2>Confirm deliveries</h2><p>Open an order to review what the packing manager has packed, then deliver it — the remaining quantity and order status update automatically.</p></div></header>
+            <header><div><h2>Confirm deliveries</h2><p>Open an order to review what the packing manager has packed, then deliver it — the remaining quantity and order status update automatically.</p></div><select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="admin-select" style={{width: 200}}><option value="">All statuses</option><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="partial">Partial delivered</option><option value="delivered">Delivered</option></select></header>
             <div className="admin-table-wrap">
                 <table className="admin-table">
                     <thead><tr><th>Order number</th><th>School</th><th>Ordered</th><th>Packed</th><th>Delivered</th><th>Remaining</th><th>Status</th><th>Actions</th></tr></thead>
@@ -436,3 +439,12 @@ function Metric({ label, value }: any) {
 function Empty({ text }: any) {
     return <div className="sales-empty"><b>No records available</b><span>{text}</span></div>;
 }
+
+
+
+
+
+
+
+
+

@@ -288,7 +288,7 @@ function InspectionsTable({ inspections, busy, can, onApprove }: any) {
 function MetricCard({ icon, label, value }: any) {
     return (
         <article className="panel quality-kpi">
-            <span>{icon}</span>
+            
             <div><small>{label}</small><b>{typeof value === 'string' ? value : Number(value || 0).toLocaleString()}</b></div>
         </article>
     );

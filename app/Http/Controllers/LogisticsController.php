@@ -21,6 +21,7 @@ class LogisticsController extends Controller
     {
         $shipments = Shipment::query();
         $vehicles = DeliveryVehicle::query();
+        $salesOrders = SalesDocument::where('document_type', 'customer_order');
         $schoolGarments = auth()->user()->currentFactory->hasNoguchiSchoolOrders();
 
         return response()->json([
@@ -39,6 +40,10 @@ class LogisticsController extends Controller
                     : (int) Shipment::where('shipments.status', 'delivered')->join('sales_documents', 'sales_documents.id', '=', 'shipments.sales_document_id')->sum('sales_documents.item_count'),
                 'delivered_packages' => (int) (clone $shipments)->where('status', 'delivered')->sum('package_count'),
                 'delivered_today' => (clone $shipments)->where('status', 'delivered')->whereDate('delivered_at', today())->count(),
+                'pending_to_be_delivered' => (clone $salesOrders)->where('status', 'pending')->count(),
+                'ready_to_be_delivered' => (clone $salesOrders)->where('status', 'accepted')->count(),
+                'partial_delivered' => (clone $salesOrders)->where('status', 'partial')->count(),
+                'delivered_orders' => (clone $salesOrders)->where('status', 'delivered')->count(),
             ],
             'shipments' => Shipment::with(['vehicle', 'salesDocument:id,document_number'])->latest('planned_dispatch_at')->latest('id')->paginate(50),
             'vehicles' => DeliveryVehicle::latest()->get(),
@@ -186,7 +191,7 @@ class LogisticsController extends Controller
     {
         $factoryId = (int) $request->user()->current_factory_id;
         $data = $request->validate(['agreement' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:15360']]);
-        $path = $data['agreement']->store('agreement/'.$factoryId, 'public');
+        $path = \App\Support\PrivateFile::store($data['agreement'], 'agreement/'.$factoryId);
         $document = AgreementDocument::create([
             'factory_id' => $factoryId, 'file_path' => $path,
             'original_name' => $data['agreement']->getClientOriginalName(), 'uploaded_by' => $request->user()->id,
@@ -207,3 +212,4 @@ class LogisticsController extends Controller
         ]);
     }
 }
+

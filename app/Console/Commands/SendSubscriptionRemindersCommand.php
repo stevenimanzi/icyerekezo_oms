@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\FactorySubscription;
 use App\Models\User;
-use App\Mail\SubscriptionEndingMail;
+use App\Notifications\SubscriptionExpiringSoon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 
 class SendSubscriptionRemindersCommand extends Command
 {
@@ -15,9 +15,9 @@ class SendSubscriptionRemindersCommand extends Command
 
     public function handle()
     {
-        $subscriptions = FactorySubscription::where('status', 'active')
-            ->whereDate('ends_at', '=', today()->addDays(5))
-            ->whereNull('reminder_sent_at')
+        $subscriptions = FactorySubscription::whereIn('status', ['active', 'trial'])
+            ->whereDate('ends_at', '<=', today()->addDays(5))
+            ->whereNull('expiry_reminder_sent_at')
             ->with('factory')
             ->get();
 
@@ -28,10 +28,14 @@ class SendSubscriptionRemindersCommand extends Command
             })->first();
 
             if ($owner) {
-                Mail::to($owner->email)->send(new SubscriptionEndingMail($subscription));
-                $subscription->update(['reminder_sent_at' => now()]);
-                $this->info("Sent reminder for factory: {$subscription->factory->name}");
+                $owner->notify(new SubscriptionExpiringSoon($subscription));
             }
+
+            // Always send an additional explicit copy to info@noguchi.rw as requested
+            Notification::route('mail', 'info@noguchi.rw')->notify(new SubscriptionExpiringSoon($subscription));
+
+            $subscription->update(['expiry_reminder_sent_at' => now()]);
+            $this->info("Sent reminder for factory: {$subscription->factory->name}");
         }
     }
 }

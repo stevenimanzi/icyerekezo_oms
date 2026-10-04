@@ -175,9 +175,6 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
     const totalCutQty = todayCuts.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
     const totalDamagedQty = todayDamage.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
     const totalPiecesProducedQty = todayPiecesProduced.reduce((s: number, tx: any) => s + Math.abs(Number(tx.quantity_delta || 0)), 0);
-    // Waste rate compares damaged pieces against pieces produced (not fabric meters
-    // consumed) — damage is now reported against cut output, so both sides of the
-    // ratio need to be in the same unit (pieces).
     const wastePercent = totalPiecesProducedQty + totalDamagedQty > 0 ? ((totalDamagedQty / (totalPiecesProducedQty + totalDamagedQty)) * 100).toFixed(1) : '0.0';
 
     const clearMsg = () => { setError(''); setSuccess(''); };
@@ -205,10 +202,6 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
         } catch (r: any) { setError(r.message); } finally { setBusy(false); }
     };
 
-    // Cutting is where a lot originates: the fabric-consuming issue is always
-    // posted, and — only when a style/quantity-produced was actually entered —
-    // a real Batch is minted and a matching production_output posted against it,
-    // so Sewing has a real lot to receive rather than just free-text.
     const submitCut = async () => {
         clearMsg();
         if (!cutForm.item_id || !cutForm.quantity) {

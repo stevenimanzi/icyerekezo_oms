@@ -33,27 +33,39 @@ class PlatformAdminController extends Controller
 {
     public function overview(): JsonResponse
     {
-        $start = now()->subDays(13)->startOfDay();
+        $start = now()->subMonths(11)->startOfMonth();
         $models = ['factories' => Factory::class, 'users' => User::class, 'subscriptions' => FactorySubscription::class];
         $totals = [];
-        $daily = [];
+        $monthly = [];
 
         foreach ($models as $key => $model) {
             $totals[$key] = $model::where('created_at', '<', $start)->count();
-            $daily[$key] = $model::where('created_at', '>=', $start)->get(['created_at'])->countBy(fn ($record) => $record->created_at->toDateString());
+            $monthly[$key] = $model::where('created_at', '>=', $start)->get(['created_at'])->countBy(fn ($record) => $record->created_at->format('Y-m'));
         }
 
         $growth = [];
-        for ($day = $start->copy(); $day->lte(now()); $day->addDay()) {
-            $date = $day->toDateString();
+        for ($month = $start->copy(); $month->lte(now()); $month->addMonth()) {
+            $date = $month->format('Y-m');
             foreach (array_keys($models) as $key) {
-                $totals[$key] += $daily[$key]->get($date, 0);
+                $totals[$key] += $monthly[$key]->get($date, 0);
             }
-            $growth[] = ['date' => $date, 'label' => $day->format('M j'), ...$totals];
+            $growth[] = ['date' => $date, 'label' => $month->format('M Y'), ...$totals];
         }
 
+        $revenue = FactorySubscription::with('plan')->get()->sum(function ($sub) {
+            if (!$sub->plan || !$sub->starts_at || !$sub->ends_at) return 0;
+            $months = max(1, (int) round($sub->starts_at->floatDiffInMonths($sub->ends_at)));
+            return $months * (float) $sub->plan->monthly_price;
+        });
+
         return response()->json([
-            'statistics' => ['factories' => Factory::count(), 'active_factories' => Factory::where('status', 'active')->count(), 'users' => User::count(), 'active_subscriptions' => FactorySubscription::whereIn('status', ['trial', 'active'])->where('ends_at', '>', now())->count(), 'open_tickets' => SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count()],
+            'statistics' => [
+                'factories' => Factory::count(),
+                'active_factories' => Factory::where('status', 'active')->count(),
+                'users' => User::count(),
+                'revenue' => $revenue,
+                'open_tickets' => SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count()
+            ],
             'growth' => $growth,
             'factories' => Factory::withCount('users')->latest()->limit(10)->get(),
             'subscriptions' => FactorySubscription::with(['factory:id,name,status', 'plan:id,name'])->latest()->limit(10)->get(),
@@ -66,12 +78,12 @@ class PlatformAdminController extends Controller
 
     public function factories(Request $request): JsonResponse
     {
-        return response()->json(Factory::withCount('users')->when($request->string('search')->value(), fn ($q, $search) => $q->where('name', 'like', "%$search%"))->latest()->paginate(25));
+        return response()->json(Factory::withCount('users')->with(['subscriptions' => fn($q) => $q->latest()->limit(1)])->when($request->string('search')->value(), fn ($q, $search) => $q->where('name', 'like', "%$search%"))->latest()->paginate(25));
     }
 
     public function storeFactory(Request $request): JsonResponse
     {
-        $data = $request->validate(['factory_name' => ['required', 'string', 'max:160'], 'industry_type' => ['required', 'string', 'max:80'], 'owner_name' => ['required', 'string', 'max:120'], 'owner_email' => ['required', 'email', 'unique:users,email'], 'owner_password' => ['required', Password::min(4)], 'manager_name' => ['nullable', 'required_with:manager_email', 'string', 'max:120'], 'manager_email' => ['nullable', 'required_with:manager_name', 'email', 'different:owner_email', 'unique:users,email'], 'manager_password' => ['nullable', 'required_with:manager_email', Password::min(4)]]);
+        $data = $request->validate(['factory_name' => ['required', 'string', 'max:160'], 'industry_type' => ['required', 'string', 'max:80'], 'owner_name' => ['required', 'string', 'max:120'], 'owner_email' => ['required', 'email', 'unique:users,email'], 'owner_password' => ['required', \App\Support\PasswordPolicy::rule()], 'manager_name' => ['nullable', 'required_with:manager_email', 'string', 'max:120'], 'manager_email' => ['nullable', 'required_with:manager_name', 'email', 'different:owner_email', 'unique:users,email'], 'manager_password' => ['nullable', 'required_with:manager_email', \App\Support\PasswordPolicy::rule()]]);
         [$factory, $owner, $manager] = DB::transaction(function () use ($data) {
             PermissionCatalog::seed();
             $base = Str::slug($data['factory_name']) ?: 'factory';
@@ -116,11 +128,11 @@ class PlatformAdminController extends Controller
 
     public function users(Request $request): JsonResponse
     {
-        $query = User::where('is_platform_admin', false)->with(['factories:id,name', 'school:id,name']);
+        $query = User::where('is_platform_admin', false)->with(['factories:id,name', 'school:id,name,factory_id', 'school.factory:id,name', 'roles:id,name,slug']);
         
         $tab = $request->string('tab')->value();
         if ($tab === 'factories') {
-            $query->whereHas('factories');
+            $query->whereHas('factories')->whereNull('school_id');
         } elseif ($tab === 'schools') {
             $query->whereNotNull('school_id');
         }
@@ -133,15 +145,20 @@ class PlatformAdminController extends Controller
             $query->where(fn ($builder) => $builder->where('name', 'like', "%$search%")->orWhere('email', 'like', "%$search%"));
         }
 
+        if ($role = $request->string('role')->value()) {
+            $query->whereHas('roles', fn ($q) => $q->where('slug', $role));
+        }
+
         return response()->json([
             'users' => $query->latest()->paginate(10)->withQueryString(), 
-            'factories' => Factory::with(['roles:id,factory_id,name,slug'])->orderBy('name')->get(['id', 'name'])
+            'factories' => Factory::with(['roles:id,factory_id,name,slug'])->orderBy('name')->get(['id', 'name']),
+            'roles' => \App\Models\Role::select('name', 'slug')->distinct()->orderBy('name')->get()
         ]);
     }
 
     public function storeFactoryUser(Request $request): JsonResponse
     {
-        $data = $request->validate(['factory_id' => ['required', 'exists:factories,id'], 'role_id' => ['required', Rule::exists('roles', 'id')->where(fn ($q) => $q->where('factory_id', $request->integer('factory_id')))], 'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email', 'unique:users,email'], 'password' => ['required', Password::min(4)], 'job_title' => ['nullable', 'string', 'max:120'], 'employee_number' => ['required', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $request->integer('factory_id'))]]);
+        $data = $request->validate(['factory_id' => ['required', 'exists:factories,id'], 'role_id' => ['required', Rule::exists('roles', 'id')->where(fn ($q) => $q->where('factory_id', $request->integer('factory_id')))], 'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email', 'unique:users,email'], 'password' => ['required', \App\Support\PasswordPolicy::rule()], 'job_title' => ['nullable', 'string', 'max:120'], 'employee_number' => ['required', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $request->integer('factory_id'))]]);
         $user = DB::transaction(function () use ($data) {
             $user = User::create(['current_factory_id' => $data['factory_id'], 'name' => $data['name'], 'email' => Str::lower($data['email']), 'password' => $data['password']]);
             $user->factories()->attach($data['factory_id'], ['is_active' => true, 'is_owner' => false, 'joined_at' => now(), 'job_title' => $data['job_title'] ?? null]);
@@ -157,7 +174,7 @@ class PlatformAdminController extends Controller
 
     public function resetPassword(Request $request, User $user): JsonResponse
     {
-        $data = $request->validate(['password' => ['required', 'confirmed', Password::min(4)]]);
+        $data = $request->validate(['password' => ['required', 'confirmed', \App\Support\PasswordPolicy::rule()]]);
         $user->update(['password' => $data['password']]);
         AuditLog::record('platform.password_reset', "Reset password for {$user->email}", $user);
 
@@ -167,11 +184,54 @@ class PlatformAdminController extends Controller
     public function updateUser(Request $request, User $user): JsonResponse
     {
         abort_if($user->is($request->user()), 422, 'You cannot change your own platform access here.');
-        $data = $request->validate(['is_active' => ['sometimes', 'boolean'], 'is_platform_admin' => ['sometimes', 'boolean']]);
-        $user->update($data);
+        $data = $request->validate([
+            'name' => ['sometimes', 'string', 'max:120'],
+            'email' => ['sometimes', 'email', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
+            'password' => ['nullable', \App\Support\PasswordPolicy::rule()],
+            'is_active' => ['sometimes', 'boolean'], 
+            'is_platform_admin' => ['sometimes', 'boolean'],
+            'role_slug' => ['sometimes', 'string']
+        ]);
+        
+        DB::transaction(function () use ($data, $user) {
+            $updateData = \Illuminate\Support\Arr::except($data, ['role_slug', 'password']);
+            if (!empty($data['password'])) {
+                $updateData['password'] = $data['password'];
+            }
+            if (!empty($updateData)) {
+                $user->update($updateData);
+            }
+            
+            if (isset($data['role_slug'])) {
+                $factoryId = $user->current_factory_id ?? $user->factories()->first()?->id;
+                if ($factoryId) {
+                    $role = \App\Models\Role::where('factory_id', $factoryId)->where('slug', $data['role_slug'])->first();
+                    if ($role) {
+                        $user->roles()->wherePivot('factory_id', $factoryId)->detach();
+                        $user->roles()->attach($role->id, ['factory_id' => $factoryId]);
+                    }
+                }
+            }
+        });
+        
         AuditLog::record('platform.user_access', "Updated platform access for {$user->email}", $user);
 
         return response()->json($user);
+    }
+
+    public function destroyUser(User $user): JsonResponse
+    {
+        abort_if($user->is(request()->user()), 422, 'You cannot delete yourself.');
+        $user->delete();
+        AuditLog::record('platform.user_deleted', "Deleted user {$user->email}");
+        return response()->json(['message' => 'User deleted']);
+    }
+
+    public function destroyFactory(Factory $factory): JsonResponse
+    {
+        $factory->forceDelete();
+        AuditLog::record('platform.factory_deleted', "Permanently deleted factory {$factory->name}");
+        return response()->json(['message' => 'Factory deleted']);
     }
 
     public function storePlan(Request $request): JsonResponse
@@ -201,7 +261,28 @@ class PlatformAdminController extends Controller
 
     public function updateSubscription(Request $request, FactorySubscription $subscription): JsonResponse
     {
-        $data = $request->validate(['subscription_plan_id' => ['required', 'exists:subscription_plans,id'], 'status' => ['sometimes', Rule::in(['trial', 'active', 'past_due', 'suspended', 'cancelled'])], 'ends_at' => ['sometimes', 'date']]);
+        $data = $request->validate([
+            'subscription_plan_id' => ['required', 'exists:subscription_plans,id'],
+            'status' => ['sometimes', Rule::in(['trial', 'active', 'past_due', 'suspended', 'cancelled', 'expired'])],
+            'starts_at' => ['sometimes', 'date'],
+            'ends_at' => ['sometimes', 'date'],
+        ]);
+
+        if (isset($data['ends_at'])) {
+            $endDate = \Carbon\Carbon::parse($data['ends_at'])->endOfDay();
+            $data['ends_at'] = $endDate;
+            $data['grace_ends_at'] = $endDate;
+            if ($endDate->isPast()) {
+                $data['status'] = 'expired';
+                $subscription->factory?->update(['status' => 'suspended']);
+            } else {
+                if (!isset($data['status']) || $subscription->status === 'expired') {
+                    $data['status'] = 'active';
+                }
+                $subscription->factory?->update(['status' => 'active']);
+            }
+        }
+
         $subscription->update($data);
         AuditLog::record('platform.subscription_changed', "Changed subscription for {$subscription->factory->name}", $subscription);
 

@@ -22,85 +22,10 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SchoolPortalController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PrivateFileController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Artisan;
-
-Route::get('/fix-roles', function () {
-    $factory = \App\Models\Factory::where('name', 'like', '%Noguchi%')->first();
-    if (!$factory) return 'Factory not found';
-    
-    \App\Support\RoleTemplateCatalog::createFor($factory);
-    
-    $user = \App\Models\User::where('email', 'samuel@noguchi.rw')->orWhere('username', 'samuel@noguchi.rw')->first();
-    if ($user) {
-        $role = \App\Models\Role::where('factory_id', $factory->id)->where('slug', 'factory-manager')->first();
-        if ($role) {
-            $user->roles()->syncWithoutDetaching([$role->id => ['factory_id' => $factory->id]]);
-            return 'Success! Roles created and Samuel assigned as Factory Manager for ' . $factory->name;
-        }
-    }
-    return 'Roles created, but Samuel not found.';
-});
-
-Route::get('/fix-everything', function () {
-    // CRITICAL: Ensure all system permissions exist in the database first
-    \App\Support\PermissionCatalog::seed();
-
-    $factory = \App\Models\Factory::where('name', 'like', '%Noguchi%')->first();
-    if (!$factory) return 'Factory not found';
-    
-    // 1. Generate all correct roles and permissions
-    \App\Support\RoleTemplateCatalog::createFor($factory);
-    
-    // Ensure factory-owner gets its specific permissions (since it's not in the TEMPLATES array)
-    $ownerRole = \App\Models\Role::where('factory_id', $factory->id)->where('slug', 'factory-owner')->first();
-    if ($ownerRole) {
-        $ownerRole->permissions()->sync(\App\Support\RoleTemplateCatalog::ownerPermissionIds());
-    }
-    
-    // 2. Ensure Noguchi has an unlimited subscription
-    $plan = \App\Models\SubscriptionPlan::firstOrCreate(
-        ['code' => 'UNLIMITED-ENT'],
-        [
-            'name' => 'Unlimited Enterprise',
-            'monthly_price' => 0,
-            'currency_code' => 'RWF',
-            'limits' => ['users' => -1, 'storage_gb' => 100],
-            'features' => ['dashboard', 'inventory', 'production', 'quality', 'sales', 'maintenance', 'reports', 'logistics', 'team', 'support', 'settings', 'procurement', 'products'],
-            'is_active' => true
-        ]
-    );
-    
-    \App\Models\FactorySubscription::updateOrCreate(
-        ['factory_id' => $factory->id],
-        [
-            'subscription_plan_id' => $plan->id,
-            'status' => 'active',
-            'starts_at' => now(),
-            'ends_at' => now()->addYears(10),
-            'grace_ends_at' => now()->addYears(10),
-            'auto_renew' => true
-        ]
-    );
-
-    // 3. Ensure Samuel is completely linked
-    $user = \App\Models\User::where('email', 'like', '%samuel%')->orWhere('name', 'like', '%samuel%')->first();
-    if ($user) {
-        $role = \App\Models\Role::where('factory_id', $factory->id)->where('slug', 'factory-manager')->first();
-        if ($role) {
-            $user->roles()->syncWithoutDetaching([$role->id => ['factory_id' => $factory->id]]);
-            $user->update(['current_factory_id' => $factory->id]);
-            \Illuminate\Support\Facades\DB::table('factory_user')->updateOrInsert(
-                ['user_id' => $user->id, 'factory_id' => $factory->id],
-                ['job_title' => 'Factory Manager', 'is_owner' => false, 'is_active' => true, 'joined_at' => now()]
-            );
-        }
-    }
-    
-    return 'SUCCESS! Everything is fixed for Noguchi. Please refresh your dashboard!';
-});
 
 Route::get('/dashboard', function () {
     return view('app');
@@ -129,6 +54,7 @@ Route::get('/manifest.json', function () {
 });
 
 Route::prefix('api')->group(function () {
+    Route::get('/files', PrivateFileController::class)->middleware(['signed:relative', 'throttle:60,1'])->name('files.show');
     Route::middleware('throttle:6,1')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
         Route::post('/auth/register-school', [AuthController::class, 'registerSchool']);
@@ -165,9 +91,11 @@ Route::prefix('api')->group(function () {
             Route::get('/factories', [PlatformAdminController::class, 'factories']);
             Route::post('/factories', [PlatformAdminController::class, 'storeFactory']);
             Route::patch('/factories/{factory}', [PlatformAdminController::class, 'updateFactory']);
+            Route::delete('/factories/{factory}', [PlatformAdminController::class, 'destroyFactory']);
             Route::get('/users', [PlatformAdminController::class, 'users']);
             Route::post('/users', [PlatformAdminController::class, 'storeFactoryUser']);
             Route::patch('/users/{user}', [PlatformAdminController::class, 'updateUser']);
+            Route::delete('/users/{user}', [PlatformAdminController::class, 'destroyUser']);
             Route::put('/users/{user}/password', [PlatformAdminController::class, 'resetPassword']);
             Route::post('/plans', [PlatformAdminController::class, 'storePlan']);
             Route::put('/plans/{plan}', [PlatformAdminController::class, 'updatePlan']);
@@ -245,8 +173,8 @@ Route::prefix('api')->group(function () {
             Route::post('/safety/corrective-actions', [SafetyController::class, 'storeCorrectiveAction'])->middleware('permission:safety.manage_actions');
             Route::patch('/safety/corrective-actions/{action}', [SafetyController::class, 'updateCorrectiveAction'])->middleware('permission:safety.manage_actions');
             Route::get('/sales/orders/{document}/pdf', [SalesController::class, 'orderPdf'])->middleware('permission:sales.view');
-            Route::patch('/sales/orders/{document}/decision', [SalesController::class, 'decide'])->middleware('permission:sales.fulfill');
-            Route::delete('/sales/orders/{document}', [SalesController::class, 'destroy'])->middleware('permission:sales.fulfill');
+            Route::patch('/sales/orders/{document}/decision', [SalesController::class, 'decide'])->middleware('permission:sales.fulfill|logistics.plan|logistics.dispatch|logistics.deliver');
+            Route::delete('/sales/orders/{document}', [SalesController::class, 'destroy'])->middleware('permission:sales.fulfill|logistics.plan|logistics.dispatch|logistics.deliver');
             Route::post('/sales/orders/{document}/invoice', [SalesController::class, 'uploadInvoice'])->middleware('permission:sales.fulfill');
             Route::post('/sales/school-orders', [SalesController::class, 'storeSchoolOrder'])->middleware('permission:sales.create|sales.fulfill');
             Route::patch('/sales/school-order-lines/{line}/pack', [SalesController::class, 'packSchoolOrderLine'])->middleware('permission:sales.pack');
