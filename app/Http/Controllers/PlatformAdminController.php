@@ -424,13 +424,55 @@ class PlatformAdminController extends Controller
 
     public function subscriptions(): JsonResponse
     {
+        $allSubscriptions = FactorySubscription::with([
+            'factory:id,name,status',
+            'plan:id,name,code,features,monthly_price,currency_code',
+        ])->get();
+
+        $activeSubscriptions = $allSubscriptions->where('status', 'active');
+        $activeCount = $activeSubscriptions->count();
+
+        $mrr = $activeSubscriptions->sum(function ($sub) {
+            return (float) ($sub->plan?->monthly_price ?? 0);
+        });
+
+        $totalRevenue = $allSubscriptions->sum(function ($sub) {
+            if (!$sub->plan || !$sub->starts_at || !$sub->ends_at) {
+                return 0;
+            }
+            $months = max(1, (int) round($sub->starts_at->floatDiffInMonths($sub->ends_at)));
+            return $months * (float) $sub->plan->monthly_price;
+        });
+
+        $expiringSoon = $allSubscriptions->filter(function ($sub) {
+            return $sub->status === 'active' && $sub->ends_at && $sub->ends_at->isFuture() && $sub->ends_at->diffInDays(now()) <= 30;
+        })->count();
+
+        $graceCount = $allSubscriptions->filter(function ($sub) {
+            return $sub->status === 'grace_period' || ($sub->ends_at && $sub->ends_at->isPast() && $sub->grace_ends_at && $sub->grace_ends_at->isFuture());
+        })->count();
+
+        $factoriesCount = Factory::count();
+        $subscribedFactories = $activeSubscriptions->pluck('factory_id')->unique()->count();
+        $subscriptionRate = $factoriesCount > 0 ? round(($subscribedFactories / $factoriesCount) * 100) : 0;
+
         return response()->json([
             'feature_catalog' => SubscriptionFeatureCatalog::all(),
             'plans' => SubscriptionPlan::orderBy('monthly_price')->get(),
             'factories' => Factory::orderBy('name')->get(['id', 'name', 'status']),
+            'analytics' => [
+                'active_subscriptions' => $activeCount,
+                'monthly_recurring_revenue' => $mrr,
+                'total_revenue' => $totalRevenue,
+                'expiring_soon' => $expiringSoon,
+                'grace_period' => $graceCount,
+                'subscribed_factories' => $subscribedFactories,
+                'total_factories' => $factoriesCount,
+                'subscription_rate' => $subscriptionRate,
+            ],
             'subscriptions' => FactorySubscription::with([
                 'factory:id,name,status',
-                'plan:id,name,code,features',
+                'plan:id,name,code,features,monthly_price,currency_code',
             ])->latest()->paginate(25),
         ]);
     }

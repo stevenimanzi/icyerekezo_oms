@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, Building2, CheckCircle2, CreditCard, Database, Megaphone, MessageSquare, Plus, RefreshCw, Save, Settings, ShieldCheck, Users, Pencil, Trash2, Eye, X } from 'lucide-react';
+import { Activity, Building2, CheckCircle2, CreditCard, Database, Megaphone, MessageSquare, Plus, RefreshCw, Save, Settings, ShieldCheck, Users, Pencil, Trash2, Eye, X, Clock, TrendingUp } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import SystemSettingsPanel from '../system/SystemSettingsPanel';
 
@@ -562,6 +562,19 @@ function SubscriptionPanel({ data, open, busy, submitPlan, updatePlan, assign, c
     const savePlan = (event: React.FormEvent) => { event.preventDefault(); editingId ? updatePlan(editingId, plan) : submitPlan(plan); };
     const planFields: [string, string][] = [['name', 'Plan name'], ['code', 'Plan code'], ['monthly_price', 'Price per month'], ['currency_code', 'Currency']];
 
+    const analytics = data?.analytics || {};
+    const subsList = data?.subscriptions?.data || [];
+    const activeCount = analytics.active_subscriptions ?? subsList.filter((s: any) => s.status === 'active').length;
+    const mrr = analytics.monthly_recurring_revenue ?? subsList.filter((s: any) => s.status === 'active').reduce((acc: number, s: any) => acc + Number(s.plan?.monthly_price || 0), 0);
+    const totalRev = analytics.total_revenue ?? mrr;
+    const expiringSoon = analytics.expiring_soon ?? subsList.filter((s: any) => {
+        if (s.status !== 'active' || !s.ends_at) return false;
+        const diff = (new Date(s.ends_at).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+        return diff >= 0 && diff <= 30;
+    }).length;
+    const graceCount = analytics.grace_period ?? subsList.filter((s: any) => s.status === 'grace_period').length;
+    const subRate = analytics.subscription_rate ?? (data?.factories?.length ? Math.round((activeCount / data.factories.length) * 100) : 0);
+
     return (
         <>
             {(open || editingId) && (
@@ -625,15 +638,65 @@ function SubscriptionPanel({ data, open, busy, submitPlan, updatePlan, assign, c
                 </div>
             )}
 
-            <div className="subscription-plan-grid">
-                {(data?.plans || []).map((item: any) => (
-                    <article className="panel subscription-plan-card" key={item.id}>
-                        <header><span><CreditCard size={20} /></span><button className="table-action" onClick={() => edit(item)}>Edit plan</button></header>
-                        <h3>{item.name}</h3>
-                        <strong>{item.currency_code} {Number(item.monthly_price).toLocaleString()}<em>/month</em></strong>
-                        <div className="plan-features">{(item.features || []).map((key: string) => <span key={key}><CheckCircle2 size={13} />{(data?.feature_catalog || {})[key] || key}</span>)}</div>
-                    </article>
-                ))}
+            <div className="admin-metrics">
+                <article>
+                    <span><CheckCircle2 size={20} /></span>
+                    <div>
+                        <small>Active Subscriptions</small>
+                        <strong>{activeCount}</strong>
+                        <p>{subRate}% factories active</p>
+                    </div>
+                </article>
+                <article>
+                    <span><TrendingUp size={20} /></span>
+                    <div>
+                        <small>Monthly Recurring Revenue</small>
+                        <strong>RWF {Number(mrr).toLocaleString()}</strong>
+                        <p>Active monthly run-rate</p>
+                    </div>
+                </article>
+                <article>
+                    <span><CreditCard size={20} /></span>
+                    <div>
+                        <small>Total Revenue</small>
+                        <strong>RWF {Number(totalRev).toLocaleString()}</strong>
+                        <p>Lifetime billing volume</p>
+                    </div>
+                </article>
+                <article>
+                    <span><Clock size={20} /></span>
+                    <div>
+                        <small>Expiring & In Grace</small>
+                        <strong>{expiringSoon + graceCount}</strong>
+                        <p>{expiringSoon} next 30 days · {graceCount} in grace</p>
+                    </div>
+                </article>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 0', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                    <h2 style={{ margin: 0, fontSize: 16 }}>Factory subscriptions</h2>
+                    <p style={{ margin: '3px 0 0', color: 'var(--muted)', fontSize: 12 }}>Manage billing periods, assign plans and track active factory status.</p>
+                </div>
+                {(data?.plans || []).length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <select
+                            style={{ padding: '7px 12px', border: '1px solid var(--line)', borderRadius: '8px', background: 'var(--panel)', color: 'var(--text)', fontSize: 13 }}
+                            value=""
+                            onChange={e => {
+                                const found = (data?.plans || []).find((p: any) => String(p.id) === e.target.value);
+                                if (found) edit(found);
+                            }}
+                        >
+                            <option value="">Edit an existing plan...</option>
+                            {(data?.plans || []).map((p: any) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.name} ({p.currency_code} {Number(p.monthly_price).toLocaleString()}/mo)
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
             </div>
 
             <AdminTable
