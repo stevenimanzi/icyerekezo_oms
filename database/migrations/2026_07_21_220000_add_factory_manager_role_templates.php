@@ -2,8 +2,8 @@
 
 use App\Models\Factory;
 use App\Models\Role;
-use App\Support\PermissionCatalog;
-use App\Support\RoleTemplateCatalog;
+use App\Support\Catalogs\PermissionCatalog;
+use App\Support\Catalogs\RoleTemplateCatalog;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration

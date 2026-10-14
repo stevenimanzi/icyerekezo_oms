@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\School;
 
 use App\Models\AgreementDocument;
 use App\Models\SalesDocument;
@@ -14,6 +14,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
 
 class SchoolPortalController extends Controller
 {
@@ -50,9 +51,9 @@ class SchoolPortalController extends Controller
 
         $existing = SchoolAgreementSignature::where('agreement_document_id', $current->id)->where('school_id', $school->id)->first();
         if ($existing) {
-            \App\Support\PrivateFile::delete($existing->file_path);
+            \App\Support\Security\PrivateFile::delete($existing->file_path);
         }
-        $path = \App\Support\PrivateFile::store($data['signed_agreement'], 'agreement/signatures/'.$factoryId);
+        $path = \App\Support\Security\PrivateFile::store($data['signed_agreement'], 'agreement/signatures/'.$factoryId);
         $signature = SchoolAgreementSignature::updateOrCreate(
             ['agreement_document_id' => $current->id, 'school_id' => $school->id],
             ['factory_id' => $factoryId, 'file_path' => $path, 'original_name' => $data['signed_agreement']->getClientOriginalName(), 'submitted_at' => now()]
@@ -90,7 +91,7 @@ class SchoolPortalController extends Controller
         $remaining=max(0,(float)$document->total_amount-(float)$document->paid_amount-$pending);
         abort_if($remaining<=0,422,'This order has no outstanding balance available for another payment submission.');
         $data=$request->validate(['amount'=>['required','numeric','min:1','max:'.$remaining],'payment_method'=>['required',Rule::in(['Bank Transfer','MoMo Pay','Cheque','Cash Deposit'])],'payment_reference'=>['required','string','max:120'],'paid_at'=>['required','date','before_or_equal:today'],'proof_file'=>['required','file','mimes:jpg,jpeg,png,pdf','max:5120']]);
-        $path=\App\Support\PrivateFile::store($request->file('proof_file'),'payment-proofs');DB::table('school_payment_submissions')->insert(['factory_id'=>$request->user()->current_factory_id,'school_id'=>$school->id,'sales_document_id'=>$document->id,'amount'=>$data['amount'],'payment_method'=>$data['payment_method'],'payment_reference'=>$data['payment_reference'],'paid_at'=>$data['paid_at'],'proof_path'=>$path,'status'=>'pending','created_at'=>now(),'updated_at'=>now()]);
+        $path=\App\Support\Security\PrivateFile::store($request->file('proof_file'),'payment-proofs');DB::table('school_payment_submissions')->insert(['factory_id'=>$request->user()->current_factory_id,'school_id'=>$school->id,'sales_document_id'=>$document->id,'amount'=>$data['amount'],'payment_method'=>$data['payment_method'],'payment_reference'=>$data['payment_reference'],'paid_at'=>$data['paid_at'],'proof_path'=>$path,'status'=>'pending','created_at'=>now(),'updated_at'=>now()]);
         return response()->json(['message'=>'Payment proof submitted for verification.'],201);
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Support\Catalogs;
 
 /**
  * Code-defined industry profiles. A factory picks its industry at registration and the

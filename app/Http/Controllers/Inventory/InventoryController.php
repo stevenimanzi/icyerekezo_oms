@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Inventory;
 
 use App\Models\Item;
 use App\Models\StockBalance;
@@ -8,12 +8,13 @@ use App\Models\StockTransaction;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Services\InventoryLedger;
-use App\Support\OperationalScope;
+use App\Support\Tenancy\OperationalScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
 
 class InventoryController extends Controller
 {

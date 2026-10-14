@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Auth;
 
 use App\Mail\OtpVerificationMail;
 use App\Models\AuditLog;
@@ -14,9 +14,9 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\FactoryProfileApplier;
-use App\Support\IndustryProfileCatalog;
-use App\Support\PermissionCatalog;
-use App\Support\RoleTemplateCatalog;
+use App\Support\Catalogs\IndustryProfileCatalog;
+use App\Support\Catalogs\PermissionCatalog;
+use App\Support\Catalogs\RoleTemplateCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +28,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password as PasswordRule;
+use App\Http\Controllers\Controller;
 
 class AuthController extends Controller
 {
@@ -46,7 +47,7 @@ class AuthController extends Controller
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'School registration is currently closed. Please contact support.');
         $this->reclaimUnverifiedEmail($request->input('email', ''));
         $locations = app(RwandaLocationService::class)->northernDistrictsAndSectors();
-        $passwordRule = \App\Support\PasswordPolicy::rule();
+        $passwordRule = \App\Support\Security\PasswordPolicy::rule();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'], 'school_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email'], 'phone' => ['required', 'string', 'max:40'],
@@ -91,7 +92,7 @@ class AuthController extends Controller
     {
         abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'New factory registration is currently closed. Please contact support.');
         $this->reclaimUnverifiedEmail($request->input('email', ''));
-        $passwordRule = \App\Support\PasswordPolicy::rule();
+        $passwordRule = \App\Support\Security\PasswordPolicy::rule();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -273,7 +274,7 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request): JsonResponse
     {
-        $passwordRule = \App\Support\PasswordPolicy::rule();
+        $passwordRule = \App\Support\Security\PasswordPolicy::rule();
         $data = $request->validate([
             'current_password' => ['required', 'string'],
             'password' => ['required', 'confirmed', $passwordRule],
@@ -309,7 +310,7 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request): JsonResponse
     {
-        $passwordRule = \App\Support\PasswordPolicy::rule();
+        $passwordRule = \App\Support\Security\PasswordPolicy::rule();
 
         $data = $request->validate([
             'token'    => ['required', 'string'],
@@ -426,7 +427,7 @@ class AuthController extends Controller
             'unread_notifications_count' => $user->unreadNotifications()->count(),
             'notifications' => $user->notifications()->limit(5)->get(),
             'pending_orders_count' => \App\Models\SalesDocument::where('factory_id', $user->current_factory_id)->where('status', 'pending')->count(),
-            'access_scope' => $user->current_factory_id ? \App\Support\OperationalScope::for($user)->payload() : null,
+            'access_scope' => $user->current_factory_id ? \App\Support\Tenancy\OperationalScope::for($user)->payload() : null,
             'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
             'announcements' => PlatformAnnouncement::whereNotNull('published_at')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->latest('published_at')->limit(10)->get(['id', 'title', 'message', 'severity', 'published_at']),
             'system' => ['name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'), 'tagline' => SystemSetting::valueFor('system_tagline', 'Factory operations made clear.'), 'logo_url' => SystemSetting::valueFor('logo_url', '/assets/images/icyerekezo_oms_logo.svg'), 'support_email' => SystemSetting::valueFor('support_email'), 'support_phone' => SystemSetting::valueFor('support_phone'), 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'), 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali')],

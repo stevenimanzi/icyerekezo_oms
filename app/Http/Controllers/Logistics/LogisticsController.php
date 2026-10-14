@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Logistics;
 
 use App\Models\AgreementDocument;
 use App\Models\AuditLog;
@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
 
 class LogisticsController extends Controller
 {
@@ -191,7 +192,7 @@ class LogisticsController extends Controller
     {
         $factoryId = (int) $request->user()->current_factory_id;
         $data = $request->validate(['agreement' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:15360']]);
-        $path = \App\Support\PrivateFile::store($data['agreement'], 'agreement/'.$factoryId);
+        $path = \App\Support\Security\PrivateFile::store($data['agreement'], 'agreement/'.$factoryId);
         $document = AgreementDocument::create([
             'factory_id' => $factoryId, 'file_path' => $path,
             'original_name' => $data['agreement']->getClientOriginalName(), 'uploaded_by' => $request->user()->id,

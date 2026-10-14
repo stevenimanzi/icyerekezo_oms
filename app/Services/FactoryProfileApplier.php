@@ -7,7 +7,7 @@ use App\Models\Factory;
 use App\Models\Unit;
 use App\Models\WorkflowTemplate;
 use App\Models\Workstation;
-use App\Support\IndustryProfileCatalog;
+use App\Support\Catalogs\IndustryProfileCatalog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 

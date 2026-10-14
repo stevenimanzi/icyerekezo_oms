@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Factory;
 
 use App\Models\AuditLog;
 use App\Services\FactoryProfileApplier;
-use App\Support\IndustryProfileCatalog;
+use App\Support\Catalogs\IndustryProfileCatalog;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class FactoryFlowController extends Controller
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Production;
 
 use App\Models\AuditLog;
 use App\Models\BillOfMaterial;
@@ -9,12 +9,13 @@ use App\Models\ProductionStageExecution;
 use App\Models\Warehouse;
 use App\Models\WorkflowTemplate;
 use App\Services\ManufacturingService;
-use App\Support\OperationalScope;
+use App\Support\Tenancy\OperationalScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
 
 class ManufacturingController extends Controller
 {
@@ -136,7 +137,7 @@ class ManufacturingController extends Controller
         $bom = BillOfMaterial::findOrFail($data['bill_of_material_id']);
         abort_unless($bom->item_id === (int) $data['item_id'], 422, 'The BOM does not produce the selected item.');
         $order = ProductionOrder::create($data + ['created_by' => $request->user()->id]);
-        \App\Support\FactoryNotifier::notify(
+        \App\Support\Notifications\FactoryNotifier::notify(
             $factoryId, 'production.approve',
             'New production order needs approval',
             "{$order->order_number} for {$data['planned_quantity']} units was created by {$request->user()->name} and is waiting for approval.",

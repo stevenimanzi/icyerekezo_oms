@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Support\Notifications;
 
 use App\Models\User;
 use App\Notifications\AppNotification;

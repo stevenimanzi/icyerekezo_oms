@@ -20,6 +20,6 @@ class AgreementDocument extends Model
 
     protected function fileUrl(): Attribute
     {
-        return Attribute::get(fn () => \App\Support\PrivateFile::url($this->file_path));
+        return Attribute::get(fn () => \App\Support\Security\PrivateFile::url($this->file_path));
     }
 }

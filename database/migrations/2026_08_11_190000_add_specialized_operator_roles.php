@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Factory;
-use App\Support\RoleTemplateCatalog;
+use App\Support\Catalogs\RoleTemplateCatalog;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 

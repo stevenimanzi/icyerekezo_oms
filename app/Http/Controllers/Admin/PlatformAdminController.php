@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
 use App\Jobs\CreateDatabaseBackup;
 use App\Models\AuditLog;
@@ -18,10 +18,10 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\FactoryProfileApplier;
-use App\Support\IndustryProfileCatalog;
-use App\Support\PermissionCatalog;
-use App\Support\RoleTemplateCatalog;
-use App\Support\SubscriptionFeatureCatalog;
+use App\Support\Catalogs\IndustryProfileCatalog;
+use App\Support\Catalogs\PermissionCatalog;
+use App\Support\Catalogs\RoleTemplateCatalog;
+use App\Support\Catalogs\SubscriptionFeatureCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use App\Http\Controllers\Controller;
 
 class PlatformAdminController extends Controller
 {
@@ -111,7 +112,7 @@ class PlatformAdminController extends Controller
             'industry_profiles.*' => ['string', Rule::in(IndustryProfileCatalog::keys())],
             'owner_name' => ['required', 'string', 'max:120'],
             'owner_email' => ['required', 'email', 'unique:users,email'],
-            'owner_password' => ['required', \App\Support\PasswordPolicy::rule()],
+            'owner_password' => ['required', \App\Support\Security\PasswordPolicy::rule()],
             'manager_name' => ['nullable', 'required_with:manager_email', 'string', 'max:120'],
             'manager_email' => [
                 'nullable',
@@ -123,7 +124,7 @@ class PlatformAdminController extends Controller
             'manager_password' => [
                 'nullable',
                 'required_with:manager_email',
-                \App\Support\PasswordPolicy::rule(),
+                \App\Support\Security\PasswordPolicy::rule(),
             ],
         ]);
 
@@ -293,7 +294,7 @@ class PlatformAdminController extends Controller
             ],
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', \App\Support\PasswordPolicy::rule()],
+            'password' => ['required', \App\Support\Security\PasswordPolicy::rule()],
             'job_title' => ['nullable', 'string', 'max:120'],
             'employee_number' => [
                 'required',
@@ -340,7 +341,7 @@ class PlatformAdminController extends Controller
 
     public function resetPassword(Request $request, User $user): JsonResponse
     {
-        $data = $request->validate(['password' => ['required', 'confirmed', \App\Support\PasswordPolicy::rule()]]);
+        $data = $request->validate(['password' => ['required', 'confirmed', \App\Support\Security\PasswordPolicy::rule()]]);
         $user->update(['password' => $data['password']]);
         AuditLog::record('platform.password_reset', "Reset password for {$user->email}", $user);
 
@@ -353,7 +354,7 @@ class PlatformAdminController extends Controller
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:120'],
             'email' => ['sometimes', 'email', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
-            'password' => ['nullable', \App\Support\PasswordPolicy::rule()],
+            'password' => ['nullable', \App\Support\Security\PasswordPolicy::rule()],
             'is_active' => ['sometimes', 'boolean'], 
             'is_platform_admin' => ['sometimes', 'boolean'],
             'role_slug' => ['sometimes', 'string']

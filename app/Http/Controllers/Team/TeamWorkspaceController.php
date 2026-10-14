@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Team;
 
 use App\Models\AuditLog;
 use App\Models\Department;
@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use App\Http\Controllers\Controller;
 
 class TeamWorkspaceController extends Controller
 {
@@ -72,7 +73,7 @@ class TeamWorkspaceController extends Controller
         }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email:rfc', 'max:190'],
-            'password' => ['required', 'confirmed', \App\Support\PasswordPolicy::rule()],
+            'password' => ['required', 'confirmed', \App\Support\Security\PasswordPolicy::rule()],
             'role_id' => ['required', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
             'school_id' => ['nullable', Rule::exists('schools', 'id')->where('factory_id', $factoryId)],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
@@ -104,7 +105,7 @@ class TeamWorkspaceController extends Controller
             return $user;
         });
         AuditLog::record('team.user_created', "Created workspace account for {$user->name}", $user);
-        \App\Support\FactoryNotifier::notify(
+        \App\Support\Notifications\FactoryNotifier::notify(
             $factoryId, 'users.update',
             'New employee added',
             "{$user->name} was added to the team as {$role->name} by {$request->user()->name}.",
@@ -169,7 +170,7 @@ class TeamWorkspaceController extends Controller
             }
         });
         AuditLog::record('team.user_removed', "Removed {$name} from this factory", $user);
-        \App\Support\FactoryNotifier::notify(
+        \App\Support\Notifications\FactoryNotifier::notify(
             $factoryId, 'users.update',
             'Employee removed',
             "{$name} was removed from the team by {$request->user()->name}.",
@@ -185,7 +186,7 @@ class TeamWorkspaceController extends Controller
         $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
         abort_if($membership->is_owner, 422, 'The factory owner account cannot be changed here.');
         $data = $request->validate([
-            'password' => ['required', 'confirmed', \App\Support\PasswordPolicy::rule()],
+            'password' => ['required', 'confirmed', \App\Support\Security\PasswordPolicy::rule()],
         ]);
         
         $user->update(['password' => bcrypt($data['password'])]);

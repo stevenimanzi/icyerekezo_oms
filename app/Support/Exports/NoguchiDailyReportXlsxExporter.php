@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Support;
+namespace App\Support\Exports;
 
 use ZipArchive;
+use App\Support\Reports\NoguchiDailyRegister;
 
 /**
  * Excel export of the Noguchi daily report. It uses the same register data and layout as the report page:

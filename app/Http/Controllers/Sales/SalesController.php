@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Sales;
 
 use App\Models\AuditLog;
 use App\Models\Item;
@@ -17,6 +17,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
 
 class SalesController extends Controller
 {
@@ -261,9 +262,9 @@ class SalesController extends Controller
             'invoice' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:15360'],
         ]);
         if ($document->invoice_path) {
-            \App\Support\PrivateFile::delete($document->invoice_path);
+            \App\Support\Security\PrivateFile::delete($document->invoice_path);
         }
-        $path = \App\Support\PrivateFile::store($data['invoice'], 'invoices/'.$document->factory_id);
+        $path = \App\Support\Security\PrivateFile::store($data['invoice'], 'invoices/'.$document->factory_id);
         $document->update([
             'invoice_path' => $path,
             'invoice_original_name' => $data['invoice']->getClientOriginalName(),

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Finance;
 
 use App\Models\SalesDocument;
 use App\Models\SchoolPaymentSubmission;
@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
 
 class FinanceController extends Controller
 {
@@ -45,7 +46,7 @@ class FinanceController extends Controller
             'pending_receipts' => SchoolPaymentSubmission::where('factory_id', $factoryId)->where('status', 'pending')
                 ->with(['school:id,name', 'salesDocument:id,document_number,total_amount,paid_amount,payment_status'])
                 ->latest()->get()
-                ->map(fn ($submission) => [...$submission->toArray(), 'proof_url' => \App\Support\PrivateFile::url($submission->proof_path)]),
+                ->map(fn ($submission) => [...$submission->toArray(), 'proof_url' => \App\Support\Security\PrivateFile::url($submission->proof_path)]),
             'recent_decisions' => SchoolPaymentSubmission::where('factory_id', $factoryId)->whereIn('status', ['approved', 'rejected'])
                 ->with(['school:id,name', 'salesDocument:id,document_number', 'reviewer:id,name'])
                 ->latest('reviewed_at')->limit(30)->get(),

@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Support\PermissionCatalog;
-use App\Support\RoleTemplateCatalog;
+use App\Support\Catalogs\PermissionCatalog;
+use App\Support\Catalogs\RoleTemplateCatalog;
 use Tests\TestCase;
 
 class RolePermissionSplitTest extends TestCase

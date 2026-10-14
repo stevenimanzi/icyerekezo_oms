@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Factory;
 
 use App\Models\AuditLog;
 use App\Models\Department;
-use App\Support\IndustryDailyReportCatalog;
+use App\Support\Catalogs\IndustryDailyReportCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
 
 class FactorySettingsController extends Controller
 {

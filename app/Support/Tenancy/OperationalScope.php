@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Support\Tenancy;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;

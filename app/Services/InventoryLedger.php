@@ -8,7 +8,7 @@ use App\Models\StockBalance;
 use App\Models\StockTransaction;
 use App\Models\StorageLocation;
 use App\Models\Warehouse;
-use App\Support\OperationalScope;
+use App\Support\Tenancy\OperationalScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -65,7 +65,7 @@ class InventoryLedger
         if ($threshold <= 0 || $after >= $threshold || $before < $threshold) {
             return;
         }
-        \App\Support\FactoryNotifier::notify(
+        \App\Support\Notifications\FactoryNotifier::notify(
             $item->factory_id, 'inventory.adjust',
             'Low stock alert',
             "{$item->name} ({$item->sku}) has dropped to {$this->number($after)}, below its reorder level of {$this->number($threshold)}.",

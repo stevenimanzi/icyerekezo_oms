@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\SubscriptionPlan;
-use App\Support\SubscriptionFeatureCatalog;
+use App\Support\Catalogs\SubscriptionFeatureCatalog;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration

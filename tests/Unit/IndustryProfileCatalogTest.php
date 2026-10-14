@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Support\IndustryProfileCatalog as Catalog;
+use App\Support\Catalogs\IndustryProfileCatalog as Catalog;
 use Tests\TestCase;
 
 class IndustryProfileCatalogTest extends TestCase

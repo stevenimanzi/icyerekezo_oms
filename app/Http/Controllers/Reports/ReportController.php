@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Reports;
 
 use App\Models\Department;
 use App\Models\DeliveryVehicle;
@@ -9,16 +9,17 @@ use App\Models\SalesDocument;
 use App\Models\School;
 use App\Models\Shipment;
 use App\Models\StockTransaction;
-use App\Support\IndustryDailyReportCatalog;
-use App\Support\NoguchiDailyReportXlsxExporter;
-use App\Support\OperationalScope;
-use App\Support\SchoolOrderXlsxExporter;
+use App\Support\Catalogs\IndustryDailyReportCatalog;
+use App\Support\Exports\NoguchiDailyReportXlsxExporter;
+use App\Support\Tenancy\OperationalScope;
+use App\Support\Exports\SchoolOrderXlsxExporter;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Http\Controllers\Controller;
 
 class ReportController extends Controller
 {
@@ -148,7 +149,7 @@ class ReportController extends Controller
             $data
         );
         $path = tempnam(sys_get_temp_dir(), 'school-summary-') . '.xlsx';
-        \App\Support\SchoolSummaryXlsxExporter::create($factory->name, $orders, $filters, $path);
+        \App\Support\Exports\SchoolSummaryXlsxExporter::create($factory->name, $orders, $filters, $path);
 
         $filename = 'school-summary-report-' . now()->format('Y-m-d-His') . '.xlsx';
         return response()->download($path, $filename, [

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Support\Exports;
 
 use Illuminate\Support\Collection;
 use ZipArchive;

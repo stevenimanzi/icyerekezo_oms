@@ -1,30 +1,30 @@
 <?php
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ExecutiveDashboardController;
-use App\Http\Controllers\DepartmentDashboardController;
-use App\Http\Controllers\FactoryContextController;
-use App\Http\Controllers\FactoryFlowController;
-use App\Http\Controllers\FactorySettingsController;
-use App\Http\Controllers\FinanceController;
-use App\Http\Controllers\HrController;
-use App\Http\Controllers\SafetyController;
-use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\ManufacturingController;
-use App\Http\Controllers\MachineController;
-use App\Http\Controllers\LogisticsController;
-use App\Http\Controllers\PlatformAdminController;
-use App\Http\Controllers\ProductCatalogController;
-use App\Http\Controllers\ProcurementController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\QualityControlController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\SalesController;
-use App\Http\Controllers\SchoolPortalController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\PrivateFileController;
-use App\Http\Controllers\SupportController;
-use App\Http\Controllers\TeamWorkspaceController;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Dashboard\ExecutiveDashboardController;
+use App\Http\Controllers\Dashboard\DepartmentDashboardController;
+use App\Http\Controllers\Factory\FactoryContextController;
+use App\Http\Controllers\Factory\FactoryFlowController;
+use App\Http\Controllers\Factory\FactorySettingsController;
+use App\Http\Controllers\Finance\FinanceController;
+use App\Http\Controllers\Hr\HrController;
+use App\Http\Controllers\Safety\SafetyController;
+use App\Http\Controllers\Inventory\InventoryController;
+use App\Http\Controllers\Production\ManufacturingController;
+use App\Http\Controllers\Production\MachineController;
+use App\Http\Controllers\Logistics\LogisticsController;
+use App\Http\Controllers\Admin\PlatformAdminController;
+use App\Http\Controllers\Inventory\ProductCatalogController;
+use App\Http\Controllers\Procurement\ProcurementController;
+use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Production\QualityControlController;
+use App\Http\Controllers\System\SearchController;
+use App\Http\Controllers\Sales\SalesController;
+use App\Http\Controllers\School\SchoolPortalController;
+use App\Http\Controllers\System\NotificationController;
+use App\Http\Controllers\System\PrivateFileController;
+use App\Http\Controllers\System\SupportController;
+use App\Http\Controllers\Team\TeamWorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', function () {

@@ -1,18 +1,20 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Production;
 
 use App\Models\AuditLog;
 use App\Models\Item;
 use App\Models\ProductionOrder;
 use App\Models\ProductionStageExecution;
 use App\Models\QualityInspection;
-use App\Support\OperationalScope;
+use App\Support\Tenancy\OperationalScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\Inventory\InventoryController;
 
 class QualityControlController extends Controller
 {
@@ -75,7 +77,7 @@ class QualityControlController extends Controller
         });
         AuditLog::record('quality.inspection_created', "Recorded {$inspection->inspection_number}", $inspection);
         if ($data['result'] === 'failed') {
-            \App\Support\FactoryNotifier::notify(
+            \App\Support\Notifications\FactoryNotifier::notify(
                 $factoryId, 'quality.approve',
                 'Quality inspection failed',
                 "{$inspection->inspection_number} failed inspection — {$data['rejected_quantity']} units rejected.",
