@@ -1,0 +1,13 @@
+node_modules
+vendor
+public/build
+public/hot
+public/uploads
+public/assets
+storage
+bootstrap/cache
+database/*.sql
+Documents
+package-lock.json
+composer.lock
+*.blade.php

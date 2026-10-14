@@ -1,0 +1,27 @@
+{
+    "plugins": ["@prettier/plugin-php"],
+    "printWidth": 100,
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "endOfLine": "lf",
+    "overrides": [
+        {
+            "files": "*.php",
+            "options": {
+                "parser": "php",
+                "phpVersion": "8.3",
+                "printWidth": 120,
+                "trailingCommaPHP": true
+            }
+        },
+        {
+            "files": ["*.json", "*.css"],
+            "options": {
+                "tabWidth": 4
+            }
+        }
+    ]
+}
