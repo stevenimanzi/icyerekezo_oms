@@ -11,9 +11,10 @@ use App\Models\Role;
 use App\Models\School;
 use App\Services\RwandaLocationService;
 use App\Models\SystemSetting;
-use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Services\FactoryProfileApplier;
+use App\Support\IndustryProfileCatalog;
 use App\Support\PermissionCatalog;
 use App\Support\RoleTemplateCatalog;
 use Illuminate\Http\JsonResponse;
@@ -98,16 +99,20 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', $passwordRule],
             'factory_name' => ['required', 'string', 'max:160'],
             'industry_type' => ['required', 'string', 'max:80'],
+            'industry_profiles' => ['nullable', 'array', 'max:6'],
+            'industry_profiles.*' => ['string', Rule::in(IndustryProfileCatalog::keys())],
             'locale' => ['nullable', 'in:en,fr'],
         ]);
 
         [$user, $factory] = DB::transaction(function () use ($data) {
             PermissionCatalog::seed();
+            $profiles = IndustryProfileCatalog::normalize($data['industry_type'], $data['industry_profiles'] ?? []);
             $factory = Factory::create([
                 'uuid' => (string) Str::uuid(),
                 'name' => $data['factory_name'],
                 'slug' => $this->uniqueFactorySlug($data['factory_name']),
                 'industry_type' => $data['industry_type'],
+                'industry_profiles' => array_slice($profiles, 1) ?: null,
                 'email' => $data['email'],
                 'status' => 'pending',
                 'default_locale' => $data['locale'] ?? SystemSetting::valueFor('default_locale', 'en'),
@@ -126,10 +131,10 @@ class AuthController extends Controller
             $role->permissions()->sync(RoleTemplateCatalog::ownerPermissionIds());
             $user->roles()->attach($role->id, ['factory_id' => $factory->id]);
             RoleTemplateCatalog::createFor($factory);
-            foreach ([['Piece', 'pc', 'count', 0], ['Kilogram', 'kg', 'mass', 3], ['Litre', 'L', 'volume', 3], ['Metre', 'm', 'length', 3]] as [$name, $symbol, $dimension, $precision]) {
-                Unit::create(compact('name', 'symbol', 'dimension', 'precision') + ['factory_id' => $factory->id]);
-            }
             Warehouse::create(['factory_id' => $factory->id, 'name' => 'Main Warehouse', 'code' => 'MAIN', 'type' => 'general']);
+            // Units, item categories, departments and the industry work flow are set up here,
+            // so a new factory is ready to use without any manual configuration.
+            app(FactoryProfileApplier::class)->apply($factory);
 
             return [$user, $factory];
         });

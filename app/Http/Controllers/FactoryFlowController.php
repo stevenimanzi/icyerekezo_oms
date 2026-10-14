@@ -3,74 +3,38 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
-use App\Models\Department;
-use App\Models\WorkflowTemplate;
-use App\Models\Workstation;
-use App\Support\IndustryFlowCatalog;
-use App\Services\DepartmentDeduplicationService;
+use App\Services\FactoryProfileApplier;
+use App\Support\IndustryProfileCatalog;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class FactoryFlowController extends Controller
 {
     public function suggestion(Request $request): JsonResponse
     {
-        return response()->json(['industry' => $request->user()->currentFactory->industry_type, 'suggestion' => IndustryFlowCatalog::for($request->user()->currentFactory->industry_type)]);
+        $factory = $request->user()->currentFactory;
+        $resolved = IndustryProfileCatalog::resolve($factory->profileKeys());
+
+        // `departments` keeps the shape the setup page already reads, using the primary profile's flow.
+        $primary = array_key_first($resolved['profiles']);
+        $departments = collect($resolved['profiles'][$primary]['departments'])->map(fn (string $name, int $index) => [
+            'name' => $name,
+            'code' => strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $name), 0, 8)).str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
+            'workstation_type' => IndustryProfileCatalog::stationType($name),
+        ])->all();
+
+        return response()->json([
+            'industry' => $factory->industry_type,
+            'profiles' => $factory->profileKeys(),
+            'suggestion' => ['name' => 'Recommended '.str_replace('_', ' ', $primary).' workflow', 'departments' => $departments],
+        ]);
     }
 
-    public function apply(Request $request): JsonResponse
+    public function apply(Request $request, FactoryProfileApplier $applier): JsonResponse
     {
-        $factory = $request->user()->currentFactory;
-        $template = IndustryFlowCatalog::for($factory->industry_type);
         try {
-            $workflow = DB::transaction(function () use ($factory, $template) {
-                app(DepartmentDeduplicationService::class)->mergeForFactory($factory->id);
-                $workflow = WorkflowTemplate::updateOrCreate(['factory_id' => $factory->id, 'code' => 'INDUSTRY-DEFAULT'], ['name' => $template['name'], 'description' => 'Industry-based workflow. Factory managers can extend it.', 'status' => 'active', 'is_default' => true]);
-
-                // Move existing stages to a temporary sequence range first. This avoids
-                // unique-key collisions when a newly suggested stage is inserted before them.
-                $existingStages = $workflow->stages()->lockForUpdate()->get();
-                foreach ($existingStages->values() as $index => $stage) {
-                    $stage->update(['sequence' => 65000 - $index]);
-                }
-
-                $stageIds = [];
-                foreach ($template['departments'] as $index => $entry) {
-                    $department = Department::where('factory_id', $factory->id)
-                        ->where(fn ($query) => $query->where('code', $entry['code'])->orWhereRaw('LOWER(TRIM(name)) = ?', [Str::lower(trim($entry['name']))]))
-                        ->first();
-                    if ($department) {
-                        $department->update(['name' => $entry['name'], 'is_active' => true]);
-                    } else {
-                        $department = Department::create(['factory_id' => $factory->id, 'code' => $entry['code'], 'name' => $entry['name'], 'is_active' => true]);
-                    }
-                    $workstation = Workstation::where('factory_id', $factory->id)
-                        ->where(fn ($query) => $query->where('code', $entry['code'].'-MAIN')->orWhere('name', $entry['name'].' Main Station'))
-                        ->first();
-                    if ($workstation) {
-                        $workstation->update(['department_id' => $department->id, 'name' => $entry['name'].' Main Station', 'type' => $entry['workstation_type'], 'is_active' => true]);
-                    } else {
-                        $workstation = Workstation::create(['factory_id' => $factory->id, 'code' => $entry['code'].'-MAIN', 'department_id' => $department->id, 'name' => $entry['name'].' Main Station', 'type' => $entry['workstation_type'], 'is_active' => true]);
-                    }
-                    $stage = $workflow->stages()->updateOrCreate(['code' => Str::slug($entry['name'], '_')], ['department_id' => $department->id, 'workstation_id' => $workstation->id, 'name' => $entry['name'], 'sequence' => $index + 1, 'required_workers' => 1, 'quality_required' => str_contains(strtolower($entry['name']), 'quality'), 'approval_required' => str_contains(strtolower($entry['name']), 'quality')]);
-                    $stageIds[] = $stage->id;
-                }
-
-                $nextSequence = count($stageIds) + 1;
-                foreach ($workflow->stages()->whereNotIn('id', $stageIds)->get() as $obsoleteStage) {
-                    $hasProductionHistory = DB::table('production_stage_executions')->where('workflow_stage_id', $obsoleteStage->id)->exists();
-                    if ($hasProductionHistory) {
-                        $obsoleteStage->update(['sequence' => $nextSequence++]);
-                    } else {
-                        $obsoleteStage->delete();
-                    }
-                }
-
-                return $workflow;
-            });
+            $workflow = $applier->apply($request->user()->currentFactory);
         } catch (QueryException $exception) {
             report($exception);
 

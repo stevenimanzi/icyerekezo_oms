@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Activity, Boxes, Factory, FileText, PackageCheck, PackageOpen, RefreshCw, Truck, Users, Warehouse, ClipboardCheck } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -279,7 +279,9 @@ function StockStatusPanel({ items, fr, number }: any) {
     );
 }
 function Metric({label,value}:any){return <article className="department-metric panel"><div><small>{label}</small><strong>{value}</strong></div></article>}
-function Empty({text}:{text:string}){return <div className="department-empty"><PackageCheck size={26}/><span>{text}</span></div>}
+function Empty({ text }: { text: string }) {
+    return <div className="department-empty"><span>{text}</span></div>;
+}
 function FinishingCharts({data, fr, number}:any){
  const [filter, setFilter] = useState<'weekly'|'monthly'|'annually'>('weekly');
  const tooltipStyle={background:'var(--panel)',border:'1px solid var(--line)',borderRadius:10,boxShadow:'0 12px 30px rgba(15,23,42,.12)',color:'var(--text)'};

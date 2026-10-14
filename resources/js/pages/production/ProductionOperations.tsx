@@ -430,5 +430,10 @@ function Summary({ label, value, danger = false }: any) {
     return <article className={'panel production-summary-card ' + (danger ? 'danger' : '')}><small>{label}</small><b>{number(value)}</b></article>;
 }
 function Empty({ title, text }: any) {
-    return <div className="production-empty"><PackageCheck size={28} /><b>{title}</b><span>{text}</span></div>;
+    return (
+        <div className="production-empty">
+            <b>{title}</b>
+            <span>{text}</span>
+        </div>
+    );
 }

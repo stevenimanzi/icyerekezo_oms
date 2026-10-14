@@ -361,6 +361,36 @@
     align-items: center;
 }
 
+.auth-field > .industry-chips {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 6px;
+    max-height: 132px;
+    overflow-y: auto;
+}
+
+.industry-chips button {
+    padding: 6px 12px;
+    border: 1px solid #dce4f2;
+    border-radius: 999px;
+    background: #f7f9fd;
+    color: #4a5a78;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+}
+
+.industry-chips button:hover {
+    border-color: #b7c9f4;
+}
+
+.industry-chips button.selected {
+    border-color: var(--auth-blue, #225eea);
+    background: rgba(34, 94, 234, .1);
+    color: var(--auth-blue, #225eea);
+}
+
 .auth-field > div > svg:first-child {
     display: none;
 }

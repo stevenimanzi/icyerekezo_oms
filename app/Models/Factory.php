@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\IndustryProfileCatalog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,14 +11,36 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'name', 'slug', 'industry_type', 'email', 'phone', 'country_code', 'currency_code', 'timezone', 'default_locale', 'status', 'settings'])]
+#[Fillable(['uuid', 'name', 'slug', 'industry_type', 'industry_profiles', 'email', 'phone', 'country_code', 'currency_code', 'timezone', 'default_locale', 'status', 'settings'])]
 class Factory extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
-        return ['settings' => 'array'];
+        return ['settings' => 'array', 'industry_profiles' => 'array'];
+    }
+
+    /** Industry profiles in effect: the primary industry first, then any additional ones. */
+    public function profileKeys(): array
+    {
+        return IndustryProfileCatalog::normalize($this->industry_type, $this->industry_profiles ?? []);
+    }
+
+    public function features(): array
+    {
+        return IndustryProfileCatalog::resolve($this->profileKeys())['features'];
+    }
+
+    public function hasFeature(string $feature): bool
+    {
+        return in_array($feature, $this->features(), true);
+    }
+
+    /** Tracking flags new items start with, for example batch and expiry for food and dairy. */
+    public function itemDefaults(): array
+    {
+        return IndustryProfileCatalog::resolve($this->profileKeys())['item_defaults'];
     }
 
     public function users(): BelongsToMany

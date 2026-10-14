@@ -377,7 +377,20 @@ function OrderDetailsModal({ order, editable, mode = 'deliver', busy, run, close
                     <div><small>Number ordered</small><b>{Number(order.item_count || 0).toLocaleString()}</b></div>
                     <div><small>Total price</small><b>{money(order.total_amount, order.currency_code)}</b></div>
                     <div><small>Date received</small><b>{date(order.document_date)}</b></div>
-                    <div><small>Order status</small><span className={'admin-status ' + order.status}>{plainStatus(order.status)}</span></div>
+                    <div>
+                        <small>Order status</small>
+                        <b
+                            className={'admin-status ' + order.status}
+                            style={{
+                                background: 'transparent',
+                                padding: 0,
+                                borderRadius: 0,
+                                boxShadow: 'none',
+                            }}
+                        >
+                            {plainStatus(order.status)}
+                        </b>
+                    </div>
                 </div>
                 <div className="school-modal-body">
                     <h3>Clothes in this order</h3>

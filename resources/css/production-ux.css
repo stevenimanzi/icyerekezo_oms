@@ -235,14 +235,7 @@
 }
 
 .production-empty > svg {
-    display: block;
-    width: 52px;
-    height: 52px;
-    margin: 0 auto 18px;
-    padding: 13px;
-    border-radius: 15px;
-    background: color-mix(in srgb, var(--brand) 10%, var(--panel));
-    color: var(--brand);
+    display: none !important;
 }
 
 .production-empty b {

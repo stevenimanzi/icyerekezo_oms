@@ -961,7 +961,10 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
   const [updated, setUpdated] = useState<Date | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [reportPage, setReportPage] = useState(1);
-  const [reportTab, setReportTab] = useState<'quantity' | 'summary' | 'daily_sheet'>('quantity');
+  const isLogistics = forcedScope === "logistics" || (data ? data.report?.scope === "logistics" : false);
+  const [reportTab, setReportTab] = useState<'quantity' | 'summary' | 'daily_sheet'>(
+    forcedScope === "logistics" ? 'quantity' : 'daily_sheet'
+  );
 
   const hasInitialPeriod = useRef(searchParams.has("period"));
   const defaultPeriodApplied = useRef(false);
@@ -969,12 +972,12 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
   const emptyFallbackDone = useRef(false);
 
   const reportScope = data?.report?.scope;
-  const logisticsOnly = reportScope === "logistics";
-  const warehouseOnly = reportScope === "warehouse";
-  const departmentOnly = reportScope === "department";
-  const factoryWide = reportScope === "factory";
+  const logisticsOnly = isLogistics;
+  const warehouseOnly = !isLogistics && reportScope === "warehouse";
+  const departmentOnly = !isLogistics && reportScope === "department";
+  const factoryWide = !isLogistics && (reportScope === "factory" || !reportScope);
   const isNoguchi = noguchiFactoryName(data?.factory?.name);
-  const noguchiOrdersOnly = isNoguchi && reportTab !== 'daily_sheet';
+  const noguchiOrdersOnly = isNoguchi && isLogistics;
   const noguchiFactoryWide = factoryWide && isNoguchi;
 
   const allDepartments: any[] = data?.filters?.departments || [];
@@ -1086,10 +1089,10 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 FACTORY WORK
               </div>
               <h1>
-                {noguchiOrdersOnly
-                  ? "School order reports"
-                  : noguchiFactoryWide
-                    ? "NOGUCHI HOLDINGS LTD daily report"
+                {isLogistics
+                  ? (isNoguchi ? "School order reports" : "Daily logistics report")
+                  : isNoguchi
+                    ? "Daily factory operation report"
                     : logisticsOnly
                       ? "Daily logistics report"
                       : warehouseOnly
@@ -1101,9 +1104,9 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                             : "Daily factory report"}
               </h1>
               <p>
-                {noguchiOrdersOnly
+                {isLogistics
                   ? "Review school order quantities, delivery progress, values and statuses by district and sector."
-                  : noguchiFactoryWide
+                  : isNoguchi
                     ? "Warehouse, cutting, production, finishing and closing stock in the official Noguchi daily "
                       + "register format."
                     : logisticsOnly
@@ -1121,11 +1124,11 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
               <a
                 className="secondary-btn"
                 href={
-                  reportTab === "summary"
-                    ? `/api/reports/summary.xlsx?${new URLSearchParams(filters)}`
-                    : reportTab === "daily_sheet"
-                      ? `/api/reports/daily.xlsx?${new URLSearchParams(filters)}`
-                      : `/api/reports/orders.xlsx?${new URLSearchParams(filters)}`
+                  isLogistics
+                    ? (reportTab === "summary"
+                        ? `/api/reports/summary.xlsx?${new URLSearchParams(filters)}`
+                        : `/api/reports/orders.xlsx?${new URLSearchParams(filters)}`)
+                    : `/api/reports/daily.xlsx?${new URLSearchParams(filters)}`
                 }
               >
                 Export Excel
@@ -1133,7 +1136,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
             )}
             <button className="primary-btn" disabled={!data} onClick={() => window.print()}>
               <Printer size={17} />
-              Print filtered report
+              Print
             </button>
           </div>
         </div>
@@ -1148,15 +1151,16 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                 setFilters({ ...filters, period: event.target.value });
               }}
             >
-              {isNoguchi && <option value="all">All order dates</option>}
+              {isLogistics && isNoguchi && <option value="all">All order dates</option>}
               <option value="day">Today</option>
               <option value="week">Last 7 days</option>
               <option value="month">This month</option>
               <option value="year">Yearly</option>
               <option value="custom">Choose dates</option>
+              {!isLogistics && isNoguchi && <option value="all">All dates</option>}
             </select>
           </label>
-          {factoryWide && (!isNoguchi || reportTab === "daily_sheet") && (
+          {!isLogistics && (
             <label>
               Department
               <select
@@ -1172,7 +1176,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
               </select>
             </label>
           )}
-          {(logisticsOnly || (isNoguchi && reportTab !== "daily_sheet")) && (
+          {isLogistics && (
             <>
               <label>
                 Order status
@@ -1334,7 +1338,7 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
         </header>
         </>
       )}
-      {isNoguchi && data && (
+      {isLogistics && isNoguchi && data && (
         <div
           className="no-print"
           style={{
@@ -1357,64 +1361,70 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
           >
             Summary report
           </button>
-          <button
-            className={reportTab === "daily_sheet" ? "primary-btn" : "secondary-btn"}
-            onClick={() => setReportTab("daily_sheet")}
-          >
-            Daily register sheet
-          </button>
         </div>
       )}
-      <div className={isNoguchi && reportTab !== "quantity" ? "hidden" : ""}>
-        {isNoguchi && data && <NoguchiPrintOrderTable rows={reportOrders} />}
-        {isNoguchi && data && (
-          <LegacyOrderMatrix rows={visibleReportOrders} open={setSelectedOrder} />
-        )}
-        {isNoguchi && reportLastPage > 1 && (
-          <nav className="school-pagination no-print" aria-label="School order report pages">
-            <button
-              className="secondary-btn"
-              disabled={reportPage <= 1}
-              onClick={() => changeReportPage(reportPage - 1)}
-            >
-              Previous
-            </button>
-            <span>
-              Page {reportPage} of {reportLastPage} · {reportOrders.length.toLocaleString()} orders
-            </span>
-            <button
-              className="secondary-btn"
-              disabled={reportPage >= reportLastPage}
-              onClick={() => changeReportPage(reportPage + 1)}
-            >
-              Next
-            </button>
-          </nav>
-        )}
-      </div>
-      <div className={isNoguchi && reportTab !== "summary" ? "hidden" : ""}>
-        {isNoguchi && data && (
-          <NoguchiSummaryReportTable
-            rows={reportOrders}
-            schoolLevelFilter={filters.school_level}
-          />
-        )}
-      </div>
-      <div className={isNoguchi && reportTab !== "daily_sheet" ? "hidden" : ""}>
-        {isNoguchi && data && (
-          <NoguchiDailyDocument
-            data={data}
-            departmentId={filters.department_id}
-          />
-        )}
-      </div>
+      {isLogistics && (
+        <>
+          <div className={reportTab !== "quantity" ? "hidden" : ""}>
+            {isNoguchi && data && <NoguchiPrintOrderTable rows={reportOrders} />}
+            {isNoguchi && data && (
+              <LegacyOrderMatrix rows={visibleReportOrders} open={setSelectedOrder} />
+            )}
+            {isNoguchi && reportLastPage > 1 && (
+              <nav className="school-pagination no-print" aria-label="School order report pages">
+                <button
+                  className="secondary-btn"
+                  disabled={reportPage <= 1}
+                  onClick={() => changeReportPage(reportPage - 1)}
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {reportPage} of {reportLastPage} · {reportOrders.length.toLocaleString()} orders
+                </span>
+                <button
+                  className="secondary-btn"
+                  disabled={reportPage >= reportLastPage}
+                  onClick={() => changeReportPage(reportPage + 1)}
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </div>
+          <div className={reportTab !== "summary" ? "hidden" : ""}>
+            {isNoguchi && data && (
+              <NoguchiSummaryReportTable
+                rows={reportOrders}
+                schoolLevelFilter={filters.school_level}
+              />
+            )}
+          </div>
+          {!isNoguchi && data && <LogisticsDocument data={data} />}
+        </>
+      )}
+      {!isLogistics && (
+        <>
+          {isNoguchi && data && (
+            <NoguchiDailyDocument
+              data={data}
+              departmentId={filters.department_id}
+            />
+          )}
+          {!isNoguchi && data && (
+            <Document
+              data={data}
+              departmentId={filters.department_id || (data.report?.department_id ?? "")}
+            />
+          )}
+        </>
+      )}
       {isNoguchi && data && (
         <footer className="noguchi-print-footer">
-          <span>{data.factory.name} · Operational report</span>
+          <span>{data.factory.name} · {isLogistics ? "School garment logistics report" : "Daily factory operation report"}</span>
           <span>Powered by ICYEREKEZO OMS</span>
         </footer>
       )}
-      {!isNoguchi && data && <Document data={data} departmentId={data.report?.department_id ?? ""} />}
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}

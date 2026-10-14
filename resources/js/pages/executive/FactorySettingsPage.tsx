@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Clock3, FileText, Factory, MapPin, Save, Settings, ShieldCheck } from 'lucide-react';
+import { Building2, Clock3, FileText, MapPin, Save, Settings, ShieldCheck } from 'lucide-react';
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 async function api(url: string, options: RequestInit = {}) {
@@ -236,7 +236,9 @@ export default function FactorySettingsPage() {
                 </div>
 
                 <aside className="panel factory-settings-summary">
-                    <Factory size={30} /><small>ACTIVE FACTORY</small><h2>{form.name}</h2><p>{String(form.industry_type || '').replaceAll('_', ' ')}</p>
+                    <small>ACTIVE FACTORY</small>
+                    <h2>{form.name}</h2>
+                    <p>{String(form.industry_type || '').replaceAll('_', ' ')}</p>
                     <dl>
                         <div><dt>Location</dt><dd>{form.settings.city || 'Not set'}, {form.country_code}</dd></div>
                         <div><dt>Working hours</dt><dd>{form.settings.opening_time} – {form.settings.closing_time}</dd></div>

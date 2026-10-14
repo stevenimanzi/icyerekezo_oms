@@ -105,6 +105,13 @@ class InventoryController extends Controller
         $this->ensureWarehouseKeeper($request);
         $factoryId = $request->user()->current_factory_id;
         $data = $request->validate(['name' => ['required', 'string', 'max:160', Rule::unique('items')->where('factory_id', $factoryId)], 'category_id' => ['nullable', Rule::exists('item_categories', 'id')->where('factory_id', $factoryId)], 'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product', 'service'])], 'unit_id' => ['required', Rule::exists('units', 'id')->where('factory_id', $factoryId)], 'standard_cost' => ['nullable', 'numeric', 'min:0'], 'minimum_stock' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'], 'batch_tracked' => ['nullable', 'boolean'], 'expiry_tracked' => ['nullable', 'boolean']]);
+        // Industry defaults (for example batch and expiry tracking for food and dairy) apply
+        // unless the person creating the item chose a value explicitly.
+        foreach ($request->user()->currentFactory->itemDefaults() as $flag => $value) {
+            if (! $request->has($flag)) {
+                $data[$flag] = $value;
+            }
+        }
         $data['sku'] = $this->generateStockCode($factoryId, $data['type']);
 
         return response()->json(Item::create($data), 201);

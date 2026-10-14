@@ -15,9 +15,10 @@ use App\Models\SubscriptionPlan;
 use App\Models\SupportMessage;
 use App\Models\SupportTicket;
 use App\Models\SystemSetting;
-use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Services\FactoryProfileApplier;
+use App\Support\IndustryProfileCatalog;
 use App\Support\PermissionCatalog;
 use App\Support\RoleTemplateCatalog;
 use App\Support\SubscriptionFeatureCatalog;
@@ -106,6 +107,8 @@ class PlatformAdminController extends Controller
         $data = $request->validate([
             'factory_name' => ['required', 'string', 'max:160'],
             'industry_type' => ['required', 'string', 'max:80'],
+            'industry_profiles' => ['nullable', 'array', 'max:6'],
+            'industry_profiles.*' => ['string', Rule::in(IndustryProfileCatalog::keys())],
             'owner_name' => ['required', 'string', 'max:120'],
             'owner_email' => ['required', 'email', 'unique:users,email'],
             'owner_password' => ['required', \App\Support\PasswordPolicy::rule()],
@@ -138,6 +141,7 @@ class PlatformAdminController extends Controller
                 'name' => $data['factory_name'],
                 'slug' => $slug,
                 'industry_type' => $data['industry_type'],
+                'industry_profiles' => array_slice(IndustryProfileCatalog::normalize($data['industry_type'], $data['industry_profiles'] ?? []), 1) ?: null,
                 'email' => $data['owner_email'],
                 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'),
                 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali'),
@@ -199,24 +203,13 @@ class PlatformAdminController extends Controller
                 ]);
             }
 
-            $units = [
-                ['Piece', 'pc', 'count', 0],
-                ['Kilogram', 'kg', 'mass', 3],
-                ['Litre', 'L', 'volume', 3],
-                ['Metre', 'm', 'length', 3],
-            ];
-            foreach ($units as [$name, $symbol, $dimension, $precision]) {
-                Unit::create(compact('name', 'symbol', 'dimension', 'precision') + [
-                    'factory_id' => $factory->id,
-                ]);
-            }
-
             Warehouse::create([
                 'factory_id' => $factory->id,
                 'name' => 'Main Warehouse',
                 'code' => 'MAIN',
                 'type' => 'general',
             ]);
+            app(FactoryProfileApplier::class)->apply($factory);
 
             return [$factory, $owner, $manager];
         });

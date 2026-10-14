@@ -517,7 +517,6 @@ function ReturnItems({ data, load, setMessage, setError, onNavigate }: any) {
                     </div>
                 ) : (
                     <div className="school-return-empty">
-                        <PackageOpen />
                         <h3>No delivered items are available to return</h3>
                         <p>Items will appear here after the factory records a delivery to your school.</p>
                         <button type="button" className="secondary-btn" onClick={() => onNavigate('order-history')}>View Order History</button>

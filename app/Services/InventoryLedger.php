@@ -46,7 +46,7 @@ class InventoryLedger
             }
 
             $balance->update(['quantity_on_hand' => $newOnHand, 'quantity_reserved' => $newReserved, 'quantity_quarantined' => $newQuarantined]);
-            $transaction = StockTransaction::create([...$dimensions, 'uuid' => (string) Str::uuid(), 'type' => $data['type'], 'quantity_delta' => $onHand, 'reserved_delta' => $reserved, 'quarantined_delta' => $quarantined, 'unit_cost' => $data['unit_cost'] ?? $item->standard_cost, 'balance_after' => $newOnHand, 'reason' => $data['reason'] ?? null, 'performed_by' => auth()->id(), 'occurred_at' => $data['occurred_at'] ?? now()]);
+            $transaction = StockTransaction::create([...$dimensions, 'uuid' => (string) Str::uuid(), 'type' => $data['type'], 'quantity_delta' => $onHand, 'reserved_delta' => $reserved, 'quarantined_delta' => $quarantined, 'unit_cost' => $data['unit_cost'] ?? $item->standard_cost, 'balance_after' => $newOnHand, 'reason' => $data['reason'] ?? null, 'reverses_transaction_id' => $data['reverses_transaction_id'] ?? null, 'performed_by' => auth()->id(), 'occurred_at' => $data['occurred_at'] ?? now()]);
 
             $this->applyStageTransition($data, $item, $batch);
             $this->maybeAlertLowStock($item, $currentOnHand, $newOnHand);
@@ -149,6 +149,7 @@ class InventoryLedger
                 'quantity' => abs((float) $original->quantity_delta ?: (float) $original->reserved_delta ?: (float) $original->quarantined_delta),
                 'unit_cost' => $original->unit_cost,
                 'reason' => 'REVERSAL of transaction ' . $original->id,
+                'reverses_transaction_id' => $original->id,
             ]);
 
             // Post corrected transaction

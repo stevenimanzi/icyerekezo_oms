@@ -25,6 +25,7 @@ import {
   Languages,
   LayoutDashboard,
   LockKeyhole,
+  LogOut,
   Mail,
   Megaphone,
   Menu,
@@ -703,6 +704,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["quality", ClipboardCheck, locale === "en" ? "Quality results" : "R\u00e9sultats qualit\u00e9", "quality.view"],
         ["sales", PackageOpen, locale === "en" ? "Sales overview" : "Vue des ventes", "sales.view"],
         ["logistics", Truck, locale === "en" ? "Delivery overview" : "Vue des livraisons", "logistics.view"],
+        ["logistics-reports", Truck, locale === "en" ? "Logistics report" : "Rapport logistique", "reports.view"],
         ["reports", FileText, locale === "en" ? "Factory reports" : "Rapports de l\u2019usine", "reports.view"],
     ] as const : isFactoryAdmin ? [
         // ─── Factory Administrator ───
@@ -716,6 +718,7 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
         ["logistics", Truck, t.logistics, "logistics.view"],
         ["team", Users, t.people, "users.view"],
         ["machines", Wrench, t.machines, "maintenance.view"],
+        ["logistics-reports", Truck, locale === "en" ? "Logistics report" : "Rapport logistique", "reports.view"],
         ["reports", FileText, t.reports, "reports.view"],
     ] as const : isFactoryManager ? [
         // ─── Factory Manager ───
@@ -1097,6 +1100,15 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                     </div>
                 )}
             </div>
+            <button
+                type="button"
+                className="sidebar-logout-btn"
+                onClick={onLogout}
+                title={locale === "en" ? "Sign out" : "Se déconnecter"}
+            >
+                <LogOut size={16} />
+                <span>{locale === "en" ? "Sign out" : "Se déconnecter"}</span>
+            </button>
         </aside>
         {sidebarOpen && <button className="backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
         <main className="main-area">
@@ -1205,10 +1217,21 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                         </button>
                         {profileOpen && (
                             <div className="top-popover profile-menu">
-                                <button onClick={() => { setActivePage("profile"); setProfileOpen(false); }}>
-                                    {locale === "en" ? "Profile & settings" : "Profil et paramètres"}
+                                <button
+                                    onClick={() => {
+                                        setActivePage("profile");
+                                        setProfileOpen(false);
+                                    }}
+                                >
+                                    <UserRound size={16} />
+                                    <span>
+                                        {locale === "en" ? "Profile & settings" : "Profil et paramètres"}
+                                    </span>
                                 </button>
-                                <button onClick={onLogout}>{locale === "en" ? "Sign out" : "Se déconnecter"}</button>
+                                <button onClick={onLogout}>
+                                    <LogOut size={16} />
+                                    <span>{locale === "en" ? "Sign out" : "Se déconnecter"}</span>
+                                </button>
                             </div>
                         )}
                     </div>
@@ -1322,7 +1345,12 @@ function Dashboard({ user, onLogout, onMaintenance }: { user: AuthUser; onLogout
                         ) : activePage === "team" ? (
                             <TeamManagementPage />
                         ) : activePage === "reports" || activePage === "logistics-reports" ? (
-                            <ReportsPage key={activePage} canExport={can("reports.export")} productionOnly={user.workspace === "production" && !isExecutiveUser} forcedScope={activePage === "logistics-reports" ? "logistics" : undefined} />
+                            <ReportsPage
+                                key={activePage}
+                                canExport={can("reports.export")}
+                                productionOnly={user.workspace === "production" && !isExecutiveUser}
+                                forcedScope={activePage === "logistics-reports" || isLogisticsUser ? "logistics" : undefined}
+                            />
                         ) : activePage === "quality" ? (
                             <QualityControlPage can={can} />
                         ) : activePage === "machines" ? (
@@ -1585,9 +1613,6 @@ function NotificationsPage({
                 ))}
                 {!notifications.length && !announcements.length && (
                     <div className="panel empty-state">
-                        <span>
-                            <Bell size={28} />
-                        </span>
                         <h3>{locale === "en" ? "No notifications" : "Aucune notification"}</h3>
                         <p>{locale === "en" ? "New system messages will appear here automatically." : "Les nouveaux messages apparaîtront ici automatiquement."}</p>
                     </div>
@@ -1891,9 +1916,6 @@ function ModulePage({ page, locale, can, onNavigate }: { page: string; locale: L
                     }
                 />
                 <div className="empty-state">
-                    <span>
-                        <Icon size={28} />
-                    </span>
                     <h3>{locale === "en" ? `${sections[selected]} workspace is ready` : `L’espace ${sections[selected]} est prêt`}</h3>
                     <p>
                         {locale === "en"
@@ -2173,6 +2195,27 @@ function MaintenanceScreen({ message, onRetry, onAdmin }: { message: string; onR
     );
 }
 
+// Keys match the backend IndustryProfileCatalog. "Other" is free text and has no profile of its own.
+const INDUSTRY_OPTIONS: [key: string, en: string, fr: string][] = [
+    ["general_manufacturing", "General manufacturing", "Fabrication generale"],
+    ["clothing_textiles", "Clothing and textiles", "Vetements et textiles"],
+    ["food_processing", "Food processing", "Transformation alimentaire"],
+    ["beverages", "Beverages and drinks", "Boissons"],
+    ["dairy", "Milk and dairy products", "Lait et produits laitiers"],
+    ["pharmaceuticals_medicines", "Medicines and pharmaceuticals", "Medicaments et produits pharmaceutiques"],
+    ["plastics_rubber", "Plastics and rubber materials", "Matieres plastiques et caoutchouc"],
+    ["steel_metals", "Steel and metal products", "Acier et produits metalliques"],
+    ["grain_flour_milling", "Maize, grain and flour milling", "Mouture de mais, cereales et farine"],
+    ["agriculture_animal_feed", "Agriculture and animal feed", "Agriculture et alimentation animale"],
+    ["construction_materials", "Construction materials, cement and bricks", "Materiaux de construction, ciment et briques"],
+    ["furniture_wood", "Furniture and wood products", "Meubles et produits du bois"],
+    ["paper_packaging_printing", "Paper, packaging and printing", "Papier, emballage et imprimerie"],
+    ["chemicals_cosmetics_soap", "Chemicals, cosmetics and soap", "Produits chimiques, cosmetiques et savon"],
+    ["electronics_electrical", "Electronics and electrical products", "Produits electroniques et electriques"],
+    ["automotive_machinery", "Automotive parts and machinery", "Pieces automobiles et machines"],
+    ["recycling_waste", "Recycling and waste processing", "Recyclage et traitement des dechets"],
+];
+
 function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user: AuthUser) => void; onMaintenance: (message: string) => void }) {
     const schoolAuth = window.location.pathname.startsWith("/school/");
     const [mode, setMode] = useState<"login" | "register" | "school_register" | "forgot">(() =>
@@ -2195,6 +2238,7 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
         password_confirmation: "",
         factory_name: "",
         industry_type: "general_manufacturing",
+        industry_profiles: [] as string[],
         industry_other: "",
         phone: "",
         district: "",
@@ -2262,7 +2306,12 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                           password_confirmation: form.password_confirmation,
                           locale,
                         }
-                      : { ...form, industry_type: form.industry_type === "other" ? form.industry_other : form.industry_type, locale };
+                      : {
+                          ...form,
+                          industry_type: form.industry_type === "other" ? form.industry_other : form.industry_type,
+                          industry_profiles: form.industry_profiles.filter((key) => key !== form.industry_type),
+                          locale,
+                        };
             const data = await api<{ user: AuthUser } | { status: "verification_required"; email: string }>(endpoint, {
                 method: "POST",
                 body: JSON.stringify(payload),
@@ -2565,29 +2614,36 @@ function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated: (user
                                     <div>
                                         <Factory />
                                         <select aria-label={words.industry} value={form.industry_type} onChange={(e) => update("industry_type", e.target.value)}>
-                                            <option value="general_manufacturing">{locale === "en" ? "General manufacturing" : "Fabrication generale"}</option>
-                                            <option value="clothing_textiles">{locale === "en" ? "Clothing and textiles" : "Vetements et textiles"}</option>
-                                            <option value="food_processing">{locale === "en" ? "Food processing" : "Transformation alimentaire"}</option>
-                                            <option value="beverages">{locale === "en" ? "Beverages and drinks" : "Boissons"}</option>
-                                            <option value="dairy">{locale === "en" ? "Milk and dairy products" : "Lait et produits laitiers"}</option>
-                                            <option value="pharmaceuticals_medicines">{locale === "en" ? "Medicines and pharmaceuticals" : "Medicaments et produits pharmaceutiques"}</option>
-                                            <option value="plastics_rubber">{locale === "en" ? "Plastics and rubber materials" : "Matieres plastiques et caoutchouc"}</option>
-                                            <option value="steel_metals">{locale === "en" ? "Steel and metal products" : "Acier et produits metalliques"}</option>
-                                            <option value="grain_flour_milling">{locale === "en" ? "Maize, grain and flour milling" : "Mouture de mais, cereales et farine"}</option>
-                                            <option value="agriculture_animal_feed">{locale === "en" ? "Agriculture and animal feed" : "Agriculture et alimentation animale"}</option>
-                                            <option value="construction_materials">{locale === "en" ? "Construction materials, cement and bricks" : "Materiaux de construction, ciment et briques"}</option>
-                                            <option value="furniture_wood">{locale === "en" ? "Furniture and wood products" : "Meubles et produits du bois"}</option>
-                                            <option value="paper_packaging_printing">{locale === "en" ? "Paper, packaging and printing" : "Papier, emballage et imprimerie"}</option>
-                                            <option value="chemicals_cosmetics_soap">{locale === "en" ? "Chemicals, cosmetics and soap" : "Produits chimiques, cosmetiques et savon"}</option>
-                                            <option value="electronics_electrical">{locale === "en" ? "Electronics and electrical products" : "Produits electroniques et electriques"}</option>
-                                            <option value="automotive_machinery">{locale === "en" ? "Automotive parts and machinery" : "Pieces automobiles et machines"}</option>
-                                            <option value="recycling_waste">{locale === "en" ? "Recycling and waste processing" : "Recyclage et traitement des dechets"}</option>
+                                            {INDUSTRY_OPTIONS.map(([key, en, fr]) => (
+                                                <option key={key} value={key}>{locale === "en" ? en : fr}</option>
+                                            ))}
                                             <option value="other">{locale === "en" ? "Other type of factory" : "Autre type d'usine"}</option>
                                         </select>
                                         <ChevronDown />
                                     </div>
                                 </label>
                             )}
+                            <div className="auth-field">
+                                <span>{locale === "en" ? "Also makes (optional)" : "Fabrique aussi (facultatif)"}</span>
+                                <div className="industry-chips" role="group" aria-label={locale === "en" ? "Other industries" : "Autres secteurs"}>
+                                    {INDUSTRY_OPTIONS.filter(([key]) => key !== form.industry_type).map(([key, en, fr]) => (
+                                        <button
+                                            type="button"
+                                            key={key}
+                                            aria-pressed={form.industry_profiles.includes(key)}
+                                            className={form.industry_profiles.includes(key) ? "selected" : ""}
+                                            onClick={() => setForm((current) => ({
+                                                ...current,
+                                                industry_profiles: current.industry_profiles.includes(key)
+                                                    ? current.industry_profiles.filter((value) => value !== key)
+                                                    : [...current.industry_profiles, key],
+                                            }))}
+                                        >
+                                            {locale === "en" ? en : fr}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             {mode === "register" && form.industry_type === "other" && (
                                 <AuthInput icon={<Factory />} label={words.specifyIndustry}>
                                     <input

@@ -12,12 +12,11 @@ async function api(url: string, options: RequestInit = {}) {
     return response.json();
 }
 
-function Empty({ icon: Icon, title, desc }: any) {
+function Empty({ title, desc }: any) {
     return (
         <tr>
             <td colSpan={10}>
                 <div className="empty-state">
-                    <Icon className="empty-icon" size={32} />
                     <h4>{title}</h4>
                     <p>{desc}</p>
                 </div>

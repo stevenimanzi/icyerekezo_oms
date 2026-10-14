@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Boxes, ChevronRight, PackageOpen } from 'lucide-react';
+import { ChevronRight, PackageOpen } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 async function loadDashboard(period: string) {
@@ -21,6 +21,26 @@ async function loadDashboard(period: string) {
 
 const number = (value: any) =>
     Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+const getStatusColor = (status: string) => {
+    switch (String(status || '').toLowerCase()) {
+        case 'delivered':
+        case 'completed':
+        case 'success':
+            return '#16a34a';
+        case 'accepted':
+            return '#2563eb';
+        case 'partial':
+            return '#7c3aed';
+        case 'pending':
+            return '#d97706';
+        case 'cancelled':
+        case 'rejected':
+            return '#dc2626';
+        default:
+            return '#2563eb';
+    }
+};
 
 export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
     const [data, setData] = useState<any>(null);
@@ -262,24 +282,12 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                             : 'Product'}
                                 </th>
                                 <th>{locale === 'fr' ? 'Statut' : 'Status'}</th>
-                                <th>{locale === 'fr' ? 'Progression' : 'Progress'}</th>
                                 <th>{locale === 'fr' ? 'Échéance' : 'Due date'}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {orders.length ? (
                                 orders.map((item: any) => {
-                                    const progress =
-                                        Number(item.planned_quantity) > 0
-                                            ? Math.min(
-                                                  100,
-                                                  Math.round(
-                                                      (Number(item.completed_quantity) /
-                                                          Number(item.planned_quantity)) *
-                                                          100,
-                                                  ),
-                                              )
-                                            : 0;
                                     return (
                                         <tr key={item.id}>
                                             <td>
@@ -287,9 +295,6 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                             </td>
                                             <td>
                                                 <div className="product-cell">
-                                                    <span className="product-icon p0">
-                                                        <Boxes size={17} />
-                                                    </span>
                                                     <div>
                                                         <strong>
                                                             {item.school_name || item.item?.name || 'Order'}
@@ -299,25 +304,18 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                                 </div>
                                             </td>
                                             <td>
-                                                <span className={'status s0'}>
+                                                <span
+                                                    className="status"
+                                                    style={{
+                                                        background: 'transparent',
+                                                        padding: 0,
+                                                        color: getStatusColor(item.status),
+                                                        fontWeight: 700,
+                                                        textTransform: 'capitalize',
+                                                    }}
+                                                >
                                                     {String(item.status || '').replaceAll('_', ' ')}
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <div className="progress-cell">
-                                                    <div className="progress">
-                                                        <span
-                                                            style={{
-                                                                width: `${progress}%`,
-                                                                background: '#2563eb',
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <b>
-                                                        {progress}% ({number(item.completed_quantity)}/
-                                                        {number(item.planned_quantity)})
-                                                    </b>
-                                                </div>
                                             </td>
                                             <td>
                                                 {item.planned_end
@@ -331,7 +329,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={5}>
+                                    <td colSpan={4}>
                                         <Empty
                                             text={
                                                 locale === 'fr'
@@ -373,7 +371,6 @@ function PanelTitle({ title, action }: any) {
 function Empty({ text }: { text: string }) {
     return (
         <div className="executive-empty">
-            <PackageOpen size={22} />
             <span>{text}</span>
         </div>
     );

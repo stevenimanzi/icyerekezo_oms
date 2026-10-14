@@ -302,10 +302,10 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
 
             {page === 'subscriptions' && (
                 <SubscriptionPanel
-                    data={data} open={showForm} busy={busy}
-                    submitPlan={(values: any) => run('/api/platform/plans', 'POST', values, 'Subscription plan created.')}
-                    updatePlan={(id: number, values: any) => run(`/api/platform/plans/${id}`, 'PUT', values, 'Subscription plan updated.')}
-                    assign={(values: any) => run(`/api/platform/factories/${values.factory_id}/subscriptions`, 'POST', values, 'Subscription assigned and factory activated.')}
+                    data={data} open={showForm} close={() => setShowForm(false)} busy={busy}
+                    submitPlan={(values: any) => run('/api/platform/plans', 'POST', values, 'Subscription plan created.').then(() => setShowForm(false))}
+                    updatePlan={(id: number, values: any) => run(`/api/platform/plans/${id}`, 'PUT', values, 'Subscription plan updated.').then(() => setShowForm(false))}
+                    assign={(values: any) => run(`/api/platform/factories/${values.factory_id}/subscriptions`, 'POST', values, 'Subscription assigned and factory activated.').then(() => setShowForm(false))}
                     changeSubscription={(id: number, values: any) => run(`/api/platform/subscriptions/${id}`, 'PATCH', values, 'Factory subscription changed.')}
                 />
             )}
@@ -521,9 +521,9 @@ function UserForm({ open, factories, roles, submit, editUser, cancel }: any) {
 }
 
 const planTemplates: any = {
-    starter: { name: 'Starter', code: 'STARTER', monthly_price: 100000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'team', 'reports', 'support'] },
-    professional: { name: 'Professional', code: 'PROFESSIONAL', monthly_price: 200000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'procurement', 'quality', 'sales', 'logistics', 'team', 'maintenance', 'reports', 'support'] },
-    enterprise: { name: 'Enterprise', code: 'ENTERPRISE', monthly_price: 300000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'procurement', 'quality', 'sales', 'logistics', 'team', 'maintenance', 'reports', 'support'] },
+    starter: { name: 'Starter Plan', code: 'STARTER', monthly_price: 100000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'team', 'reports', 'support'] },
+    professional: { name: 'Professional Plan', code: 'PROFESSIONAL', monthly_price: 200000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'procurement', 'quality', 'sales', 'team', 'reports', 'support'] },
+    enterprise: { name: 'Unlimited Enterprise', code: 'UNLIMITED-ENT', monthly_price: 300000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'procurement', 'quality', 'sales', 'logistics', 'team', 'maintenance', 'reports', 'support'] },
 };
 const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const dateAfter = (value: string, months: number, days = 0) => {
@@ -534,9 +534,10 @@ const dateAfter = (value: string, months: number, days = 0) => {
     return localDate(date);
 };
 
-function SubscriptionPanel({ data, open, busy, submitPlan, updatePlan, assign, changeSubscription }: any) {
+function SubscriptionPanel({ data, open, close, busy, submitPlan, updatePlan, assign, changeSubscription }: any) {
     const today = localDate(new Date());
     const catalog = Object.entries(data?.feature_catalog || {});
+    const [modalTab, setModalTab] = useState<'assign' | 'plan'>('assign');
     const [template, setTemplate] = useState('');
     const [plan, setPlan] = useState<any>({ currency_code: 'RWF', features: [] });
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -545,22 +546,40 @@ function SubscriptionPanel({ data, open, busy, submitPlan, updatePlan, assign, c
     const [dateChanges, setDateChanges] = useState<Record<number, string>>({});
     const selectedPlan = (data?.plans || []).find((item: any) => String(item.id) === String(subscription.subscription_plan_id));
 
+    const closeModal = () => {
+        setEditingId(null);
+        setPlan({ currency_code: 'RWF', features: [] });
+        if (close) close();
+    };
+
     const updateStart = (starts_at: string) => setSubscription({ ...subscription, starts_at, ends_at: dateAfter(starts_at, 1), grace_ends_at: dateAfter(starts_at, 1, 7) });
     const updateEnd = (ends_at: string) => setSubscription({ ...subscription, ends_at, grace_ends_at: dateAfter(ends_at, 0, 7) });
     const chooseTemplate = (value: string) => {
         setTemplate(value);
-        setEditingId(null);
         setPlan(value ? { ...planTemplates[value], features: [...planTemplates[value].features] } : { currency_code: 'RWF', features: [] });
     };
     const edit = (item: any) => {
         setEditingId(item.id);
         setTemplate('');
         setPlan({ ...item, features: item.features || [] });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setModalTab('plan');
     };
     const toggleFeature = (key: string) => setPlan({ ...plan, features: (plan.features || []).includes(key) ? plan.features.filter((item: string) => item !== key) : [...(plan.features || []), key] });
-    const savePlan = (event: React.FormEvent) => { event.preventDefault(); editingId ? updatePlan(editingId, plan) : submitPlan(plan); };
-    const planFields: [string, string][] = [['name', 'Plan name'], ['code', 'Plan code'], ['monthly_price', 'Price per month'], ['currency_code', 'Currency']];
+    const savePlan = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (editingId) {
+            await updatePlan(editingId, plan);
+        } else {
+            await submitPlan(plan);
+        }
+        closeModal();
+    };
+    const handleAssign = async (event: React.FormEvent) => {
+        event.preventDefault();
+        await assign(subscription);
+        closeModal();
+    };
+    const planFields: [string, string][] = [['name', 'Plan name'], ['code', 'Plan code'], ['monthly_price', 'Price per month (RWF)'], ['currency_code', 'Currency']];
 
     const analytics = data?.analytics || {};
     const subsList = data?.subscriptions?.data || [];
@@ -577,64 +596,141 @@ function SubscriptionPanel({ data, open, busy, submitPlan, updatePlan, assign, c
 
     return (
         <>
+            {/* Modal Popup for Create / Edit / Assign */}
             {(open || editingId) && (
-                <div className="subscription-editor-grid">
-                    <form className="admin-form panel plan-editor" onSubmit={savePlan}>
-                        <header>
-                            <div><span>{editingId ? 'EDIT PLAN' : 'NEW PLAN'}</span><h2>{editingId ? 'Update subscription type' : 'Create subscription type'}</h2></div>
-                            {editingId && <button type="button" className="table-action" onClick={() => { setEditingId(null); setPlan({ currency_code: 'RWF', features: [] }); }}>Cancel</button>}
-                        </header>
-                        {!editingId && (
-                            <label>
-                                Start from template
-                                <select value={template} onChange={e => chooseTemplate(e.target.value)}>
-                                    <option value="">Empty plan</option>
-                                    <option value="starter">Starter — RWF 100,000</option>
-                                    <option value="professional">Professional — RWF 200,000</option>
-                                    <option value="enterprise">Enterprise — RWF 300,000</option>
-                                </select>
-                            </label>
-                        )}
-                        <div className="form-grid">
-                            {planFields.map(([key, label]) => <label key={key}>{label}<input required type={key === 'monthly_price' ? 'number' : 'text'} value={plan[key] || ''} onChange={e => setPlan({ ...plan, [key]: e.target.value })} /></label>)}
-                        </div>
-                        <div className="feature-editor">
-                            <div><h3>Included features</h3><p>Select what factories on this subscription type can access.</p></div>
-                            <div className="feature-options">
-                                {catalog.map(([key, label]: any) => (
-                                    <label className={(plan.features || []).includes(key) ? 'selected' : ''} key={key}>
-                                        <input type="checkbox" checked={(plan.features || []).includes(key)} onChange={() => toggleFeature(key)} /><span><CheckCircle2 size={16} />{label}</span>
-                                    </label>
-                                ))}
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0, 0, 0, 0.65)',
+                        backdropFilter: 'blur(4px)',
+                        zIndex: 1000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 20,
+                    }}
+                    onClick={closeModal}
+                >
+                    <div
+                        className="panel"
+                        style={{
+                            width: 'min(780px, 100%)',
+                            maxHeight: '90vh',
+                            overflowY: 'auto',
+                            padding: '24px 28px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 18,
+                            borderRadius: 18,
+                            boxShadow: '0 30px 90px rgba(0,0,0,0.4)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)', paddingBottom: 12 }}>
+                            <div>
+                                <h2 style={{ margin: 0, fontSize: 18 }}>
+                                    {editingId ? 'Edit Subscription Plan' : (modalTab === 'assign' ? 'Assign or Renew Factory Subscription' : 'Create Subscription Plan')}
+                                </h2>
+                                <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 12 }}>
+                                    {editingId ? 'Update plan pricing, code and accessible module features.' : (modalTab === 'assign' ? 'Select a factory and assign a billing period.' : 'Configure a new subscription pricing tier.')}
+                                </p>
                             </div>
+                            <button
+                                type="button"
+                                className="icon-btn"
+                                onClick={closeModal}
+                                style={{ cursor: 'pointer', padding: 6 }}
+                                aria-label="Close"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
-                        <button className="primary-btn" disabled={busy}><Save size={16} />{editingId ? 'Save plan changes' : 'Create subscription type'}</button>
-                    </form>
 
-                    {open && (
-                        <form className="admin-form panel assignment-editor" onSubmit={e => { e.preventDefault(); assign(subscription); }}>
-                            <h2>Assign or renew subscription</h2>
-                            <label>
-                                Factory
-                                <select required value={subscription.factory_id || ''} onChange={e => setSubscription({ ...subscription, factory_id: e.target.value })}>
-                                    <option value="">Select factory</option>
-                                    {(data?.factories || []).map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                                </select>
-                            </label>
-                            <label>
-                                Subscription type
-                                <select required value={subscription.subscription_plan_id || ''} onChange={e => setSubscription({ ...subscription, subscription_plan_id: e.target.value })}>
-                                    <option value="">Select subscription type</option>
-                                    {(data?.plans || []).map((p: any) => <option key={p.id} value={p.id}>{p.name} — {p.currency_code} {Number(p.monthly_price).toLocaleString()}/month</option>)}
-                                </select>
-                            </label>
-                            {selectedPlan && <div className="selected-plan-summary"><b>{selectedPlan.name}</b><span>{(selectedPlan.features || []).length} features included</span></div>}
-                            <label>Subscription starts on<input required type="date" value={subscription.starts_at} onChange={e => updateStart(e.target.value)} /></label>
-                            <label>Payment is due on<input required type="date" value={subscription.ends_at} onChange={e => updateEnd(e.target.value)} /></label>
-                            <label>Factory access stops on<input readOnly type="date" value={subscription.grace_ends_at || ''} /><small>The factory gets 7 extra days to pay after the due date.</small></label>
-                            <button className="primary-btn" disabled={busy}><CreditCard size={16} />Activate subscription</button>
-                        </form>
-                    )}
+                        {!editingId && (
+                            <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--line)', paddingBottom: 12 }}>
+                                <button
+                                    type="button"
+                                    className={modalTab === 'assign' ? 'primary-btn' : 'secondary-btn'}
+                                    style={{ padding: '8px 16px', fontSize: 13 }}
+                                    onClick={() => setModalTab('assign')}
+                                >
+                                    <CreditCard size={15} /> Assign to Factory
+                                </button>
+                                <button
+                                    type="button"
+                                    className={modalTab === 'plan' ? 'primary-btn' : 'secondary-btn'}
+                                    style={{ padding: '8px 16px', fontSize: 13 }}
+                                    onClick={() => setModalTab('plan')}
+                                >
+                                    <Plus size={15} /> Create Plan Tier
+                                </button>
+                            </div>
+                        )}
+
+                        {(!editingId && modalTab === 'assign') ? (
+                            <form className="admin-form" style={{ padding: 0 }} onSubmit={handleAssign}>
+                                <label>
+                                    Factory
+                                    <select required value={subscription.factory_id || ''} onChange={e => setSubscription({ ...subscription, factory_id: e.target.value })}>
+                                        <option value="">Select factory</option>
+                                        {(data?.factories || []).map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                    </select>
+                                </label>
+                                <label>
+                                    Subscription type
+                                    <select required value={subscription.subscription_plan_id || ''} onChange={e => setSubscription({ ...subscription, subscription_plan_id: e.target.value })}>
+                                        <option value="">Select subscription type</option>
+                                        {(data?.plans || []).map((p: any) => <option key={p.id} value={p.id}>{p.name} — {p.currency_code} {Number(p.monthly_price).toLocaleString()}/month</option>)}
+                                    </select>
+                                </label>
+                                {selectedPlan && <div className="selected-plan-summary"><b>{selectedPlan.name}</b><span>{(selectedPlan.features || []).length} features included</span></div>}
+                                <div className="form-grid">
+                                    <label>Subscription starts on<input required type="date" value={subscription.starts_at} onChange={e => updateStart(e.target.value)} /></label>
+                                    <label>Payment is due on<input required type="date" value={subscription.ends_at} onChange={e => updateEnd(e.target.value)} /></label>
+                                </div>
+                                <label>Factory access stops on<input readOnly type="date" value={subscription.grace_ends_at || ''} /><small>The factory gets 7 extra days to pay after the due date.</small></label>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>
+                                    <button type="button" className="secondary-btn" onClick={closeModal}>Cancel</button>
+                                    <button className="primary-btn" disabled={busy}><CreditCard size={16} />Activate subscription</button>
+                                </div>
+                            </form>
+                        ) : (
+                            <form className="admin-form" style={{ padding: 0 }} onSubmit={savePlan}>
+                                {!editingId && (
+                                    <label>
+                                        Start from template
+                                        <select value={template} onChange={e => chooseTemplate(e.target.value)}>
+                                            <option value="">Empty plan</option>
+                                            <option value="starter">Starter Plan — RWF 100,000</option>
+                                            <option value="professional">Professional Plan — RWF 200,000</option>
+                                            <option value="enterprise">Unlimited Enterprise — RWF 300,000</option>
+                                        </select>
+                                    </label>
+                                )}
+                                <div className="form-grid">
+                                    {planFields.map(([key, label]) => <label key={key}>{label}<input required type={key === 'monthly_price' ? 'number' : 'text'} value={plan[key] || ''} onChange={e => setPlan({ ...plan, [key]: e.target.value })} /></label>)}
+                                </div>
+                                <div className="feature-editor">
+                                    <div><h3>Included features</h3><p>Select what factories on this subscription type can access.</p></div>
+                                    <div className="feature-options">
+                                        {catalog.map(([key, label]: any) => (
+                                            <label className={(plan.features || []).includes(key) ? 'selected' : ''} key={key}>
+                                                <input type="checkbox" checked={(plan.features || []).includes(key)} onChange={() => toggleFeature(key)} /><span><CheckCircle2 size={16} />{label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>
+                                    <button type="button" className="secondary-btn" onClick={closeModal}>Cancel</button>
+                                    <button className="primary-btn" disabled={busy}><Save size={16} />{editingId ? 'Save plan changes' : 'Create subscription type'}</button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -728,7 +824,12 @@ function SupportPanel({ records, reply, busy }: any) {
     };
 
     if (!records.length) {
-        return <div className="panel empty-state"><span><MessageSquare size={28} /></span><h3>No support conversations yet</h3><p>Questions sent by factory users will appear here automatically.</p></div>;
+        return (
+            <div className="panel empty-state">
+                <h3>No support conversations yet</h3>
+                <p>Questions sent by factory users will appear here automatically.</p>
+            </div>
+        );
     }
 
     return (

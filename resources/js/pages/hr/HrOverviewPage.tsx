@@ -229,7 +229,12 @@ export default function HrOverviewPage() {
                                     ) : <small>No participants added.</small>}
                                 </div>
                             </article>
-                        )) : <div className="panel empty-state"><span><GraduationCap size={28} /></span><h3>No trainings scheduled</h3><p>Schedule one above to get started.</p></div>}
+                        )) : (
+                            <div className="panel empty-state">
+                                <h3>No trainings scheduled</h3>
+                                <p>Schedule one above to get started.</p>
+                            </div>
+                        )}
                     </div>
                 </article>
             )}
