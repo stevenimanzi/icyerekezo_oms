@@ -86,6 +86,8 @@ class User extends Authenticatable
         return $this->hasMany(PushSubscription::class);
     }
 
+    private array $permissionSlugs = [];
+
     public function hasPermission(string $permission, ?int $factoryId = null): bool
     {
         if ($this->is_platform_admin) {
@@ -93,9 +95,14 @@ class User extends Authenticatable
         }
         $factoryId ??= $this->current_factory_id;
 
-        return $this->roles()
+        $this->permissionSlugs[$factoryId] ??= $this->roles()
             ->wherePivot('factory_id', $factoryId)
-            ->whereHas('permissions', fn ($query) => $query->where('slug', $permission))
-            ->exists();
+            ->with('permissions:id,slug')
+            ->get()
+            ->flatMap(fn ($role) => $role->permissions->pluck('slug'))
+            ->flip()
+            ->all();
+
+        return isset($this->permissionSlugs[$factoryId][$permission]);
     }
 }

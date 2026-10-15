@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../core/api';
 import type { AuthUser } from '../../core/types';
 
-const REFRESH_MS = 15000;
+const REFRESH_MS = 60000;
 
 export function useLowStockCount(user: AuthUser, canViewInventory: boolean) {
     const [count, setCount] = useState(0);

@@ -271,4 +271,18 @@ class OwnerOverviewTest extends TestCase
         $search = $this->getJson('/api/executive/activity?q=order')->json();
         $this->assertSame(1, $search['meta']['total']);
     }
+
+    public function test_members_without_an_executive_role_cannot_read_the_owner_overview(): void
+    {
+        $operator = User::factory()->create(['current_factory_id' => $this->factory->id]);
+        $operator->factories()->attach($this->factory->id, ['is_owner' => false, 'is_active' => true]);
+        $role = Role::create([
+            'factory_id' => $this->factory->id, 'name' => 'Cutting Operator', 'slug' => 'cutting-operator',
+            'dashboard_key' => 'cutting', 'is_system' => true,
+        ]);
+        $operator->roles()->attach($role->id, ['factory_id' => $this->factory->id]);
+
+        $this->actingAs($operator)->getJson('/api/executive/owner-overview')->assertForbidden();
+        $this->actingAs($operator)->getJson('/api/executive/dashboard')->assertForbidden();
+    }
 }

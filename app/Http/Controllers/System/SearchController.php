@@ -20,6 +20,8 @@ class SearchController extends Controller
             return response()->json(['data' => []]);
         }
 
+        $like = addcslashes($query, '\%_');
+
         if ($request->user()->is_platform_admin) {
             $modules = [
                 [
@@ -79,7 +81,7 @@ class SearchController extends Controller
             ];
             $results = $this->matchingModules($modules, $query)
                 ->merge(
-                    Factory::where('name', 'like', "%{$query}%")
+                    Factory::where('name', 'like', "%{$like}%")
                         ->limit(5)
                         ->get()
                         ->map(
@@ -94,8 +96,8 @@ class SearchController extends Controller
                 ->merge(
                     User::where(
                         fn ($builder) => $builder
-                            ->where('name', 'like', "%{$query}%")
-                            ->orWhere('email', 'like', "%{$query}%"),
+                            ->where('name', 'like', "%{$like}%")
+                            ->orWhere('email', 'like', "%{$like}%"),
                     )
                         ->limit(5)
                         ->get()
@@ -185,8 +187,8 @@ class SearchController extends Controller
                         ->where('factory_id', $factoryId)
                         ->where(
                             fn ($builder) => $builder
-                                ->where('name', 'like', "%{$query}%")
-                                ->orWhere('sku', 'like', "%{$query}%"),
+                                ->where('name', 'like', "%{$like}%")
+                                ->orWhere('sku', 'like', "%{$like}%"),
                         )
                         ->limit(5)
                         ->get()
@@ -202,7 +204,7 @@ class SearchController extends Controller
                 ->merge(
                     ProductionOrder::withoutGlobalScopes()
                         ->where('factory_id', $factoryId)
-                        ->where('order_number', 'like', "%{$query}%")
+                        ->where('order_number', 'like', "%{$like}%")
                         ->limit(5)
                         ->get()
                         ->map(
@@ -218,8 +220,8 @@ class SearchController extends Controller
                     SupportTicket::where('user_id', $request->user()->id)
                         ->where(
                             fn ($builder) => $builder
-                                ->where('subject', 'like', "%{$query}%")
-                                ->orWhere('ticket_number', 'like', "%{$query}%"),
+                                ->where('subject', 'like', "%{$like}%")
+                                ->orWhere('ticket_number', 'like', "%{$like}%"),
                         )
                         ->limit(5)
                         ->get()
@@ -234,7 +236,30 @@ class SearchController extends Controller
                 );
         }
 
+        if (! $request->user()->is_platform_admin) {
+            $results = $results->filter(fn (array $result) => $this->mayOpen($request->user(), $result['page']));
+        }
+
         return response()->json(['data' => $results->take(10)->values()]);
+    }
+
+    private const PAGE_PERMISSIONS = [
+        'procurement' => 'procurement.view',
+        'inventory' => 'inventory.view',
+        'products' => 'products.view',
+        'production' => 'production.view',
+        'quality' => 'quality.view',
+        'sales' => 'sales.view',
+        'logistics' => 'logistics.view',
+        'team' => 'users.view',
+        'reports' => 'reports.view',
+    ];
+
+    private function mayOpen($user, string $page): bool
+    {
+        $permission = self::PAGE_PERMISSIONS[$page] ?? null;
+
+        return $permission === null || $user->hasPermission($permission);
     }
 
     private function matchingModules(array $modules, string $query)

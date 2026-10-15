@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureFactoryAccess;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsurePlatformAvailable;
+use App\Http\Middleware\RequireExecutiveRole;
 use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -12,8 +13,8 @@ use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => EnsureFactoryAccess::class,
             'permission' => RequirePermission::class,
             'platform' => EnsurePlatformAdmin::class,
+            'executive' => RequireExecutiveRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

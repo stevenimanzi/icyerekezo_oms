@@ -3,7 +3,7 @@ import { api } from '../../core/api';
 import { urlBase64ToUint8Array } from '../../core/push';
 import type { AppNotificationItem, AuthUser } from '../../core/types';
 
-const ANNOUNCEMENT_REFRESH_MS = 5000;
+const ANNOUNCEMENT_REFRESH_MS = 30000;
 const NOTIFICATION_REFRESH_MS = 20000;
 
 export function useNotifications(user: AuthUser, onMaintenance: (message: string) => void) {
