@@ -89,13 +89,20 @@ export type RequestRow = {
 export type MaterialRow = {
     item_id: number;
     name: string;
+    color: string | null;
     unit: string | null;
     issued: number;
     used: number;
     on_hand: number;
 };
 
-export type OptionItem = { id: number; name: string; sku: string; unit: string | null };
+export type OptionItem = {
+    id: number;
+    name: string;
+    sku: string;
+    unit: string | null;
+    color: string | null;
+};
 
 export type StageOverview = {
     stage: StageInfo;

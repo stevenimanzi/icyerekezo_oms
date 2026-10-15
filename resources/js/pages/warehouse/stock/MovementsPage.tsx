@@ -180,7 +180,14 @@ export default function MovementsPage({ user, locale, direction, tabs, alternate
                                                 </td>
                                                 <td>
                                                     <b>{row.item ?? text.none}</b>
-                                                    <small>{row.sku}</small>
+                                                    <small>
+                                                        {row.color && (
+                                                            <span className="ui-colour">
+                                                                {row.color}
+                                                            </span>
+                                                        )}{' '}
+                                                        {row.sku}
+                                                    </small>
                                                 </td>
                                                 <td>
                                                     <span

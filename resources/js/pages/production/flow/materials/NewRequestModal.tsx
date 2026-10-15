@@ -70,6 +70,7 @@ export function NewRequestModal({ stage, options, text, onClose, onDone }: Props
                     {options.map((option) => (
                         <option key={option.id} value={option.id}>
                             {option.name}
+                            {option.color ? ` · ${option.color}` : ''}
                             {option.unit ? ` (${option.unit})` : ''}
                         </option>
                     ))}

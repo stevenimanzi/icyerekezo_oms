@@ -2,13 +2,13 @@
 
 The app is a React + TypeScript single-page app. `app.tsx` only starts it. Everything else lives in one of these folders.
 
-| Folder | What is inside |
-| --- | --- |
-| `core/` | Things every part needs: `api.ts` (fetch helper), `types.ts` (user and notification types), `labels.ts` (menu text in English and French). |
-| `app/` | The frame around every page: `AppShell.tsx` (puts it together), `Sidebar.tsx`, `Topbar.tsx`, `PageRouter.tsx` (which page shows for which name), `navigation.ts` (who may see which menu item), and `hooks/` (small helpers such as notifications and the offline banner). |
-| `auth/` | Sign in, register, forgot password and reset password. |
-| `roles/` | **One folder per kind of user.** See below. |
-| `pages/` | Screens that several roles share (stock, sales, finance, quality, reports...). Production work screens are grouped by industry and stage, see below. |
+| Folder   | What is inside                                                                                                                                                                                                                                                             |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core/`  | Things every part needs: `api.ts` (fetch helper), `types.ts` (user and notification types), `labels.ts` (menu text in English and French).                                                                                                                                 |
+| `app/`   | The frame around every page: `AppShell.tsx` (puts it together), `Sidebar.tsx`, `Topbar.tsx`, `PageRouter.tsx` (which page shows for which name), `navigation.ts` (who may see which menu item), and `hooks/` (small helpers such as notifications and the offline banner). |
+| `auth/`  | Sign in, register, forgot password and reset password.                                                                                                                                                                                                                     |
+| `roles/` | **One folder per kind of user.** See below.                                                                                                                                                                                                                                |
+| `pages/` | Screens that several roles share (stock, sales, finance, quality, reports...). Production work screens are grouped by industry and stage, see below.                                                                                                                       |
 
 ## Roles: one folder per kind of user
 

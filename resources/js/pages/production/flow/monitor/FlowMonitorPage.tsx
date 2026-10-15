@@ -5,6 +5,7 @@ import type { AuthUser, Locale } from '../../../../core/types';
 import '../../../../components/ui.css';
 import '../flow.css';
 import { FlowReportView } from '../report/FlowReportView';
+import { ColourSize } from '../ColourSize';
 import { stageLabel } from '../stages';
 import { flowText } from '../text';
 import type { FlowMonitor, LotBalances } from '../types';
@@ -253,9 +254,11 @@ export default function FlowMonitorPage({ locale }: Props) {
                                                 <td>
                                                     {lot.product ?? text.none}
                                                     <small>
-                                                        {[lot.color, lot.size]
-                                                            .filter(Boolean)
-                                                            .join(' / ')}
+                                                        <ColourSize
+                                                            color={lot.color}
+                                                            size={lot.size}
+                                                            none=""
+                                                        />
                                                     </small>
                                                 </td>
                                                 {data.stages.map((stage) => (

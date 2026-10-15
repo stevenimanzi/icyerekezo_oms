@@ -135,7 +135,7 @@ export function RecordIssueModal({ data, text, format, onClose, onDone }: Props)
                 </select>
             </label>
             <label className="ui-field">
-                {isOther ? t.otherReasonLabel : (needsNote ? `${t.note} *` : t.note)}
+                {isOther ? t.otherReasonLabel : needsNote ? `${t.note} *` : t.note}
                 <textarea
                     rows={2}
                     value={note}

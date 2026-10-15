@@ -646,3 +646,25 @@
 .ui-overlay input[type='checkbox'] {
     width: 18px;
 }
+
+.ui-auto input[readonly] {
+    border-color: color-mix(in srgb, #2563eb 45%, var(--line));
+    background: color-mix(in srgb, #2563eb 8%, var(--panel));
+    color: #2563eb;
+    font-weight: 700;
+}
+
+.ui-auto .ui-help {
+    color: #2563eb;
+}
+
+.ui-colour {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, #2563eb 12%, transparent);
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}

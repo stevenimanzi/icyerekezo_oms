@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
         'unit_id',
         'type',
         'name',
+        'color',
         'sku',
         'barcode',
         'description',

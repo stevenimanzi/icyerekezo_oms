@@ -27,7 +27,12 @@ export function StockTable({ rows, text, format, showHeld }: Props) {
                             <tr key={row.id}>
                                 <td>
                                     <b>{row.name}</b>
-                                    <small>{row.sku}</small>
+                                    <small>
+                                        {row.color && (
+                                            <span className="ui-colour">{row.color}</span>
+                                        )}{' '}
+                                        {row.sku}
+                                    </small>
                                 </td>
                                 <td className="num">
                                     <b>{format.number(row.on_hand)}</b> {row.unit ?? ''}

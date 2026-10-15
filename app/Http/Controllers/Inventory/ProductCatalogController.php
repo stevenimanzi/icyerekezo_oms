@@ -32,6 +32,7 @@ class ProductCatalogController extends Controller
                 'items.category_id',
                 'items.unit_id',
                 'items.name',
+                'items.color',
                 'items.sku',
                 'items.type',
                 'items.description',

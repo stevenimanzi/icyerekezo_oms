@@ -1,5 +1,6 @@
 import type { Format } from '../../../../core/format';
 import type { Locale } from '../../../../core/types';
+import { ColourSize } from '../ColourSize';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
 import type { LotRow, StageOverview, TransferRow } from '../types';
@@ -60,9 +61,11 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                             </td>
                                             <td>{transfer.product ?? text.none}</td>
                                             <td>
-                                                {[transfer.color, transfer.size]
-                                                    .filter(Boolean)
-                                                    .join(' / ') || text.none}
+                                                <ColourSize
+                                                    color={transfer.color}
+                                                    size={transfer.size}
+                                                    none={text.none}
+                                                />
                                             </td>
                                             <td className="num">
                                                 <b>{format.whole(transfer.quantity_sent)}</b>
@@ -149,8 +152,11 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                         </td>
                                         <td>{lot.product ?? text.none}</td>
                                         <td>
-                                            {[lot.color, lot.size].filter(Boolean).join(' / ') ||
-                                                text.none}
+                                            <ColourSize
+                                                color={lot.color}
+                                                size={lot.size}
+                                                none={text.none}
+                                            />
                                         </td>
                                         {isCutting ? (
                                             <>

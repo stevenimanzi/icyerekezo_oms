@@ -228,6 +228,19 @@ class StockMovementTest extends TestCase
         $this->assertSame('other', end($reasons));
     }
 
+    public function test_an_items_colour_is_saved_and_shown_on_the_stock_pages(): void
+    {
+        $this->actingAs($this->keeper)->postJson('/api/inventory/items', [
+            'name' => 'Navy twill', 'type' => 'raw_material', 'unit_id' => $this->unit->id, 'color' => 'Navy',
+        ])->assertCreated()->assertJsonPath('color', 'Navy');
+
+        $stock = collect($this->actingAs($this->keeper)->getJson('/api/stock/analytics')->json('raw_materials'))->firstWhere('name', 'Navy twill');
+        $this->assertSame('Navy', $stock['color']);
+
+        $option = collect($this->actingAs($this->keeper)->getJson('/api/stock/movements?direction=in')->json('items'))->firstWhere('name', 'Navy twill');
+        $this->assertSame('Navy', $option['color']);
+    }
+
     public function test_the_lists_show_only_this_factorys_movements_in_the_right_direction(): void
     {
         $item = $this->item('Blue cotton');

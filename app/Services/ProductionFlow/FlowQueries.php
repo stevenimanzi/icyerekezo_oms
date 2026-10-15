@@ -437,8 +437,8 @@ class FlowQueries
 
     private function options(string $stage): array
     {
-        $items = Item::with('unit:id,symbol')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku', 'type', 'unit_id']);
-        $pick = fn (Item $item) => ['id' => $item->id, 'name' => $item->name, 'sku' => $item->sku, 'unit' => $item->unit?->symbol];
+        $items = Item::with('unit:id,symbol')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku', 'type', 'unit_id', 'color']);
+        $pick = fn (Item $item) => ['id' => $item->id, 'name' => $item->name, 'sku' => $item->sku, 'unit' => $item->unit?->symbol, 'color' => $item->color];
 
         return [
             'requestable' => $items->whereIn('type', MaterialRequestService::REQUESTABLE_TYPES)->map($pick)->values(),

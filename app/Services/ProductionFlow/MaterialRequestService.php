@@ -142,6 +142,7 @@ class MaterialRequestService
         return $issued->map(fn ($quantity, $itemId) => [
             'item_id' => (int) $itemId,
             'name' => $items[$itemId]->name ?? 'Item',
+            'color' => $items[$itemId]->color ?? null,
             'unit' => $items[$itemId]->unit->symbol ?? null,
             'issued' => (float) $quantity,
             'used' => (float) ($used[$itemId] ?? 0),

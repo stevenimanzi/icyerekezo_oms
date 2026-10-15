@@ -77,6 +77,7 @@ class StockAnalytics
                     'id' => $item->id,
                     'name' => $item->name,
                     'sku' => $item->sku,
+                    'color' => $item->color,
                     'type' => $item->type,
                     'unit' => $item->unit?->symbol,
                     'on_hand' => $onHand,

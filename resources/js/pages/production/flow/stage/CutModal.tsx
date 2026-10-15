@@ -32,6 +32,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
     const [busy, setBusy] = useState(false);
 
     const chosen = fabrics.find((fabric) => String(fabric.item_id) === fabricId);
+    const fabricColor = chosen?.color ?? '';
     const fabricTotal = (Number(fabricUsed) || 0) + (Number(fabricWaste) || 0);
     const tooMuchFabric = chosen !== undefined && fabricTotal > chosen.on_hand;
     const knownProduct = data.options.products.find(
@@ -54,7 +55,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                 product_item_id: lot ? null : (knownProduct?.id ?? null),
                 product_name: lot || knownProduct ? null : product.trim(),
                 style: style.trim() || null,
-                color: color.trim() || null,
+                color: (fabricColor || color).trim() || null,
                 size: size.trim() || null,
                 fabric_item_id: Number(fabricId),
                 fabric_used: Number(fabricUsed),
@@ -89,11 +90,31 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
         >
             {error && <div className="ui-error">{error}</div>}
 
-            {lot ? (
+            <label className="ui-field">
+                {t.fabric}
+                <select
+                    value={fabricId}
+                    onChange={(event) => setFabricId(event.target.value)}
+                    autoFocus
+                >
+                    <option value="">{t.chooseFabric}</option>
+                    {fabrics.map((fabric) => (
+                        <option key={fabric.item_id} value={fabric.item_id}>
+                            {fabric.name}
+                            {fabric.color ? ` · ${fabric.color}` : ''} —{' '}
+                            {t.onHand(format.number(fabric.on_hand), fabric.unit ?? '')}
+                        </option>
+                    ))}
+                </select>
+                {!fabrics.length && <span className="ui-help">{t.fabricNone}</span>}
+            </label>
+
+            {lot && (
                 <p className="ui-help" style={{ margin: 0 }}>
                     {[lot.product, lot.color, lot.size].filter(Boolean).join(' · ')}
                 </p>
-            ) : (
+            )}
+            {!lot && (
                 <>
                     <label className="ui-field">
                         {t.product}
@@ -101,7 +122,6 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                             list="flow-products"
                             value={product}
                             onChange={(event) => setProduct(event.target.value)}
-                            autoFocus
                         />
                         <datalist id="flow-products">
                             {data.options.products.map((option) => (
@@ -111,12 +131,15 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                         <span className="ui-help">{t.productHint}</span>
                     </label>
                     <div className="ui-grid">
-                        <label className="ui-field">
+                        <label className={`ui-field ${fabricColor ? 'ui-auto' : ''}`}>
                             {t.color}
                             <input
-                                value={color}
+                                value={fabricColor || color}
+                                readOnly={Boolean(fabricColor)}
+                                placeholder={chosen ? t.colorManual : ''}
                                 onChange={(event) => setColor(event.target.value)}
                             />
+                            {fabricColor && <span className="ui-help">{t.colorAuto}</span>}
                         </label>
                         <label className="ui-field">
                             {t.size}
@@ -130,19 +153,6 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                 </>
             )}
 
-            <label className="ui-field">
-                {t.fabric}
-                <select value={fabricId} onChange={(event) => setFabricId(event.target.value)}>
-                    <option value="">{t.chooseFabric}</option>
-                    {fabrics.map((fabric) => (
-                        <option key={fabric.item_id} value={fabric.item_id}>
-                            {fabric.name} —{' '}
-                            {t.onHand(format.number(fabric.on_hand), fabric.unit ?? '')}
-                        </option>
-                    ))}
-                </select>
-                {!fabrics.length && <span className="ui-help">{t.fabricNone}</span>}
-            </label>
             <div className="ui-grid">
                 <label className="ui-field">
                     {t.fabricUsed}

@@ -1,6 +1,7 @@
 export type StockItemOption = {
     id: number;
     name: string;
+    color: string | null;
     sku: string;
     type: string;
     unit: string | null;
@@ -21,6 +22,7 @@ export type SupplierOption = {
 
 export type Movement = {
     id: number;
+    color: string | null;
     supplier: string | null;
     at: string | null;
     type: string;
@@ -54,6 +56,7 @@ export type ItemStatus = 'ok' | 'low' | 'out';
 export type StockRow = {
     id: number;
     name: string;
+    color: string | null;
     sku: string;
     type: string;
     unit: string | null;

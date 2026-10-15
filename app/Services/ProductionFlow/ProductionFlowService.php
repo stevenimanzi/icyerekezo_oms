@@ -33,13 +33,22 @@ class ProductionFlowService
         $this->requireStageAccess($user, 'cutting');
 
         return DB::transaction(function () use ($user, $data) {
+            $fabric = Item::findOrFail($data['fabric_item_id']);
+
+            if (empty($data['lot_id'])) {
+                if ($fabric->color) {
+                    $data['color'] = $fabric->color;
+                } elseif (! empty($data['color'])) {
+                    $fabric->update(['color' => trim($data['color'])]);
+                }
+            }
+
             $lot = ! empty($data['lot_id'])
                 ? $this->lockLot((int) $data['lot_id'])
                 : $this->createLot($user, $data);
 
             $this->requireActive($lot);
 
-            $fabric = Item::findOrFail($data['fabric_item_id']);
             $used = round((float) $data['fabric_used'], 3);
             $waste = round((float) ($data['fabric_waste'] ?? 0), 3);
             $available = $this->materials->fabricAvailable($fabric->id);

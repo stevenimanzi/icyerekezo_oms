@@ -30,6 +30,7 @@ export function ItemSelect({ items, value, text, onChange, describe, onlyInStock
                         {rows.map((item) => (
                             <option key={item.id} value={item.id}>
                                 {item.name}
+                                {item.color ? ` · ${item.color}` : ''}
                                 {item.unit ? ` (${item.unit})` : ''}
                                 {describe ? ` — ${describe(item)}` : ''}
                             </option>

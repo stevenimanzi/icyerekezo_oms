@@ -29,6 +29,7 @@ async function request(url: string, options: RequestInit = {}) {
 }
 const emptyItem = {
     name: '',
+    color: '',
     type: 'raw_material',
     category_id: '',
     unit_id: '',
@@ -80,6 +81,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                 ? type === 'item'
                     ? {
                           name: row.name,
+                          color: row.color || '',
                           type: row.type,
                           category_id: row.category_id || '',
                           unit_id: row.unit_id || '',
@@ -397,7 +399,25 @@ function Field({ label, children }: any) {
         </label>
     );
 }
+const COMMON_COLOURS = [
+    'Black',
+    'White',
+    'Grey',
+    'Blue',
+    'Navy',
+    'Red',
+    'Green',
+    'Yellow',
+    'Orange',
+    'Pink',
+    'Purple',
+    'Brown',
+    'Beige',
+];
+
 function ItemForm({ form, setForm, data }: any) {
+    const used = (data.items || []).map((item: any) => item.color).filter(Boolean);
+    const colours = Array.from(new Set([...used, ...COMMON_COLOURS]));
     const set = (key: string, value: any) => setForm((old: any) => ({ ...old, [key]: value }));
     return (
         <div className="warehouse-form-grid">
@@ -408,6 +428,19 @@ function ItemForm({ form, setForm, data }: any) {
                     placeholder="Example: Cotton fabric"
                     onChange={(e) => set('name', e.target.value)}
                 />
+            </Field>
+            <Field label="Colour (fabrics and coloured items)">
+                <input
+                    list="item-colours"
+                    value={form.color}
+                    placeholder="Example: Blue"
+                    onChange={(e) => set('color', e.target.value)}
+                />
+                <datalist id="item-colours">
+                    {colours.map((name) => (
+                        <option key={name} value={name} />
+                    ))}
+                </datalist>
             </Field>
             <Field label="Item code">
                 <input disabled value="Generated automatically when saved" />
@@ -586,6 +619,7 @@ function Items({ rows, money, quantity, edit }: any) {
                     <thead>
                         <tr>
                             <th>Item</th>
+                            <th>Colour</th>
                             <th>Code</th>
                             <th>Type</th>
                             <th>Category</th>
@@ -603,6 +637,13 @@ function Items({ rows, money, quantity, edit }: any) {
                                 <tr key={item.id}>
                                     <td>
                                         <b>{item.name}</b>
+                                    </td>
+                                    <td>
+                                        {item.color ? (
+                                            <span className="ui-colour">{item.color}</span>
+                                        ) : (
+                                            '—'
+                                        )}
                                     </td>
                                     <td>{item.sku}</td>
                                     <td>{String(item.type).replaceAll('_', ' ')}</td>

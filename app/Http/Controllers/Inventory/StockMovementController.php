@@ -79,7 +79,7 @@ class StockMovementController extends Controller
         $summary = (clone $query)->get(['quantity_delta', 'unit_cost', 'item_id', 'occurred_at']);
         $suppliers = Supplier::pluck('name', 'id');
         $page = $query
-            ->with(['item:id,name,sku,type,unit_id', 'item.unit:id,symbol', 'warehouse:id,name', 'batch:id,batch_number,expires_at', 'performer:id,name'])
+            ->with(['item:id,name,color,sku,type,unit_id', 'item.unit:id,symbol', 'warehouse:id,name', 'batch:id,batch_number,expires_at', 'performer:id,name'])
             ->latest('stock_transactions.occurred_at')
             ->latest('stock_transactions.id')
             ->paginate(20)
@@ -90,6 +90,7 @@ class StockMovementController extends Controller
                 'type' => $row->type,
                 'item' => $row->item?->name,
                 'sku' => $row->item?->sku,
+                'color' => $row->item?->color,
                 'item_type' => $row->item?->type,
                 'unit' => $row->item?->unit?->symbol,
                 'warehouse' => $row->warehouse?->name,
@@ -121,11 +122,12 @@ class StockMovementController extends Controller
                 ->where('is_active', true)
                 ->where('type', '!=', 'service')
                 ->orderBy('name')
-                ->get(['id', 'unit_id', 'name', 'sku', 'type', 'standard_cost', 'batch_tracked', 'expiry_tracked'])
+                ->get(['id', 'unit_id', 'name', 'color', 'sku', 'type', 'standard_cost', 'batch_tracked', 'expiry_tracked'])
                 ->map(fn (Item $item) => [
                     'id' => $item->id,
                     'name' => $item->name,
                     'sku' => $item->sku,
+                    'color' => $item->color,
                     'type' => $item->type,
                     'unit' => $item->unit?->symbol,
                     'cost' => (float) $item->standard_cost,

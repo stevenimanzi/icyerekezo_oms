@@ -167,6 +167,7 @@ class InventoryController extends Controller
         $factoryId = $request->user()->current_factory_id;
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160', Rule::unique('items')->where('factory_id', $factoryId)],
+            'color' => ['nullable', 'string', 'max:40'],
             'category_id' => ['nullable', Rule::exists('item_categories', 'id')->where('factory_id', $factoryId)],
             'type' => [
                 'required',
@@ -209,6 +210,7 @@ class InventoryController extends Controller
                 'max:160',
                 Rule::unique('items')->where('factory_id', $request->user()->current_factory_id)->ignore($item->id),
             ],
+            'color' => ['nullable', 'string', 'max:40'],
             'category_id' => [
                 'nullable',
                 Rule::exists('item_categories', 'id')->where('factory_id', $request->user()->current_factory_id),

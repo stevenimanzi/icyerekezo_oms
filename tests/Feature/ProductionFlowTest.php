@@ -322,6 +322,31 @@ class ProductionFlowTest extends TestCase
         $this->assertSame(4, $balances['rejected']);
     }
 
+    public function test_a_new_lot_takes_its_colour_from_the_fabric_that_was_cut(): void
+    {
+        $this->approvedFabric(80);
+        $this->fabric->update(['color' => 'Navy']);
+
+        $coloured = $this->cutLot(10, ['color' => 'Red', 'fabric_used' => 10]);
+        $this->assertSame('Navy', ProductionLot::find($coloured)->color, 'The fabric colour wins over what was typed.');
+
+        $this->fabric->update(['color' => null]);
+        $typed = $this->cutLot(10, ['color' => 'Red', 'fabric_used' => 10]);
+        $this->assertSame('Red', ProductionLot::find($typed)->color, 'Without a fabric colour, the typed one is kept.');
+        $this->assertSame('Red', $this->fabric->fresh()->color, 'The first colour typed is remembered on the fabric for next time.');
+
+        $next = $this->cutLot(10, ['color' => 'Green', 'fabric_used' => 10]);
+        $this->assertSame('Red', ProductionLot::find($next)->color, 'Once the fabric has a colour it fills in by itself.');
+        Item::whereKey($this->fabric->id)->update(['color' => null]);
+
+        $options = $this->as('cutting-operator')->getJson('/api/flow/overview?stage=cutting')->json();
+        $this->fabric->update(['color' => 'Navy']);
+        $again = $this->as('cutting-operator')->getJson('/api/flow/overview?stage=cutting')->json();
+        $this->assertSame('Navy', collect($again['materials'])->firstWhere('item_id', $this->fabric->id)['color']);
+        $this->assertSame('Navy', collect($again['options']['fabrics'])->firstWhere('id', $this->fabric->id)['color']);
+        $this->assertNull(collect($options['materials'])->firstWhere('item_id', $this->fabric->id)['color']);
+    }
+
     public function test_a_team_can_filter_its_own_material_requests_and_see_every_status(): void
     {
         $approved = $this->as('cutting-operator')->postJson('/api/flow/requests', ['stage' => 'cutting', 'item_id' => $this->fabric->id, 'quantity' => 10, 'reason' => 'Polo order'])->json('request.id');
