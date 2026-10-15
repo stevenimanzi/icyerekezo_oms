@@ -19,6 +19,7 @@ use App\Models\SalesDocumentLine;
 use App\Models\SchoolPaymentSubmission;
 use App\Models\StockBalance;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class OwnerOverviewReport
@@ -91,21 +92,50 @@ final class OwnerOverviewReport
 
     private function monthlyTrend(): array
     {
-        return collect(range(11, 0))
-            ->map(function (int $monthsAgo) {
-                $from = now()->startOfMonth()->subMonths($monthsAgo);
-                $to = $from->copy()->endOfMonth();
+        $months = collect(range(11, 0))->map(fn (int $monthsAgo) => now()->startOfMonth()->subMonths($monthsAgo))->values();
 
-                return [
-                    'label' => $from->format('M y'),
-                    'revenue' => $this->revenueBetween($from, $to),
-                    'orders' => $this->countedOrders()
-                        ->whereBetween('document_date', [$from->toDateString(), $to->toDateString()])
-                        ->count(),
-                    'output' => $this->outputBetween($from, $to),
-                ];
-            })
+        $revenue = $this->monthlySums($this->countedOrders(), 'document_date', 'total_amount', $months, dateOnly: true);
+        $orders = $this->monthlySums($this->countedOrders(), 'document_date', '1', $months, dateOnly: true);
+        $output = $this->monthlySums(
+            ProductionStageExecution::withoutGlobalScopes()->where('factory_id', $this->factoryId)->where('status', 'completed'),
+            'completed_at',
+            'output_quantity',
+            $months,
+            dateOnly: false,
+        );
+
+        return $months
+            ->map(fn ($month, int $index) => [
+                'label' => $month->format('M y'),
+                'revenue' => $revenue[$index],
+                'orders' => $orders[$index],
+                'output' => $output[$index],
+            ])
             ->all();
+    }
+
+    /**
+     * One query for all months: each month is a conditional SUM, so the database is asked once instead of twelve times.
+     *
+     * @return array<int, float>
+     */
+    private function monthlySums($query, string $dateColumn, string $valueExpression, Collection $months, bool $dateOnly): array
+    {
+        $format = fn ($date) => $dateOnly ? $date->toDateString() : $date->toDateTimeString();
+
+        $selects = [];
+        $bindings = [];
+        foreach ($months as $index => $start) {
+            $selects[] = "COALESCE(SUM(CASE WHEN {$dateColumn} BETWEEN ? AND ? THEN {$valueExpression} ELSE 0 END), 0) AS m{$index}";
+            array_push($bindings, $format($start), $format($start->copy()->endOfMonth()));
+        }
+
+        $row = $query
+            ->whereBetween($dateColumn, [$format($months->first()), $format($months->last()->copy()->endOfMonth())])
+            ->selectRaw(implode(', ', $selects), $bindings)
+            ->first();
+
+        return $months->keys()->map(fn (int $index) => (float) $row->{"m{$index}"})->all();
     }
 
     private function cash(): array

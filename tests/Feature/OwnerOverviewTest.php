@@ -115,6 +115,8 @@ class OwnerOverviewTest extends TestCase
         $this->assertSame(1, $data['cash']['overdue_orders']);
         $this->assertContains('overdue_payments', array_column($data['alerts'], 'key'));
         $this->assertCount(12, $data['trend']);
+        $this->assertEquals(4500, array_sum(array_column($data['trend'], 'revenue')), 'The chart adds up to the billed total.');
+        $this->assertEquals(3, array_sum(array_column($data['trend'], 'orders')));
     }
 
     public function test_a_growth_change_is_empty_when_there_was_nothing_to_compare_with(): void
