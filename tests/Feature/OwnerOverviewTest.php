@@ -287,4 +287,18 @@ class OwnerOverviewTest extends TestCase
         $this->actingAs($operator)->getJson('/api/executive/owner-overview')->assertForbidden();
         $this->actingAs($operator)->getJson('/api/executive/dashboard')->assertForbidden();
     }
+
+    public function test_packed_garments_count_as_production_output(): void
+    {
+        DB::table('production_entries')->insert([
+            ['factory_id' => $this->factory->id, 'stage' => 'packing', 'entry_date' => today()->toDateString(), 'good_quantity' => 40, 'damaged_quantity' => 0, 'voided_at' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['factory_id' => $this->factory->id, 'stage' => 'packing', 'entry_date' => today()->toDateString(), 'good_quantity' => 99, 'damaged_quantity' => 0, 'voided_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            ['factory_id' => $this->factory->id, 'stage' => 'sewing', 'entry_date' => today()->toDateString(), 'good_quantity' => 70, 'damaged_quantity' => 0, 'voided_at' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $data = $this->overview();
+
+        $this->assertEquals(40, $data['growth']['output']['current'], 'Only packed, uncancelled pieces count.');
+        $this->assertEquals(40, array_sum(array_column($data['trend'], 'output')));
+    }
 }

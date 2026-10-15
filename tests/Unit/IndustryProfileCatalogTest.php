@@ -57,7 +57,7 @@ class IndustryProfileCatalogTest extends TestCase
             ],
             Catalog::resolve(['clothing_textiles'])['profiles']['clothing_textiles']['departments'],
         );
-        $this->assertSame([], Catalog::resolve(['clothing_textiles'])['features']);
+        $this->assertSame(['garment_flow'], Catalog::resolve(['clothing_textiles'])['features']);
     }
 
     public function test_unknown_or_free_text_industry_falls_back_to_the_general_flow(): void

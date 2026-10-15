@@ -9,6 +9,7 @@ use App\Models\EmployeeProfile;
 use App\Models\LeaveRequest;
 use App\Models\Machine;
 use App\Models\MaintenanceRecord;
+use App\Models\ProductionEntry;
 use App\Models\ProductionOrder;
 use App\Models\ProductionStageExecution;
 use App\Models\PurchaseDocument;
@@ -104,6 +105,8 @@ final class OwnerOverviewReport
             $months,
             dateOnly: false,
         );
+        $packed = $this->monthlySums($this->packedEntries(), 'entry_date', 'good_quantity', $months, dateOnly: true);
+        $output = array_map(fn ($value, $index) => $value + $packed[$index], $output, array_keys($output));
 
         return $months
             ->map(fn ($month, int $index) => [
@@ -510,11 +513,26 @@ final class OwnerOverviewReport
 
     private function outputBetween(CarbonInterface $from, CarbonInterface $to): float
     {
-        return (float) ProductionStageExecution::withoutGlobalScopes()
+        $stages = (float) ProductionStageExecution::withoutGlobalScopes()
             ->where('factory_id', $this->factoryId)
             ->where('status', 'completed')
             ->whereBetween('completed_at', [$from, $to])
             ->sum('output_quantity');
+
+        $packed = (float) $this->packedEntries()
+            ->where('entry_date', '>=', $from->toDateString())
+            ->where('entry_date', '<', $to->copy()->addDay()->toDateString())
+            ->sum('good_quantity');
+
+        return $stages + $packed;
+    }
+
+    private function packedEntries()
+    {
+        return ProductionEntry::withoutGlobalScopes()
+            ->where('factory_id', $this->factoryId)
+            ->where('stage', 'packing')
+            ->whereNull('voided_at');
     }
 
     private function collectedBetween(CarbonInterface $from, CarbonInterface $to): float
