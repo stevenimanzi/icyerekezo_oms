@@ -162,7 +162,7 @@ export type MonitorLot = {
     damaged: number;
     rejected: number;
     shortage: number;
-    stages: Record<StageKey, { here: number; arriving: number }>;
+    stages: Record<StageKey, { here: number; arriving: number; awaiting_quality: number }>;
 };
 
 export type InspectionRow = {

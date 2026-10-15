@@ -27,5 +27,14 @@ These are rules that are not obvious from reading one file. If you change the co
 - Setting a factory up from its industry is safe to repeat. It adds what is missing and never deletes departments or history.
 - Every factory-owned record belongs to exactly one factory, and every query is limited to the signed-in user's current factory. Code that runs without a signed-in user must name the factory explicitly.
 
+## Garment production flow (cutting, sewing, finishing, packing)
+- Fabric reaches cutting only through a warehouse-approved material request. Approving it takes the stock out of the warehouse; nobody approves their own request.
+- Pieces count at the next stage only after that stage receives them. Receiving fewer than were sent needs a reason and shows as missing until resolved.
+- No stage can work on, or send, more than it has received or finished. A lot on quality hold cannot move until it is released.
+- Every number on screen is calculated from entries, deliveries and quality checks. There are no stored counters that can drift.
+- Packed pieces enter stock but stay quarantined. Only a final quality check releases them for sale; rejected pieces are written off.
+- A record can be cancelled only if no later step depends on it.
+- The Noguchi factory keeps its older production pages. Every other factory whose industry includes clothing and textiles uses this flow.
+
 ## Do not rename or move
 - The Eloquent models, notifications, jobs and mails keep their names and folders. Their class names are stored in the database (audit log, notifications table, queue), so renaming them breaks existing records.

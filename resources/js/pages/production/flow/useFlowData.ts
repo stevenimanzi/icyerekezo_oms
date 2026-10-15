@@ -4,7 +4,6 @@ import { startPolling } from '../../../core/polling';
 
 const REFRESH_EVERY_MS = 15000;
 
-/** Loads one flow endpoint, keeps it fresh while the tab is visible, and lets screens reload after an action. */
 export function useFlowData<T>(url: string) {
     const [data, setData] = useState<T | null>(null);
     const [error, setError] = useState('');

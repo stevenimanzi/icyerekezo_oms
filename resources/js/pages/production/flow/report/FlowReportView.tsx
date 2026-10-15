@@ -23,7 +23,6 @@ function rangeFor(period: Period): { from: string; to: string } {
     return { from: isoDay(start), to: isoDay(end) };
 }
 
-/** Per-stage output, damage, deliveries and quality checks for a period; shared by stage pages and the quality monitor. */
 export function FlowReportView({ locale, text, format, highlight }: Props) {
     const t = text.report;
     const [period, setPeriod] = useState<Period>('week');

@@ -45,6 +45,17 @@ pages/production/
     packing/   PackingWorkspacePage.tsx
 ```
 
+### The garment flow (`pages/production/flow/`)
+
+Factories whose industry includes clothing and textiles (except Noguchi, which keeps the older screens under `textile/`) use one shared set of screens for all four stages:
+
+- `StageWorkspace.tsx` is the page for one stage (Work, Materials, History, Report tabs). The `stage/` folder holds its tabs and dialogs.
+- `monitor/FlowMonitorPage.tsx` is the manager and quality view of every lot, with quality checks and hold/release.
+- `requests/MaterialRequestsPage.tsx` is the warehouse queue that approves fabric requests (the "Stock out" page).
+- `report/FlowReportView.tsx` is the report shared by the stage tabs and the monitor.
+
+`PageRouter.tsx` picks these pages when `flags.hasProductionFlow` is true. The rules behind them are in `docs/rules-the-code-follows.md`.
+
 To add an industry, for example dairy, create `pages/production/dairy/` with one folder per stage (`receiving/`, `pasteurising/`, `packing/`...). Then add the menu entries for the people who work there in `roles/` and the page names in `app/PageRouter.tsx`. Only textile has stage screens today. The other industries use the general production pages until their stage screens are built.
 
 ## Rules of thumb

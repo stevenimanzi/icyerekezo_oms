@@ -131,7 +131,7 @@ export function LotDetailModal({
                                 data.balances.cut,
                                 data.balances.finished,
                                 data.balances.in_progress,
-                                data.balances.damaged,
+                                data.balances.damaged - data.balances.stages.cutting.damaged,
                                 data.balances.rejected,
                                 data.balances.shortage,
                             )}

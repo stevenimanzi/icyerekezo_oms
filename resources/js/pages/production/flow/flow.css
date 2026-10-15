@@ -71,3 +71,40 @@
 .ui-row-actions .ui-link {
     white-space: nowrap;
 }
+
+.ui-alerts {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ui-alerts li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+}
+
+.ui-stage-facts {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.ui-stage-facts b {
+    color: var(--text);
+    text-align: right;
+}
+
+.ui-stage-facts .alert {
+    color: var(--ui-bad);
+}

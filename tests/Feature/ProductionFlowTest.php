@@ -322,6 +322,33 @@ class ProductionFlowTest extends TestCase
         $this->assertSame(4, $balances['rejected']);
     }
 
+    public function test_the_final_check_alert_counts_only_packed_pieces_not_ones_still_to_pack(): void
+    {
+        $this->approvedFabric();
+        $lot = $this->cutLot(100);
+
+        $this->receive('sewing-operator', $this->send('cutting-operator', $lot, 'cutting', 100), 100);
+        $this->work('sewing-operator', $lot, 'sewing', 100)->assertCreated();
+        $this->receive('finishing-manager', $this->send('sewing-operator', $lot, 'sewing', 100), 100);
+        $this->work('finishing-manager', $lot, 'finishing', 100)->assertCreated();
+        $this->receive('packaging-operator', $this->send('finishing-manager', $lot, 'finishing', 100), 100);
+        $this->work('packaging-operator', $lot, 'packing', 60)->assertCreated();
+
+        $alert = $this->as('quality-officer')->getJson('/api/flow/monitor')->json('alerts.awaiting_final_check');
+
+        $this->assertCount(1, $alert);
+        $this->assertSame(60, $alert[0]['pieces'], '40 more pieces are still waiting to be packed and cannot be checked yet.');
+
+        $this->as('quality-officer')->postJson('/api/flow/inspections', [
+            'lot_id' => $lot, 'stage' => 'packing', 'inspected_quantity' => 60, 'passed_quantity' => 60, 'rejected_quantity' => 0,
+        ])->assertCreated();
+
+        $checks = $this->as('quality-officer')->getJson('/api/flow/monitor')->assertOk()->json('inspections');
+        $this->assertCount(1, $checks);
+        $this->assertSame(ProductionLot::find($lot)->lot_number, $checks[0]['lot_number']);
+        $this->assertSame(60, $checks[0]['passed']);
+    }
+
     public function test_packed_pieces_cannot_be_checked_for_more_than_is_waiting(): void
     {
         $this->approvedFabric();

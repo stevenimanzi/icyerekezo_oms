@@ -120,11 +120,6 @@ class MaterialRequestService
         return $request->load('item.unit');
     }
 
-    /**
-     * Fabric (or any material) handed to a stage minus what that stage has used up.
-     *
-     * @return Collection<int, array{item_id: int, name: string, unit: ?string, issued: float, used: float, on_hand: float}>
-     */
     public function onHand(string $stage): Collection
     {
         $issued = MaterialRequest::where('stage', $stage)

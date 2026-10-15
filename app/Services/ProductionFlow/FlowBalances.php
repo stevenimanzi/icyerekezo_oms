@@ -8,16 +8,8 @@ use App\Models\QualityInspection;
 use App\Support\Catalogs\ProductionFlowCatalog;
 use Illuminate\Support\Collection;
 
-/**
- * Works out, for every lot, how many pieces are where. All numbers come from the entries,
- * transfers and inspections, so there is no separate counter that can drift out of step.
- */
 final class FlowBalances
 {
-    /**
-     * @param  iterable<int>  $lotIds
-     * @return array<int, array<string, mixed>> balances keyed by lot id
-     */
     public function forLots(iterable $lotIds): array
     {
         $lotIds = Collection::make($lotIds)->unique()->values();
@@ -72,7 +64,6 @@ final class FlowBalances
         return $balances;
     }
 
-    /** @return array<string, mixed> */
     public function forLot(int $lotId): array
     {
         return $this->forLots([$lotId])[$lotId];

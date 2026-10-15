@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Item;
-use App\Models\StockTransaction;
 use App\Models\Warehouse;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -13,9 +12,6 @@ class StockIssuer
 {
     public function __construct(private readonly InventoryLedger $ledger) {}
 
-    /**
-     * @return array<int, StockTransaction> the ledger entries created for this issue
-     */
     public function issue(Item $item, float $quantity, ?Warehouse $warehouse, string $type, string $reason, Model $reference, string $errorKey): array
     {
         $warehouse ??= $this->warehouseWithMostStock($item);
@@ -68,7 +64,6 @@ class StockIssuer
         return $id ? Warehouse::find($id) : Warehouse::where('is_active', true)->orderBy('id')->first();
     }
 
-    /** @return array<int, array{0: ?int, 1: float}> batch id and quantity pairs, earliest expiry first for batch-tracked items */
     private function sources(Item $item, Warehouse $warehouse, float $quantity): array
     {
         if (! $item->batch_tracked) {

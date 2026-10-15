@@ -114,7 +114,7 @@ const en = {
             rejected: number,
             missing: number,
         ) =>
-            `Cut ${cut} · In progress ${progress} · In stock ${finished} · Damaged ${damaged} · Rejected ${rejected} · Missing ${missing}`,
+            `Cut ${cut} · In progress ${progress} · In stock ${finished} · Spoiled after cutting ${damaged} · Rejected ${rejected} · Missing ${missing}`,
     },
 
     requests: {
@@ -246,7 +246,7 @@ const fr: typeof en = {
         heldSince: (reason) => `Bloqué : ${reason}`,
         check: 'Contrôle qualité',
         summary: (cut, finished, progress, damaged, rejected, missing) =>
-            `Coupé ${cut} · En cours ${progress} · En stock ${finished} · Abîmé ${damaged} · Rejeté ${rejected} · Manquant ${missing}`,
+            `Coupé ${cut} · En cours ${progress} · En stock ${finished} · Abîmé après la coupe ${damaged} · Rejeté ${rejected} · Manquant ${missing}`,
     },
 
     requests: {

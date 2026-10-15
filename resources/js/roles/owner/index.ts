@@ -7,6 +7,7 @@ import {
     ShoppingCart,
     TrendingUp,
     Truck,
+    Users,
     Warehouse,
 } from 'lucide-react';
 import type { RoleModule } from '../types';
@@ -33,6 +34,7 @@ export const ownerRole: RoleModule = {
                 text('Delivery report', 'Rapport de livraison'),
                 'reports.view',
             ],
+            ['team', Users, text('Team', 'Équipe'), 'users.view'],
             ...productionFlowNav(context),
             ['reports', ChartColumn, text('Reports', 'Rapports'), 'reports.view'],
         ];

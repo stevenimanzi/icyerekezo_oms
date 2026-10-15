@@ -22,6 +22,20 @@ final class RoleTemplateCatalog
         'reports.view',
         'reports.export',
         'audit.view',
+        'users.view',
+        'users.create',
+        'users.update',
+    ];
+
+    public const PROTECTED_ROLES = ['factory-owner', 'factory-administrator', 'factory-manager'];
+
+    public const INDUSTRY_ROLES = [
+        'cutting-operator' => ['clothing_textiles'],
+        'sewing-operator' => ['clothing_textiles'],
+        'finishing-manager' => ['clothing_textiles'],
+        'mixing-operator' => ['food_processing', 'dairy', 'beverages', 'grain_flour_milling', 'pharmaceuticals_medicines', 'chemicals_cosmetics_soap'],
+        'processing-operator' => ['food_processing', 'dairy', 'beverages', 'grain_flour_milling', 'agriculture_animal_feed'],
+        'bottling-operator' => ['beverages', 'dairy', 'food_processing', 'pharmaceuticals_medicines', 'chemicals_cosmetics_soap'],
     ];
 
     public static function ownerPermissionIds()
@@ -234,6 +248,13 @@ final class RoleTemplateCatalog
         ],
         'school-user' => ['School User', 'school', ['sales.view', 'sales.create']],
     ];
+
+    public static function isAvailableFor(Factory $factory, string $slug): bool
+    {
+        $industries = self::INDUSTRY_ROLES[$slug] ?? null;
+
+        return $industries === null || array_intersect($industries, $factory->profileKeys()) !== [];
+    }
 
     public static function createFor(Factory $factory): void
     {

@@ -10,4 +10,9 @@ final class PasswordPolicy
     {
         return Password::min(10)->mixedCase()->numbers()->symbols();
     }
+
+    public static function staffRule(): Password
+    {
+        return Password::min(4);
+    }
 }

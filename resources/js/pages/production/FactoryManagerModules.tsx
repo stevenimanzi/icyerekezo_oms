@@ -519,10 +519,8 @@ export function TeamManagementPage() {
     const [creating, setCreating] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
     const [activeTab, setActiveTab] = useState('employees');
-    const [resetUser, setResetUser] = useState<any>(null);
     const [resetPassword, setResetPassword] = useState('');
     const [resetPasswordConfirmation, setResetPasswordConfirmation] = useState('');
-    const [resetting, setResetting] = useState(false);
     const [profileUser, setProfileUser] = useState<any>(null);
     const [profileForm, setProfileForm] = useState({ name: '', email: '' });
     const [savingProfile, setSavingProfile] = useState(false);
@@ -582,6 +580,10 @@ export function TeamManagementPage() {
 
     const saveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (resetPassword && resetPassword !== resetPasswordConfirmation) {
+            setError('Passwords do not match');
+            return;
+        }
         setSavingProfile(true);
         setError('');
         setSuccess('');
@@ -590,8 +592,21 @@ export function TeamManagementPage() {
                 method: 'PATCH',
                 body: JSON.stringify(profileForm),
             });
-            setSuccess('Employee details updated.');
-            setProfileUser(null);
+            if (resetPassword) {
+                await api('/api/team/users/' + profileUser.id + '/reset-password', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        password: resetPassword,
+                        password_confirmation: resetPasswordConfirmation,
+                    }),
+                });
+            }
+            setSuccess(
+                resetPassword
+                    ? 'Employee details and password updated.'
+                    : 'Employee details updated.',
+            );
+            closeProfile();
             await load();
         } catch (reason: any) {
             setError(reason.message);
@@ -621,32 +636,10 @@ export function TeamManagementPage() {
         }
     };
 
-    const handleResetPassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (resetPassword !== resetPasswordConfirmation) {
-            setError('Passwords do not match');
-            return;
-        }
-        setResetting(true);
-        setError('');
-        setSuccess('');
-        try {
-            await api('/api/team/users/' + resetUser.id + '/reset-password', {
-                method: 'POST',
-                body: JSON.stringify({
-                    password: resetPassword,
-                    password_confirmation: resetPasswordConfirmation,
-                }),
-            });
-            setSuccess('Password reset successfully for ' + resetUser.name);
-            setResetUser(null);
-            setResetPassword('');
-            setResetPasswordConfirmation('');
-        } catch (reason: any) {
-            setError(reason.message);
-        } finally {
-            setResetting(false);
-        }
+    const closeProfile = () => {
+        setProfileUser(null);
+        setResetPassword('');
+        setResetPasswordConfirmation('');
     };
 
     const users = data?.users?.data || [];
@@ -752,21 +745,23 @@ export function TeamManagementPage() {
                 >
                     Factory Employees
                 </button>
-                <button
-                    className={activeTab === 'schools' ? 'active' : ''}
-                    onClick={() => setActiveTab('schools')}
-                    style={{
-                        background: activeTab === 'schools' ? 'var(--brand)' : 'transparent',
-                        color: activeTab === 'schools' ? 'white' : 'var(--text)',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                    }}
-                >
-                    School Accounts
-                </button>
+                {data?.online_orders && (
+                    <button
+                        className={activeTab === 'schools' ? 'active' : ''}
+                        onClick={() => setActiveTab('schools')}
+                        style={{
+                            background: activeTab === 'schools' ? 'var(--brand)' : 'transparent',
+                            color: activeTab === 'schools' ? 'white' : 'var(--text)',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                        }}
+                    >
+                        School Accounts
+                    </button>
+                )}
             </div>
 
             {activeTab === 'employees' && (
@@ -803,6 +798,16 @@ export function TeamManagementPage() {
                                             user.employee_profile?.department_id ??
                                             '';
                                         const active = current.is_active ?? isActive(user);
+                                        const locked = user.can_manage === false;
+                                        const currentRole = user.roles?.[0];
+                                        const roleOptions = (data?.roles || []).some(
+                                            (item: any) => item.id === currentRole?.id,
+                                        )
+                                            ? data?.roles || []
+                                            : [
+                                                  ...(currentRole ? [currentRole] : []),
+                                                  ...(data?.roles || []),
+                                              ];
                                         return (
                                             <tr key={user.id}>
                                                 <td>
@@ -823,6 +828,7 @@ export function TeamManagementPage() {
                                                 </td>
                                                 <td>
                                                     <select
+                                                        disabled={locked}
                                                         value={active ? '1' : '0'}
                                                         onChange={(e) =>
                                                             setEditing({
@@ -841,6 +847,7 @@ export function TeamManagementPage() {
                                                 </td>
                                                 <td>
                                                     <select
+                                                        disabled={locked}
                                                         value={
                                                             current.role_id ||
                                                             user.roles?.[0]?.id ||
@@ -857,7 +864,7 @@ export function TeamManagementPage() {
                                                         }
                                                     >
                                                         <option value="">Choose role</option>
-                                                        {(data?.roles || []).map((item: any) => (
+                                                        {roleOptions.map((item: any) => (
                                                             <option key={item.id} value={item.id}>
                                                                 {item.name}
                                                             </option>
@@ -866,6 +873,7 @@ export function TeamManagementPage() {
                                                 </td>
                                                 <td>
                                                     <select
+                                                        disabled={locked}
                                                         value={selectedDepartment}
                                                         onChange={(e) =>
                                                             setEditing({
@@ -892,61 +900,60 @@ export function TeamManagementPage() {
                                                     </select>
                                                 </td>
                                                 <td>
-                                                    <div
-                                                        style={{
-                                                            display: 'flex',
-                                                            gap: '8px',
-                                                            flexWrap: 'nowrap',
-                                                            whiteSpace: 'nowrap',
-                                                        }}
-                                                    >
-                                                        <button
-                                                            className="table-action"
-                                                            disabled={!editing[user.id]}
-                                                            onClick={() => save(user)}
-                                                        >
-                                                            <Save size={15} />
-                                                            Save
-                                                        </button>
-                                                        <button
-                                                            className="table-action"
-                                                            style={{ color: '#64748b' }}
-                                                            onClick={() => {
-                                                                setProfileUser(user);
-                                                                setProfileForm({
-                                                                    name: user.name || '',
-                                                                    email: user.email || '',
-                                                                });
-                                                                setError('');
-                                                                setSuccess('');
+                                                    {locked ? (
+                                                        <small>
+                                                            Only the factory owner or administrator
+                                                            can change this account.
+                                                        </small>
+                                                    ) : (
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                gap: '8px',
+                                                                flexWrap: 'nowrap',
+                                                                whiteSpace: 'nowrap',
                                                             }}
                                                         >
-                                                            <Edit3 size={15} />
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            className="table-action"
-                                                            style={{ color: '#64748b' }}
-                                                            onClick={() => {
-                                                                setResetUser(user);
-                                                                setError('');
-                                                                setSuccess('');
-                                                            }}
-                                                        >
-                                                            Reset Password
-                                                        </button>
-                                                        <button
-                                                            className="table-action"
-                                                            style={{ color: '#dc2626' }}
-                                                            disabled={removingId === user.id}
-                                                            onClick={() => removeUser(user)}
-                                                        >
-                                                            <Trash2 size={15} />
-                                                            {removingId === user.id
-                                                                ? 'Removing…'
-                                                                : 'Remove'}
-                                                        </button>
-                                                    </div>
+                                                            <button
+                                                                className="table-action icon-only"
+                                                                title="Save changes"
+                                                                aria-label="Save changes"
+                                                                disabled={!editing[user.id]}
+                                                                onClick={() => save(user)}
+                                                            >
+                                                                <Save size={17} />
+                                                            </button>
+                                                            <button
+                                                                className="table-action icon-only"
+                                                                title="Edit details or password"
+                                                                aria-label="Edit details or password"
+                                                                onClick={() => {
+                                                                    setProfileUser(user);
+                                                                    setProfileForm({
+                                                                        name: user.name || '',
+                                                                        email: user.email || '',
+                                                                    });
+                                                                    setResetPassword('');
+                                                                    setResetPasswordConfirmation(
+                                                                        '',
+                                                                    );
+                                                                    setError('');
+                                                                    setSuccess('');
+                                                                }}
+                                                            >
+                                                                <Edit3 size={17} />
+                                                            </button>
+                                                            <button
+                                                                className="table-action icon-only danger"
+                                                                title="Remove from factory"
+                                                                aria-label="Remove from factory"
+                                                                disabled={removingId === user.id}
+                                                                onClick={() => removeUser(user)}
+                                                            >
+                                                                <Trash2 size={17} />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
@@ -964,7 +971,7 @@ export function TeamManagementPage() {
                 </>
             )}
 
-            {activeTab === 'schools' && (
+            {data?.online_orders && activeTab === 'schools' && (
                 <div className="admin-table-wrap team-users-table">
                     <div
                         style={{
@@ -1089,15 +1096,22 @@ export function TeamManagementPage() {
                                             </td>
                                             <td>
                                                 <button
-                                                    className="table-action"
-                                                    style={{ color: '#64748b' }}
+                                                    className="table-action icon-only"
+                                                    title="Edit details or password"
+                                                    aria-label="Edit details or password"
                                                     onClick={() => {
-                                                        setResetUser(user);
+                                                        setProfileUser(user);
+                                                        setProfileForm({
+                                                            name: user.name || '',
+                                                            email: user.email || '',
+                                                        });
+                                                        setResetPassword('');
+                                                        setResetPasswordConfirmation('');
                                                         setError('');
                                                         setSuccess('');
                                                     }}
                                                 >
-                                                    Reset Password
+                                                    <Edit3 size={17} />
                                                 </button>
                                             </td>
                                         </tr>
@@ -1213,7 +1227,7 @@ export function TeamManagementPage() {
                                     Temporary password
                                     <input
                                         required
-                                        minLength={10}
+                                        minLength={4}
                                         type="password"
                                         placeholder="Create a secure password"
                                         value={newUser.password}
@@ -1221,13 +1235,16 @@ export function TeamManagementPage() {
                                             setNewUser({ ...newUser, password: e.target.value })
                                         }
                                     />
-                                    <small>Use uppercase, lowercase, number and symbol.</small>
+                                    <small>
+                                        Any password with at least 4 characters. The employee can
+                                        change it later.
+                                    </small>
                                 </label>
                                 <label>
                                     Confirm password
                                     <input
                                         required
-                                        minLength={10}
+                                        minLength={4}
                                         type="password"
                                         placeholder="Enter the password again"
                                         value={newUser.password_confirmation}
@@ -1263,7 +1280,7 @@ export function TeamManagementPage() {
                     className="team-modal-backdrop"
                     role="presentation"
                     onMouseDown={(event) => {
-                        if (event.target === event.currentTarget) setProfileUser(null);
+                        if (event.target === event.currentTarget) closeProfile();
                     }}
                 >
                     <section
@@ -1275,15 +1292,14 @@ export function TeamManagementPage() {
                         <header>
                             <div>
                                 <div>
-                                    <h2 id="edit-user-title">Edit employee details</h2>
-                                    <p>Fix the name or email on file for {profileUser.name}.</p>
+                                    <h2 id="edit-user-title">Edit employee</h2>
+                                    <p>
+                                        Change the details or set a new password for{' '}
+                                        {profileUser.name}.
+                                    </p>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                aria-label="Close"
-                                onClick={() => setProfileUser(null)}
-                            >
+                            <button type="button" aria-label="Close" onClick={closeProfile}>
                                 <X size={19} />
                             </button>
                         </header>
@@ -1316,95 +1332,48 @@ export function TeamManagementPage() {
                                         }
                                     />
                                 </label>
+                                <label>
+                                    New password (optional)
+                                    <input
+                                        minLength={4}
+                                        type="password"
+                                        autoComplete="new-password"
+                                        placeholder="Leave empty to keep the current password"
+                                        value={resetPassword}
+                                        onChange={(e) => setResetPassword(e.target.value)}
+                                    />
+                                    <small>
+                                        Any password with at least 4 characters. The employee can
+                                        change it later.
+                                    </small>
+                                </label>
+                                {resetPassword && (
+                                    <label>
+                                        Confirm new password
+                                        <input
+                                            required
+                                            minLength={4}
+                                            type="password"
+                                            autoComplete="new-password"
+                                            value={resetPasswordConfirmation}
+                                            onChange={(e) =>
+                                                setResetPasswordConfirmation(e.target.value)
+                                            }
+                                        />
+                                    </label>
+                                )}
                             </div>
                             <footer>
                                 <button
                                     type="button"
                                     className="secondary-btn"
-                                    onClick={() => setProfileUser(null)}
+                                    onClick={closeProfile}
                                 >
                                     Cancel
                                 </button>
                                 <button className="primary-btn" disabled={savingProfile}>
                                     <Save size={16} />
                                     {savingProfile ? 'Saving...' : 'Save changes'}
-                                </button>
-                            </footer>
-                        </form>
-                    </section>
-                </div>
-            )}
-
-            {resetUser && (
-                <div
-                    className="team-modal-backdrop"
-                    role="presentation"
-                    onMouseDown={(event) => {
-                        if (event.target === event.currentTarget) setResetUser(null);
-                    }}
-                >
-                    <section
-                        className="team-modal"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="reset-password-title"
-                    >
-                        <header>
-                            <div>
-                                <div>
-                                    <h2 id="reset-password-title">Reset User Password</h2>
-                                    <p>Set a new password for {resetUser.name}</p>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                aria-label="Close"
-                                onClick={() => setResetUser(null)}
-                            >
-                                <X size={19} />
-                            </button>
-                        </header>
-                        <form
-                            className="admin-form employee-create-form"
-                            onSubmit={handleResetPassword}
-                        >
-                            <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
-                                <label>
-                                    New Password
-                                    <input
-                                        required
-                                        minLength={10}
-                                        type="password"
-                                        placeholder="Enter a new secure password"
-                                        value={resetPassword}
-                                        onChange={(e) => setResetPassword(e.target.value)}
-                                    />
-                                    <small>Use uppercase, lowercase, number and symbol.</small>
-                                </label>
-                                <label>
-                                    Confirm Password
-                                    <input
-                                        required
-                                        minLength={10}
-                                        type="password"
-                                        placeholder="Confirm the new password"
-                                        value={resetPasswordConfirmation}
-                                        onChange={(e) =>
-                                            setResetPasswordConfirmation(e.target.value)
-                                        }
-                                    />
-                                </label>
-                            </div>
-                            <footer>
-                                <button
-                                    type="button"
-                                    className="secondary-btn"
-                                    onClick={() => setResetUser(null)}
-                                >
-                                    Cancel
-                                </button>
-                                <button className="primary-btn" disabled={resetting}>
-                                    {resetting ? 'Resetting...' : 'Reset Password'}
                                 </button>
                             </footer>
                         </form>

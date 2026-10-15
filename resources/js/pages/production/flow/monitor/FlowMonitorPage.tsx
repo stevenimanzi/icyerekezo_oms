@@ -21,7 +21,6 @@ const STATUSES: Status[] = ['open', 'held', 'completed', 'all'];
 const NOTICE_MS = 7000;
 const SEARCH_DELAY_MS = 350;
 
-/** Quality and managers' view of every lot, stage and check across the production flow. */
 export default function FlowMonitorPage({ locale }: Props) {
     const text = flowText[locale];
     const words = monitorText[locale];
@@ -148,18 +147,26 @@ export default function FlowMonitorPage({ locale }: Props) {
                             <article className="panel ui-kpi" key={stage.key}>
                                 <small>{stage.label[locale]}</small>
                                 <strong>{format.whole(stage.here)}</strong>
-                                <p>
-                                    {words.arriving}: {format.whole(stage.arriving)} · {words.ready}
-                                    : {format.whole(stage.ready_to_send)}
-                                </p>
-                                <p>
-                                    {words.awaiting}: {format.whole(stage.awaiting_quality)} ·{' '}
-                                    {words.damaged}: {format.whole(stage.damaged)}
-                                </p>
-                                <p>
-                                    {words.rejected}: {format.whole(stage.rejected)} ·{' '}
-                                    {words.shortage}: {format.whole(stage.shortage)}
-                                </p>
+                                <div className="ui-stage-facts">
+                                    <span>{words.arriving}</span>
+                                    <b>{format.whole(stage.arriving)}</b>
+                                    <span>{words.ready}</span>
+                                    <b>{format.whole(stage.ready_to_send)}</b>
+                                    <span>{words.awaiting}</span>
+                                    <b>{format.whole(stage.awaiting_quality)}</b>
+                                    <span>{words.damaged}</span>
+                                    <b className={stage.damaged > 0 ? 'alert' : ''}>
+                                        {format.whole(stage.damaged)}
+                                    </b>
+                                    <span>{words.rejected}</span>
+                                    <b className={stage.rejected > 0 ? 'alert' : ''}>
+                                        {format.whole(stage.rejected)}
+                                    </b>
+                                    <span>{words.shortage}</span>
+                                    <b className={stage.shortage > 0 ? 'alert' : ''}>
+                                        {format.whole(stage.shortage)}
+                                    </b>
+                                </div>
                             </article>
                         ))}
                     </div>
@@ -169,7 +176,7 @@ export default function FlowMonitorPage({ locale }: Props) {
                             <h2>{words.alertsTitle}</h2>
                         </div>
                         {alerts.length ? (
-                            <ul className="ui-payments">
+                            <ul className="ui-alerts">
                                 {alerts.map((alert) => (
                                     <li key={alert.key}>
                                         <span>{alert.message}</span>
@@ -374,7 +381,10 @@ export default function FlowMonitorPage({ locale }: Props) {
                     words={words}
                     format={format}
                     onClose={() => setOpenLot(null)}
-                    onInspect={(lotId, balances) => setInspecting({ lotId, balances })}
+                    onInspect={(lotId, balances) => {
+                        setOpenLot(null);
+                        setInspecting({ lotId, balances });
+                    }}
                     onChanged={changed}
                 />
             )}

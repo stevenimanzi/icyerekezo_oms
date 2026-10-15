@@ -18,7 +18,6 @@ type Decision = { row: RequestRow; kind: 'approve' | 'reject' };
 const FILTERS: Filter[] = ['pending', 'approved', 'rejected', 'all'];
 const NOTICE_MS = 7000;
 
-/** The warehouse keeper's queue of material requests from production stages. */
 export default function MaterialRequestsPage({ locale }: Props) {
     const text = flowText[locale];
     const words = monitorText[locale].requests;

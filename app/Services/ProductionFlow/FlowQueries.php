@@ -121,6 +121,7 @@ class FlowQueries
                 'stages' => collect($b['stages'])->map(fn (array $s) => [
                     'here' => $s['wip'] + $s['outbox'] + $s['awaiting_quality'],
                     'arriving' => $s['incoming'],
+                    'awaiting_quality' => $s['awaiting_quality'],
                 ])->all(),
             ];
         });
@@ -149,8 +150,8 @@ class FlowQueries
             'lots' => $rows,
             'alerts' => [
                 'held' => $held->map(fn (ProductionLot $lot) => ['id' => $lot->id, 'lot_number' => $lot->lot_number, 'product' => $lot->product?->name, 'reason' => $lot->hold_reason, 'since' => $lot->held_at?->toIso8601String()]),
-                'awaiting_final_check' => $rows->filter(fn ($row) => ($row['stages']['packing']['here'] ?? 0) > 0)->values()
-                    ->map(fn ($row) => ['id' => $row['id'], 'lot_number' => $row['lot_number'], 'product' => $row['product'], 'pieces' => $row['stages']['packing']['here']]),
+                'awaiting_final_check' => $rows->filter(fn ($row) => ($row['stages']['packing']['awaiting_quality'] ?? 0) > 0)->values()
+                    ->map(fn ($row) => ['id' => $row['id'], 'lot_number' => $row['lot_number'], 'product' => $row['product'], 'pieces' => $row['stages']['packing']['awaiting_quality']]),
                 'stuck_deliveries' => (int) ProductionTransfer::where('status', 'sent')->where('sent_at', '<', now()->subHours(self::STUCK_AFTER_HOURS))->count(),
                 'idle_lots' => $rows->filter(fn ($row) => $row['status'] === 'open' && $row['in_progress'] > 0 && $row['idle_days'] >= self::IDLE_AFTER_DAYS)->values()
                     ->map(fn ($row) => ['id' => $row['id'], 'lot_number' => $row['lot_number'], 'idle_days' => $row['idle_days']]),
@@ -424,7 +425,6 @@ class FlowQueries
         ];
     }
 
-    /** @return array<int, Carbon> */
     private function lastMovement(Collection $lotIds): array
     {
         $latest = [];

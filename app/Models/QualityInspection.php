@@ -60,6 +60,11 @@ class QualityInspection extends Model
         return $this->belongsTo(Item::class);
     }
 
+    public function lot()
+    {
+        return $this->belongsTo(ProductionLot::class, 'lot_id');
+    }
+
     public function inspector()
     {
         return $this->belongsTo(User::class, 'inspector_id');

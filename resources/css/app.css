@@ -10409,3 +10409,28 @@ small,
         font-size: 12px;
     }
 }
+
+.table-action.icon-only {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    color: var(--muted);
+}
+
+.table-action.icon-only:hover:not(:disabled) {
+    border-color: var(--brand);
+    color: var(--brand);
+}
+
+.table-action.icon-only.danger:hover:not(:disabled) {
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+.table-action.icon-only:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}

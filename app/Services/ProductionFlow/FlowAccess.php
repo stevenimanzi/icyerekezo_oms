@@ -7,7 +7,6 @@ use App\Support\Catalogs\ProductionFlowCatalog;
 
 final class FlowAccess
 {
-    /** @param array<int, string> $roleSlugs */
     private function __construct(private readonly User $user, private readonly array $roleSlugs) {}
 
     public static function for(User $user): self
@@ -31,7 +30,6 @@ final class FlowAccess
         return $this->isManager() || (bool) array_intersect(ProductionFlowCatalog::STAGES[$stage]['roles'] ?? [], $this->roleSlugs);
     }
 
-    /** @return array<int, string> */
     public function workStages(): array
     {
         return array_values(array_filter(ProductionFlowCatalog::keys(), fn (string $stage) => $this->canWork($stage)));

@@ -11,6 +11,7 @@ use App\Models\School;
 use App\Models\User;
 use App\Models\WorkAssignment;
 use App\Services\DepartmentDeduplicationService;
+use App\Support\Catalogs\RoleTemplateCatalog;
 use App\Support\Notifications\FactoryNotifier;
 use App\Support\Security\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
@@ -38,40 +39,30 @@ class TeamWorkspaceController extends Controller
             ->whereIn('user_id', $employeeUserIds)
             ->whereNotNull('department_id')
             ->count();
-        $productionDepartment = Department::where('factory_id', $factoryId)
-            ->where(
-                fn ($query) => $query->where('code', 'PRODUCTION')->orWhereRaw('LOWER(TRIM(name)) = ?', ['production']),
-            )
-            ->first();
-        if ($productionDepartment) {
-            $productionDepartment->update(['name' => 'Production', 'is_active' => true]);
-        } else {
-            Department::create([
-                'factory_id' => $factoryId,
-                'code' => 'PRODUCTION',
-                'name' => 'Production',
-                'is_active' => true,
-            ]);
+        foreach (['PRODUCTION' => 'Production', 'WAREHOUSE' => 'Warehouse'] as $code => $name) {
+            $department = Department::where('factory_id', $factoryId)
+                ->where(fn ($query) => $query->where('code', $code)->orWhereRaw('LOWER(TRIM(name)) = ?', [strtolower($name)]))
+                ->first();
+
+            if ($department) {
+                $department->update(['name' => $name, 'is_active' => true]);
+            } else {
+                Department::create(['factory_id' => $factoryId, 'code' => $code, 'name' => $name, 'is_active' => true]);
+            }
         }
-        $roles = Role::where('factory_id', $factoryId);
-        $isManagerOnly =
-            $request
-                ->user()
-                ->roles()
-                ->wherePivot('factory_id', $factoryId)
-                ->where('slug', 'factory-manager')
-                ->exists() &&
-            ! $request
-                ->user()
-                ->roles()
-                ->wherePivot('factory_id', $factoryId)
-                ->whereIn('slug', ['factory-owner', 'factory-administrator'])
-                ->exists();
-        if ($isManagerOnly) {
-            $roles->whereNotIn('slug', ['factory-owner', 'factory-administrator', 'factory-manager']);
+        $actor = $request->user();
+        $factory = $actor->currentFactory;
+        $receivesOnlineOrders = $factory->hasNoguchiSchoolOrders();
+        $roles = Role::where('factory_id', $factoryId)->where('slug', '!=', 'factory-owner');
+        if (! $receivesOnlineOrders) {
+            $roles->where('slug', '!=', 'school-user');
+        }
+        if (! $this->isFactoryAdmin($actor)) {
+            $roles->whereNotIn('slug', RoleTemplateCatalog::PROTECTED_ROLES);
         }
 
         return response()->json([
+            'online_orders' => $receivesOnlineOrders,
             'statistics' => [
                 'total_users' => $totalUsers,
                 'active_users' => $activeUsers,
@@ -90,10 +81,17 @@ class TeamWorkspaceController extends Controller
                     'employeeProfile.department',
                     'employeeProfile.workstation',
                 ])
-                ->paginate(25),
+                ->paginate(25)
+                ->through(function (User $member) use ($actor, $factoryId) {
+                    $member->setAttribute('can_manage', $this->canManage($actor, $member, $factoryId));
+
+                    return $member;
+                }),
             'roles' => $roles
                 ->with('permissions:id,name,slug,module')
-                ->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
+                ->get(['id', 'name', 'slug', 'dashboard_key', 'is_system'])
+                ->filter(fn (Role $role) => RoleTemplateCatalog::isAvailableFor($factory, $role->slug))
+                ->values(),
             'departments' => Department::where('is_active', true)
                 ->with('manager:id,name,email')
                 ->withCount('employees')
@@ -101,8 +99,8 @@ class TeamWorkspaceController extends Controller
                 ->get()
                 ->unique(fn (Department $department) => Str::lower(trim($department->name)))
                 ->values(),
-            'schools' => School::where('factory_id', $factoryId)->orderBy('name')->get(),
-            'school_users' => User::where('is_platform_admin', false)
+            'schools' => $receivesOnlineOrders ? School::where('factory_id', $factoryId)->orderBy('name')->get() : [],
+            'school_users' => ! $receivesOnlineOrders ? [] : User::where('is_platform_admin', false)
                 ->whereNotNull('school_id')
                 ->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))
                 ->with(['school', 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId)])
@@ -125,7 +123,7 @@ class TeamWorkspaceController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email:rfc', 'max:190'],
-            'password' => ['required', 'confirmed', PasswordPolicy::rule()],
+            'password' => ['required', 'confirmed', PasswordPolicy::staffRule()],
             'role_id' => ['required', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
             'school_id' => ['nullable', Rule::exists('schools', 'id')->where('factory_id', $factoryId)],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
@@ -214,6 +212,7 @@ class TeamWorkspaceController extends Controller
         $factoryId = $request->user()->current_factory_id;
         $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
         abort_if($membership->is_owner, 422, 'The factory owner account cannot be changed here.');
+        $this->assertCanManage($request->user(), $user, $factoryId);
         $data = $request->validate([
             'name' => ['nullable', 'string', 'max:120'],
             'email' => ['nullable', 'email:rfc', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
@@ -235,7 +234,7 @@ class TeamWorkspaceController extends Controller
         }
         if (! empty($data['role_id'])) {
             $role = Role::where('factory_id', $factoryId)->with('permissions:id,slug')->findOrFail($data['role_id']);
-            $this->assertCanGrantRole($request->user(), $role);
+            $this->assertCanGrantRole($request->user(), $role, $user);
             $user->roles()->wherePivot('factory_id', $factoryId)->detach();
             $user->roles()->attach($role->id, ['factory_id' => $factoryId]);
         }
@@ -259,6 +258,7 @@ class TeamWorkspaceController extends Controller
         $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
         abort_if($membership->is_owner, 422, 'The factory owner account cannot be removed.');
         abort_if($user->id === $request->user()->id, 422, 'You cannot remove your own account.');
+        $this->assertCanManage($request->user(), $user, $factoryId);
         $name = $user->name;
 
         DB::transaction(function () use ($user, $factoryId) {
@@ -288,8 +288,9 @@ class TeamWorkspaceController extends Controller
         $factoryId = $request->user()->current_factory_id;
         $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
         abort_if($membership->is_owner, 422, 'The factory owner account cannot be changed here.');
+        $this->assertCanManage($request->user(), $user, $factoryId);
         $data = $request->validate([
-            'password' => ['required', 'confirmed', PasswordPolicy::rule()],
+            'password' => ['required', 'confirmed', PasswordPolicy::staffRule()],
         ]);
 
         $user->update(['password' => bcrypt($data['password'])]);
@@ -367,35 +368,70 @@ class TeamWorkspaceController extends Controller
         return response()->json($assignment);
     }
 
-    private function assertCanGrantRole(User $actor, Role $role): void
+    private function assertCanGrantRole(User $actor, Role $role, ?User $target = null): void
     {
         if ($role->slug === 'factory-owner') {
             throw ValidationException::withMessages([
                 'role_id' => 'The factory owner account is protected and cannot be assigned or changed from Team & Shifts.',
             ]);
         }
-        $isFactoryManager = $actor
-            ->roles()
-            ->wherePivot('factory_id', $actor->current_factory_id)
-            ->where('slug', 'factory-manager')
-            ->exists();
-        if (
-            $isFactoryManager &&
-            ! in_array($role->slug, ['factory-owner', 'factory-administrator', 'factory-manager'], true)
-        ) {
+        if (in_array($role->slug, RoleTemplateCatalog::PROTECTED_ROLES, true) && ! $this->isFactoryAdmin($actor)) {
+            throw ValidationException::withMessages([
+                'role_id' => 'Only the factory owner or administrator can give this role.',
+            ]);
+        }
+        if ($role->slug === 'school-user' && ! $actor->currentFactory->hasNoguchiSchoolOrders()) {
+            throw ValidationException::withMessages(['role_id' => 'This factory does not take online orders from clients.']);
+        }
+        $alreadyHasRole = $target?->roles()->wherePivot('factory_id', $actor->current_factory_id)->where('roles.id', $role->id)->exists();
+        if (! $alreadyHasRole && ! RoleTemplateCatalog::isAvailableFor($actor->currentFactory, $role->slug)) {
+            throw ValidationException::withMessages([
+                'role_id' => 'This role is not used by this type of factory.',
+            ]);
+        }
+        if ($this->isFactoryAdmin($actor) || $this->isFactoryManager($actor)) {
             return;
         }
         $this->assertCanGrantPermissions($actor, $role->permissions->pluck('slug')->all());
     }
 
+    private function roleSlugs(User $user, int $factoryId): array
+    {
+        return $user->roles()->wherePivot('factory_id', $factoryId)->pluck('slug')->all();
+    }
+
+    private function isFactoryAdmin(User $actor): bool
+    {
+        return $actor->is_platform_admin
+            || array_intersect($this->roleSlugs($actor, $actor->current_factory_id), ['factory-owner', 'factory-administrator']) !== [];
+    }
+
+    private function isFactoryManager(User $actor): bool
+    {
+        return in_array('factory-manager', $this->roleSlugs($actor, $actor->current_factory_id), true);
+    }
+
+    private function canManage(User $actor, User $target, int $factoryId): bool
+    {
+        if ($this->isFactoryAdmin($actor)) {
+            return true;
+        }
+
+        return array_intersect($this->roleSlugs($target, $factoryId), RoleTemplateCatalog::PROTECTED_ROLES) === [];
+    }
+
+    private function assertCanManage(User $actor, User $target, int $factoryId): void
+    {
+        abort_unless(
+            $this->canManage($actor, $target, $factoryId),
+            403,
+            'Only the factory owner or administrator can change this account.',
+        );
+    }
+
     private function assertCanGrantPermissions(User $actor, array $permissions): void
     {
-        $isFactoryAdministrator = $actor
-            ->roles()
-            ->wherePivot('factory_id', $actor->current_factory_id)
-            ->whereIn('slug', ['factory-owner', 'factory-administrator'])
-            ->exists();
-        if ($actor->is_platform_admin || $isFactoryAdministrator) {
+        if ($this->isFactoryAdmin($actor)) {
             return;
         }
         $unauthorized = collect($permissions)->reject(fn ($permission) => $actor->hasPermission($permission));

@@ -26,7 +26,9 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
     const isPacking = stage.key === 'packing';
     const lots = isCutting
         ? data.lots
-        : data.lots.filter((lot) => lot.wip + lot.good + lot.damaged + lot.outbox + lot.awaiting_quality > 0);
+        : data.lots.filter(
+              (lot) => lot.wip + lot.good + lot.damaged + lot.outbox + lot.awaiting_quality > 0,
+          );
     const next = stage.next ? stageLabel(stage.next, locale) : '';
 
     return (
