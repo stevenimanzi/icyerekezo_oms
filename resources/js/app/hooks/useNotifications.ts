@@ -95,9 +95,7 @@ export function useNotifications(user: AuthUser, onMaintenance: (message: string
                 body: JSON.stringify(subscription.toJSON()),
             });
             setPushSubscribed(true);
-        } catch {
-            // Permission denied or not supported: browser notifications simply stay off.
-        }
+        } catch
     };
 
     return {

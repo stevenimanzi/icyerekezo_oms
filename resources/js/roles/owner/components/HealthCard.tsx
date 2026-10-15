@@ -36,7 +36,6 @@ export function HealthCard({ title, headline, rows, children }: Props) {
     );
 }
 
-/** Colours a count red or amber only when something needs attention. */
 export function toneFor(count: number, level: Exclude<Tone, 'good'> = 'warn'): Tone | undefined {
     return count > 0 ? level : undefined;
 }

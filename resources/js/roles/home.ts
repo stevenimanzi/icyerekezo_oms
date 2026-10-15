@@ -7,7 +7,6 @@ import OwnerDashboard from './owner/OwnerDashboard';
 import SafetyOfficerHome from './safety-officer/Home';
 import type { HomeComponent } from './types';
 
-/** The screen shown on the "dashboard" page. The factory owner has their own; the rest follow the old order of precedence. */
 export function homeFor(flags: RoleFlags): HomeComponent {
     if (flags.isFactoryOwner) return OwnerDashboard;
     if (flags.isExecutiveUser) return ExecutiveDashboard;
