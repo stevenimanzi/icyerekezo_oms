@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal } from '../../../components/Modal';
 import type { Format } from '../../../core/format';
 import { postJson } from '../../../core/liveData';
@@ -24,9 +24,19 @@ export function RecordIssueModal({ data, text, format, onClose, onDone }: Props)
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
 
+    const reasonOptions = useMemo(() => {
+        const list = Array.isArray(data.reasons) ? [...data.reasons] : [];
+        if (!list.includes('cutting')) {
+            list.push('cutting');
+        }
+        const withoutOther = list.filter((key) => key !== 'other');
+        return [...withoutOther, 'other'];
+    }, [data.reasons]);
+
     const item = data.items.find((row) => String(row.id) === itemId);
     const tooMuch = item !== undefined && Number(quantity) > item.available;
-    const needsNote = reason !== 'used';
+    const isOther = reason === 'other';
+    const needsNote = isOther || reason === 'damaged' || reason === 'lost';
     const ready =
         item !== undefined &&
         Number(quantity) > 0 &&
@@ -34,6 +44,10 @@ export function RecordIssueModal({ data, text, format, onClose, onDone }: Props)
         (!needsNote || note.trim().length >= 3);
 
     const submit = async () => {
+        if (needsNote && note.trim().length < 3) {
+            setError(isOther ? t.otherNoteHint : t.noteHint);
+            return;
+        }
         setBusy(true);
         setError('');
         try {
@@ -113,7 +127,7 @@ export function RecordIssueModal({ data, text, format, onClose, onDone }: Props)
             <label className="ui-field">
                 {t.reason}
                 <select value={reason} onChange={(event) => setReason(event.target.value)}>
-                    {data.reasons.map((key) => (
+                    {reasonOptions.map((key) => (
                         <option key={key} value={key}>
                             {t.reasons[key] ?? key}
                         </option>
@@ -121,9 +135,22 @@ export function RecordIssueModal({ data, text, format, onClose, onDone }: Props)
                 </select>
             </label>
             <label className="ui-field">
-                {t.note}
-                <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
-                {needsNote && <span className="ui-help">{t.noteHint}</span>}
+                {isOther ? t.otherReasonLabel : (needsNote ? `${t.note} *` : t.note)}
+                <textarea
+                    rows={2}
+                    value={note}
+                    placeholder={isOther ? t.otherPlaceholder : undefined}
+                    onChange={(event) => setNote(event.target.value)}
+                />
+                {isOther && !note.trim() && (
+                    <span className="ui-help" style={{ color: 'var(--amber-700, #b45309)' }}>
+                        {t.otherNoteHint}
+                    </span>
+                )}
+                {isOther && note.trim().length > 0 && note.trim().length < 3 && (
+                    <span className="ui-error">{t.noteMinLength}</span>
+                )}
+                {!isOther && needsNote && <span className="ui-help">{t.noteHint}</span>}
             </label>
         </Modal>
     );
