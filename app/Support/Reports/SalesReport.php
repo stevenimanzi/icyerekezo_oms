@@ -4,6 +4,7 @@ namespace App\Support\Reports;
 
 use App\Models\SalesPayment;
 use App\Models\SchoolPaymentSubmission;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -142,7 +143,7 @@ final class SalesReport
 
         return $rows->groupBy(fn ($row, $day) => substr($day, 0, 7))
             ->map(fn ($group, $month) => [
-                'label' => \Carbon\Carbon::createFromFormat('Y-m', $month)->format('M Y'),
+                'label' => Carbon::createFromFormat('Y-m', $month)->format('M Y'),
                 'sales' => (int) $group->sum('sales'),
                 'revenue' => (float) $group->sum('revenue'),
             ])
@@ -201,7 +202,7 @@ final class SalesReport
             ->limit(12)
             ->get()
             ->map(function ($row) {
-                $dueOn = \Carbon\Carbon::parse($row->due_date ?: $row->document_date);
+                $dueOn = Carbon::parse($row->due_date ?: $row->document_date);
 
                 return [
                     'id' => (int) $row->id,

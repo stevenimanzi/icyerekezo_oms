@@ -37,7 +37,7 @@ class ManualSalesController extends Controller
             ->where('source', 'manual')
             ->with(['lines.item:id,name,sku', 'payments', 'creator:id,name'])
             ->when($filters['search'] ?? null, function ($query, string $term) {
-                $like = '%'.addcslashes($term, '\\%_').'%';
+                $like = '%' . addcslashes($term, '\\%_') . '%';
                 $query->where(fn ($match) => $match->where('document_number', 'like', $like)->orWhere('customer_name', 'like', $like)->orWhere('customer_phone', 'like', $like));
             })
             ->when($filters['payment'] ?? null, fn ($query, string $status) => $status === 'cancelled'
@@ -78,7 +78,7 @@ class ManualSalesController extends Controller
             'lines.*.unit_price' => ['required', 'numeric', 'min:0', 'max:999999999'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
-            'payment_method' => ['required_with:paid_amount', 'nullable', Rule::in(SalesPayment::METHODS)],
+            'payment_method' => [Rule::requiredIf(fn () => (float) $request->input('paid_amount') > 0), 'nullable', Rule::in(SalesPayment::METHODS)],
             'payment_reference' => ['nullable', 'string', 'max:100'],
             'due_date' => ['nullable', 'date', 'after_or_equal:sale_date'],
             'deduct_stock' => ['nullable', 'boolean'],
@@ -100,7 +100,7 @@ class ManualSalesController extends Controller
         abort_if($balance <= 0, 422, 'This sale is already fully paid.');
 
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'gt:0', 'max:'.$balance],
+            'amount' => ['required', 'numeric', 'gt:0', 'max:' . $balance],
             'method' => ['required', Rule::in(SalesPayment::METHODS)],
             'reference' => ['nullable', 'string', 'max:100'],
             'paid_on' => ['nullable', 'date', 'before_or_equal:today'],
@@ -126,7 +126,7 @@ class ManualSalesController extends Controller
         $this->ensureManual($document);
         $document->load(['lines.item.unit', 'payments', 'creator']);
         $factory = $request->user()->currentFactory;
-        $fileName = 'receipt-'.preg_replace('/[^A-Za-z0-9_-]+/', '-', $document->document_number).'.pdf';
+        $fileName = 'receipt-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $document->document_number) . '.pdf';
 
         return Pdf::loadView('pdf.sale-receipt', compact('document', 'factory'))->setPaper('a5')->stream($fileName);
     }

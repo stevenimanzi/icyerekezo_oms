@@ -1,5 +1,5 @@
 import type { Comparison } from '../types';
-import type { Format } from '../format';
+import type { Format } from '../../../core/format';
 import type { ownerText } from '../text';
 
 type Text = (typeof ownerText)['en'];

@@ -16,6 +16,7 @@ use App\Models\QualityInspection;
 use App\Models\SafetyIncident;
 use App\Models\SalesDocument;
 use App\Models\SalesDocumentLine;
+use App\Models\SalesPayment;
 use App\Models\SchoolPaymentSubmission;
 use App\Models\StockBalance;
 use Carbon\CarbonInterface;
@@ -523,11 +524,19 @@ final class OwnerOverviewReport
 
     private function collectedBetween(CarbonInterface $from, CarbonInterface $to): float
     {
-        return (float) SchoolPaymentSubmission::withoutGlobalScopes()
+        $schools = (float) SchoolPaymentSubmission::withoutGlobalScopes()
             ->where('factory_id', $this->factoryId)
             ->where('status', 'approved')
             ->whereBetween('reviewed_at', [$from, $to])
             ->sum('amount');
+
+        $counter = (float) SalesPayment::withoutGlobalScopes()
+            ->where('factory_id', $this->factoryId)
+            ->where('paid_on', '>=', $from->toDateString())
+            ->where('paid_on', '<', $to->copy()->addDay()->toDateString())
+            ->sum('amount');
+
+        return $schools + $counter;
     }
 
     private function maintenanceInPeriod()

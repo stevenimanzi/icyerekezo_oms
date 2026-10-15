@@ -1,4 +1,4 @@
-import type { Format } from '../format';
+import type { Format } from '../../../core/format';
 import type { ownerText } from '../text';
 
 export type SectionProps<T> = {

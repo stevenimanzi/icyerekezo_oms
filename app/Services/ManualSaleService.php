@@ -267,11 +267,11 @@ class ManualSaleService
 
     private function nextNumber(): string
     {
-        $prefix = 'SL-'.now()->format('Y').'-';
-        $next = SalesDocument::where('source', 'manual')->where('document_number', 'like', $prefix.'%')->count() + 1;
+        $prefix = 'SL-' . now()->format('Y') . '-';
+        $next = SalesDocument::where('source', 'manual')->where('document_number', 'like', $prefix . '%')->count() + 1;
 
         do {
-            $number = $prefix.str_pad((string) $next++, 4, '0', STR_PAD_LEFT);
+            $number = $prefix . str_pad((string) $next++, 4, '0', STR_PAD_LEFT);
         } while (SalesDocument::where('document_number', $number)->exists());
 
         return $number;

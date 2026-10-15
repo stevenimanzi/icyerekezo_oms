@@ -4,7 +4,7 @@ import { ActivityList } from './components/ActivityList';
 import { AlertsBar } from './components/AlertsBar';
 import { KpiCard } from './components/KpiCard';
 import { TrendChart } from './components/TrendChart';
-import { makeFormat } from './format';
+import { makeFormat } from '../../core/format';
 import './owner.css';
 import { CashSection } from './sections/CashSection';
 import { CustomersSection } from './sections/CustomersSection';

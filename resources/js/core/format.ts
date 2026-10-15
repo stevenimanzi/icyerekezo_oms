@@ -1,4 +1,4 @@
-import type { Locale } from '../../core/types';
+import type { Locale } from './types';
 
 const LOCALES: Record<Locale, string> = { en: 'en-GB', fr: 'fr-FR' };
 
@@ -19,6 +19,8 @@ export function makeFormat(locale: Locale, currency: string) {
             `${value > 0 ? '+' : value < 0 ? '−' : ''}${plain.format(Math.abs(value))}%`,
         hours: (minutes: number) =>
             minutes >= 60 ? `${plain.format(minutes / 60)} h` : `${whole.format(minutes)} min`,
+        date: (value: string | null) =>
+            value ? new Date(value.slice(0, 10) + 'T12:00:00').toLocaleDateString(tag, { dateStyle: 'medium' }) : '—',
         dateTime: (iso: string | null) =>
             iso
                 ? new Date(iso).toLocaleString(tag, { dateStyle: 'medium', timeStyle: 'short' })

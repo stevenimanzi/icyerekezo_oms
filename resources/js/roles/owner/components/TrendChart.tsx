@@ -8,7 +8,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import type { Format } from '../format';
+import type { Format } from '../../../core/format';
 import type { ownerText } from '../text';
 import type { OwnerOverview } from '../types';
 

@@ -1,5 +1,5 @@
-import type { Format } from '../format';
-import { humanize } from '../format';
+import type { Format } from '../../../core/format';
+import { humanize } from '../../../core/format';
 import type { ownerText } from '../text';
 import type { ActivityEntry } from '../types';
 

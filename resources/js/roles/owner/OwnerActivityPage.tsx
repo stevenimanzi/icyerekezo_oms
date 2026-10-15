@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../core/api';
 import type { HomeProps } from '../types';
-import { humanize, makeFormat } from './format';
+import { humanize, makeFormat } from '../../core/format';
 import './owner.css';
 import { ownerText } from './text';
 import type { ActivityPage } from './types';
