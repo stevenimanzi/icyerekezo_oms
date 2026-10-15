@@ -5,7 +5,13 @@ import type { FlowText } from '../text';
 import type { StageOverview } from '../types';
 import { postFlow } from '../useFlowData';
 
-type Props = { data: StageOverview; locale: Locale; text: FlowText; format: Format; onChanged: (message: string) => void };
+type Props = {
+    data: StageOverview;
+    locale: Locale;
+    text: FlowText;
+    format: Format;
+    onChanged: (message: string) => void;
+};
 
 export function MaterialsTab({ data, text, format, onChanged }: Props) {
     const t = text.materials;
@@ -19,12 +25,15 @@ export function MaterialsTab({ data, text, format, onChanged }: Props) {
         setBusy(true);
         setError('');
         try {
-            const result = await postFlow<{ request: { request_number: string } }>('/api/flow/requests', {
-                stage: data.stage.key,
-                item_id: Number(itemId),
-                quantity: Number(quantity),
-                reason: reason.trim(),
-            });
+            const result = await postFlow<{ request: { request_number: string } }>(
+                '/api/flow/requests',
+                {
+                    stage: data.stage.key,
+                    item_id: Number(itemId),
+                    quantity: Number(quantity),
+                    reason: reason.trim(),
+                },
+            );
             setItemId('');
             setQuantity('');
             setReason('');
@@ -75,7 +84,9 @@ export function MaterialsTab({ data, text, format, onChanged }: Props) {
                                                 <b>{material.name}</b>
                                                 <small>{material.unit ?? text.none}</small>
                                             </td>
-                                            <td className="num">{format.number(material.issued)}</td>
+                                            <td className="num">
+                                                {format.number(material.issued)}
+                                            </td>
                                             <td className="num">{format.number(material.used)}</td>
                                             <td className="num">
                                                 <b>{format.number(material.on_hand)}</b>
@@ -103,7 +114,10 @@ export function MaterialsTab({ data, text, format, onChanged }: Props) {
                             <span className="ui-help">{t.requestHint}</span>
                             <label className="ui-field">
                                 {t.requestItem}
-                                <select value={itemId} onChange={(event) => setItemId(event.target.value)}>
+                                <select
+                                    value={itemId}
+                                    onChange={(event) => setItemId(event.target.value)}
+                                >
                                     <option value="">{t.chooseItem}</option>
                                     {data.options.requestable.map((item) => (
                                         <option key={item.id} value={item.id}>
@@ -115,13 +129,32 @@ export function MaterialsTab({ data, text, format, onChanged }: Props) {
                             </label>
                             <label className="ui-field">
                                 {t.quantity}
-                                <input type="number" min={0} step="any" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step="any"
+                                    value={quantity}
+                                    onChange={(event) => setQuantity(event.target.value)}
+                                />
                             </label>
                             <label className="ui-field">
                                 {t.reason}
-                                <input value={reason} placeholder={t.reasonHint} onChange={(event) => setReason(event.target.value)} />
+                                <input
+                                    value={reason}
+                                    placeholder={t.reasonHint}
+                                    onChange={(event) => setReason(event.target.value)}
+                                />
                             </label>
-                            <button className="primary-btn" onClick={request} disabled={busy || !itemId || !(Number(quantity) > 0) || reason.trim().length < 3}>
+                            <button
+                                className="primary-btn"
+                                onClick={request}
+                                disabled={
+                                    busy ||
+                                    !itemId ||
+                                    !(Number(quantity) > 0) ||
+                                    reason.trim().length < 3
+                                }
+                            >
                                 {busy ? text.saving : t.send}
                             </button>
                         </div>
@@ -158,14 +191,23 @@ export function MaterialsTab({ data, text, format, onChanged }: Props) {
                                             {format.number(row.quantity)} {row.unit ?? ''}
                                         </td>
                                         <td>
-                                            <span className={`ui-chip ${row.status}`}>{t.status_[row.status]}</span>
-                                            {row.decided_by && <small>{t.decidedBy(row.decided_by)}</small>}
-                                            {row.decision_note && <small>{row.decision_note}</small>}
+                                            <span className={`ui-chip ${row.status}`}>
+                                                {t.status_[row.status]}
+                                            </span>
+                                            {row.decided_by && (
+                                                <small>{t.decidedBy(row.decided_by)}</small>
+                                            )}
+                                            {row.decision_note && (
+                                                <small>{row.decision_note}</small>
+                                            )}
                                         </td>
                                         <td>{format.dateTime(row.at)}</td>
                                         <td>
                                             {row.status === 'pending' && row.own && (
-                                                <button className="ui-link" onClick={() => cancel(row.id)}>
+                                                <button
+                                                    className="ui-link"
+                                                    onClick={() => cancel(row.id)}
+                                                >
                                                     {t.cancel}
                                                 </button>
                                             )}

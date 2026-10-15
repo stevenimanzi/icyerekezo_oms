@@ -7,7 +7,13 @@ import type { FlowText } from '../text';
 import type { EntryRow, StageOverview } from '../types';
 import { postFlow } from '../useFlowData';
 
-type Props = { data: StageOverview; locale: Locale; text: FlowText; format: Format; onChanged: (message: string) => void };
+type Props = {
+    data: StageOverview;
+    locale: Locale;
+    text: FlowText;
+    format: Format;
+    onChanged: (message: string) => void;
+};
 
 export function HistoryTab({ data, locale, text, format, onChanged }: Props) {
     const t = text.history;
@@ -83,7 +89,9 @@ export function HistoryTab({ data, locale, text, format, onChanged }: Props) {
                                                 {entry.fabric_used > 0 && (
                                                     <small>
                                                         {format.number(entry.fabric_used)}
-                                                        {entry.fabric_waste > 0 ? ` + ${format.number(entry.fabric_waste)}` : ''}
+                                                        {entry.fabric_waste > 0
+                                                            ? ` + ${format.number(entry.fabric_waste)}`
+                                                            : ''}
                                                     </small>
                                                 )}
                                             </td>
@@ -92,10 +100,17 @@ export function HistoryTab({ data, locale, text, format, onChanged }: Props) {
                                             {entry.by ?? text.none}
                                             <small>{format.dateTime(entry.at)}</small>
                                         </td>
-                                        <td>{entry.voided ? t.cancelled(entry.void_reason ?? '') : (entry.note ?? text.none)}</td>
+                                        <td>
+                                            {entry.voided
+                                                ? t.cancelled(entry.void_reason ?? '')
+                                                : (entry.note ?? text.none)}
+                                        </td>
                                         <td>
                                             {canWork && entry.can_void && !entry.voided && (
-                                                <button className="ui-link" onClick={() => setVoiding(entry)}>
+                                                <button
+                                                    className="ui-link"
+                                                    onClick={() => setVoiding(entry)}
+                                                >
                                                     {t.cancelRecord}
                                                 </button>
                                             )}
@@ -134,37 +149,67 @@ export function HistoryTab({ data, locale, text, format, onChanged }: Props) {
                         <tbody>
                             {data.transfers.length ? (
                                 data.transfers.map((transfer) => {
-                                    const missing = transfer.status === 'received' ? transfer.quantity_sent - (transfer.quantity_received ?? 0) : 0;
+                                    const missing =
+                                        transfer.status === 'received'
+                                            ? transfer.quantity_sent -
+                                              (transfer.quantity_received ?? 0)
+                                            : 0;
 
                                     return (
                                         <tr key={transfer.id}>
                                             <td>
                                                 <b>{transfer.lot_number}</b>
-                                                <small>{[transfer.product, transfer.color, transfer.size].filter(Boolean).join(' · ')}</small>
-                                            </td>
-                                            <td>
-                                                {transfer.direction === 'in' ? t.incoming : t.outgoing}
                                                 <small>
-                                                    {stageLabel(transfer.from, locale)} → {stageLabel(transfer.to, locale)}
+                                                    {[
+                                                        transfer.product,
+                                                        transfer.color,
+                                                        transfer.size,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' · ')}
                                                 </small>
                                             </td>
-                                            <td className="num">{format.whole(transfer.quantity_sent)}</td>
-                                            <td className="num">{transfer.quantity_received === null ? text.none : format.whole(transfer.quantity_received)}</td>
                                             <td>
-                                                <span className={`ui-chip ${transfer.status}`}>{t.transferStatus[transfer.status]}</span>
+                                                {transfer.direction === 'in'
+                                                    ? t.incoming
+                                                    : t.outgoing}
+                                                <small>
+                                                    {stageLabel(transfer.from, locale)} →{' '}
+                                                    {stageLabel(transfer.to, locale)}
+                                                </small>
+                                            </td>
+                                            <td className="num">
+                                                {format.whole(transfer.quantity_sent)}
+                                            </td>
+                                            <td className="num">
+                                                {transfer.quantity_received === null
+                                                    ? text.none
+                                                    : format.whole(transfer.quantity_received)}
+                                            </td>
+                                            <td>
+                                                <span className={`ui-chip ${transfer.status}`}>
+                                                    {t.transferStatus[transfer.status]}
+                                                </span>
                                                 {missing > 0 && <small>{t.missing(missing)}</small>}
-                                                {transfer.receive_note && <small>{transfer.receive_note}</small>}
+                                                {transfer.receive_note && (
+                                                    <small>{transfer.receive_note}</small>
+                                                )}
                                             </td>
                                             <td>
                                                 {transfer.sent_by ?? text.none}
                                                 <small>{format.dateTime(transfer.sent_at)}</small>
                                             </td>
                                             <td>
-                                                {canWork && transfer.direction === 'out' && transfer.status === 'sent' && (
-                                                    <button className="ui-link" onClick={() => takeBack(transfer.id)}>
-                                                        {t.takeBack}
-                                                    </button>
-                                                )}
+                                                {canWork &&
+                                                    transfer.direction === 'out' &&
+                                                    transfer.status === 'sent' && (
+                                                        <button
+                                                            className="ui-link"
+                                                            onClick={() => takeBack(transfer.id)}
+                                                        >
+                                                            {t.takeBack}
+                                                        </button>
+                                                    )}
                                             </td>
                                         </tr>
                                     );
@@ -188,10 +233,18 @@ export function HistoryTab({ data, locale, text, format, onChanged }: Props) {
                     onClose={() => setVoiding(null)}
                     footer={
                         <>
-                            <button className="secondary-btn" onClick={() => setVoiding(null)} disabled={busy}>
+                            <button
+                                className="secondary-btn"
+                                onClick={() => setVoiding(null)}
+                                disabled={busy}
+                            >
                                 {t.keep}
                             </button>
-                            <button className="primary-btn" onClick={voidEntry} disabled={busy || reason.trim().length < 3}>
+                            <button
+                                className="primary-btn"
+                                onClick={voidEntry}
+                                disabled={busy || reason.trim().length < 3}
+                            >
                                 {busy ? text.saving : t.confirmCancel}
                             </button>
                         </>
@@ -201,7 +254,11 @@ export function HistoryTab({ data, locale, text, format, onChanged }: Props) {
                     <span className="ui-help">{t.cancelHint}</span>
                     <label className="ui-field">
                         {t.cancelReason}
-                        <input value={reason} onChange={(event) => setReason(event.target.value)} autoFocus />
+                        <input
+                            value={reason}
+                            onChange={(event) => setReason(event.target.value)}
+                            autoFocus
+                        />
                     </label>
                 </Modal>
             )}

@@ -10,7 +10,11 @@ export function buildKpis(stage: StageKey, data: StageOverview, text: FlowText):
     if (stage === 'cutting') {
         return [
             { label: text.kpi.cutToday, value: summary.done_today },
-            { label: text.kpi.damagedToday, value: summary.damaged_today, alert: summary.damaged_today > 0 },
+            {
+                label: text.kpi.damagedToday,
+                value: summary.damaged_today,
+                alert: summary.damaged_today > 0,
+            },
             { label: text.kpi.readyToSend, value: summary.ready_to_send },
             { label: text.kpi.sentToday, value: summary.sent_today },
             { label: text.kpi.requestsWaiting, value: waitingRequests },
@@ -23,7 +27,11 @@ export function buildKpis(stage: StageKey, data: StageOverview, text: FlowText):
             { label: text.kpi.arriving, value: summary.incoming },
             { label: text.kpi.inWork, value: summary.in_work },
             { label: text.kpi.packedToday, value: summary.done_today },
-            { label: text.kpi.damagedToday, value: summary.damaged_today, alert: summary.damaged_today > 0 },
+            {
+                label: text.kpi.damagedToday,
+                value: summary.damaged_today,
+                alert: summary.damaged_today > 0,
+            },
             { label: text.kpi.awaitingQuality, value: summary.awaiting_quality },
             { label: text.kpi.requestsWaiting, value: waitingRequests },
         ];
@@ -33,7 +41,11 @@ export function buildKpis(stage: StageKey, data: StageOverview, text: FlowText):
         { label: text.kpi.arriving, value: summary.incoming },
         { label: text.kpi.inWork, value: summary.in_work },
         { label: text.kpi.doneToday, value: summary.done_today },
-        { label: text.kpi.damagedToday, value: summary.damaged_today, alert: summary.damaged_today > 0 },
+        {
+            label: text.kpi.damagedToday,
+            value: summary.damaged_today,
+            alert: summary.damaged_today > 0,
+        },
         { label: text.kpi.readyToSend, value: summary.ready_to_send },
         { label: text.kpi.sentToday, value: summary.sent_today },
     ];

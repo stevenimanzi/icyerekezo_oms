@@ -4,7 +4,12 @@ import type { FlowText } from '../text';
 import type { TransferRow } from '../types';
 import { postFlow } from '../useFlowData';
 
-type Props = { transfer: TransferRow; text: FlowText; onClose: () => void; onDone: (message: string) => void };
+type Props = {
+    transfer: TransferRow;
+    text: FlowText;
+    onClose: () => void;
+    onDone: (message: string) => void;
+};
 
 export function ReceiveModal({ transfer, text, onClose, onDone }: Props) {
     const t = text.receive;
@@ -19,7 +24,10 @@ export function ReceiveModal({ transfer, text, onClose, onDone }: Props) {
         setBusy(true);
         setError('');
         try {
-            await postFlow(`/api/flow/transfers/${transfer.id}/receive`, { quantity: Number(quantity), note: note.trim() || null });
+            await postFlow(`/api/flow/transfers/${transfer.id}/receive`, {
+                quantity: Number(quantity),
+                note: note.trim() || null,
+            });
             onDone(`${transfer.lot_number}: ${text.pieces(Number(quantity))}.`);
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : '');
@@ -38,7 +46,13 @@ export function ReceiveModal({ transfer, text, onClose, onDone }: Props) {
                     <button className="secondary-btn" onClick={onClose} disabled={busy}>
                         {text.cancel}
                     </button>
-                    <button className="primary-btn" onClick={submit} disabled={busy || !(Number(quantity) > 0) || (short && note.trim().length < 3)}>
+                    <button
+                        className="primary-btn"
+                        onClick={submit}
+                        disabled={
+                            busy || !(Number(quantity) > 0) || (short && note.trim().length < 3)
+                        }
+                    >
                         {busy ? text.saving : t.confirm}
                     </button>
                 </>
@@ -50,7 +64,14 @@ export function ReceiveModal({ transfer, text, onClose, onDone }: Props) {
             </p>
             <label className="ui-field">
                 {t.quantity}
-                <input type="number" min={1} max={transfer.quantity_sent} step={1} value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+                <input
+                    type="number"
+                    min={1}
+                    max={transfer.quantity_sent}
+                    step={1}
+                    value={quantity}
+                    onChange={(event) => setQuantity(event.target.value)}
+                />
             </label>
             {short && (
                 <label className="ui-field">

@@ -5,7 +5,14 @@ import type { FlowText } from '../text';
 import type { LotRow, StageInfo } from '../types';
 import { postFlow } from '../useFlowData';
 
-type Props = { lot: LotRow; stage: StageInfo; locale: Locale; text: FlowText; onClose: () => void; onDone: (message: string) => void };
+type Props = {
+    lot: LotRow;
+    stage: StageInfo;
+    locale: Locale;
+    text: FlowText;
+    onClose: () => void;
+    onDone: (message: string) => void;
+};
 
 export function RecordWorkModal({ lot, stage, locale, text, onClose, onDone }: Props) {
     const t = text.record;
@@ -48,7 +55,11 @@ export function RecordWorkModal({ lot, stage, locale, text, onClose, onDone }: P
                     <button className="secondary-btn" onClick={onClose} disabled={busy}>
                         {text.cancel}
                     </button>
-                    <button className="primary-btn" onClick={submit} disabled={busy || total < 1 || tooMany}>
+                    <button
+                        className="primary-btn"
+                        onClick={submit}
+                        disabled={busy || total < 1 || tooMany}
+                    >
                         {busy ? text.saving : t.save}
                     </button>
                 </>
@@ -56,22 +67,43 @@ export function RecordWorkModal({ lot, stage, locale, text, onClose, onDone }: P
         >
             {error && <div className="ui-error">{error}</div>}
             <p className="ui-help" style={{ margin: 0 }}>
-                {[lot.product, lot.color, lot.size].filter(Boolean).join(' · ')} — {t.waiting(lot.wip)}
+                {[lot.product, lot.color, lot.size].filter(Boolean).join(' · ')} —{' '}
+                {t.waiting(lot.wip)}
             </p>
             <div className="ui-grid">
                 <label className="ui-field">
                     {t.good}
-                    <input type="number" min={0} max={lot.wip} step={1} value={good} onChange={(event) => setGood(event.target.value)} autoFocus />
+                    <input
+                        type="number"
+                        min={0}
+                        max={lot.wip}
+                        step={1}
+                        value={good}
+                        onChange={(event) => setGood(event.target.value)}
+                        autoFocus
+                    />
                 </label>
                 <label className="ui-field">
                     {t.damaged}
-                    <input type="number" min={0} max={lot.wip} step={1} value={damaged} onChange={(event) => setDamaged(event.target.value)} />
+                    <input
+                        type="number"
+                        min={0}
+                        max={lot.wip}
+                        step={1}
+                        value={damaged}
+                        onChange={(event) => setDamaged(event.target.value)}
+                    />
                 </label>
             </div>
             {tooMany && <div className="ui-error">{t.waiting(lot.wip)}</div>}
             <label className="ui-field">
                 {t.date}
-                <input type="date" value={date} max={new Date().toLocaleDateString('en-CA')} onChange={(event) => setDate(event.target.value)} />
+                <input
+                    type="date"
+                    value={date}
+                    max={new Date().toLocaleDateString('en-CA')}
+                    onChange={(event) => setDate(event.target.value)}
+                />
             </label>
             <label className="ui-field">
                 {t.note}

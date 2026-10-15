@@ -32,7 +32,9 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
     const [tab, setTab] = useState<Tab>(initialTab);
     const [modal, setModal] = useState<WorkModal | null>(null);
     const [notice, setNotice] = useState('');
-    const { data, error, loading, reload } = useFlowData<StageOverview>(`/api/flow/overview?stage=${stage}`);
+    const { data, error, loading, reload } = useFlowData<StageOverview>(
+        `/api/flow/overview?stage=${stage}`,
+    );
 
     useEffect(() => setTab(initialTab), [initialTab, stage]);
 
@@ -66,10 +68,16 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                     </button>
                     {canWork && stage === 'cutting' && (
                         <>
-                            <button className="secondary-btn" onClick={() => setModal({ kind: 'loss' })}>
+                            <button
+                                className="secondary-btn"
+                                onClick={() => setModal({ kind: 'loss' })}
+                            >
                                 {text.work.damagedFabric}
                             </button>
-                            <button className="primary-btn" onClick={() => setModal({ kind: 'cut' })}>
+                            <button
+                                className="primary-btn"
+                                onClick={() => setModal({ kind: 'cut' })}
+                            >
                                 + {text.work.newCut}
                             </button>
                         </>
@@ -90,7 +98,10 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
 
                     <div className="ui-kpis six">
                         {buildKpis(stage, data, text).map((kpi) => (
-                            <article className={`panel ui-kpi ${kpi.alert ? 'alert' : ''}`} key={kpi.label}>
+                            <article
+                                className={`panel ui-kpi ${kpi.alert ? 'alert' : ''}`}
+                                key={kpi.label}
+                            >
                                 <small>{kpi.label}</small>
                                 <strong>{format.whole(kpi.value)}</strong>
                             </article>
@@ -99,22 +110,96 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
 
                     <div className="ui-tabs" role="tablist">
                         {TABS.map((key) => (
-                            <button key={key} role="tab" aria-selected={tab === key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>
+                            <button
+                                key={key}
+                                role="tab"
+                                aria-selected={tab === key}
+                                className={tab === key ? 'active' : ''}
+                                onClick={() => setTab(key)}
+                            >
                                 {text.tabs[key]}
                             </button>
                         ))}
                     </div>
 
-                    {tab === 'work' && <WorkTab data={data} locale={locale} text={text} format={format} onModal={setModal} />}
-                    {tab === 'materials' && <MaterialsTab data={data} locale={locale} text={text} format={format} onChanged={done} />}
-                    {tab === 'history' && <HistoryTab data={data} locale={locale} text={text} format={format} onChanged={done} />}
-                    {tab === 'report' && <ReportTab stage={stage} locale={locale} text={text} format={format} />}
+                    {tab === 'work' && (
+                        <WorkTab
+                            data={data}
+                            locale={locale}
+                            text={text}
+                            format={format}
+                            onModal={setModal}
+                        />
+                    )}
+                    {tab === 'materials' && (
+                        <MaterialsTab
+                            data={data}
+                            locale={locale}
+                            text={text}
+                            format={format}
+                            onChanged={done}
+                        />
+                    )}
+                    {tab === 'history' && (
+                        <HistoryTab
+                            data={data}
+                            locale={locale}
+                            text={text}
+                            format={format}
+                            onChanged={done}
+                        />
+                    )}
+                    {tab === 'report' && (
+                        <ReportTab stage={stage} locale={locale} text={text} format={format} />
+                    )}
 
-                    {modal?.kind === 'receive' && <ReceiveModal transfer={modal.transfer} text={text} onClose={close} onDone={done} />}
-                    {modal?.kind === 'record' && <RecordWorkModal lot={modal.lot} stage={data.stage} locale={locale} text={text} onClose={close} onDone={done} />}
-                    {modal?.kind === 'send' && <SendModal lot={modal.lot} stage={data.stage} locale={locale} text={text} onClose={close} onDone={done} />}
-                    {modal?.kind === 'cut' && <CutModal lot={modal.lot} data={data} text={text} format={format} onClose={close} onDone={done} />}
-                    {modal?.kind === 'loss' && <FabricLossModal data={data} text={text} format={format} onClose={close} onDone={done} />}
+                    {modal?.kind === 'receive' && (
+                        <ReceiveModal
+                            transfer={modal.transfer}
+                            text={text}
+                            onClose={close}
+                            onDone={done}
+                        />
+                    )}
+                    {modal?.kind === 'record' && (
+                        <RecordWorkModal
+                            lot={modal.lot}
+                            stage={data.stage}
+                            locale={locale}
+                            text={text}
+                            onClose={close}
+                            onDone={done}
+                        />
+                    )}
+                    {modal?.kind === 'send' && (
+                        <SendModal
+                            lot={modal.lot}
+                            stage={data.stage}
+                            locale={locale}
+                            text={text}
+                            onClose={close}
+                            onDone={done}
+                        />
+                    )}
+                    {modal?.kind === 'cut' && (
+                        <CutModal
+                            lot={modal.lot}
+                            data={data}
+                            text={text}
+                            format={format}
+                            onClose={close}
+                            onDone={done}
+                        />
+                    )}
+                    {modal?.kind === 'loss' && (
+                        <FabricLossModal
+                            data={data}
+                            text={text}
+                            format={format}
+                            onClose={close}
+                            onDone={done}
+                        />
+                    )}
                 </>
             )}
         </section>

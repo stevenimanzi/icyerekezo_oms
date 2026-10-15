@@ -5,7 +5,13 @@ import type { FlowText } from '../text';
 import type { StageOverview } from '../types';
 import { postFlow } from '../useFlowData';
 
-type Props = { data: StageOverview; text: FlowText; format: Format; onClose: () => void; onDone: (message: string) => void };
+type Props = {
+    data: StageOverview;
+    text: FlowText;
+    format: Format;
+    onClose: () => void;
+    onDone: (message: string) => void;
+};
 
 export function FabricLossModal({ data, text, format, onClose, onDone }: Props) {
     const t = text.loss;
@@ -28,7 +34,9 @@ export function FabricLossModal({ data, text, format, onClose, onDone }: Props) 
                 fabric_waste: Number(quantity),
                 notes: reason.trim(),
             });
-            onDone(`${chosen?.name ?? ''}: ${format.number(Number(quantity))} ${chosen?.unit ?? ''}`.trim());
+            onDone(
+                `${chosen?.name ?? ''}: ${format.number(Number(quantity))} ${chosen?.unit ?? ''}`.trim(),
+            );
         } catch (reasonError) {
             setError(reasonError instanceof Error ? reasonError.message : '');
         } finally {
@@ -46,7 +54,17 @@ export function FabricLossModal({ data, text, format, onClose, onDone }: Props) 
                     <button className="secondary-btn" onClick={onClose} disabled={busy}>
                         {text.cancel}
                     </button>
-                    <button className="primary-btn" onClick={submit} disabled={busy || !chosen || !(Number(quantity) > 0) || tooMuch || reason.trim().length < 3}>
+                    <button
+                        className="primary-btn"
+                        onClick={submit}
+                        disabled={
+                            busy ||
+                            !chosen ||
+                            !(Number(quantity) > 0) ||
+                            tooMuch ||
+                            reason.trim().length < 3
+                        }
+                    >
                         {busy ? text.saving : t.save}
                     </button>
                 </>
@@ -60,14 +78,22 @@ export function FabricLossModal({ data, text, format, onClose, onDone }: Props) 
                     <option value="">{text.cut.chooseFabric}</option>
                     {fabrics.map((fabric) => (
                         <option key={fabric.item_id} value={fabric.item_id}>
-                            {fabric.name} — {text.cut.onHand(format.number(fabric.on_hand), fabric.unit ?? '')}
+                            {fabric.name} —{' '}
+                            {text.cut.onHand(format.number(fabric.on_hand), fabric.unit ?? '')}
                         </option>
                     ))}
                 </select>
             </label>
             <label className="ui-field">
                 {t.quantity}
-                <input type="number" min={0} max={chosen?.on_hand} step="any" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+                <input
+                    type="number"
+                    min={0}
+                    max={chosen?.on_hand}
+                    step="any"
+                    value={quantity}
+                    onChange={(event) => setQuantity(event.target.value)}
+                />
             </label>
             <label className="ui-field">
                 {t.reason}

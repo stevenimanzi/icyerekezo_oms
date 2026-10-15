@@ -54,7 +54,11 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                 <b>{transfer.lot_number}</b>
                                             </td>
                                             <td>{transfer.product ?? text.none}</td>
-                                            <td>{[transfer.color, transfer.size].filter(Boolean).join(' / ') || text.none}</td>
+                                            <td>
+                                                {[transfer.color, transfer.size]
+                                                    .filter(Boolean)
+                                                    .join(' / ') || text.none}
+                                            </td>
                                             <td className="num">
                                                 <b>{format.whole(transfer.quantity_sent)}</b>
                                             </td>
@@ -65,7 +69,12 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                             <td>{transfer.note ?? text.none}</td>
                                             <td>
                                                 {canWork && (
-                                                    <button className="primary-btn" onClick={() => onModal({ kind: 'receive', transfer })}>
+                                                    <button
+                                                        className="primary-btn"
+                                                        onClick={() =>
+                                                            onModal({ kind: 'receive', transfer })
+                                                        }
+                                                    >
                                                         {text.work.receive}
                                                     </button>
                                                 )}
@@ -105,7 +114,9 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                     <>
                                         <th className="num">{text.work.waiting}</th>
                                         <th className="num">{text.work.done}</th>
-                                        <th className="num">{isPacking ? text.work.qcWaiting : text.work.ready}</th>
+                                        <th className="num">
+                                            {isPacking ? text.work.qcWaiting : text.work.ready}
+                                        </th>
                                         <th className="num">{text.work.damaged}</th>
                                     </>
                                 )}
@@ -120,14 +131,22 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                             <b>{lot.lot_number}</b>
                                             {lot.held && (
                                                 <small>
-                                                    <span className="ui-chip bad" title={text.work.holdWarning(lot.hold_reason ?? '')}>
+                                                    <span
+                                                        className="ui-chip bad"
+                                                        title={text.work.holdWarning(
+                                                            lot.hold_reason ?? '',
+                                                        )}
+                                                    >
                                                         {text.work.onHold}
                                                     </span>
                                                 </small>
                                             )}
                                         </td>
                                         <td>{lot.product ?? text.none}</td>
-                                        <td>{[lot.color, lot.size].filter(Boolean).join(' / ') || text.none}</td>
+                                        <td>
+                                            {[lot.color, lot.size].filter(Boolean).join(' / ') ||
+                                                text.none}
+                                        </td>
                                         {isCutting ? (
                                             <>
                                                 <td className="num">{format.whole(lot.cut)}</td>
@@ -142,7 +161,13 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                 </td>
                                                 <td className="num">{format.whole(lot.good)}</td>
                                                 <td className="num">
-                                                    <b>{format.whole(isPacking ? lot.awaiting_quality : lot.outbox)}</b>
+                                                    <b>
+                                                        {format.whole(
+                                                            isPacking
+                                                                ? lot.awaiting_quality
+                                                                : lot.outbox,
+                                                        )}
+                                                    </b>
                                                 </td>
                                                 <td className="num">{format.whole(lot.damaged)}</td>
                                             </>
@@ -151,17 +176,37 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                             {canWork && (
                                                 <div className="ui-row-actions">
                                                     {isCutting && (
-                                                        <button className="ui-link" disabled={lot.held} onClick={() => onModal({ kind: 'cut', lot })}>
+                                                        <button
+                                                            className="ui-link"
+                                                            disabled={lot.held}
+                                                            onClick={() =>
+                                                                onModal({ kind: 'cut', lot })
+                                                            }
+                                                        >
                                                             {text.work.cutMore}
                                                         </button>
                                                     )}
                                                     {!isCutting && lot.wip > 0 && (
-                                                        <button className="ui-link" disabled={lot.held} onClick={() => onModal({ kind: 'record', lot })}>
-                                                            {isPacking ? text.work.recordPacking : text.work.record}
+                                                        <button
+                                                            className="ui-link"
+                                                            disabled={lot.held}
+                                                            onClick={() =>
+                                                                onModal({ kind: 'record', lot })
+                                                            }
+                                                        >
+                                                            {isPacking
+                                                                ? text.work.recordPacking
+                                                                : text.work.record}
                                                         </button>
                                                     )}
                                                     {stage.next && lot.outbox > 0 && (
-                                                        <button className="ui-link" disabled={lot.held} onClick={() => onModal({ kind: 'send', lot })}>
+                                                        <button
+                                                            className="ui-link"
+                                                            disabled={lot.held}
+                                                            onClick={() =>
+                                                                onModal({ kind: 'send', lot })
+                                                            }
+                                                        >
                                                             {text.work.send(next)} →
                                                         </button>
                                                     )}
@@ -173,7 +218,9 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                             ) : (
                                 <tr>
                                     <td colSpan={isCutting ? 6 : 8} className="empty">
-                                        {isCutting ? text.work.lotsEmptyCutting : text.work.lotsEmpty}
+                                        {isCutting
+                                            ? text.work.lotsEmptyCutting
+                                            : text.work.lotsEmpty}
                                     </td>
                                 </tr>
                             )}

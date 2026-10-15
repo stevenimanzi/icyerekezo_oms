@@ -14,8 +14,10 @@ const en = {
     stageDescription: {
         cutting: 'Ask the warehouse for fabric, cut it into pieces and record every lot you cut.',
         sewing: 'Receive the pieces that cutting sent, record what you sewed each day and send finished pieces on to finishing.',
-        finishing: 'Receive sewn pieces, record what you finished (pressing, trimming, labels) and send it on to packing.',
-        packing: 'Receive finished pieces and pack them. Packed pieces wait for the final quality check before they can be sold.',
+        finishing:
+            'Receive sewn pieces, record what you finished (pressing, trimming, labels) and send it on to packing.',
+        packing:
+            'Receive finished pieces and pack them. Packed pieces wait for the final quality check before they can be sold.',
     },
     flowFrom: 'Receives from',
     flowTo: 'Sends to',
@@ -41,7 +43,8 @@ const en = {
         arrivingTitle: (from: string) => `Arriving from ${from}`,
         arrivingEmpty: 'Nothing is on its way to you right now.',
         lotsTitle: 'Lots at this stage',
-        lotsEmpty: 'No lots here yet. Pieces appear once the stage before sends them and you receive them.',
+        lotsEmpty:
+            'No lots here yet. Pieces appear once the stage before sends them and you receive them.',
         lotsEmptyCutting: 'No lots yet. Press “New cut” when you cut fabric.',
         lot: 'Lot',
         product: 'Product',
@@ -84,7 +87,8 @@ const en = {
         damaged: 'Damaged pieces',
         date: 'Date',
         note: 'Note (optional)',
-        packingHint: 'Packed pieces go into finished stock but stay unavailable until quality control passes them.',
+        packingHint:
+            'Packed pieces go into finished stock but stay unavailable until quality control passes them.',
         save: 'Save record',
     },
 
@@ -101,12 +105,14 @@ const en = {
         titleNew: 'New cut',
         titleMore: (lot: string) => `Cut more for ${lot}`,
         product: 'What are you making?',
-        productHint: 'Type a product name, for example “School polo”. Pick one you used before to keep stock together.',
+        productHint:
+            'Type a product name, for example “School polo”. Pick one you used before to keep stock together.',
         color: 'Colour',
         size: 'Size',
         style: 'Style (optional)',
         fabric: 'Fabric used',
-        fabricNone: 'You have no fabric yet. Open the Materials tab and ask the warehouse for some.',
+        fabricNone:
+            'You have no fabric yet. Open the Materials tab and ask the warehouse for some.',
         chooseFabric: 'Choose a fabric',
         onHand: (n: string, unit: string) => `${n} ${unit} at cutting`,
         fabricUsed: 'Fabric used',
@@ -148,7 +154,12 @@ const en = {
         status: 'Status',
         when: 'When',
         cancel: 'Cancel request',
-        status_: { pending: 'Waiting', approved: 'Approved', rejected: 'Declined', cancelled: 'Cancelled' } as Record<string, string>,
+        status_: {
+            pending: 'Waiting',
+            approved: 'Approved',
+            rejected: 'Declined',
+            cancelled: 'Cancelled',
+        } as Record<string, string>,
         decidedBy: (name: string) => `by ${name}`,
         sent: (number: string) => `Request ${number} sent to the warehouse.`,
     },
@@ -165,7 +176,8 @@ const en = {
         note: 'Note',
         cancelRecord: 'Cancel record',
         cancelTitle: 'Cancel this record',
-        cancelHint: 'Use this only for a mistake. It fails if later steps already used these pieces.',
+        cancelHint:
+            'Use this only for a mistake. It fails if later steps already used these pieces.',
         cancelReason: 'Why is it wrong?',
         confirmCancel: 'Cancel the record',
         keep: 'Keep it',
@@ -179,12 +191,21 @@ const en = {
         receivedQty: 'Received',
         status: 'Status',
         takeBack: 'Take back',
-        transferStatus: { sent: 'On its way', received: 'Received', cancelled: 'Taken back' } as Record<string, string>,
+        transferStatus: {
+            sent: 'On its way',
+            received: 'Received',
+            cancelled: 'Taken back',
+        } as Record<string, string>,
         missing: (n: number) => `${n} missing`,
     },
 
     report: {
-        periods: { today: 'Today', week: 'Last 7 days', month: 'Last 30 days', thisMonth: 'This month' },
+        periods: {
+            today: 'Today',
+            week: 'Last 7 days',
+            month: 'Last 30 days',
+            thisMonth: 'This month',
+        },
         show: 'Show',
         stagesTitle: 'Every stage',
         stage: 'Stage',
@@ -220,10 +241,13 @@ const fr: typeof en = {
     pieces: (n) => `${n} pièce${n === 1 ? '' : 's'}`,
 
     stageDescription: {
-        cutting: 'Demandez du tissu à l’entrepôt, coupez-le en pièces et enregistrez chaque lot coupé.',
+        cutting:
+            'Demandez du tissu à l’entrepôt, coupez-le en pièces et enregistrez chaque lot coupé.',
         sewing: 'Recevez les pièces envoyées par la coupe, enregistrez ce que vous avez cousu chaque jour et envoyez les pièces finies à la finition.',
-        finishing: 'Recevez les pièces cousues, enregistrez ce que vous avez fini (repassage, finitions, étiquettes) et envoyez-le à l’emballage.',
-        packing: 'Recevez les pièces finies et emballez-les. Les pièces emballées attendent le contrôle qualité final avant de pouvoir être vendues.',
+        finishing:
+            'Recevez les pièces cousues, enregistrez ce que vous avez fini (repassage, finitions, étiquettes) et envoyez-le à l’emballage.',
+        packing:
+            'Recevez les pièces finies et emballez-les. Les pièces emballées attendent le contrôle qualité final avant de pouvoir être vendues.',
     },
     flowFrom: 'Reçoit de',
     flowTo: 'Envoie à',
@@ -249,7 +273,8 @@ const fr: typeof en = {
         arrivingTitle: (from) => `En route depuis ${from}`,
         arrivingEmpty: 'Rien n’est en route vers vous pour le moment.',
         lotsTitle: 'Lots à cette étape',
-        lotsEmpty: 'Aucun lot ici. Les pièces apparaissent quand l’étape précédente les envoie et que vous les recevez.',
+        lotsEmpty:
+            'Aucun lot ici. Les pièces apparaissent quand l’étape précédente les envoie et que vous les recevez.',
         lotsEmptyCutting: 'Aucun lot. Appuyez sur « Nouvelle coupe » quand vous coupez du tissu.',
         lot: 'Lot',
         product: 'Produit',
@@ -281,7 +306,8 @@ const fr: typeof en = {
         sent: (n, by) => `${n} pièces ont été envoyées${by ? ` par ${by}` : ''}.`,
         quantity: 'Combien sont arrivées ?',
         shortNote: 'Pourquoi en est-il arrivé moins ?',
-        shortHint: 'Moins de pièces que prévu. Le contrôle qualité et les responsables seront prévenus.',
+        shortHint:
+            'Moins de pièces que prévu. Le contrôle qualité et les responsables seront prévenus.',
         confirm: 'Confirmer la réception',
     },
 
@@ -292,7 +318,8 @@ const fr: typeof en = {
         damaged: 'Pièces abîmées',
         date: 'Date',
         note: 'Note (facultatif)',
-        packingHint: 'Les pièces emballées entrent en stock mais restent indisponibles jusqu’à la validation du contrôle qualité.',
+        packingHint:
+            'Les pièces emballées entrent en stock mais restent indisponibles jusqu’à la validation du contrôle qualité.',
         save: 'Enregistrer',
     },
 
@@ -309,12 +336,14 @@ const fr: typeof en = {
         titleNew: 'Nouvelle coupe',
         titleMore: (lot) => `Couper plus pour ${lot}`,
         product: 'Que fabriquez-vous ?',
-        productHint: 'Saisissez un nom de produit, par exemple « Polo scolaire ». Choisissez-en un déjà utilisé pour garder le stock ensemble.',
+        productHint:
+            'Saisissez un nom de produit, par exemple « Polo scolaire ». Choisissez-en un déjà utilisé pour garder le stock ensemble.',
         color: 'Couleur',
         size: 'Taille',
         style: 'Modèle (facultatif)',
         fabric: 'Tissu utilisé',
-        fabricNone: 'Vous n’avez pas encore de tissu. Ouvrez l’onglet Matières et demandez-en à l’entrepôt.',
+        fabricNone:
+            'Vous n’avez pas encore de tissu. Ouvrez l’onglet Matières et demandez-en à l’entrepôt.',
         chooseFabric: 'Choisir un tissu',
         onHand: (n, unit) => `${n} ${unit} à la coupe`,
         fabricUsed: 'Tissu utilisé',
@@ -356,7 +385,12 @@ const fr: typeof en = {
         status: 'Statut',
         when: 'Quand',
         cancel: 'Annuler la demande',
-        status_: { pending: 'En attente', approved: 'Approuvée', rejected: 'Refusée', cancelled: 'Annulée' },
+        status_: {
+            pending: 'En attente',
+            approved: 'Approuvée',
+            rejected: 'Refusée',
+            cancelled: 'Annulée',
+        },
         decidedBy: (name) => `par ${name}`,
         sent: (number) => `Demande ${number} envoyée à l’entrepôt.`,
     },
@@ -373,7 +407,8 @@ const fr: typeof en = {
         note: 'Note',
         cancelRecord: 'Annuler',
         cancelTitle: 'Annuler cet enregistrement',
-        cancelHint: 'À utiliser seulement en cas d’erreur. Impossible si des étapes suivantes ont déjà utilisé ces pièces.',
+        cancelHint:
+            'À utiliser seulement en cas d’erreur. Impossible si des étapes suivantes ont déjà utilisé ces pièces.',
         cancelReason: 'Pourquoi est-ce faux ?',
         confirmCancel: 'Annuler l’enregistrement',
         keep: 'Le garder',
@@ -392,7 +427,12 @@ const fr: typeof en = {
     },
 
     report: {
-        periods: { today: 'Aujourd’hui', week: '7 derniers jours', month: '30 derniers jours', thisMonth: 'Ce mois-ci' },
+        periods: {
+            today: 'Aujourd’hui',
+            week: '7 derniers jours',
+            month: '30 derniers jours',
+            thisMonth: 'Ce mois-ci',
+        },
         show: 'Afficher',
         stagesTitle: 'Toutes les étapes',
         stage: 'Étape',

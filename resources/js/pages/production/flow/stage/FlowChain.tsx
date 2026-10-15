@@ -7,9 +7,17 @@ type Props = { stage: StageInfo; locale: Locale; text: FlowText };
 
 export function FlowChain({ stage, locale, text }: Props) {
     const steps = [
-        { key: 'from', label: stage.previous ? stageLabel(stage.previous, locale) : text.flowStart, active: false },
+        {
+            key: 'from',
+            label: stage.previous ? stageLabel(stage.previous, locale) : text.flowStart,
+            active: false,
+        },
         { key: 'here', label: stage.label[locale], active: true },
-        { key: 'to', label: stage.next ? stageLabel(stage.next, locale) : text.flowEnd, active: false },
+        {
+            key: 'to',
+            label: stage.next ? stageLabel(stage.next, locale) : text.flowEnd,
+            active: false,
+        },
     ];
 
     return (

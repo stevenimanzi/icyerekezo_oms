@@ -7,11 +7,14 @@ import type { NotificationsState } from './hooks/useNotifications';
 import type { Access } from './navigation';
 import { PageBoundary } from './PageBoundary';
 import { pageKeyFromPath } from './routing';
+import type { Tab as FlowTab } from '../pages/production/flow/StageWorkspace';
+import type { StageKey } from '../pages/production/flow/types';
 
 const AgreementWorkspacePage = lazy(() => import('../pages/logistics/AgreementWorkspacePage'));
 const CuttingWorkspacePage = lazy(
     () => import('../pages/production/textile/cutting/CuttingWorkspacePage'),
 );
+const FlowMonitorPage = lazy(() => import('../pages/production/flow/monitor/FlowMonitorPage'));
 const FactorySettingsPage = lazy(() => import('../pages/factory/FactorySettingsPage'));
 const FinanceOverviewPage = lazy(() => import('../pages/finance/FinanceOverviewPage'));
 const FinancialReportsPage = lazy(() => import('../pages/finance/FinancialReportsPage'));
@@ -23,6 +26,9 @@ const IncomingRequestsPage = lazy(() => import('../pages/warehouse/IncomingReque
 const InventoryManagementPage = lazy(() => import('../pages/warehouse/InventoryManagementPage'));
 const LogisticsOverviewPage = lazy(() => import('../pages/logistics/LogisticsOverviewPage'));
 const MachinesPage = lazy(() => import('../pages/production/MachinesPage'));
+const MaterialRequestsPage = lazy(
+    () => import('../pages/production/flow/requests/MaterialRequestsPage'),
+);
 const NotificationsPage = lazy(() =>
     import('../pages/shared/NotificationsPage').then((module) => ({
         default: module.NotificationsPage,
@@ -50,6 +56,7 @@ const SchoolPortalPage = lazy(() => import('../roles/school/SchoolPortalPage'));
 const SewingWorkspacePage = lazy(
     () => import('../pages/production/textile/sewing/SewingWorkspacePage'),
 );
+const StageWorkspace = lazy(() => import('../pages/production/flow/StageWorkspace'));
 const SystemAdminPage = lazy(() => import('../roles/system-admin/SystemAdminPage'));
 const TeamManagementPage = lazy(() =>
     import('../pages/production/FactoryManagerModules').then((module) => ({
@@ -82,6 +89,17 @@ const CUTTING_TABS: Record<string, 'request' | 'cut' | 'damaged' | 'report'> = {
     'cut-fabrics': 'cut',
     'damaged-fabrics': 'damaged',
     'cutting-report': 'report',
+};
+
+const FLOW_STAGE_PAGES: Record<string, { stage: StageKey; tab: FlowTab }> = {
+    'cutting-workspace': { stage: 'cutting', tab: 'work' },
+    'cut-fabrics': { stage: 'cutting', tab: 'work' },
+    'damaged-fabrics': { stage: 'cutting', tab: 'work' },
+    'fabric-request': { stage: 'cutting', tab: 'materials' },
+    'cutting-report': { stage: 'cutting', tab: 'report' },
+    'sewing-workspace': { stage: 'sewing', tab: 'work' },
+    'finishing-workspace': { stage: 'finishing', tab: 'work' },
+    'packing-workspace': { stage: 'packing', tab: 'work' },
 };
 
 const LOGISTICS_TABS: Record<string, string> = {
@@ -154,6 +172,26 @@ function CurrentPage({
     if (user.is_platform_admin) return <SystemAdminPage page={activePage} locale={locale} />;
 
     if (activePage === 'support') return <UserSupportChat user={user} locale={locale} />;
+
+    if (flags.hasProductionFlow) {
+        const flowStage = FLOW_STAGE_PAGES[activePage];
+
+        if (flowStage) {
+            return (
+                <StageWorkspace
+                    key={flowStage.stage}
+                    user={user}
+                    locale={locale}
+                    stage={flowStage.stage}
+                    initialTab={flowStage.tab}
+                />
+            );
+        }
+        if (activePage === 'production-flow')
+            return <FlowMonitorPage user={user} locale={locale} />;
+        if (activePage === 'incoming-requests')
+            return <MaterialRequestsPage user={user} locale={locale} />;
+    }
 
     if (activePage in CUTTING_TABS)
         return (

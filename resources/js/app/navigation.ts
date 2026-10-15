@@ -11,6 +11,7 @@ const FEATURE_FOR_PAGE: Record<string, string> = {
     'incoming-requests': 'inventory',
     products: 'products',
     production: 'production',
+    'production-flow': 'production',
     quality: 'quality',
     sales: 'sales',
     logistics: 'logistics',

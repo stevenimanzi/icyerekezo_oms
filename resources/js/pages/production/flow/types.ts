@@ -86,7 +86,14 @@ export type RequestRow = {
     own?: boolean;
 };
 
-export type MaterialRow = { item_id: number; name: string; unit: string | null; issued: number; used: number; on_hand: number };
+export type MaterialRow = {
+    item_id: number;
+    name: string;
+    unit: string | null;
+    issued: number;
+    used: number;
+    on_hand: number;
+};
 
 export type OptionItem = { id: number; name: string; sku: string; unit: string | null };
 
@@ -187,8 +194,19 @@ export type FlowMonitor = {
     })[];
     lots: MonitorLot[];
     alerts: {
-        held: { id: number; lot_number: string; product: string | null; reason: string | null; since: string | null }[];
-        awaiting_final_check: { id: number; lot_number: string; product: string | null; pieces: number }[];
+        held: {
+            id: number;
+            lot_number: string;
+            product: string | null;
+            reason: string | null;
+            since: string | null;
+        }[];
+        awaiting_final_check: {
+            id: number;
+            lot_number: string;
+            product: string | null;
+            pieces: number;
+        }[];
         stuck_deliveries: number;
         idle_lots: { id: number; lot_number: string; idle_days: number }[];
         missing_pieces: number;
@@ -200,8 +218,34 @@ export type FlowMonitor = {
 };
 
 export type TimelineItem =
-    | ({ kind: 'entry'; at: string; stage: StageKey; who: string | null; good: number; damaged: number; fabric: string | null; fabric_used: number; fabric_waste: number; note: string | null; voided: boolean; void_reason: string | null })
-    | ({ kind: 'transfer'; at: string; from: StageKey; to: StageKey; sent: number; received: number | null; status: string; who: string | null; received_by: string | null; received_at: string | null; note: string | null; receive_note: string | null })
+    | {
+          kind: 'entry';
+          at: string;
+          stage: StageKey;
+          who: string | null;
+          good: number;
+          damaged: number;
+          fabric: string | null;
+          fabric_used: number;
+          fabric_waste: number;
+          note: string | null;
+          voided: boolean;
+          void_reason: string | null;
+      }
+    | {
+          kind: 'transfer';
+          at: string;
+          from: StageKey;
+          to: StageKey;
+          sent: number;
+          received: number | null;
+          status: string;
+          who: string | null;
+          received_by: string | null;
+          received_at: string | null;
+          note: string | null;
+          receive_note: string | null;
+      }
     | (InspectionRow & { kind: 'inspection' });
 
 export type LotDetail = {
@@ -238,7 +282,13 @@ export type FlowReport = {
         rejected: number;
     })[];
     daily: ({ day: string } & Record<StageKey, { good: number; damaged: number }>)[];
-    fabric: { name: string; unit: string | null; used: number; waste: number; waste_rate: number | null }[];
+    fabric: {
+        name: string;
+        unit: string | null;
+        used: number;
+        waste: number;
+        waste_rate: number | null;
+    }[];
 };
 
 export type RequestsOverview = {

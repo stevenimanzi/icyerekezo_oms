@@ -34,9 +34,16 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
     const chosen = fabrics.find((fabric) => String(fabric.item_id) === fabricId);
     const fabricTotal = (Number(fabricUsed) || 0) + (Number(fabricWaste) || 0);
     const tooMuchFabric = chosen !== undefined && fabricTotal > chosen.on_hand;
-    const knownProduct = data.options.products.find((option) => option.name.toLowerCase() === product.trim().toLowerCase());
+    const knownProduct = data.options.products.find(
+        (option) => option.name.toLowerCase() === product.trim().toLowerCase(),
+    );
     const hasProduct = lot !== undefined || product.trim().length > 0;
-    const ready = hasProduct && chosen !== undefined && Number(fabricUsed) > 0 && Number(good) >= 1 && !tooMuchFabric;
+    const ready =
+        hasProduct &&
+        chosen !== undefined &&
+        Number(fabricUsed) > 0 &&
+        Number(good) >= 1 &&
+        !tooMuchFabric;
 
     const submit = async () => {
         setBusy(true);
@@ -90,7 +97,12 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                 <>
                     <label className="ui-field">
                         {t.product}
-                        <input list="flow-products" value={product} onChange={(event) => setProduct(event.target.value)} autoFocus />
+                        <input
+                            list="flow-products"
+                            value={product}
+                            onChange={(event) => setProduct(event.target.value)}
+                            autoFocus
+                        />
                         <datalist id="flow-products">
                             {data.options.products.map((option) => (
                                 <option key={option.id} value={option.name} />
@@ -101,7 +113,10 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                     <div className="ui-grid">
                         <label className="ui-field">
                             {t.color}
-                            <input value={color} onChange={(event) => setColor(event.target.value)} />
+                            <input
+                                value={color}
+                                onChange={(event) => setColor(event.target.value)}
+                            />
                         </label>
                         <label className="ui-field">
                             {t.size}
@@ -121,7 +136,8 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                     <option value="">{t.chooseFabric}</option>
                     {fabrics.map((fabric) => (
                         <option key={fabric.item_id} value={fabric.item_id}>
-                            {fabric.name} — {t.onHand(format.number(fabric.on_hand), fabric.unit ?? '')}
+                            {fabric.name} —{' '}
+                            {t.onHand(format.number(fabric.on_hand), fabric.unit ?? '')}
                         </option>
                     ))}
                 </select>
@@ -130,27 +146,60 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
             <div className="ui-grid">
                 <label className="ui-field">
                     {t.fabricUsed}
-                    <input type="number" min={0} step="any" value={fabricUsed} onChange={(event) => setFabricUsed(event.target.value)} />
+                    <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={fabricUsed}
+                        onChange={(event) => setFabricUsed(event.target.value)}
+                    />
                 </label>
                 <label className="ui-field">
                     {t.fabricWaste}
-                    <input type="number" min={0} step="any" value={fabricWaste} onChange={(event) => setFabricWaste(event.target.value)} />
+                    <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={fabricWaste}
+                        onChange={(event) => setFabricWaste(event.target.value)}
+                    />
                 </label>
             </div>
-            {tooMuchFabric && chosen && <div className="ui-error">{t.onHand(format.number(chosen.on_hand), chosen.unit ?? '')}</div>}
+            {tooMuchFabric && chosen && (
+                <div className="ui-error">
+                    {t.onHand(format.number(chosen.on_hand), chosen.unit ?? '')}
+                </div>
+            )}
             <div className="ui-grid">
                 <label className="ui-field">
                     {t.good}
-                    <input type="number" min={1} step={1} value={good} onChange={(event) => setGood(event.target.value)} />
+                    <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={good}
+                        onChange={(event) => setGood(event.target.value)}
+                    />
                 </label>
                 <label className="ui-field">
                     {t.damaged}
-                    <input type="number" min={0} step={1} value={damaged} onChange={(event) => setDamaged(event.target.value)} />
+                    <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={damaged}
+                        onChange={(event) => setDamaged(event.target.value)}
+                    />
                 </label>
             </div>
             <label className="ui-field">
                 {t.date}
-                <input type="date" value={date} max={new Date().toLocaleDateString('en-CA')} onChange={(event) => setDate(event.target.value)} />
+                <input
+                    type="date"
+                    value={date}
+                    max={new Date().toLocaleDateString('en-CA')}
+                    onChange={(event) => setDate(event.target.value)}
+                />
             </label>
             <label className="ui-field">
                 {t.note}

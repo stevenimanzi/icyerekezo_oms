@@ -28,13 +28,19 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
     const t = text.report;
     const [period, setPeriod] = useState<Period>('week');
     const range = useMemo(() => rangeFor(period), [period]);
-    const { data, error, loading } = useFlowData<FlowReport>(`/api/flow/report?from=${range.from}&to=${range.to}`);
+    const { data, error, loading } = useFlowData<FlowReport>(
+        `/api/flow/report?from=${range.from}&to=${range.to}`,
+    );
 
     return (
         <>
             <div className="ui-report-controls">
                 {(Object.keys(t.periods) as Period[]).map((key) => (
-                    <button key={key} className={period === key ? 'primary-btn' : 'secondary-btn'} onClick={() => setPeriod(key)}>
+                    <button
+                        key={key}
+                        className={period === key ? 'primary-btn' : 'secondary-btn'}
+                        onClick={() => setPeriod(key)}
+                    >
                         {t.periods[key]}
                     </button>
                 ))}
@@ -66,11 +72,20 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                                 </thead>
                                 <tbody>
                                     {data.stages.map((row) => (
-                                        <tr key={row.key} style={row.key === highlight ? { fontWeight: 700 } : undefined}>
+                                        <tr
+                                            key={row.key}
+                                            style={
+                                                row.key === highlight
+                                                    ? { fontWeight: 700 }
+                                                    : undefined
+                                            }
+                                        >
                                             <td>{row.label[locale]}</td>
                                             <td className="num">{format.whole(row.good)}</td>
                                             <td className="num">{format.whole(row.damaged)}</td>
-                                            <td className="num">{format.percent(row.damage_rate)}</td>
+                                            <td className="num">
+                                                {format.percent(row.damage_rate)}
+                                            </td>
                                             <td className="num">{format.whole(row.sent)}</td>
                                             <td className="num">{format.whole(row.missing)}</td>
                                             <td className="num">{format.whole(row.checks)}</td>
@@ -108,7 +123,12 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                                                     {STAGE_ORDER.map((key) => (
                                                         <td key={key} className="num">
                                                             {format.whole(day[key].good)}
-                                                            {day[key].damaged > 0 && <small>−{format.whole(day[key].damaged)}</small>}
+                                                            {day[key].damaged > 0 && (
+                                                                <small>
+                                                                    −
+                                                                    {format.whole(day[key].damaged)}
+                                                                </small>
+                                                            )}
                                                         </td>
                                                     ))}
                                                 </tr>
@@ -147,9 +167,15 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                                                         <b>{row.name}</b>
                                                         <small>{row.unit ?? text.none}</small>
                                                     </td>
-                                                    <td className="num">{format.number(row.used)}</td>
-                                                    <td className="num">{format.number(row.waste)}</td>
-                                                    <td className="num">{format.percent(row.waste_rate)}</td>
+                                                    <td className="num">
+                                                        {format.number(row.used)}
+                                                    </td>
+                                                    <td className="num">
+                                                        {format.number(row.waste)}
+                                                    </td>
+                                                    <td className="num">
+                                                        {format.percent(row.waste_rate)}
+                                                    </td>
                                                 </tr>
                                             ))
                                         ) : (

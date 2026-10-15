@@ -10,4 +10,5 @@ const NAMES: Record<StageKey, { en: string; fr: string }> = {
 
 export const STAGE_ORDER: StageKey[] = ['cutting', 'sewing', 'finishing', 'packing'];
 
-export const stageLabel = (key: StageKey | null | undefined, locale: Locale) => (key ? NAMES[key][locale] : '');
+export const stageLabel = (key: StageKey | null | undefined, locale: Locale) =>
+    key ? NAMES[key][locale] : '';
