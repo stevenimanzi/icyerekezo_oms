@@ -21,6 +21,8 @@ const OPERATOR_WORKSPACES = [
 ];
 
 export function getRoleFlags(user: AuthUser) {
+    const noguchi = user.current_factory?.name?.trim().toLowerCase() === 'noguchi holdings ltd';
+
     const hasRole = (slug: string) => user.roles.some((role) => role.slug === slug);
     const inWorkspaceOrRole = (workspace: string, slug: string) =>
         user.workspace === workspace || hasRole(slug);
@@ -73,6 +75,9 @@ export function getRoleFlags(user: AuthUser) {
         isFinanceUser: inWorkspaceOrRole('finance', 'accountant'),
         isNoguchiFactory:
             user.current_factory?.name?.trim().toLowerCase() === 'noguchi holdings ltd',
+        isSewingUser: inWorkspaceOrRole('sewing', 'sewing-operator'),
+        hasProductionFlow:
+            !noguchi && Boolean(user.current_factory?.feature_flags?.includes('garment_flow')),
     };
 }
 

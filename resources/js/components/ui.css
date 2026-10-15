@@ -1,55 +1,55 @@
-.ms {
-    --ms-good: #15803d;
-    --ms-good-bg: #dcfce7;
-    --ms-warn: #b45309;
-    --ms-warn-bg: #fef3c7;
-    --ms-bad: #b91c1c;
-    --ms-bad-bg: #fee2e2;
-    --ms-grey: #475569;
-    --ms-grey-bg: #e2e8f0;
+.ui {
+    --ui-good: #15803d;
+    --ui-good-bg: #dcfce7;
+    --ui-warn: #b45309;
+    --ui-warn-bg: #fef3c7;
+    --ui-bad: #b91c1c;
+    --ui-bad-bg: #fee2e2;
+    --ui-grey: #475569;
+    --ui-grey-bg: #e2e8f0;
     display: flex;
     flex-direction: column;
     gap: 18px;
 }
 
-[data-theme='dark'] .ms,
-[data-theme='dark'] .ms-overlay {
-    --ms-good: #4ade80;
-    --ms-good-bg: #14301f;
-    --ms-warn: #fbbf24;
-    --ms-warn-bg: #3a2a0c;
-    --ms-bad: #f87171;
-    --ms-bad-bg: #3b1616;
-    --ms-grey: #cbd5e1;
-    --ms-grey-bg: #263246;
+[data-theme='dark'] .ui,
+[data-theme='dark'] .ui-overlay {
+    --ui-good: #4ade80;
+    --ui-good-bg: #14301f;
+    --ui-warn: #fbbf24;
+    --ui-warn-bg: #3a2a0c;
+    --ui-bad: #f87171;
+    --ui-bad-bg: #3b1616;
+    --ui-grey: #cbd5e1;
+    --ui-grey-bg: #263246;
 }
 
-.ms .page-heading {
+.ui .page-heading {
     margin-bottom: 0;
 }
 
-.ms-actions {
+.ui-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
 }
 
-.ms-notice {
+.ui-notice {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     padding: 12px 16px;
-    border: 1px solid var(--ms-good);
+    border: 1px solid var(--ui-good);
     border-radius: 12px;
-    background: var(--ms-good-bg);
-    color: var(--ms-good);
+    background: var(--ui-good-bg);
+    color: var(--ui-good);
     font-size: 13px;
     font-weight: 600;
 }
 
-.ms-notice button {
+.ui-notice button {
     border: 0;
     background: transparent;
     color: inherit;
@@ -58,25 +58,25 @@
     cursor: pointer;
 }
 
-.ms-kpis {
+.ui-kpis {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 14px;
 }
 
-.ms-kpi {
+.ui-kpi {
     min-width: 0;
     padding: 18px;
 }
 
-.ms-kpi small {
+.ui-kpi small {
     display: block;
     color: var(--text);
     font-size: 12px;
     font-weight: 700;
 }
 
-.ms-kpi strong {
+.ui-kpi strong {
     display: block;
     margin: 6px 0 4px;
     font-size: 24px;
@@ -84,31 +84,31 @@
     white-space: nowrap;
 }
 
-.ms-kpi p {
+.ui-kpi p {
     margin: 0;
     color: var(--muted);
     font-size: 12px;
 }
 
-.ms-kpi .up {
-    color: var(--ms-good);
+.ui-kpi .up {
+    color: var(--ui-good);
     font-weight: 700;
 }
 
-.ms-kpi .down {
-    color: var(--ms-bad);
+.ui-kpi .down {
+    color: var(--ui-bad);
     font-weight: 700;
 }
 
-.ms-kpi.alert strong {
-    color: var(--ms-bad);
+.ui-kpi.alert strong {
+    color: var(--ui-bad);
 }
 
-.ms-kpis.six {
+.ui-kpis.six {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.ms-tabs {
+.ui-tabs {
     display: inline-flex;
     gap: 4px;
     width: fit-content;
@@ -118,7 +118,7 @@
     background: var(--panel);
 }
 
-.ms-tabs button {
+.ui-tabs button {
     padding: 9px 18px;
     border: 0;
     border-radius: 9px;
@@ -129,12 +129,12 @@
     cursor: pointer;
 }
 
-.ms-tabs button.active {
+.ui-tabs button.active {
     background: color-mix(in srgb, var(--brand) 12%, transparent);
     color: var(--brand);
 }
 
-.ms-toolbar {
+.ui-toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
@@ -142,8 +142,8 @@
     padding: 16px;
 }
 
-.ms-toolbar label,
-.ms-field {
+.ui-toolbar label,
+.ui-field {
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -153,12 +153,12 @@
     font-weight: 700;
 }
 
-.ms input,
-.ms select,
-.ms textarea,
-.ms-overlay input,
-.ms-overlay select,
-.ms-overlay textarea {
+.ui input,
+.ui select,
+.ui textarea,
+.ui-overlay input,
+.ui-overlay select,
+.ui-overlay textarea {
     min-height: 40px;
     padding: 8px 12px;
     border: 1px solid var(--line);
@@ -170,34 +170,34 @@
     font-weight: 500;
 }
 
-.ms input:focus,
-.ms select:focus,
-.ms textarea:focus,
-.ms-overlay input:focus,
-.ms-overlay select:focus,
-.ms-overlay textarea:focus {
+.ui input:focus,
+.ui select:focus,
+.ui textarea:focus,
+.ui-overlay input:focus,
+.ui-overlay select:focus,
+.ui-overlay textarea:focus {
     border-color: var(--brand);
     outline: 0;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
 }
 
-.ms-toolbar .grow {
+.ui-toolbar .grow {
     flex: 1;
     min-width: 220px;
 }
 
-.ms-table-wrap {
+.ui-table-wrap {
     overflow-x: auto;
 }
 
-.ms-table {
+.ui-table {
     width: 100%;
     min-width: 780px;
     border-collapse: separate;
     border-spacing: 0;
 }
 
-.ms-table th {
+.ui-table th {
     padding: 12px 16px;
     border-bottom: 1px solid var(--line);
     background: var(--soft);
@@ -210,52 +210,52 @@
     white-space: nowrap;
 }
 
-.ms-table td {
+.ui-table td {
     padding: 13px 16px;
     border-bottom: 1px solid var(--line);
     font-size: 13px;
     vertical-align: middle;
 }
 
-.ms-table tbody tr:nth-child(even) td {
+.ui-table tbody tr:nth-child(even) td {
     background: color-mix(in srgb, var(--brand) 3%, transparent);
 }
 
-.ms-table tbody tr.clickable {
+.ui-table tbody tr.clickable {
     cursor: pointer;
 }
 
-.ms-table tbody tr:hover td {
+.ui-table tbody tr:hover td {
     background: color-mix(in srgb, var(--brand) 7%, transparent);
 }
 
-.ms-table tbody tr:last-child td {
+.ui-table tbody tr:last-child td {
     border-bottom: 0;
 }
 
-.ms-table .num {
+.ui-table .num {
     text-align: right;
     white-space: nowrap;
 }
 
-.ms-table td.empty {
+.ui-table td.empty {
     padding: 36px 16px;
     color: var(--muted);
     text-align: center;
 }
 
-.ms-table small {
+.ui-table small {
     display: block;
     color: var(--muted);
     font-size: 11px;
 }
 
-.ms-row-actions {
+.ui-row-actions {
     display: flex;
     gap: 6px;
 }
 
-.ms-link {
+.ui-link {
     padding: 6px 10px;
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -266,12 +266,12 @@
     cursor: pointer;
 }
 
-.ms-link:hover {
+.ui-link:hover {
     border-color: var(--brand);
     color: var(--brand);
 }
 
-.ms-chip {
+.ui-chip {
     display: inline-block;
     padding: 4px 10px;
     border-radius: 999px;
@@ -280,27 +280,27 @@
     white-space: nowrap;
 }
 
-.ms-chip.paid {
-    background: var(--ms-good-bg);
-    color: var(--ms-good);
+.ui-chip.paid {
+    background: var(--ui-good-bg);
+    color: var(--ui-good);
 }
 
-.ms-chip.partially_paid {
-    background: var(--ms-warn-bg);
-    color: var(--ms-warn);
+.ui-chip.partially_paid {
+    background: var(--ui-warn-bg);
+    color: var(--ui-warn);
 }
 
-.ms-chip.unpaid {
-    background: var(--ms-bad-bg);
-    color: var(--ms-bad);
+.ui-chip.unpaid {
+    background: var(--ui-bad-bg);
+    color: var(--ui-bad);
 }
 
-.ms-chip.cancelled {
-    background: var(--ms-grey-bg);
-    color: var(--ms-grey);
+.ui-chip.cancelled {
+    background: var(--ui-grey-bg);
+    color: var(--ui-grey);
 }
 
-.ms-pager {
+.ui-pager {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -312,12 +312,12 @@
     font-size: 12px;
 }
 
-.ms-pager div {
+.ui-pager div {
     display: flex;
     gap: 8px;
 }
 
-.ms-overlay {
+.ui-overlay {
     position: fixed;
     inset: 0;
     z-index: 100;
@@ -325,17 +325,17 @@
     place-items: center;
     padding: 16px;
     background: rgba(15, 23, 42, 0.55);
-    --ms-good: #15803d;
-    --ms-good-bg: #dcfce7;
-    --ms-warn: #b45309;
-    --ms-warn-bg: #fef3c7;
-    --ms-bad: #b91c1c;
-    --ms-bad-bg: #fee2e2;
-    --ms-grey: #475569;
-    --ms-grey-bg: #e2e8f0;
+    --ui-good: #15803d;
+    --ui-good-bg: #dcfce7;
+    --ui-warn: #b45309;
+    --ui-warn-bg: #fef3c7;
+    --ui-bad: #b91c1c;
+    --ui-bad-bg: #fee2e2;
+    --ui-grey: #475569;
+    --ui-grey-bg: #e2e8f0;
 }
 
-.ms-dialog {
+.ui-dialog {
     display: flex;
     flex-direction: column;
     width: min(940px, 100%);
@@ -348,11 +348,11 @@
     box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
 }
 
-.ms-dialog.narrow {
+.ui-dialog.narrow {
     width: min(620px, 100%);
 }
 
-.ms-dialog > header {
+.ui-dialog > header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -361,12 +361,12 @@
     border-bottom: 1px solid var(--line);
 }
 
-.ms-dialog > header h2 {
+.ui-dialog > header h2 {
     margin: 0;
     font-size: 18px;
 }
 
-.ms-dialog > header button {
+.ui-dialog > header button {
     width: 34px;
     height: 34px;
     border: 0;
@@ -377,12 +377,12 @@
     cursor: pointer;
 }
 
-.ms-dialog > header button:hover {
+.ui-dialog > header button:hover {
     background: var(--soft);
     color: var(--text);
 }
 
-.ms-dialog-body {
+.ui-dialog-body {
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -390,7 +390,7 @@
     overflow-y: auto;
 }
 
-.ms-dialog > footer {
+.ui-dialog > footer {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -400,17 +400,17 @@
     background: var(--soft);
 }
 
-.ms-grid {
+.ui-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
 }
 
-.ms-grid.three {
+.ui-grid.three {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.ms-section {
+.ui-section {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -420,19 +420,19 @@
     background: var(--soft);
 }
 
-.ms-section h3 {
+.ui-section h3 {
     margin: 0;
     font-size: 14px;
 }
 
-.ms-line {
+.ui-line {
     display: grid;
     grid-template-columns: minmax(0, 2.4fr) 100px 140px 130px 36px;
     align-items: end;
     gap: 10px;
 }
 
-.ms-line .amount {
+.ui-line .amount {
     padding-bottom: 10px;
     font-size: 14px;
     font-weight: 700;
@@ -440,17 +440,17 @@
     white-space: nowrap;
 }
 
-.ms-line .remove {
+.ui-line .remove {
     width: 36px;
     height: 40px;
     border: 1px solid var(--line);
     border-radius: 9px;
     background: var(--panel);
-    color: var(--ms-bad);
+    color: var(--ui-bad);
     cursor: pointer;
 }
 
-.ms-line-head {
+.ui-line-head {
     color: var(--muted);
     font-size: 11px;
     font-weight: 700;
@@ -458,13 +458,13 @@
     text-transform: uppercase;
 }
 
-.ms-help {
+.ui-help {
     color: var(--muted);
     font-size: 12px;
     font-weight: 500;
 }
 
-.ms-totals {
+.ui-totals {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -472,37 +472,37 @@
     min-width: 260px;
 }
 
-.ms-totals div {
+.ui-totals div {
     display: flex;
     justify-content: space-between;
     gap: 24px;
     font-size: 13px;
 }
 
-.ms-totals .grand {
+.ui-totals .grand {
     padding-top: 8px;
     border-top: 1px solid var(--line);
     font-size: 17px;
     font-weight: 800;
 }
 
-.ms-totals .owed {
-    color: var(--ms-bad);
+.ui-totals .owed {
+    color: var(--ui-bad);
     font-weight: 700;
 }
 
-.ms-totals .good {
-    color: var(--ms-good);
+.ui-totals .good {
+    color: var(--ui-good);
     font-weight: 700;
 }
 
-.ms-quick {
+.ui-quick {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
-.ms-check {
+.ui-check {
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -510,30 +510,30 @@
     font-weight: 600;
 }
 
-.ms-check input {
+.ui-check input {
     width: 18px;
     min-height: 18px;
     margin-top: 2px;
     accent-color: var(--brand);
 }
 
-.ms-error {
+.ui-error {
     padding: 11px 14px;
-    border: 1px solid var(--ms-bad);
+    border: 1px solid var(--ui-bad);
     border-radius: 10px;
-    background: var(--ms-bad-bg);
-    color: var(--ms-bad);
+    background: var(--ui-bad-bg);
+    color: var(--ui-bad);
     font-size: 13px;
     font-weight: 600;
 }
 
-.ms-facts {
+.ui-facts {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 14px;
 }
 
-.ms-facts small {
+.ui-facts small {
     display: block;
     color: var(--muted);
     font-size: 11px;
@@ -542,19 +542,19 @@
     letter-spacing: 0.05em;
 }
 
-.ms-facts b {
+.ui-facts b {
     display: block;
     margin-top: 3px;
     font-size: 14px;
 }
 
-.ms-payments {
+.ui-payments {
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.ms-payments li {
+.ui-payments li {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
@@ -564,34 +564,34 @@
     font-size: 13px;
 }
 
-.ms-payments li:last-child {
+.ui-payments li:last-child {
     border-bottom: 0;
 }
 
-.ms-report-controls {
+.ui-report-controls {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
     gap: 10px;
 }
 
-.ms-report-grid {
+.ui-report-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
     align-items: start;
 }
 
-.ms-report-grid .panel-title {
+.ui-report-grid .panel-title {
     min-height: 54px;
 }
 
-.ms-chart {
+.ui-chart {
     height: 280px;
     padding: 14px 12px 6px;
 }
 
-.ms-empty {
+.ui-empty {
     padding: 36px 16px;
     color: var(--muted);
     text-align: center;
@@ -599,50 +599,50 @@
 }
 
 @media (max-width: 900px) {
-    .ms-kpis.six {
+    .ui-kpis.six {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .ms-report-grid {
+    .ui-report-grid {
         grid-template-columns: 1fr;
     }
 
-    .ms-grid,
-    .ms-grid.three {
+    .ui-grid,
+    .ui-grid.three {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .ms-line {
+    .ui-line {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
-    .ms-line > :first-child {
+    .ui-line > :first-child {
         grid-column: 1 / -1;
     }
 
-    .ms-line-head {
+    .ui-line-head {
         display: none;
     }
 }
 
 @media (max-width: 560px) {
-    .ms-kpis.six {
+    .ui-kpis.six {
         grid-template-columns: 1fr;
     }
 }
 
-.ms input,
-.ms select,
-.ms textarea,
-.ms-overlay input,
-.ms-overlay select,
-.ms-overlay textarea {
+.ui input,
+.ui select,
+.ui textarea,
+.ui-overlay input,
+.ui-overlay select,
+.ui-overlay textarea {
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
 }
 
-.ms input[type='checkbox'],
-.ms-overlay input[type='checkbox'] {
+.ui input[type='checkbox'],
+.ui-overlay input[type='checkbox'] {
     width: 18px;
 }

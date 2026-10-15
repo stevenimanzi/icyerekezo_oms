@@ -93,8 +93,8 @@ export function SalesReports({ text, format }: Props) {
 
     return (
         <>
-            <div className="ms-report-controls">
-                <label className="ms-field">
+            <div className="ui-report-controls">
+                <label className="ui-field">
                     <span>{t.show}</span>
                     <select
                         value={preset}
@@ -109,7 +109,7 @@ export function SalesReports({ text, format }: Props) {
                 </label>
                 {preset === 'custom' && (
                     <>
-                        <label className="ms-field">
+                        <label className="ui-field">
                             <span>{t.from}</span>
                             <input
                                 type="date"
@@ -120,7 +120,7 @@ export function SalesReports({ text, format }: Props) {
                                 }
                             />
                         </label>
-                        <label className="ms-field">
+                        <label className="ui-field">
                             <span>{t.to}</span>
                             <input
                                 type="date"
@@ -135,39 +135,39 @@ export function SalesReports({ text, format }: Props) {
                 )}
             </div>
 
-            {error && <div className="ms-error">{error}</div>}
+            {error && <div className="ui-error">{error}</div>}
             {!data ? (
-                <div className="panel ms-empty">{t.loading}</div>
+                <div className="panel ui-empty">{t.loading}</div>
             ) : (
                 <>
-                    <div className="ms-kpis six">
-                        <article className="panel ms-kpi">
+                    <div className="ui-kpis six">
+                        <article className="panel ui-kpi">
                             <small>{t.kpi.revenue}</small>
                             <strong>{format.moneyShort(data.summary.revenue.current)}</strong>
                             {change(data.summary.revenue)}
                         </article>
-                        <article className="panel ms-kpi">
+                        <article className="panel ui-kpi">
                             <small>{t.kpi.sales}</small>
                             <strong>{format.whole(data.summary.sales.current)}</strong>
                             {change(data.summary.sales)}
                         </article>
-                        <article className="panel ms-kpi">
+                        <article className="panel ui-kpi">
                             <small>{t.kpi.average}</small>
                             <strong>{format.moneyShort(data.summary.average_sale.current)}</strong>
                             {change(data.summary.average_sale)}
                         </article>
-                        <article className="panel ms-kpi">
+                        <article className="panel ui-kpi">
                             <small>{t.kpi.items}</small>
                             <strong>{format.whole(data.summary.items_sold.current)}</strong>
                             {change(data.summary.items_sold)}
                         </article>
-                        <article className="panel ms-kpi">
+                        <article className="panel ui-kpi">
                             <small>{t.kpi.collected}</small>
                             <strong>{format.moneyShort(data.summary.collected)}</strong>
                             <p>{t.kpi.discounts(format.money(data.summary.discounts))}</p>
                         </article>
                         <article
-                            className={`panel ms-kpi ${data.summary.outstanding > 0 ? 'alert' : ''}`}
+                            className={`panel ui-kpi ${data.summary.outstanding > 0 ? 'alert' : ''}`}
                         >
                             <small>{t.kpi.owed}</small>
                             <strong>{format.moneyShort(data.summary.outstanding)}</strong>
@@ -179,7 +179,7 @@ export function SalesReports({ text, format }: Props) {
                         <div className="panel-title">
                             <h2>{t.trend}</h2>
                         </div>
-                        <div className="ms-chart">
+                        <div className="ui-chart">
                             {data.trend.some((point) => point.revenue > 0) ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart
@@ -242,12 +242,12 @@ export function SalesReports({ text, format }: Props) {
                                     </AreaChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="ms-empty">{t.trendEmpty}</div>
+                                <div className="ui-empty">{t.trendEmpty}</div>
                             )}
                         </div>
                     </article>
 
-                    <div className="ms-report-grid">
+                    <div className="ui-report-grid">
                         <Table
                             title={t.products}
                             empty={t.none}
@@ -336,7 +336,7 @@ export function SalesReports({ text, format }: Props) {
                                 <td>{row.due_on ? format.date(row.due_on) : '—'}</td>
                                 <td>
                                     <span
-                                        className={`ms-chip ${row.days_late > 0 ? 'unpaid' : 'paid'}`}
+                                        className={`ui-chip ${row.days_late > 0 ? 'unpaid' : 'paid'}`}
                                     >
                                         {t.late(row.days_late)}
                                     </span>
@@ -367,8 +367,8 @@ function Table({ title, empty, heads, numeric, children }: TableProps) {
             <div className="panel-title">
                 <h2>{title}</h2>
             </div>
-            <div className="ms-table-wrap">
-                <table className="ms-table" style={{ minWidth: 0 }}>
+            <div className="ui-table-wrap">
+                <table className="ui-table" style={{ minWidth: 0 }}>
                     <thead>
                         <tr>
                             {heads.map((head, index) => (

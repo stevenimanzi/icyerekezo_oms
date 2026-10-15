@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../../core/api';
 import type { Format } from '../../../core/format';
-import { Modal } from './components/Modal';
+import { Modal } from '../../../components/Modal';
 import { StatusChip } from './components/StatusChip';
 import type { salesText } from './text';
 import type { Sale } from './types';
@@ -73,12 +73,12 @@ export function SaleDetailsModal({
                 </>
             }
         >
-            {error && <div className="ms-error">{error}</div>}
+            {error && <div className="ui-error">{error}</div>}
             {cancelled && sale.cancel_reason && (
-                <div className="ms-error">{t.cancelledBecause(sale.cancel_reason)}</div>
+                <div className="ui-error">{t.cancelledBecause(sale.cancel_reason)}</div>
             )}
 
-            <div className="ms-facts">
+            <div className="ui-facts">
                 <div>
                     <small>{text.table.customer}</small>
                     <b>{sale.customer_name}</b>
@@ -112,16 +112,16 @@ export function SaleDetailsModal({
             </div>
 
             {sale.notes && (
-                <p className="ms-help" style={{ margin: 0 }}>
+                <p className="ui-help" style={{ margin: 0 }}>
                     {t.notes}: {sale.notes}
                 </p>
             )}
 
             <div
-                className="ms-table-wrap"
+                className="ui-table-wrap"
                 style={{ border: '1px solid var(--line)', borderRadius: 12 }}
             >
-                <table className="ms-table" style={{ minWidth: 520 }}>
+                <table className="ui-table" style={{ minWidth: 520 }}>
                     <thead>
                         <tr>
                             <th>{t.product}</th>
@@ -145,7 +145,7 @@ export function SaleDetailsModal({
                 </table>
             </div>
 
-            <div className="ms-totals">
+            <div className="ui-totals">
                 {Number(sale.discount_amount) > 0 && (
                     <>
                         <div>
@@ -174,10 +174,10 @@ export function SaleDetailsModal({
                 )}
             </div>
 
-            <section className="ms-section">
+            <section className="ui-section">
                 <h3>{t.payments}</h3>
                 {sale.payments.length ? (
-                    <ul className="ms-payments">
+                    <ul className="ui-payments">
                         {sale.payments.map((payment) => (
                             <li key={payment.id}>
                                 <span>
@@ -190,15 +190,15 @@ export function SaleDetailsModal({
                         ))}
                     </ul>
                 ) : (
-                    <span className="ms-help">{t.noPayments}</span>
+                    <span className="ui-help">{t.noPayments}</span>
                 )}
             </section>
 
             {canRecord && !cancelled && balance > 0 && (
-                <section className="ms-section">
+                <section className="ui-section">
                     <h3>{t.addPayment}</h3>
-                    <div className="ms-grid three">
-                        <label className="ms-field">
+                    <div className="ui-grid three">
+                        <label className="ui-field">
                             {t.paymentAmount}
                             <input
                                 type="number"
@@ -208,7 +208,7 @@ export function SaleDetailsModal({
                                 onChange={(event) => setAmount(event.target.value)}
                             />
                         </label>
-                        <label className="ms-field">
+                        <label className="ui-field">
                             {text.form.method}
                             <select
                                 value={method}
@@ -221,7 +221,7 @@ export function SaleDetailsModal({
                                 ))}
                             </select>
                         </label>
-                        <label className="ms-field">
+                        <label className="ui-field">
                             {text.form.reference}
                             <input
                                 value={reference}
@@ -229,7 +229,7 @@ export function SaleDetailsModal({
                             />
                         </label>
                     </div>
-                    <div className="ms-quick">
+                    <div className="ui-quick">
                         <button
                             className="secondary-btn"
                             onClick={() => setAmount(String(balance))}
@@ -258,7 +258,7 @@ export function SaleDetailsModal({
             )}
 
             {canRecord && !cancelled && (
-                <section className="ms-section">
+                <section className="ui-section">
                     {!cancelling ? (
                         <div>
                             <button className="secondary-btn" onClick={() => setCancelling(true)}>
@@ -268,15 +268,15 @@ export function SaleDetailsModal({
                     ) : (
                         <>
                             <h3>{t.cancelSale}</h3>
-                            <span className="ms-help">{t.cancelHint}</span>
-                            <label className="ms-field">
+                            <span className="ui-help">{t.cancelHint}</span>
+                            <label className="ui-field">
                                 {t.reason}
                                 <input
                                     value={reason}
                                     onChange={(event) => setReason(event.target.value)}
                                 />
                             </label>
-                            <div className="ms-quick">
+                            <div className="ui-quick">
                                 <button
                                     className="secondary-btn"
                                     onClick={() => setCancelling(false)}

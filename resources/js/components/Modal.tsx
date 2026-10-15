@@ -19,9 +19,9 @@ export function Modal({ title, onClose, footer, narrow, children }: Props) {
     }, [onClose]);
 
     return (
-        <div className="ms-overlay" onMouseDown={onClose}>
+        <div className="ui-overlay" onMouseDown={onClose}>
             <section
-                className={`ms-dialog ${narrow ? 'narrow' : ''}`}
+                className={`ui-dialog ${narrow ? 'narrow' : ''}`}
                 role="dialog"
                 aria-modal="true"
                 aria-label={title}
@@ -33,7 +33,7 @@ export function Modal({ title, onClose, footer, narrow, children }: Props) {
                         ×
                     </button>
                 </header>
-                <div className="ms-dialog-body">{children}</div>
+                <div className="ui-dialog-body">{children}</div>
                 {footer && <footer>{footer}</footer>}
             </section>
         </div>

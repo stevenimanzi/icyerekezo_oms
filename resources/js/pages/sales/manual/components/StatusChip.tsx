@@ -9,5 +9,5 @@ type Props = {
 export function StatusChip({ sale, text }: Props) {
     const key = sale.status === 'cancelled' ? 'cancelled' : sale.payment_status;
 
-    return <span className={`ms-chip ${key}`}>{text.status[key]}</span>;
+    return <span className={`ui-chip ${key}`}>{text.status[key]}</span>;
 }

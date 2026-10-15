@@ -35,7 +35,7 @@ export function SalesTab({
 
     return (
         <article className="panel">
-            <div className="ms-toolbar">
+            <div className="ui-toolbar">
                 <label className="grow">
                     <span>{text.filters.search}</span>
                     <input
@@ -87,8 +87,8 @@ export function SalesTab({
                 )}
             </div>
 
-            <div className="ms-table-wrap">
-                <table className="ms-table">
+            <div className="ui-table-wrap">
+                <table className="ui-table">
                     <thead>
                         <tr>
                             <th>{text.table.receipt}</th>
@@ -141,15 +141,15 @@ export function SalesTab({
                                             <StatusChip sale={sale} text={text} />
                                         </td>
                                         <td onClick={(event) => event.stopPropagation()}>
-                                            <div className="ms-row-actions">
+                                            <div className="ui-row-actions">
                                                 <button
-                                                    className="ms-link"
+                                                    className="ui-link"
                                                     onClick={() => onOpen(sale)}
                                                 >
                                                     {text.table.view}
                                                 </button>
                                                 <button
-                                                    className="ms-link"
+                                                    className="ui-link"
                                                     onClick={() => openReceipt(sale)}
                                                 >
                                                     {text.table.receiptPdf}
@@ -171,7 +171,7 @@ export function SalesTab({
             </div>
 
             {sales.last_page > 1 && (
-                <div className="ms-pager">
+                <div className="ui-pager">
                     <span>{text.table.page(sales.current_page, sales.last_page, sales.total)}</span>
                     <div>
                         <button

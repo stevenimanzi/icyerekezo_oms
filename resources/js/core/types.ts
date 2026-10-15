@@ -12,6 +12,7 @@ export type AuthUser = {
         slug: string;
         industry_type?: string;
         currency_code?: string;
+        feature_flags?: string[];
     } | null;
     factories?: { id: number; name: string; slug: string }[];
     is_platform_admin: boolean;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { makeFormat } from '../../../core/format';
 import type { AuthUser, Locale } from '../../../core/types';
-import './manual-sales.css';
+import '../../../components/ui.css';
 import { NewSaleModal } from './NewSaleModal';
 import { SaleDetailsModal } from './SaleDetailsModal';
 import { SalesReports } from './SalesReports';
@@ -54,13 +54,13 @@ export default function ManualSalesPage({ user, locale }: { user: AuthUser; loca
     }, [notice]);
 
     return (
-        <section className="ms">
+        <section className="ui">
             <div className="page-heading">
                 <div>
                     <h1>{text.title}</h1>
                     <p>{text.subtitle}</p>
                 </div>
-                <div className="ms-actions">
+                <div className="ui-actions">
                     <button className="secondary-btn" onClick={reload} disabled={loading}>
                         <RefreshCw size={15} />
                         {text.refresh}
@@ -73,9 +73,9 @@ export default function ManualSalesPage({ user, locale }: { user: AuthUser; loca
                 </div>
             </div>
 
-            {error && <div className="ms-error">{error}</div>}
+            {error && <div className="ui-error">{error}</div>}
             {notice && (
-                <div className="ms-notice" role="status">
+                <div className="ui-notice" role="status">
                     <span>{notice.message}</span>
                     {notice.receiptId && (
                         <button
@@ -93,13 +93,13 @@ export default function ManualSalesPage({ user, locale }: { user: AuthUser; loca
             )}
 
             {data && (
-                <div className="ms-kpis">
-                    <article className="panel ms-kpi">
+                <div className="ui-kpis">
+                    <article className="panel ui-kpi">
                         <small>{text.kpi.today}</small>
                         <strong>{format.money(data.today.revenue)}</strong>
                         <p>{text.kpi.todayCount(data.today.sales)}</p>
                     </article>
-                    <article className={`panel ms-kpi ${data.outstanding > 0 ? 'alert' : ''}`}>
+                    <article className={`panel ui-kpi ${data.outstanding > 0 ? 'alert' : ''}`}>
                         <small>{text.kpi.owed}</small>
                         <strong>{format.money(data.outstanding)}</strong>
                         <p>{text.kpi.owedHint}</p>
@@ -107,7 +107,7 @@ export default function ManualSalesPage({ user, locale }: { user: AuthUser; loca
                 </div>
             )}
 
-            <div className="ms-tabs" role="tablist">
+            <div className="ui-tabs" role="tablist">
                 {(['sales', 'reports'] as Tab[]).map((key) => (
                     <button
                         key={key}
@@ -135,7 +135,7 @@ export default function ManualSalesPage({ user, locale }: { user: AuthUser; loca
                     onOpen={setSelected}
                 />
             ) : (
-                <div className="panel ms-empty">{text.loading}</div>
+                <div className="panel ui-empty">{text.loading}</div>
             )}
 
             {newSale && data?.form && (

@@ -3,7 +3,7 @@ import type { RoleModule } from '../types';
 
 export const packingRole: RoleModule = {
     id: 'packing',
-    matches: ({ flags }) => flags.isNoguchiFactory && flags.isPackagingUser,
+    matches: ({ flags }) => flags.isPackagingUser,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['packing-workspace', PackageCheck, text('Packing', 'Emballage'), 'production.view'],

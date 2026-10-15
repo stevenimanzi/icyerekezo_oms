@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { api } from '../../../core/api';
 import type { Format } from '../../../core/format';
-import { Modal } from './components/Modal';
+import { Modal } from '../../../components/Modal';
 import type { salesText } from './text';
 import type { Sale, SaleFormOptions } from './types';
 
@@ -126,29 +126,29 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                 </>
             }
         >
-            {error && <div className="ms-error">{error}</div>}
+            {error && <div className="ui-error">{error}</div>}
 
             {!options.items.length ? (
-                <div className="ms-error">{t.noProducts}</div>
+                <div className="ui-error">{t.noProducts}</div>
             ) : (
                 <>
-                    <div className="ms-grid three">
-                        <label className="ms-field">
+                    <div className="ui-grid three">
+                        <label className="ui-field">
                             {t.customer}
                             <input
-                                list="ms-customers"
+                                list="ui-customers"
                                 value={customer}
                                 placeholder={t.walkIn}
                                 onChange={(event) => chooseCustomer(event.target.value)}
                             />
-                            <datalist id="ms-customers">
+                            <datalist id="ui-customers">
                                 {options.customers.map((entry) => (
                                     <option key={entry.name} value={entry.name} />
                                 ))}
                             </datalist>
-                            <span className="ms-help">{t.customerHint}</span>
+                            <span className="ui-help">{t.customerHint}</span>
                         </label>
-                        <label className="ms-field">
+                        <label className="ui-field">
                             {t.phone}
                             <input
                                 value={phone}
@@ -156,7 +156,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                 onChange={(event) => setPhone(event.target.value)}
                             />
                         </label>
-                        <label className="ms-field">
+                        <label className="ui-field">
                             {t.date}
                             <input
                                 type="date"
@@ -167,9 +167,9 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                         </label>
                     </div>
 
-                    <section className="ms-section">
+                    <section className="ui-section">
                         <h3>{t.products}</h3>
-                        <div className="ms-line ms-line-head">
+                        <div className="ui-line ui-line-head">
                             <span>{t.product}</span>
                             <span>{t.quantity}</span>
                             <span>{t.price}</span>
@@ -180,8 +180,8 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                             const item = items.get(line.item_id);
 
                             return (
-                                <div className="ms-line" key={line.key}>
-                                    <label className="ms-field">
+                                <div className="ui-line" key={line.key}>
+                                    <label className="ui-field">
                                         <select
                                             value={line.item_id}
                                             onChange={(event) =>
@@ -202,15 +202,15 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                             deductStock &&
                                             item.type !== 'service' && (
                                                 <span
-                                                    className="ms-help"
-                                                    style={{ color: 'var(--ms-bad)' }}
+                                                    className="ui-help"
+                                                    style={{ color: 'var(--ui-bad)' }}
                                                 >
                                                     {format.number(Number(item.on_hand))}{' '}
                                                     {t.inStock}
                                                 </span>
                                             )}
                                     </label>
-                                    <label className="ms-field">
+                                    <label className="ui-field">
                                         <input
                                             type="number"
                                             min={1}
@@ -224,7 +224,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                             }
                                         />
                                     </label>
-                                    <label className="ms-field">
+                                    <label className="ui-field">
                                         <input
                                             type="number"
                                             min={0}
@@ -272,10 +272,10 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                         </div>
                     </section>
 
-                    <div className="ms-grid">
-                        <section className="ms-section">
+                    <div className="ui-grid">
+                        <section className="ui-section">
                             <h3>{t.payment}</h3>
-                            <label className="ms-field">
+                            <label className="ui-field">
                                 {t.discount}
                                 <input
                                     type="number"
@@ -285,7 +285,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                     onChange={(event) => setDiscount(event.target.value)}
                                 />
                             </label>
-                            <label className="ms-field">
+                            <label className="ui-field">
                                 {t.paidNow}
                                 <input
                                     type="number"
@@ -295,7 +295,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                     onChange={(event) => setPaid(event.target.value)}
                                 />
                             </label>
-                            <div className="ms-quick">
+                            <div className="ui-quick">
                                 <button
                                     type="button"
                                     className="secondary-btn"
@@ -313,7 +313,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                             </div>
                             {paidValue > 0 && (
                                 <>
-                                    <label className="ms-field">
+                                    <label className="ui-field">
                                         {t.method}
                                         <select
                                             value={method}
@@ -326,7 +326,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                             ))}
                                         </select>
                                     </label>
-                                    <label className="ms-field">
+                                    <label className="ui-field">
                                         {t.reference}
                                         <input
                                             value={reference}
@@ -337,7 +337,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                 </>
                             )}
                             {balance > 0 && (
-                                <label className="ms-field">
+                                <label className="ui-field">
                                     {t.dueDate}
                                     <input
                                         type="date"
@@ -349,9 +349,9 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                             )}
                         </section>
 
-                        <section className="ms-section">
+                        <section className="ui-section">
                             <h3>{t.summary}</h3>
-                            <div className="ms-totals">
+                            <div className="ui-totals">
                                 <div>
                                     <span>{t.subtotal}</span>
                                     <span>{format.money(subtotal)}</span>
@@ -376,7 +376,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                     </div>
                                 )}
                             </div>
-                            <label className="ms-check">
+                            <label className="ui-check">
                                 <input
                                     type="checkbox"
                                     checked={deductStock}
@@ -384,13 +384,13 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                 />
                                 <span>
                                     {t.takeFromStock}
-                                    <span className="ms-help" style={{ display: 'block' }}>
+                                    <span className="ui-help" style={{ display: 'block' }}>
                                         {t.takeFromStockHint}
                                     </span>
                                 </span>
                             </label>
                             {deductStock && options.warehouses.length > 1 && (
-                                <label className="ms-field">
+                                <label className="ui-field">
                                     {t.warehouse}
                                     <select
                                         value={warehouseId}
@@ -405,7 +405,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                     </select>
                                 </label>
                             )}
-                            <label className="ms-field">
+                            <label className="ui-field">
                                 {t.notes}
                                 <textarea
                                     rows={2}
