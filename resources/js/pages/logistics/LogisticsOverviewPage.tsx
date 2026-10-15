@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Pencil, Plus, RefreshCw, Trash2, Truck } from 'lucide-react';
 import { OrderDetailsModal } from '../sales/SalesOverviewPage';
+import { startPolling } from '../../core/polling';
 
 async function api(url = '/api/logistics/overview', options: RequestInit = {}) {
     const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
@@ -134,7 +135,7 @@ export default function LogisticsOverviewPage({
     };
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 15000);
+        const timer = startPolling(() => load(true), 15000);
         return () => window.clearInterval(timer);
     }, []);
     useEffect(() => setTab(initialTab), [initialTab]);

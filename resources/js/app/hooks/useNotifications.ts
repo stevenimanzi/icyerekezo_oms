@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../core/api';
 import { urlBase64ToUint8Array } from '../../core/push';
 import type { AppNotificationItem, AuthUser } from '../../core/types';
+import { startPolling } from '../../core/polling';
 
 const ANNOUNCEMENT_REFRESH_MS = 30000;
 const NOTIFICATION_REFRESH_MS = 20000;
@@ -21,7 +22,7 @@ export function useNotifications(user: AuthUser, onMaintenance: (message: string
                 .catch((reason: any) => {
                     if (reason?.status === 503) onMaintenance(reason.message);
                 });
-        const timer = window.setInterval(refresh, ANNOUNCEMENT_REFRESH_MS);
+        const timer = startPolling(refresh, ANNOUNCEMENT_REFRESH_MS);
 
         return () => window.clearInterval(timer);
     }, [onMaintenance]);
@@ -37,7 +38,7 @@ export function useNotifications(user: AuthUser, onMaintenance: (message: string
                 })
                 .catch(() => {});
         refresh();
-        const timer = window.setInterval(refresh, NOTIFICATION_REFRESH_MS);
+        const timer = startPolling(refresh, NOTIFICATION_REFRESH_MS);
 
         return () => window.clearInterval(timer);
     }, []);

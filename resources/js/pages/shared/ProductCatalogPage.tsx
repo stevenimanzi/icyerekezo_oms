@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Edit3, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { startPolling } from '../../core/polling';
 
 const csrf = () =>
     document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
@@ -65,7 +66,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
     }, []);
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 15000);
+        const timer = startPolling(() => load(true), 15000);
         return () => window.clearInterval(timer);
     }, [load]);
 

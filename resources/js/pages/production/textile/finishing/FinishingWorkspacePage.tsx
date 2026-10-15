@@ -7,6 +7,7 @@ import {
     productionApi,
     StockPopupModal,
 } from '../../shared';
+import { startPolling } from '../../../../core/polling';
 
 type FinishingTab = 'request' | 'materials' | 'finish';
 type AuthUser = {
@@ -128,7 +129,7 @@ export default function FinishingWorkspacePage({
 
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 10000);
+        const timer = startPolling(() => load(true), 10000);
         return () => window.clearInterval(timer);
     }, []);
     useEffect(() => {

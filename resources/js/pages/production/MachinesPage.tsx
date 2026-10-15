@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, Factory, Plus, RefreshCw, Wrench } from 'lucide-react';
+import { startPolling } from '../../core/polling';
 
 async function api(url: string, options: RequestInit = {}) {
     const response = await fetch(url, {
@@ -77,7 +78,7 @@ export default function MachinesPage({ can }: any) {
             .catch((e: any) => setError(e.message));
     useEffect(() => {
         load();
-        const timer = setInterval(load, 5000);
+        const timer = startPolling(load, 15000);
         return () => clearInterval(timer);
     }, []);
 

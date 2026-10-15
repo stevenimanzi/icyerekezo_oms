@@ -18,6 +18,7 @@ import {
     Users,
     X,
 } from 'lucide-react';
+import { startPolling } from '../../core/polling';
 
 const csrf = () =>
     document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
@@ -158,7 +159,7 @@ export function ProductionFlowPage() {
             .catch((reason) => setError(reason.message));
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => {
+        const timer = startPolling(() => {
             if (!editing) load();
         }, 5000);
         return () => window.clearInterval(timer);
@@ -1466,7 +1467,7 @@ export function ReportsPage({
             }
         };
         const debounce = window.setTimeout(() => refresh(false), 250);
-        const timer = window.setInterval(() => refresh(true), 5000);
+        const timer = startPolling(() => refresh(true), 15000);
         return () => {
             active = false;
             window.clearTimeout(debounce);

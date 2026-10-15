@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, FileText, Package, RefreshCw, Scissors, Send } from 'lucide-react';
 import { Locale, productionApi, StockPopupModal } from '../../shared';
+import { startPolling } from '../../../../core/polling';
 
 type CuttingTab = 'request' | 'cut' | 'damaged' | 'report';
 type AuthUser = {
@@ -199,7 +200,7 @@ export default function CuttingWorkspacePage({
 
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 10000);
+        const timer = startPolling(() => load(true), 10000);
         return () => window.clearInterval(timer);
     }, []);
 

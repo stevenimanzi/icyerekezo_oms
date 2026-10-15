@@ -7,6 +7,7 @@ import {
     productionApi,
     StockPopupModal,
 } from '../../shared';
+import { startPolling } from '../../../../core/polling';
 
 type SewingTab = 'request' | 'sew' | 'damaged' | 'report';
 type AuthUser = {
@@ -152,7 +153,7 @@ export default function SewingWorkspacePage({
 
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 10000);
+        const timer = startPolling(() => load(true), 10000);
         return () => window.clearInterval(timer);
     }, []);
     useEffect(() => {

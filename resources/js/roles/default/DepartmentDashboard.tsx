@@ -23,6 +23,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
+import { startPolling } from '../../core/polling';
 
 async function api(url: string, options: RequestInit = {}) {
     const response = await fetch(url, {
@@ -106,7 +107,7 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
     };
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 5000);
+        const timer = startPolling(() => load(true), 15000);
         return () => window.clearInterval(timer);
     }, [period, specificDate]);
     const update = async (id: number, statusValue: string) => {

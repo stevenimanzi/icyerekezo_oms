@@ -8,6 +8,7 @@ import {
     StockPopupModal,
 } from '../../shared';
 import { OrderDetailsModal } from '../../../sales/SalesOverviewPage';
+import { startPolling } from '../../../../core/polling';
 
 type PackingTab = 'request' | 'finish' | 'orders';
 type AuthUser = {
@@ -128,7 +129,7 @@ export default function PackingWorkspacePage({
 
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 10000);
+        const timer = startPolling(() => load(true), 10000);
         return () => window.clearInterval(timer);
     }, []);
     useEffect(() => {

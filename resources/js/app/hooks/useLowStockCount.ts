@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../core/api';
 import type { AuthUser } from '../../core/types';
+import { startPolling } from '../../core/polling';
 
 const REFRESH_MS = 60000;
 
@@ -18,7 +19,7 @@ export function useLowStockCount(user: AuthUser, canViewInventory: boolean) {
                 .then((result) => setCount(Number(result.low_stock) || 0))
                 .catch(() => setCount(0));
         refresh();
-        const timer = window.setInterval(refresh, REFRESH_MS);
+        const timer = startPolling(refresh, REFRESH_MS);
 
         return () => window.clearInterval(timer);
     }, [user.is_platform_admin, canViewInventory]);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../core/api';
 import type { OwnerOverview } from './types';
+import { startPolling } from '../../core/polling';
 
 const REFRESH_EVERY_MS = 30000;
 
@@ -25,7 +26,7 @@ export function useOwnerOverview(days: number) {
 
     useEffect(() => {
         load();
-        const timer = window.setInterval(load, REFRESH_EVERY_MS);
+        const timer = startPolling(load, REFRESH_EVERY_MS);
 
         return () => window.clearInterval(timer);
     }, [load]);

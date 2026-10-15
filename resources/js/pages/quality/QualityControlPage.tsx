@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, ClipboardCheck, Plus, RefreshCw, ShieldCheck, XCircle } from 'lucide-react';
+import { startPolling } from '../../core/polling';
 
 async function api(url: string, options: RequestInit = {}) {
     const response = await fetch(url, {
@@ -58,7 +59,7 @@ export default function QualityControlPage({ can }: any) {
             .catch((e: any) => setError(e.message));
     useEffect(() => {
         load();
-        const timer = window.setInterval(load, 5000);
+        const timer = startPolling(load, 15000);
         return () => clearInterval(timer);
     }, []);
 

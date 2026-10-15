@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MessageSquare, RefreshCw, Send, ShieldCheck } from 'lucide-react';
 import { api } from '../../core/api';
 import { type AuthUser, type Locale } from '../../core/types';
+import { startPolling } from '../../core/polling';
 
 export function UserSupportChat({ user, locale }: { user: AuthUser; locale: Locale }) {
     const [tickets, setTickets] = useState<any[]>([]);
@@ -39,7 +40,7 @@ export function UserSupportChat({ user, locale }: { user: AuthUser; locale: Loca
 
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 3000);
+        const timer = startPolling(() => load(true), 5000);
         return () => window.clearInterval(timer);
     }, []);
 

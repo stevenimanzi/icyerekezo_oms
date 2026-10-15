@@ -9,6 +9,7 @@ import {
     Save,
     X,
 } from 'lucide-react';
+import { startPolling } from '../../core/polling';
 
 const csrf = () =>
     document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
@@ -111,7 +112,7 @@ export default function InventoryManagementPage({
     };
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 15000);
+        const timer = startPolling(() => load(true), 15000);
         return () => window.clearInterval(timer);
     }, []);
     const currency = user?.current_factory?.currency_code || user?.system?.currency_code || 'RWF';

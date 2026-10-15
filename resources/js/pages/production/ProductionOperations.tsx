@@ -9,6 +9,7 @@ import {
     Save,
     Trash2,
 } from 'lucide-react';
+import { startPolling } from '../../core/polling';
 
 async function api(url: string, options: RequestInit = {}) {
     const response = await fetch(url, {
@@ -115,7 +116,7 @@ export default function ProductionOperations({ can }: any) {
     };
     useEffect(() => {
         load();
-        const timer = window.setInterval(() => load(true), 15000);
+        const timer = startPolling(() => load(true), 15000);
         return () => window.clearInterval(timer);
     }, []);
     useEffect(() => {

@@ -1,5 +1,6 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Edit3, Plus, RefreshCw, X } from 'lucide-react';
+import { startPolling } from '../../core/polling';
 
 const PackagePlus = Plus;
 const ArrowDownToLine = Plus;
@@ -116,7 +117,7 @@ export default function ProcurementOverviewPage() {
         request('/api/auth/me')
             .then((result: any) => setPermissions(result.user?.permissions || []))
             .catch(() => setPermissions([]));
-        const timer = window.setInterval(() => load(true), 15000);
+        const timer = startPolling(() => load(true), 15000);
         return () => window.clearInterval(timer);
     }, []);
 

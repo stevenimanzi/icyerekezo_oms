@@ -9,6 +9,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
+import { startPolling } from '../../core/polling';
 
 async function loadDashboard(period: string) {
     const response = await fetch(`/api/executive/dashboard?period=${period}`, {
@@ -68,7 +69,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
 
     useEffect(() => {
         load();
-        const timer = window.setInterval(load, 5000);
+        const timer = startPolling(load, 15000);
         return () => window.clearInterval(timer);
     }, [period]);
 

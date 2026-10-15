@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { request } from './api';
 import { adminPages, FALLBACK_PAGE } from './pageInfo';
+import { startPolling } from '../../core/polling';
 
 const SUCCESS_MESSAGE_MS = 5000;
 
@@ -90,7 +91,7 @@ export function useAdminData(page: string) {
 
     useEffect(() => {
         if (!info.refreshEverySeconds) return;
-        const timer = window.setInterval(
+        const timer = startPolling(
             () =>
                 request(info.endpoint)
                     .then(setData)
