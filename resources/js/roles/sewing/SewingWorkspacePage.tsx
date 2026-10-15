@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, FileText, Package, RefreshCw, Scissors } from 'lucide-react';
-import { EditRecordModal, EditRecordForm, Locale, productionApi, StockPopupModal } from './shared';
+import { EditRecordModal, EditRecordForm, Locale, productionApi, StockPopupModal } from '../../pages/production/shared';
 
 type SewingTab = 'request' | 'sew' | 'damaged' | 'report';
 type AuthUser = {

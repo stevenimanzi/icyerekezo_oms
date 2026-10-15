@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Package, RefreshCw, Scissors, Send } from 'lucide-react';
-import { EditRecordModal, EditRecordForm, Locale, productionApi, StockPopupModal } from './shared';
+import { EditRecordModal, EditRecordForm, Locale, productionApi, StockPopupModal } from '../../pages/production/shared';
 
 type FinishingTab = 'request' | 'materials' | 'finish';
 type AuthUser = {
