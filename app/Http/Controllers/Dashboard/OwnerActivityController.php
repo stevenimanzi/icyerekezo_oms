@@ -24,16 +24,16 @@ class OwnerActivityController extends Controller
 
         $logs = AuditLog::where('factory_id', $factoryId)->with('user:id,name');
 
-        if (!empty($filters['q'])) {
+        if (! empty($filters['q'])) {
             $term = '%' . $filters['q'] . '%';
-            $logs->where(fn($query) => $query->where('description', 'like', $term)->orWhere('event', 'like', $term));
+            $logs->where(fn ($query) => $query->where('description', 'like', $term)->orWhere('event', 'like', $term));
         }
 
-        if (!empty($filters['module'])) {
+        if (! empty($filters['module'])) {
             $logs->where('event', 'like', $filters['module'] . '.%');
         }
 
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $logs->where('user_id', $filters['user_id']);
         }
 
@@ -43,7 +43,7 @@ class OwnerActivityController extends Controller
             'data' => $page
                 ->getCollection()
                 ->map(
-                    fn(AuditLog $log) => [
+                    fn (AuditLog $log) => [
                         'id' => $log->id,
                         'who' => $log->user?->name ?? 'System',
                         'module' => str($log->event)->before('.')->toString(),
@@ -61,7 +61,7 @@ class OwnerActivityController extends Controller
             'modules' => AuditLog::where('factory_id', $factoryId)
                 ->distinct()
                 ->pluck('event')
-                ->map(fn(string $event) => str($event)->before('.')->toString())
+                ->map(fn (string $event) => str($event)->before('.')->toString())
                 ->unique()
                 ->sort()
                 ->values(),

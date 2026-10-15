@@ -63,7 +63,7 @@ class IndustryDailyReportCatalog
             'output_label' => 'Work completed',
             'unit_examples' => ['kg', 'L', 'm', 'pcs'],
             'attributes' => ['Product', 'Batch', 'Type/grade', 'Size or package'],
-            ...($profiles[$industry ?? ''] ?? []),
+            ...$profiles[$industry ?? ''] ?? [],
         ];
     }
 }

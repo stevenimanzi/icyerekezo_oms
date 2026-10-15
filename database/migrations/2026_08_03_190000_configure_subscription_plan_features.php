@@ -13,10 +13,10 @@ return new class extends Migration
 
         SubscriptionPlan::where('code', 'STARTER')->update(['features' => json_encode($starter)]);
         SubscriptionPlan::where('code', 'PROFESSIONAL')->update(['features' => json_encode($professional)]);
-        SubscriptionPlan::where('code', 'ENTERPRISE')->update(['features' => json_encode(SubscriptionFeatureCatalog::keys())]);
+        SubscriptionPlan::where('code', 'ENTERPRISE')->update([
+            'features' => json_encode(SubscriptionFeatureCatalog::keys()),
+        ]);
     }
 
-    public function down(): void
-    {
-    }
+    public function down(): void {}
 };

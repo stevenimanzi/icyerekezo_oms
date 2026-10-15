@@ -16,6 +16,13 @@ class Training extends Model
         return ['scheduled_at' => 'date', 'duration_hours' => 'decimal:2'];
     }
 
-    public function creator() { return $this->belongsTo(User::class, 'created_by'); }
-    public function participants() { return $this->hasMany(TrainingParticipant::class); }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function participants()
+    {
+        return $this->hasMany(TrainingParticipant::class);
+    }
 }

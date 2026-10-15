@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Jobs\CreateDatabaseBackup;
 use App\Models\AuditLog;
 use App\Models\DatabaseBackup;
 use App\Models\EmployeeProfile;
 use App\Models\Factory;
 use App\Models\FactorySubscription;
-use App\Models\Permission;
 use App\Models\PlatformAnnouncement;
 use App\Models\Role;
 use App\Models\SubscriptionPlan;
@@ -22,14 +22,15 @@ use App\Support\Catalogs\IndustryProfileCatalog;
 use App\Support\Catalogs\PermissionCatalog;
 use App\Support\Catalogs\RoleTemplateCatalog;
 use App\Support\Catalogs\SubscriptionFeatureCatalog;
+use App\Support\Security\PasswordPolicy;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
-use App\Http\Controllers\Controller;
 
 class PlatformAdminController extends Controller
 {
@@ -60,13 +61,16 @@ class PlatformAdminController extends Controller
             $growth[] = ['date' => $date, 'label' => $month->format('M Y'), ...$totals];
         }
 
-        $revenue = FactorySubscription::with('plan')->get()->sum(function ($sub) {
-            if (!$sub->plan || !$sub->starts_at || !$sub->ends_at) {
-                return 0;
-            }
-            $months = max(1, (int) round($sub->starts_at->floatDiffInMonths($sub->ends_at)));
-            return $months * (float) $sub->plan->monthly_price;
-        });
+        $revenue = FactorySubscription::with('plan')
+            ->get()
+            ->sum(function ($sub) {
+                if (! $sub->plan || ! $sub->starts_at || ! $sub->ends_at) {
+                    return 0;
+                }
+                $months = max(1, (int) round($sub->starts_at->floatDiffInMonths($sub->ends_at)));
+
+                return $months * (float) $sub->plan->monthly_price;
+            });
 
         return response()->json([
             'statistics' => [
@@ -78,10 +82,10 @@ class PlatformAdminController extends Controller
             ],
             'growth' => $growth,
             'factories' => Factory::withCount('users')->latest()->limit(10)->get(),
-            'subscriptions' => FactorySubscription::with([
-                'factory:id,name,status',
-                'plan:id,name',
-            ])->latest()->limit(10)->get(),
+            'subscriptions' => FactorySubscription::with(['factory:id,name,status', 'plan:id,name'])
+                ->latest()
+                ->limit(10)
+                ->get(),
             'tickets' => SupportTicket::with('messages')->latest()->limit(10)->get(),
             'backups' => DatabaseBackup::latest()->limit(10)->get(),
             'activities' => AuditLog::with('user:id,name,email')->latest()->limit(15)->get(),
@@ -94,12 +98,9 @@ class PlatformAdminController extends Controller
         return response()->json(
             Factory::withCount('users')
                 ->with(['subscriptions' => fn ($q) => $q->latest()->limit(1)])
-                ->when(
-                    $request->string('search')->value(),
-                    fn ($q, $search) => $q->where('name', 'like', "%{$search}%")
-                )
+                ->when($request->string('search')->value(), fn ($q, $search) => $q->where('name', 'like', "%{$search}%"))
                 ->latest()
-                ->paginate(25)
+                ->paginate(25),
         );
     }
 
@@ -112,7 +113,7 @@ class PlatformAdminController extends Controller
             'industry_profiles.*' => ['string', Rule::in(IndustryProfileCatalog::keys())],
             'owner_name' => ['required', 'string', 'max:120'],
             'owner_email' => ['required', 'email', 'unique:users,email'],
-            'owner_password' => ['required', \App\Support\Security\PasswordPolicy::rule()],
+            'owner_password' => ['required', PasswordPolicy::rule()],
             'manager_name' => ['nullable', 'required_with:manager_email', 'string', 'max:120'],
             'manager_email' => [
                 'nullable',
@@ -124,7 +125,7 @@ class PlatformAdminController extends Controller
             'manager_password' => [
                 'nullable',
                 'required_with:manager_email',
-                \App\Support\Security\PasswordPolicy::rule(),
+                PasswordPolicy::rule(),
             ],
         ]);
 
@@ -134,7 +135,7 @@ class PlatformAdminController extends Controller
             $slug = $base;
             $counter = 2;
             while (Factory::where('slug', $slug)->exists()) {
-                $slug = $base.'-'.$counter++;
+                $slug = $base . '-' . $counter++;
             }
 
             $factory = Factory::create([
@@ -142,7 +143,11 @@ class PlatformAdminController extends Controller
                 'name' => $data['factory_name'],
                 'slug' => $slug,
                 'industry_type' => $data['industry_type'],
-                'industry_profiles' => array_slice(IndustryProfileCatalog::normalize($data['industry_type'], $data['industry_profiles'] ?? []), 1) ?: null,
+                'industry_profiles' => array_slice(
+                    IndustryProfileCatalog::normalize($data['industry_type'], $data['industry_profiles'] ?? []),
+                    1,
+                ) ?:
+                    null,
                 'email' => $data['owner_email'],
                 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'),
                 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali'),
@@ -190,14 +195,12 @@ class PlatformAdminController extends Controller
                     'joined_at' => now(),
                     'job_title' => 'Factory Manager',
                 ]);
-                $managerRole = Role::where('factory_id', $factory->id)
-                    ->where('slug', 'factory-manager')
-                    ->firstOrFail();
+                $managerRole = Role::where('factory_id', $factory->id)->where('slug', 'factory-manager')->firstOrFail();
                 $manager->roles()->attach($managerRole->id, ['factory_id' => $factory->id]);
                 EmployeeProfile::create([
                     'factory_id' => $factory->id,
                     'user_id' => $manager->id,
-                    'employee_number' => 'MGR-'.str_pad((string) $manager->id, 5, '0', STR_PAD_LEFT),
+                    'employee_number' => 'MGR-' . str_pad((string) $manager->id, 5, '0', STR_PAD_LEFT),
                     'job_title' => 'Factory Manager',
                     'employment_status' => 'active',
                     'hired_at' => now(),
@@ -217,11 +220,14 @@ class PlatformAdminController extends Controller
 
         AuditLog::record('platform.factory_registered', "Registered factory {$factory->name}", $factory);
 
-        return response()->json([
-            'factory' => $factory,
-            'owner' => $owner->only(['id', 'name', 'email']),
-            'manager' => $manager?->only(['id', 'name', 'email']),
-        ], 201);
+        return response()->json(
+            [
+                'factory' => $factory,
+                'owner' => $owner->only(['id', 'name', 'email']),
+                'manager' => $manager?->only(['id', 'name', 'email']),
+            ],
+            201,
+        );
     }
 
     public function updateFactory(Request $request, Factory $factory): JsonResponse
@@ -230,11 +236,7 @@ class PlatformAdminController extends Controller
             'status' => ['required', Rule::in(['pending', 'active', 'suspended', 'rejected'])],
         ]);
         $factory->update($data);
-        AuditLog::record(
-            'platform.factory_status',
-            "Factory {$factory->name} changed to {$data['status']}",
-            $factory
-        );
+        AuditLog::record('platform.factory_status', "Factory {$factory->name} changed to {$data['status']}", $factory);
 
         return response()->json($factory);
     }
@@ -247,7 +249,7 @@ class PlatformAdminController extends Controller
             'school.factory:id,name',
             'roles:id,name,slug',
         ]);
-        
+
         $tab = $request->string('tab')->value();
         if ($tab === 'factories') {
             $query->whereHas('factories')->whereNull('school_id');
@@ -261,8 +263,7 @@ class PlatformAdminController extends Controller
 
         if ($search = $request->string('search')->value()) {
             $query->where(function ($builder) use ($search) {
-                $builder->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $builder->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -271,14 +272,11 @@ class PlatformAdminController extends Controller
         }
 
         return response()->json([
-            'users' => $query->latest()->paginate(10)->withQueryString(), 
+            'users' => $query->latest()->paginate(10)->withQueryString(),
             'factories' => Factory::with(['roles:id,factory_id,name,slug'])
                 ->orderBy('name')
                 ->get(['id', 'name']),
-            'roles' => \App\Models\Role::select('name', 'slug')
-                ->distinct()
-                ->orderBy('name')
-                ->get(),
+            'roles' => Role::select('name', 'slug')->distinct()->orderBy('name')->get(),
         ]);
     }
 
@@ -288,22 +286,17 @@ class PlatformAdminController extends Controller
             'factory_id' => ['required', 'exists:factories,id'],
             'role_id' => [
                 'required',
-                Rule::exists('roles', 'id')->where(
-                    fn ($q) => $q->where('factory_id', $request->integer('factory_id'))
-                ),
+                Rule::exists('roles', 'id')->where(fn ($q) => $q->where('factory_id', $request->integer('factory_id'))),
             ],
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', \App\Support\Security\PasswordPolicy::rule()],
+            'password' => ['required', PasswordPolicy::rule()],
             'job_title' => ['nullable', 'string', 'max:120'],
             'employee_number' => [
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('employee_profiles')->where(
-                    'factory_id',
-                    $request->integer('factory_id')
-                ),
+                Rule::unique('employee_profiles')->where('factory_id', $request->integer('factory_id')),
             ],
         ]);
 
@@ -341,7 +334,9 @@ class PlatformAdminController extends Controller
 
     public function resetPassword(Request $request, User $user): JsonResponse
     {
-        $data = $request->validate(['password' => ['required', 'confirmed', \App\Support\Security\PasswordPolicy::rule()]]);
+        $data = $request->validate([
+            'password' => ['required', 'confirmed', PasswordPolicy::rule()],
+        ]);
         $user->update(['password' => $data['password']]);
         AuditLog::record('platform.password_reset', "Reset password for {$user->email}", $user);
 
@@ -353,26 +348,26 @@ class PlatformAdminController extends Controller
         abort_if($user->is($request->user()), 422, 'You cannot change your own platform access here.');
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:120'],
-            'email' => ['sometimes', 'email', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
-            'password' => ['nullable', \App\Support\Security\PasswordPolicy::rule()],
-            'is_active' => ['sometimes', 'boolean'], 
+            'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
+            'password' => ['nullable', PasswordPolicy::rule()],
+            'is_active' => ['sometimes', 'boolean'],
             'is_platform_admin' => ['sometimes', 'boolean'],
-            'role_slug' => ['sometimes', 'string']
+            'role_slug' => ['sometimes', 'string'],
         ]);
-        
+
         DB::transaction(function () use ($data, $user) {
-            $updateData = \Illuminate\Support\Arr::except($data, ['role_slug', 'password']);
-            if (!empty($data['password'])) {
+            $updateData = Arr::except($data, ['role_slug', 'password']);
+            if (! empty($data['password'])) {
                 $updateData['password'] = $data['password'];
             }
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 $user->update($updateData);
             }
-            
+
             if (isset($data['role_slug'])) {
                 $factoryId = $user->current_factory_id ?? $user->factories()->first()?->id;
                 if ($factoryId) {
-                    $role = \App\Models\Role::where('factory_id', $factoryId)
+                    $role = Role::where('factory_id', $factoryId)
                         ->where('slug', $data['role_slug'])
                         ->first();
                     if ($role) {
@@ -382,7 +377,7 @@ class PlatformAdminController extends Controller
                 }
             }
         });
-        
+
         AuditLog::record('platform.user_access', "Updated platform access for {$user->email}", $user);
 
         return response()->json($user);
@@ -393,6 +388,7 @@ class PlatformAdminController extends Controller
         abort_if($user->is(request()->user()), 422, 'You cannot delete yourself.');
         $user->delete();
         AuditLog::record('platform.user_deleted', "Deleted user {$user->email}");
+
         return response()->json(['message' => 'User deleted']);
     }
 
@@ -400,6 +396,7 @@ class PlatformAdminController extends Controller
     {
         $factory->forceDelete();
         AuditLog::record('platform.factory_deleted', "Permanently deleted factory {$factory->name}");
+
         return response()->json(['message' => 'Factory deleted']);
     }
 
@@ -410,7 +407,7 @@ class PlatformAdminController extends Controller
         $code = strtoupper($data['code']);
         $plan = SubscriptionPlan::updateOrCreate(
             ['code' => $code],
-            array_merge($data, ['code' => $code, 'is_active' => true])
+            array_merge($data, ['code' => $code, 'is_active' => true]),
         );
 
         return response()->json($plan, $plan->wasRecentlyCreated ? 201 : 200);
@@ -431,20 +428,32 @@ class PlatformAdminController extends Controller
         });
 
         $totalRevenue = $allSubscriptions->sum(function ($sub) {
-            if (!$sub->plan || !$sub->starts_at || !$sub->ends_at) {
+            if (! $sub->plan || ! $sub->starts_at || ! $sub->ends_at) {
                 return 0;
             }
             $months = max(1, (int) round($sub->starts_at->floatDiffInMonths($sub->ends_at)));
+
             return $months * (float) $sub->plan->monthly_price;
         });
 
-        $expiringSoon = $allSubscriptions->filter(function ($sub) {
-            return $sub->status === 'active' && $sub->ends_at && $sub->ends_at->isFuture() && $sub->ends_at->diffInDays(now()) <= 30;
-        })->count();
+        $expiringSoon = $allSubscriptions
+            ->filter(function ($sub) {
+                return $sub->status === 'active' &&
+                    $sub->ends_at &&
+                    $sub->ends_at->isFuture() &&
+                    $sub->ends_at->diffInDays(now()) <= 30;
+            })
+            ->count();
 
-        $graceCount = $allSubscriptions->filter(function ($sub) {
-            return $sub->status === 'grace_period' || ($sub->ends_at && $sub->ends_at->isPast() && $sub->grace_ends_at && $sub->grace_ends_at->isFuture());
-        })->count();
+        $graceCount = $allSubscriptions
+            ->filter(function ($sub) {
+                return $sub->status === 'grace_period' ||
+                    ($sub->ends_at &&
+                        $sub->ends_at->isPast() &&
+                        $sub->grace_ends_at &&
+                        $sub->grace_ends_at->isFuture());
+            })
+            ->count();
 
         $factoriesCount = Factory::count();
         $subscribedFactories = $activeSubscriptions->pluck('factory_id')->unique()->count();
@@ -467,7 +476,9 @@ class PlatformAdminController extends Controller
             'subscriptions' => FactorySubscription::with([
                 'factory:id,name,status',
                 'plan:id,name,code,features,monthly_price,currency_code',
-            ])->latest()->paginate(25),
+            ])
+                ->latest()
+                ->paginate(25),
         ]);
     }
 
@@ -476,11 +487,7 @@ class PlatformAdminController extends Controller
         $data = $this->validatePlan($request, $plan);
         $data['code'] = strtoupper($data['code']);
         $plan->update($data);
-        AuditLog::record(
-            'platform.subscription_plan_updated',
-            "Updated subscription plan {$plan->name}",
-            $plan
-        );
+        AuditLog::record('platform.subscription_plan_updated', "Updated subscription plan {$plan->name}", $plan);
 
         return response()->json($plan->fresh());
     }
@@ -495,14 +502,14 @@ class PlatformAdminController extends Controller
         ]);
 
         if (isset($data['ends_at'])) {
-            $endDate = \Carbon\Carbon::parse($data['ends_at'])->endOfDay();
+            $endDate = Carbon::parse($data['ends_at'])->endOfDay();
             $data['ends_at'] = $endDate;
             $data['grace_ends_at'] = $endDate;
             if ($endDate->isPast()) {
                 $data['status'] = 'expired';
                 $subscription->factory?->update(['status' => 'suspended']);
             } else {
-                if (!isset($data['status']) || $subscription->status === 'expired') {
+                if (! isset($data['status']) || $subscription->status === 'expired') {
                     $data['status'] = 'active';
                 }
                 $subscription->factory?->update(['status' => 'active']);
@@ -513,7 +520,7 @@ class PlatformAdminController extends Controller
         AuditLog::record(
             'platform.subscription_changed',
             "Changed subscription for {$subscription->factory->name}",
-            $subscription
+            $subscription,
         );
 
         return response()->json($subscription->fresh()->load('plan'));
@@ -542,10 +549,12 @@ class PlatformAdminController extends Controller
             'grace_ends_at' => ['nullable', 'date', 'after_or_equal:ends_at'],
             'auto_renew' => ['nullable', 'boolean'],
         ]);
-        $subscription = FactorySubscription::create($data + [
-            'factory_id' => $factory->id,
-            'status' => 'active',
-        ]);
+        $subscription = FactorySubscription::create(
+            $data + [
+                'factory_id' => $factory->id,
+                'status' => 'active',
+            ],
+        );
         $factory->update(['status' => 'active']);
 
         return response()->json($subscription->load('plan'), 201);
@@ -564,10 +573,12 @@ class PlatformAdminController extends Controller
             'audience' => ['required', Rule::in(['all', 'factory_owners', 'factory_users'])],
             'expires_at' => ['nullable', 'date', 'after:now'],
         ]);
-        $announcement = PlatformAnnouncement::create($data + [
-            'created_by' => $request->user()->id,
-            'published_at' => now(),
-        ]);
+        $announcement = PlatformAnnouncement::create(
+            $data + [
+                'created_by' => $request->user()->id,
+                'published_at' => now(),
+            ],
+        );
 
         return response()->json($announcement, 201);
     }
@@ -580,11 +591,9 @@ class PlatformAdminController extends Controller
     public function tickets(): JsonResponse
     {
         return response()->json(
-            SupportTicket::with([
-                'messages.user:id,name,is_platform_admin',
-                'user:id,name,email',
-                'factory:id,name',
-            ])->latest('updated_at')->paginate(25)
+            SupportTicket::with(['messages.user:id,name,is_platform_admin', 'user:id,name,email', 'factory:id,name'])
+                ->latest('updated_at')
+                ->paginate(25),
         );
     }
 
@@ -592,10 +601,7 @@ class PlatformAdminController extends Controller
     {
         $data = $request->validate([
             'message' => ['required', 'string', 'max:10000'],
-            'status' => [
-                'nullable',
-                Rule::in(['open', 'in_progress', 'waiting_customer', 'resolved', 'closed']),
-            ],
+            'status' => ['nullable', Rule::in(['open', 'in_progress', 'waiting_customer', 'resolved', 'closed'])],
         ]);
         $message = SupportMessage::create([
             'support_ticket_id' => $ticket->id,
@@ -635,10 +641,13 @@ class PlatformAdminController extends Controller
                 Rule::unique('users', 'email')->ignore($request->user()->id),
             ],
         ]);
-        $account = array_filter([
-            'name' => $data['account_name'] ?? null,
-            'email' => isset($data['account_email']) ? Str::lower($data['account_email']) : null,
-        ], fn ($value) => $value !== null);
+        $account = array_filter(
+            [
+                'name' => $data['account_name'] ?? null,
+                'email' => isset($data['account_email']) ? Str::lower($data['account_email']) : null,
+            ],
+            fn ($value) => $value !== null,
+        );
         unset($data['account_name'], $data['account_email']);
         if ($account) {
             $request->user()->update($account);
@@ -665,7 +674,7 @@ class PlatformAdminController extends Controller
                     'value' => is_bool($value) ? ($value ? '1' : '0') : $value,
                     'type' => $type,
                     'is_public' => in_array($key, $publicKeys, true),
-                ]
+                ],
             );
         }
         AuditLog::record('platform.settings_updated', 'Updated system settings');
@@ -675,10 +684,12 @@ class PlatformAdminController extends Controller
 
     public function getSettings(Request $request): JsonResponse
     {
-        return response()->json(SystemSetting::pluck('value', 'key')->merge([
-            'account_name' => $request->user()->name,
-            'account_email' => $request->user()->email,
-        ]));
+        return response()->json(
+            SystemSetting::pluck('value', 'key')->merge([
+                'account_name' => $request->user()->name,
+                'account_email' => $request->user()->email,
+            ]),
+        );
     }
 
     public function uploadLogo(Request $request): JsonResponse
@@ -688,16 +699,16 @@ class PlatformAdminController extends Controller
         ]);
         $directory = public_path('uploads/system');
         File::ensureDirectoryExists($directory);
-        foreach (File::glob($directory.DIRECTORY_SEPARATOR.'system-logo.*') as $oldLogo) {
+        foreach (File::glob($directory . DIRECTORY_SEPARATOR . 'system-logo.*') as $oldLogo) {
             File::delete($oldLogo);
         }
         $extension = strtolower($data['logo']->getClientOriginalExtension());
-        $filename = 'system-logo.'.$extension;
+        $filename = 'system-logo.' . $extension;
         $data['logo']->move($directory, $filename);
-        $logoUrl = '/uploads/system/'.$filename.'?v='.now()->timestamp;
+        $logoUrl = '/uploads/system/' . $filename . '?v=' . now()->timestamp;
         SystemSetting::updateOrCreate(
             ['key' => 'logo_url'],
-            ['value' => $logoUrl, 'type' => 'string', 'is_public' => true]
+            ['value' => $logoUrl, 'type' => 'string', 'is_public' => true],
         );
         AuditLog::record('platform.logo_updated', 'Updated the system logo');
 
@@ -714,8 +725,7 @@ class PlatformAdminController extends Controller
         $query = AuditLog::with(['user:id,name,email', 'factory:id,name']);
         if ($search = $request->string('search')->trim()->toString()) {
             $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                    ->orWhere('event', 'like', "%{$search}%");
+                $q->where('description', 'like', "%{$search}%")->orWhere('event', 'like', "%{$search}%");
             });
         }
         if ($factoryId = $request->integer('factory_id')) {

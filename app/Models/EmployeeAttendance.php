@@ -16,6 +16,13 @@ class EmployeeAttendance extends Model
         return ['date' => 'date'];
     }
 
-    public function user() { return $this->belongsTo(User::class); }
-    public function recorder() { return $this->belongsTo(User::class, 'recorded_by'); }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function recorder()
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
 }

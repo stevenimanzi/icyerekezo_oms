@@ -12,7 +12,12 @@ return new class extends Migration
             $table->string('invoice_path')->nullable()->after('due_date');
             $table->string('invoice_original_name')->nullable()->after('invoice_path');
             $table->timestamp('invoice_uploaded_at')->nullable()->after('invoice_original_name');
-            $table->foreignId('invoice_uploaded_by')->nullable()->after('invoice_uploaded_at')->constrained('users')->nullOnDelete();
+            $table
+                ->foreignId('invoice_uploaded_by')
+                ->nullable()
+                ->after('invoice_uploaded_at')
+                ->constrained('users')
+                ->nullOnDelete();
         });
     }
 

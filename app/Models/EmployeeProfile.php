@@ -6,7 +6,19 @@ use App\Models\Concerns\BelongsToFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['factory_id', 'user_id', 'department_id', 'workstation_id', 'employee_number', 'job_title', 'skills', 'employment_status', 'hired_at'])]
+#[
+    Fillable([
+        'factory_id',
+        'user_id',
+        'department_id',
+        'workstation_id',
+        'employee_number',
+        'job_title',
+        'skills',
+        'employment_status',
+        'hired_at',
+    ]),
+]
 class EmployeeProfile extends Model
 {
     use BelongsToFactory;

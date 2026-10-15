@@ -31,12 +31,15 @@ class WebPushChannel
             ],
         ]);
         foreach ($subscriptions as $subscription) {
-            $webPush->queueNotification(Subscription::create([
-                'endpoint' => $subscription->endpoint,
-                'publicKey' => $subscription->public_key,
-                'authToken' => $subscription->auth_token,
-                'contentEncoding' => $subscription->content_encoding,
-            ]), $payload);
+            $webPush->queueNotification(
+                Subscription::create([
+                    'endpoint' => $subscription->endpoint,
+                    'publicKey' => $subscription->public_key,
+                    'authToken' => $subscription->auth_token,
+                    'contentEncoding' => $subscription->content_encoding,
+                ]),
+                $payload,
+            );
         }
         foreach ($webPush->flush() as $report) {
             if ($report->isSubscriptionExpired()) {

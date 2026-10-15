@@ -2,19 +2,19 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Factory;
-use App\Models\WorkflowTemplate;
 use App\Models\WorkflowStage;
+use App\Models\WorkflowTemplate;
+use Illuminate\Database\Seeder;
 
 class NoguchiWorkflowSeeder extends Seeder
 {
     public function run(): void
     {
         $factory = Factory::where('name', 'Noguchi Holdings Ltd')->first();
-        if (!$factory) {
+        if (! $factory) {
             echo "Noguchi Holdings Ltd not found.\n";
+
             return;
         }
 
@@ -27,7 +27,9 @@ class NoguchiWorkflowSeeder extends Seeder
             'is_default' => true,
         ]);
 
-        WorkflowTemplate::where('factory_id', $factory->id)->where('id', '!=', $template->id)->update(['is_default' => false]);
+        WorkflowTemplate::where('factory_id', $factory->id)
+            ->where('id', '!=', $template->id)
+            ->update(['is_default' => false]);
 
         $stages = [
             ['name' => 'Cutting', 'code' => 'CUTTING'],
@@ -48,7 +50,7 @@ class NoguchiWorkflowSeeder extends Seeder
                 'approval_required' => false,
             ]);
         }
-        
+
         echo "Noguchi workflow seeded successfully.\n";
     }
 }

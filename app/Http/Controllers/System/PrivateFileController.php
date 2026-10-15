@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\System;
 
+use App\Http\Controllers\Controller;
 use App\Support\Security\PrivateFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use App\Http\Controllers\Controller;
 
 class PrivateFileController extends Controller
 {
@@ -16,6 +16,9 @@ class PrivateFileController extends Controller
         $disk = PrivateFile::diskFor($path);
         abort_unless($disk, 404);
 
-        return Storage::disk($disk)->response($path, null, ['Content-Security-Policy' => "default-src 'none'; sandbox", 'Cache-Control' => 'private, max-age=600']);
+        return Storage::disk($disk)->response($path, null, [
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+            'Cache-Control' => 'private, max-age=600',
+        ]);
     }
 }

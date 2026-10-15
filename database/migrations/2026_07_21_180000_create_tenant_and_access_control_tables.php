@@ -108,7 +108,14 @@ return new class extends Migration
         Schema::dropIfExists('roles');
         Schema::table('users', function (Blueprint $table) {
             $table->dropConstrainedForeignId('current_factory_id');
-            $table->dropColumn(['locale', 'timezone', 'last_login_at', 'last_login_ip', 'is_platform_admin', 'is_active']);
+            $table->dropColumn([
+                'locale',
+                'timezone',
+                'last_login_at',
+                'last_login_ip',
+                'is_platform_admin',
+                'is_active',
+            ]);
         });
         Schema::dropIfExists('factory_user');
         Schema::dropIfExists('factories');

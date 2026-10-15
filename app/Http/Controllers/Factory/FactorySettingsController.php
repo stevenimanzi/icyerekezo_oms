@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Factory;
 
+use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Support\Catalogs\IndustryDailyReportCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Http\Controllers\Controller;
 
 class FactorySettingsController extends Controller
 {
@@ -17,9 +17,24 @@ class FactorySettingsController extends Controller
         $factory = $request->user()->currentFactory;
 
         return response()->json([
-            'factory' => $factory->only(['id', 'name', 'industry_type', 'email', 'phone', 'country_code', 'currency_code', 'timezone', 'default_locale', 'status']),
+            'factory' => $factory->only([
+                'id',
+                'name',
+                'industry_type',
+                'email',
+                'phone',
+                'country_code',
+                'currency_code',
+                'timezone',
+                'default_locale',
+                'status',
+            ]),
             'settings' => $this->defaults($factory->settings ?? [], $factory->industry_type),
-            'report_departments' => Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
+            'report_departments' => Department::withoutGlobalScopes()
+                ->where('factory_id', $factory->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'code']),
         ]);
     }
 
@@ -32,7 +47,10 @@ class FactorySettingsController extends Controller
             'phone' => ['nullable', 'string', 'max:40'],
             'country_code' => ['required', 'string', 'size:2'],
             'currency_code' => ['required', Rule::in(['RWF', 'USD', 'EUR', 'KES', 'UGX'])],
-            'timezone' => ['required', Rule::in(['Africa/Kigali', 'Africa/Johannesburg', 'Africa/Nairobi', 'Africa/Kampala', 'UTC'])],
+            'timezone' => [
+                'required',
+                Rule::in(['Africa/Kigali', 'Africa/Johannesburg', 'Africa/Nairobi', 'Africa/Kampala', 'UTC']),
+            ],
             'default_locale' => ['required', Rule::in(['en', 'fr'])],
             'settings.address' => ['nullable', 'string', 'max:255'],
             'settings.city' => ['nullable', 'string', 'max:100'],
@@ -41,7 +59,10 @@ class FactorySettingsController extends Controller
             'settings.opening_time' => ['required', 'date_format:H:i'],
             'settings.closing_time' => ['required', 'date_format:H:i', 'after:settings.opening_time'],
             'settings.working_days' => ['required', 'array', 'min:1'],
-            'settings.working_days.*' => ['required', Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])],
+            'settings.working_days.*' => [
+                'required',
+                Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']),
+            ],
             'settings.production_order_prefix' => ['required', 'alpha_dash:ascii', 'max:12'],
             'settings.low_stock_alert_level' => ['required', 'integer', 'min:0', 'max:1000000'],
             'settings.require_production_approval' => ['required', 'boolean'],
@@ -69,20 +90,52 @@ class FactorySettingsController extends Controller
                 Rule::exists('departments', 'id')->where('factory_id', $factory->id)->where('is_active', true),
             ],
         ]);
-        $old = $factory->only(['name', 'email', 'phone', 'country_code', 'currency_code', 'timezone', 'default_locale', 'settings']);
+        $old = $factory->only([
+            'name',
+            'email',
+            'phone',
+            'country_code',
+            'currency_code',
+            'timezone',
+            'default_locale',
+            'settings',
+        ]);
         $settings = $this->defaults($data['settings'], $factory->industry_type);
         $factory->update([
             ...collect($data)->except('settings')->all(),
             'country_code' => strtoupper($data['country_code']),
             'settings' => $settings,
         ]);
-        AuditLog::record('factory.settings_updated', 'Updated factory profile and operating settings', $factory, $old, $factory->fresh()->only(array_keys($old)));
+        AuditLog::record(
+            'factory.settings_updated',
+            'Updated factory profile and operating settings',
+            $factory,
+            $old,
+            $factory->fresh()->only(array_keys($old)),
+        );
 
         return response()->json([
             'message' => 'Factory settings saved successfully.',
-            'factory' => $factory->fresh()->only(['id', 'name', 'industry_type', 'email', 'phone', 'country_code', 'currency_code', 'timezone', 'default_locale', 'status']),
+            'factory' => $factory
+                ->fresh()
+                ->only([
+                    'id',
+                    'name',
+                    'industry_type',
+                    'email',
+                    'phone',
+                    'country_code',
+                    'currency_code',
+                    'timezone',
+                    'default_locale',
+                    'status',
+                ]),
             'settings' => $settings,
-            'report_departments' => Department::withoutGlobalScopes()->where('factory_id', $factory->id)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
+            'report_departments' => Department::withoutGlobalScopes()
+                ->where('factory_id', $factory->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'code']),
         ]);
     }
 
@@ -120,13 +173,6 @@ class FactorySettingsController extends Controller
             ],
         ];
 
-        return [
-            ...$defaults,
-            ...$settings,
-            'report' => [
-                ...$defaults['report'],
-                ...($settings['report'] ?? []),
-            ],
-        ];
+        return [...$defaults, ...$settings, 'report' => [...$defaults['report'], ...$settings['report'] ?? []]];
     }
 }

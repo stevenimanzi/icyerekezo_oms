@@ -2,6 +2,7 @@
 
 namespace App\Models\Concerns;
 
+use App\Models\Factory;
 use Illuminate\Database\Eloquent\Builder;
 
 trait BelongsToFactory
@@ -20,6 +21,6 @@ trait BelongsToFactory
 
     public function factory()
     {
-        return $this->belongsTo(\App\Models\Factory::class);
+        return $this->belongsTo(Factory::class);
     }
 }

@@ -11,5 +11,8 @@ class School extends Model
 {
     use BelongsToFactory;
 
-    public function orders() { return $this->hasMany(SalesDocument::class); }
+    public function orders()
+    {
+        return $this->hasMany(SalesDocument::class);
+    }
 }

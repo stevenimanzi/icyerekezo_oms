@@ -16,6 +16,13 @@ class PpeAssignment extends Model
         return ['issued_at' => 'date', 'returned_at' => 'date'];
     }
 
-    public function user() { return $this->belongsTo(User::class); }
-    public function issuer() { return $this->belongsTo(User::class, 'issued_by'); }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function issuer()
+    {
+        return $this->belongsTo(User::class, 'issued_by');
+    }
 }

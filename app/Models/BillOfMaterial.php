@@ -6,7 +6,21 @@ use App\Models\Concerns\BelongsToFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['factory_id', 'item_id', 'name', 'version', 'output_quantity', 'expected_waste_percent', 'status', 'effective_from', 'effective_until', 'approved_by', 'approved_at'])]
+#[
+    Fillable([
+        'factory_id',
+        'item_id',
+        'name',
+        'version',
+        'output_quantity',
+        'expected_waste_percent',
+        'status',
+        'effective_from',
+        'effective_until',
+        'approved_by',
+        'approved_at',
+    ]),
+]
 class BillOfMaterial extends Model
 {
     use BelongsToFactory;

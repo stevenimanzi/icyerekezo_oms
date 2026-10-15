@@ -8,13 +8,32 @@ use Illuminate\Support\Facades\Notification;
 
 class FactoryNotifier
 {
-    public static function notify(int $factoryId, string $permission, string $title, string $body, ?string $url = null, string $category = 'general', ?int $excludeUserId = null): void
-    {
+    public static function notify(
+        int $factoryId,
+        string $permission,
+        string $title,
+        string $body,
+        ?string $url = null,
+        string $category = 'general',
+        ?int $excludeUserId = null,
+    ): void {
         $users = User::where('is_platform_admin', false)
-            ->whereHas('factories', fn ($query) => $query->where('factories.id', $factoryId)->where('factory_user.is_active', true))
+            ->whereHas(
+                'factories',
+                fn ($query) => $query->where('factories.id', $factoryId)->where('factory_user.is_active', true),
+            )
             ->where(function ($query) use ($factoryId, $permission) {
-                $query->whereHas('factories', fn ($sub) => $sub->where('factories.id', $factoryId)->where('factory_user.is_owner', true))
-                    ->orWhereHas('roles', fn ($sub) => $sub->where('role_user.factory_id', $factoryId)->whereHas('permissions', fn ($p) => $p->where('slug', $permission)));
+                $query
+                    ->whereHas(
+                        'factories',
+                        fn ($sub) => $sub->where('factories.id', $factoryId)->where('factory_user.is_owner', true),
+                    )
+                    ->orWhereHas(
+                        'roles',
+                        fn ($sub) => $sub
+                            ->where('role_user.factory_id', $factoryId)
+                            ->whereHas('permissions', fn ($p) => $p->where('slug', $permission)),
+                    );
             })
             ->when($excludeUserId, fn ($query) => $query->where('id', '!=', $excludeUserId))
             ->get();

@@ -6,7 +6,20 @@ use App\Models\Concerns\BelongsToFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['factory_id', 'item_id', 'supplier_id', 'batch_number', 'manufactured_at', 'expires_at', 'status', 'production_stage', 'qc_status', 'metadata'])]
+#[
+    Fillable([
+        'factory_id',
+        'item_id',
+        'supplier_id',
+        'batch_number',
+        'manufactured_at',
+        'expires_at',
+        'status',
+        'production_stage',
+        'qc_status',
+        'metadata',
+    ]),
+]
 class Batch extends Model
 {
     use BelongsToFactory;

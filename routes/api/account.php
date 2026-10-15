@@ -3,9 +3,9 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Factory\FactoryContextController;
 use App\Http\Controllers\System\NotificationController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\System\SearchController;
 use App\Http\Controllers\System\SupportController;
+use Illuminate\Support\Facades\Route;
 
 Route::controller(AuthController::class)
     ->prefix('auth')

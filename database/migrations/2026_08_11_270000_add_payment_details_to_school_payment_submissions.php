@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('school_payment_submissions', function (Blueprint $table) {
@@ -15,6 +16,9 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::table('school_payment_submissions', fn (Blueprint $table) => $table->dropColumn(['payment_reference', 'paid_at']));
+        Schema::table(
+            'school_payment_submissions',
+            fn (Blueprint $table) => $table->dropColumn(['payment_reference', 'paid_at']),
+        );
     }
 };

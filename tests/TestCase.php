@@ -15,7 +15,9 @@ abstract class TestCase extends BaseTestCase
         $database = $app['config']->get("database.connections.{$connection}.database");
 
         if ($connection !== 'sqlite' || $database !== ':memory:') {
-            throw new RuntimeException("Refusing to run tests against [{$connection}:{$database}]. Tests must use in-memory SQLite (see phpunit.xml).");
+            throw new RuntimeException(
+                "Refusing to run tests against [{$connection}:{$database}]. Tests must use in-memory SQLite (see phpunit.xml).",
+            );
         }
 
         return $app;

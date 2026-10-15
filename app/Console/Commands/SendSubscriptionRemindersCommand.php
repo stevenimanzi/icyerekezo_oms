@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Notification;
 class SendSubscriptionRemindersCommand extends Command
 {
     protected $signature = 'subscriptions:remind';
+
     protected $description = 'Send 5-day reminder emails for expiring factory subscriptions';
 
     public function handle()
@@ -23,8 +24,7 @@ class SendSubscriptionRemindersCommand extends Command
 
         foreach ($subscriptions as $subscription) {
             $owner = User::whereHas('factories', function ($query) use ($subscription) {
-                $query->where('factories.id', $subscription->factory_id)
-                      ->where('factory_user.is_owner', true);
+                $query->where('factories.id', $subscription->factory_id)->where('factory_user.is_owner', true);
             })->first();
 
             if ($owner) {

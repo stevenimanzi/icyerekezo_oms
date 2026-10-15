@@ -11,6 +11,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\InventoryLedger;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -21,8 +22,11 @@ class InventoryLedgerTest extends TestCase
     use RefreshDatabase;
 
     private Factory $factory;
+
     private Warehouse $warehouse;
+
     private Item $item;
+
     private InventoryLedger $ledger;
 
     protected function setUp(): void
@@ -33,12 +37,18 @@ class InventoryLedgerTest extends TestCase
         $this->actingAs($user);
         $this->warehouse = $this->warehouseFor($this->factory);
         $this->item = $this->itemFor($this->factory);
-        $this->ledger = new InventoryLedger();
+        $this->ledger = new InventoryLedger;
     }
 
     private function tenant(string $name): array
     {
-        $factory = Factory::create(['uuid' => (string) Str::uuid(), 'name' => $name, 'slug' => Str::slug($name).Str::random(4), 'industry_type' => 'steel_metals', 'status' => 'active']);
+        $factory = Factory::create([
+            'uuid' => (string) Str::uuid(),
+            'name' => $name,
+            'slug' => Str::slug($name) . Str::random(4),
+            'industry_type' => 'steel_metals',
+            'status' => 'active',
+        ]);
         $user = User::factory()->create(['current_factory_id' => $factory->id]);
         $factory->users()->attach($user->id, ['is_owner' => true, 'is_active' => true, 'joined_at' => now()]);
 
@@ -47,24 +57,56 @@ class InventoryLedgerTest extends TestCase
 
     private function warehouseFor(Factory $factory, bool $negative = false): Warehouse
     {
-        return Warehouse::withoutGlobalScopes()->create(['factory_id' => $factory->id, 'name' => 'Main', 'code' => 'M'.Str::random(3), 'type' => 'general', 'allows_negative_stock' => $negative]);
+        return Warehouse::withoutGlobalScopes()->create([
+            'factory_id' => $factory->id,
+            'name' => 'Main',
+            'code' => 'M' . Str::random(3),
+            'type' => 'general',
+            'allows_negative_stock' => $negative,
+        ]);
     }
 
     private function itemFor(Factory $factory, array $overrides = []): Item
     {
-        $unit = Unit::withoutGlobalScopes()->firstOrCreate(['factory_id' => $factory->id, 'symbol' => 'kg'], ['name' => 'Kilogram', 'dimension' => 'mass', 'precision' => 3]);
+        $unit = Unit::withoutGlobalScopes()->firstOrCreate(
+            ['factory_id' => $factory->id, 'symbol' => 'kg'],
+            ['name' => 'Kilogram', 'dimension' => 'mass', 'precision' => 3],
+        );
 
-        return Item::withoutGlobalScopes()->create(array_merge(['factory_id' => $factory->id, 'unit_id' => $unit->id, 'type' => 'raw_material', 'name' => 'Steel '.Str::random(4), 'sku' => 'SKU'.Str::random(5)], $overrides));
+        return Item::withoutGlobalScopes()->create(
+            array_merge(
+                [
+                    'factory_id' => $factory->id,
+                    'unit_id' => $unit->id,
+                    'type' => 'raw_material',
+                    'name' => 'Steel ' . Str::random(4),
+                    'sku' => 'SKU' . Str::random(5),
+                ],
+                $overrides,
+            ),
+        );
     }
 
     private function move(string $type, float $quantity, array $extra = []): StockTransaction
     {
-        return $this->ledger->post(array_merge(['item_id' => $this->item->id, 'warehouse_id' => $this->warehouse->id, 'type' => $type, 'quantity' => $quantity], $extra));
+        return $this->ledger->post(
+            array_merge(
+                [
+                    'item_id' => $this->item->id,
+                    'warehouse_id' => $this->warehouse->id,
+                    'type' => $type,
+                    'quantity' => $quantity,
+                ],
+                $extra,
+            ),
+        );
     }
 
     private function onHand(?Item $item = null): float
     {
-        return (float) StockBalance::withoutGlobalScopes()->where('item_id', ($item ?? $this->item)->id)->sum('quantity_on_hand');
+        return (float) StockBalance::withoutGlobalScopes()
+            ->where('item_id', ($item ?? $this->item)->id)
+            ->sum('quantity_on_hand');
     }
 
     public function test_receipts_and_issues_move_the_balance_and_record_a_running_total(): void
@@ -123,13 +165,23 @@ class InventoryLedgerTest extends TestCase
         $reversal = StockTransaction::withoutGlobalScopes()->where('reverses_transaction_id', $original->id)->first();
         $this->assertNotNull($reversal, 'The reversal must reference the transaction it cancels.');
         $this->assertSame('adjustment_out', $reversal->type);
-        $this->assertSame(3, StockTransaction::withoutGlobalScopes()->where('item_id', $this->item->id)->count(), 'Nothing is deleted or edited: original, reversal and corrected movement all remain.');
+        $this->assertSame(
+            3,
+            StockTransaction::withoutGlobalScopes()->where('item_id', $this->item->id)->count(),
+            'Nothing is deleted or edited: original, reversal and corrected movement all remain.',
+        );
     }
 
     public function test_expired_stock_cannot_be_issued(): void
     {
         $this->item->update(['batch_tracked' => true, 'expiry_tracked' => true]);
-        $batch = Batch::withoutGlobalScopes()->create(['factory_id' => $this->factory->id, 'item_id' => $this->item->id, 'batch_number' => 'L1', 'expires_at' => now()->subDay(), 'status' => 'available']);
+        $batch = Batch::withoutGlobalScopes()->create([
+            'factory_id' => $this->factory->id,
+            'item_id' => $this->item->id,
+            'batch_number' => 'L1',
+            'expires_at' => now()->subDay(),
+            'status' => 'available',
+        ]);
         $this->move('receipt', 10, ['batch_id' => $batch->id]);
 
         try {
@@ -153,8 +205,13 @@ class InventoryLedgerTest extends TestCase
         $foreignItem = $this->itemFor($otherFactory);
 
         $this->assertThrows(
-            fn () => $this->ledger->post(['item_id' => $foreignItem->id, 'warehouse_id' => $this->warehouse->id, 'type' => 'receipt', 'quantity' => 5]),
-            \Illuminate\Database\Eloquent\ModelNotFoundException::class,
+            fn () => $this->ledger->post([
+                'item_id' => $foreignItem->id,
+                'warehouse_id' => $this->warehouse->id,
+                'type' => 'receipt',
+                'quantity' => 5,
+            ]),
+            ModelNotFoundException::class,
         );
         $this->assertSame(0.0, $this->onHand($foreignItem));
     }

@@ -9,7 +9,11 @@ Route::controller(HrController::class)
         Route::get('/overview', 'overview')->middleware('permission:hr.view');
         Route::post('/attendance', 'storeAttendance')->middleware('permission:hr.manage_attendance');
         Route::post('/leave-requests', 'storeLeaveRequest')->middleware('permission:hr.manage_leave');
-        Route::post('/leave-requests/{leaveRequest}/decision', 'decideLeaveRequest')->middleware('permission:hr.manage_leave');
+        Route::post('/leave-requests/{leaveRequest}/decision', 'decideLeaveRequest')->middleware(
+            'permission:hr.manage_leave',
+        );
         Route::post('/trainings', 'storeTraining')->middleware('permission:hr.manage_training');
-        Route::patch('/training-participants/{participant}', 'updateTrainingParticipant')->middleware('permission:hr.manage_training');
+        Route::patch('/training-participants/{participant}', 'updateTrainingParticipant')->middleware(
+            'permission:hr.manage_training',
+        );
     });

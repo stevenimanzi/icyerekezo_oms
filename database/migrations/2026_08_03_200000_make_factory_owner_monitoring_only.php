@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         $roleIds = DB::table('roles')->where('slug', 'factory-owner')->pluck('id');
-        $permissionIds = DB::table('permissions')->whereIn('slug', RoleTemplateCatalog::FACTORY_OWNER_PERMISSIONS)->pluck('id');
+        $permissionIds = DB::table('permissions')
+            ->whereIn('slug', RoleTemplateCatalog::FACTORY_OWNER_PERMISSIONS)
+            ->pluck('id');
         DB::table('permission_role')->whereIn('role_id', $roleIds)->delete();
         foreach ($roleIds as $roleId) {
             foreach ($permissionIds as $permissionId) {

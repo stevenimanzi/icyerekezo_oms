@@ -7,7 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['factory_id', 'user_id', 'ticket_number', 'subject', 'category', 'priority', 'status', 'assigned_to', 'resolved_at'])]
+#[
+    Fillable([
+        'factory_id',
+        'user_id',
+        'ticket_number',
+        'subject',
+        'category',
+        'priority',
+        'status',
+        'assigned_to',
+        'resolved_at',
+    ]),
+]
 class SupportTicket extends Model
 {
     protected function casts(): array

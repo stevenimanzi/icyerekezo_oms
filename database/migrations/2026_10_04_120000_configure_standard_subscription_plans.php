@@ -20,8 +20,14 @@ return new class extends Migration
                 'currency_code' => 'RWF',
                 'features' => $starterFeatures,
                 'is_active' => true,
-                'limits' => ['users' => 10, 'branches' => 1, 'warehouses' => 2, 'monthly_orders' => 500, 'storage_gb' => 5],
-            ]
+                'limits' => [
+                    'users' => 10,
+                    'branches' => 1,
+                    'warehouses' => 2,
+                    'monthly_orders' => 500,
+                    'storage_gb' => 5,
+                ],
+            ],
         );
 
         SubscriptionPlan::updateOrCreate(
@@ -32,8 +38,14 @@ return new class extends Migration
                 'currency_code' => 'RWF',
                 'features' => $professionalFeatures,
                 'is_active' => true,
-                'limits' => ['users' => 50, 'branches' => 5, 'warehouses' => 10, 'monthly_orders' => 5000, 'storage_gb' => 25],
-            ]
+                'limits' => [
+                    'users' => 50,
+                    'branches' => 5,
+                    'warehouses' => 10,
+                    'monthly_orders' => 5000,
+                    'storage_gb' => 25,
+                ],
+            ],
         );
 
         $enterprise = SubscriptionPlan::where('code', 'UNLIMITED-ENT')->orWhere('code', 'ENTERPRISE')->first();
@@ -53,12 +65,16 @@ return new class extends Migration
                 'currency_code' => 'RWF',
                 'features' => $enterpriseFeatures,
                 'is_active' => true,
-                'limits' => ['users' => 250, 'branches' => 25, 'warehouses' => 50, 'monthly_orders' => 50000, 'storage_gb' => 100],
+                'limits' => [
+                    'users' => 250,
+                    'branches' => 25,
+                    'warehouses' => 50,
+                    'monthly_orders' => 50000,
+                    'storage_gb' => 100,
+                ],
             ]);
         }
     }
 
-    public function down(): void
-    {
-    }
+    public function down(): void {}
 };

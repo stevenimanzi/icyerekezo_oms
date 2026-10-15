@@ -3,6 +3,7 @@
 use App\Jobs\CreateDatabaseBackup;
 use App\Models\DatabaseBackup;
 use App\Models\FactorySubscription;
+use App\Models\User;
 use App\Notifications\SubscriptionExpiringSoon;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -22,9 +23,10 @@ Artisan::command('subscriptions:enforce', function () {
                 return;
             }
 
-            $graceIsValid = $subscription->grace_ends_at
-                && $subscription->grace_ends_at->diffInDays($subscription->ends_at, false) <= 30
-                && $subscription->grace_ends_at->isFuture();
+            $graceIsValid =
+                $subscription->grace_ends_at &&
+                $subscription->grace_ends_at->diffInDays($subscription->ends_at, false) <= 30 &&
+                $subscription->grace_ends_at->isFuture();
 
             if (! $graceIsValid) {
                 $subscription->update(['status' => 'expired', 'suspended_at' => now()]);
@@ -47,9 +49,8 @@ Artisan::command('subscriptions:notify-expiring', function () {
         ->where('ends_at', '>', now())
         ->get()
         ->each(function (FactorySubscription $subscription) {
-            $owners = \App\Models\User::whereHas('factories', function ($query) use ($subscription) {
-                $query->where('factories.id', $subscription->factory_id)
-                    ->where('factory_user.is_owner', true);
+            $owners = User::whereHas('factories', function ($query) use ($subscription) {
+                $query->where('factories.id', $subscription->factory_id)->where('factory_user.is_owner', true);
             })->get();
 
             if ($owners->isNotEmpty()) {

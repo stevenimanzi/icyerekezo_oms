@@ -13,13 +13,12 @@ return new class extends Migration
             return;
         }
 
-        DB::table('roles')
-            ->where('slug', 'logistics-officer')
-            ->pluck('id')
-            ->each(fn ($roleId) => DB::table('permission_role')->insertOrIgnore([
+        DB::table('roles')->where('slug', 'logistics-officer')->pluck('id')->each(
+            fn ($roleId) => DB::table('permission_role')->insertOrIgnore([
                 'role_id' => $roleId,
                 'permission_id' => $permissionId,
-            ]));
+            ]),
+        );
     }
 
     public function down(): void

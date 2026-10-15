@@ -8,19 +8,50 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['factory_id', 'category_id', 'unit_id', 'type', 'name', 'sku', 'barcode', 'description', 'standard_cost', 'tax_rate', 'minimum_stock', 'reorder_level', 'batch_tracked', 'serial_tracked', 'expiry_tracked', 'storage_conditions', 'is_active'])]
+#[
+    Fillable([
+        'factory_id',
+        'category_id',
+        'unit_id',
+        'type',
+        'name',
+        'sku',
+        'barcode',
+        'description',
+        'standard_cost',
+        'tax_rate',
+        'minimum_stock',
+        'reorder_level',
+        'batch_tracked',
+        'serial_tracked',
+        'expiry_tracked',
+        'storage_conditions',
+        'is_active',
+    ]),
+]
 class Item extends Model
 {
     use BelongsToFactory, SoftDeletes;
 
     private const SKU_PREFIXES = [
-        'raw_material' => 'RAW', 'semi_finished' => 'WIP', 'finished_good' => 'FIN', 'packaging' => 'PKG',
-        'spare_part' => 'SPR', 'waste' => 'WST', 'by_product' => 'BYP', 'service' => 'SRV',
+        'raw_material' => 'RAW',
+        'semi_finished' => 'WIP',
+        'finished_good' => 'FIN',
+        'packaging' => 'PKG',
+        'spare_part' => 'SPR',
+        'waste' => 'WST',
+        'by_product' => 'BYP',
+        'service' => 'SRV',
     ];
 
     protected function casts(): array
     {
-        return ['batch_tracked' => 'boolean', 'serial_tracked' => 'boolean', 'expiry_tracked' => 'boolean', 'is_active' => 'boolean'];
+        return [
+            'batch_tracked' => 'boolean',
+            'serial_tracked' => 'boolean',
+            'expiry_tracked' => 'boolean',
+            'is_active' => 'boolean',
+        ];
     }
 
     public function unit()
@@ -32,7 +63,7 @@ class Item extends Model
     {
         $prefix = self::SKU_PREFIXES[$type] ?? 'STK';
         do {
-            $sku = $prefix.'-'.Str::upper(Str::random(8));
+            $sku = $prefix . '-' . Str::upper(Str::random(8));
         } while (self::withoutGlobalScopes()->where('factory_id', $factoryId)->where('sku', $sku)->exists());
 
         return $sku;
@@ -43,12 +74,21 @@ class Item extends Model
         return self::withoutGlobalScopes()->firstOrCreate(
             ['factory_id' => $factoryId, 'name' => $name, 'type' => 'finished_good'],
             [
-                'unit_id' => Unit::withoutGlobalScopes()->where('factory_id', $factoryId)
+                'unit_id' => Unit::withoutGlobalScopes()
+                    ->where('factory_id', $factoryId)
                     ->where(fn ($query) => $query->where('dimension', 'count')->orWhere('symbol', 'pcs'))
-                    ->value('id') ?? Unit::withoutGlobalScopes()->where('factory_id', $factoryId)->value('id') ?? Unit::withoutGlobalScopes()->create(['factory_id' => $factoryId, 'name' => 'Pieces', 'symbol' => 'pcs', 'dimension' => 'count', 'precision' => 0])->id,
+                    ->value('id') ??
+                    (Unit::withoutGlobalScopes()->where('factory_id', $factoryId)->value('id') ??
+                        Unit::withoutGlobalScopes()->create([
+                            'factory_id' => $factoryId,
+                            'name' => 'Pieces',
+                            'symbol' => 'pcs',
+                            'dimension' => 'count',
+                            'precision' => 0,
+                        ])->id),
                 'sku' => self::generateSku($factoryId, 'finished_good'),
                 'is_active' => true,
-            ]
+            ],
         );
     }
 }

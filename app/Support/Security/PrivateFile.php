@@ -48,7 +48,12 @@ final class PrivateFile
 
     public static function isAllowed(string $path): bool
     {
-        if (str_contains($path, '..') || str_contains($path, "\0") || str_contains($path, chr(92)) ||str_starts_with($path, '/')) {
+        if (
+            str_contains($path, '..') ||
+            str_contains($path, "\0") ||
+            str_contains($path, chr(92)) ||
+            str_starts_with($path, '/')
+        ) {
             return false;
         }
 

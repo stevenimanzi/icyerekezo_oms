@@ -15,7 +15,9 @@ Route::controller(InventoryController::class)
         Route::post('/finished-items', 'storeFinishedItem')->middleware('permission:inventory.issue');
         Route::patch('/items/{item}', 'updateItem')->middleware('permission:inventory.receive');
         Route::post('/transactions', 'postTransaction')->middleware('permission:inventory.adjust|inventory.issue');
-        Route::patch('/transactions/{transaction}/correct', 'correctTransaction')->middleware('permission:inventory.adjust|inventory.issue');
+        Route::patch('/transactions/{transaction}/correct', 'correctTransaction')->middleware(
+            'permission:inventory.adjust|inventory.issue',
+        );
         Route::post('/transfers', 'transfer')->middleware('permission:inventory.adjust');
         Route::post('/stock-counts', 'stockCount')->middleware('permission:inventory.adjust');
         Route::patch('/items/{item}/status', 'updateItemStatus')->middleware('permission:inventory.adjust');

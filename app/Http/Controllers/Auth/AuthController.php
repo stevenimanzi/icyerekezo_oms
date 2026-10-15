@@ -2,33 +2,36 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Controller;
 use App\Mail\OtpVerificationMail;
 use App\Models\AuditLog;
 use App\Models\Factory;
-use App\Models\Permission;
+use App\Models\FactorySubscription;
 use App\Models\PlatformAnnouncement;
 use App\Models\Role;
+use App\Models\SalesDocument;
 use App\Models\School;
-use App\Services\RwandaLocationService;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\FactoryProfileApplier;
+use App\Services\RwandaLocationService;
 use App\Support\Catalogs\IndustryProfileCatalog;
 use App\Support\Catalogs\PermissionCatalog;
 use App\Support\Catalogs\RoleTemplateCatalog;
+use App\Support\Security\PasswordPolicy;
+use App\Support\Tenancy\OperationalScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password as PasswordRule;
-use App\Http\Controllers\Controller;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -39,33 +42,58 @@ class AuthController extends Controller
     public function schoolRegistrationOptions(): JsonResponse
     {
         $factory = Factory::get()->first(fn (Factory $factory) => $factory->hasNoguchiSchoolOrders());
-        return response()->json(['factory' => $factory?->only(['id', 'name']), 'locations' => app(RwandaLocationService::class)->northernDistrictsAndSectors()]);
+
+        return response()->json([
+            'factory' => $factory?->only(['id', 'name']),
+            'locations' => app(RwandaLocationService::class)->northernDistrictsAndSectors(),
+        ]);
     }
 
     public function registerSchool(Request $request): JsonResponse
     {
-        abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'School registration is currently closed. Please contact support.');
+        abort_unless(
+            SystemSetting::valueFor('registration_enabled', true),
+            403,
+            'School registration is currently closed. Please contact support.',
+        );
         $this->reclaimUnverifiedEmail($request->input('email', ''));
         $locations = app(RwandaLocationService::class)->northernDistrictsAndSectors();
-        $passwordRule = \App\Support\Security\PasswordPolicy::rule();
+        $passwordRule = PasswordPolicy::rule();
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'], 'school_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email'], 'phone' => ['required', 'string', 'max:40'],
-            'district' => ['required', Rule::in(array_keys($locations))], 'sector' => ['required', Rule::in($locations[$request->input('district')] ?? [])],
-            'password' => ['required', 'confirmed', $passwordRule], 'locale' => ['nullable', 'in:en,fr'],
+            'name' => ['required', 'string', 'max:120'],
+            'school_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email'],
+            'phone' => ['required', 'string', 'max:40'],
+            'district' => ['required', Rule::in(array_keys($locations))],
+            'sector' => ['required', Rule::in($locations[$request->input('district')] ?? [])],
+            'password' => ['required', 'confirmed', $passwordRule],
+            'locale' => ['nullable', 'in:en,fr'],
         ]);
         $factory = Factory::get()->first(fn (Factory $candidate) => $candidate->hasNoguchiSchoolOrders());
-        abort_unless($factory, 422, 'The school ordering factory is not available yet. Please contact NOGUCHI support.');
+        abort_unless(
+            $factory,
+            422,
+            'The school ordering factory is not available yet. Please contact NOGUCHI support.',
+        );
 
         $user = DB::transaction(function () use ($data, $factory) {
             PermissionCatalog::seed();
             RoleTemplateCatalog::createFor($factory);
 
             $school = School::firstOrCreate(
-                ['factory_id' => $factory->id, 'name' => $data['school_name'], 'district' => $data['district'], 'sector' => $data['sector']],
-                ['contact_name' => $data['name'], 'phone' => $data['phone'], 'email' => Str::lower($data['email'])]
+                [
+                    'factory_id' => $factory->id,
+                    'name' => $data['school_name'],
+                    'district' => $data['district'],
+                    'sector' => $data['sector'],
+                ],
+                ['contact_name' => $data['name'], 'phone' => $data['phone'], 'email' => Str::lower($data['email'])],
             );
-            $school->update(['contact_name' => $data['name'], 'phone' => $data['phone'], 'email' => Str::lower($data['email'])]);
+            $school->update([
+                'contact_name' => $data['name'],
+                'phone' => $data['phone'],
+                'email' => Str::lower($data['email']),
+            ]);
 
             $user = User::create([
                 'current_factory_id' => $factory->id,
@@ -75,7 +103,14 @@ class AuthController extends Controller
                 'password' => $data['password'],
                 'locale' => $data['locale'] ?? 'en',
             ]);
-            $factory->users()->attach($user->id, ['is_owner' => false, 'is_active' => true, 'joined_at' => now(), 'job_title' => 'School Administrator']);
+            $factory
+                ->users()
+                ->attach($user->id, [
+                    'is_owner' => false,
+                    'is_active' => true,
+                    'joined_at' => now(),
+                    'job_title' => 'School Administrator',
+                ]);
             $role = Role::where('factory_id', $factory->id)->where('slug', 'school-user')->firstOrFail();
             $user->roles()->attach($role->id, ['factory_id' => $factory->id]);
 
@@ -89,9 +124,13 @@ class AuthController extends Controller
 
     public function register(Request $request): JsonResponse
     {
-        abort_unless(SystemSetting::valueFor('registration_enabled', true), 403, 'New factory registration is currently closed. Please contact support.');
+        abort_unless(
+            SystemSetting::valueFor('registration_enabled', true),
+            403,
+            'New factory registration is currently closed. Please contact support.',
+        );
         $this->reclaimUnverifiedEmail($request->input('email', ''));
-        $passwordRule = \App\Support\Security\PasswordPolicy::rule();
+        $passwordRule = PasswordPolicy::rule();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -126,12 +165,30 @@ class AuthController extends Controller
                 'password' => $data['password'],
                 'locale' => $data['locale'] ?? SystemSetting::valueFor('default_locale', 'en'),
             ]);
-            $factory->users()->attach($user->id, ['is_owner' => true, 'is_active' => true, 'joined_at' => now(), 'job_title' => 'Factory owner']);
-            $role = Role::create(['factory_id' => $factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner', 'dashboard_key' => 'executive', 'is_system' => true]);
+            $factory
+                ->users()
+                ->attach($user->id, [
+                    'is_owner' => true,
+                    'is_active' => true,
+                    'joined_at' => now(),
+                    'job_title' => 'Factory owner',
+                ]);
+            $role = Role::create([
+                'factory_id' => $factory->id,
+                'name' => 'Factory Owner',
+                'slug' => 'factory-owner',
+                'dashboard_key' => 'executive',
+                'is_system' => true,
+            ]);
             $role->permissions()->sync(RoleTemplateCatalog::ownerPermissionIds());
             $user->roles()->attach($role->id, ['factory_id' => $factory->id]);
             RoleTemplateCatalog::createFor($factory);
-            Warehouse::create(['factory_id' => $factory->id, 'name' => 'Main Warehouse', 'code' => 'MAIN', 'type' => 'general']);
+            Warehouse::create([
+                'factory_id' => $factory->id,
+                'name' => 'Main Warehouse',
+                'code' => 'MAIN',
+                'type' => 'general',
+            ]);
             app(FactoryProfileApplier::class)->apply($factory);
 
             return [$user, $factory];
@@ -139,7 +196,13 @@ class AuthController extends Controller
 
         AuditLog::record('auth.registered', 'Factory and owner account created', $factory);
 
-        return response()->json(['message' => 'Account created. Your factory is pending administrator approval.', 'requires_approval' => true], 201);
+        return response()->json(
+            [
+                'message' => 'Account created. Your factory is pending administrator approval.',
+                'requires_approval' => true,
+            ],
+            201,
+        );
     }
 
     public function verifyOtp(Request $request): JsonResponse
@@ -164,7 +227,12 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['code' => 'That code is incorrect.']);
         }
 
-        $user->update(['email_verified_at' => now(), 'otp_code' => null, 'otp_expires_at' => null, 'otp_attempts' => 0]);
+        $user->update([
+            'email_verified_at' => now(),
+            'otp_code' => null,
+            'otp_expires_at' => null,
+            'otp_attempts' => 0,
+        ]);
         Auth::login($user);
         $request->session()->regenerate();
         AuditLog::record('auth.email_verified', 'Verified account email with a one-time code', $user);
@@ -176,9 +244,9 @@ class AuthController extends Controller
     {
         $data = $request->validate(['email' => ['required', 'email']]);
         $user = User::where('email', Str::lower(trim($data['email'])))->whereNull('email_verified_at')->first();
-        $cooldownKey = 'otp-resend:'.sha1(Str::lower($data['email']));
-        if ($user && ! \Illuminate\Support\Facades\Cache::has($cooldownKey)) {
-            \Illuminate\Support\Facades\Cache::put($cooldownKey, true, now()->addSeconds(60));
+        $cooldownKey = 'otp-resend:' . sha1(Str::lower($data['email']));
+        if ($user && ! Cache::has($cooldownKey)) {
+            Cache::put($cooldownKey, true, now()->addSeconds(60));
             $this->issueOtp($user);
         }
 
@@ -187,13 +255,18 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
-        $credentials = $request->validate(['email' => ['required', 'string'], 'password' => ['required', 'string'], 'remember' => ['nullable', 'boolean']]);
-        
+        $credentials = $request->validate([
+            'email' => ['required', 'string'],
+            'password' => ['required', 'string'],
+            'remember' => ['nullable', 'boolean'],
+        ]);
+
         $loginField = Str::lower($credentials['email']);
-        $user = User::where('email', $loginField)
-            ->orWhere('username', $loginField)
-            ->first();
-        $passwordOk = Hash::check($credentials['password'], $user?->password ?? '$2y$12$mbYr.q3T92SaLRVbsmQRe.Dy0wvXXDY8d./E1GMS.EKsbEzhiJMCa');
+        $user = User::where('email', $loginField)->orWhere('username', $loginField)->first();
+        $passwordOk = Hash::check(
+            $credentials['password'],
+            $user?->password ?? '$2y$12$mbYr.q3T92SaLRVbsmQRe.Dy0wvXXDY8d./E1GMS.EKsbEzhiJMCa',
+        );
         if (! $user || ! $user->is_active || ! $passwordOk) {
             return response()->json(['message' => 'The provided credentials are incorrect.'], 422);
         }
@@ -201,18 +274,37 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your factory workspace is pending administrator approval.'], 403);
         }
         if (! $user->is_platform_admin && SystemSetting::valueFor('maintenance_enabled', false)) {
-            return response()->json(['message' => SystemSetting::valueFor('maintenance_message', 'The platform is undergoing scheduled maintenance.')], 503);
+            return response()->json(
+                [
+                    'message' => SystemSetting::valueFor(
+                        'maintenance_message',
+                        'The platform is undergoing scheduled maintenance.',
+                    ),
+                ],
+                503,
+            );
         }
 
         $effectiveFactoryId = $user->current_factory_id;
-        if (!$effectiveFactoryId && $user->school_id) {
-            $effectiveFactoryId = $user->school?->factory_id ?? \App\Models\School::find($user->school_id)?->factory_id;
+        if (! $effectiveFactoryId && $user->school_id) {
+            $effectiveFactoryId = $user->school?->factory_id ?? School::find($user->school_id)?->factory_id;
         }
 
         if ($effectiveFactoryId && ! $user->is_platform_admin) {
-            $subscription = \App\Models\FactorySubscription::where('factory_id', $effectiveFactoryId)->latest('ends_at')->first();
-            if (!$subscription || ($subscription->ends_at->isPast() && (! $subscription->grace_ends_at || $subscription->grace_ends_at->isPast()))) {
-                return response()->json(['message' => 'The subscription for your factory has expired. Please contact your administrator or renew the plan.'], 403);
+            $subscription = FactorySubscription::where('factory_id', $effectiveFactoryId)
+                ->latest('ends_at')
+                ->first();
+            if (
+                ! $subscription ||
+                ($subscription->ends_at->isPast() &&
+                    (! $subscription->grace_ends_at || $subscription->grace_ends_at->isPast()))
+            ) {
+                return response()->json(
+                    [
+                        'message' => 'The subscription for your factory has expired. Please contact your administrator or renew the plan.',
+                    ],
+                    403,
+                );
             }
         }
 
@@ -247,7 +339,7 @@ class AuthController extends Controller
         $user = $request->user();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email,'.$user->id],
+            'email' => ['required', 'email:rfc', 'max:190', 'unique:users,email,' . $user->id],
             'locale' => ['required', 'in:en,fr'],
             'timezone' => ['required', 'timezone:all'],
         ]);
@@ -269,7 +361,7 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request): JsonResponse
     {
-        $passwordRule = \App\Support\Security\PasswordPolicy::rule();
+        $passwordRule = PasswordPolicy::rule();
         $data = $request->validate([
             'current_password' => ['required', 'string'],
             'password' => ['required', 'confirmed', $passwordRule],
@@ -293,9 +385,7 @@ class AuthController extends Controller
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        Password::sendResetLink(
-            ['email' => Str::lower(trim($request->input('email')))]
-        );
+        Password::sendResetLink(['email' => Str::lower(trim($request->input('email')))]);
 
         return response()->json([
             'message' => "If an account exists for that email, we've sent a reset link from support@icyerekezooms.com. It can take a few minutes to arrive — check your spam or junk folder if you don't see it.",
@@ -304,28 +394,27 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request): JsonResponse
     {
-        $passwordRule = \App\Support\Security\PasswordPolicy::rule();
+        $passwordRule = PasswordPolicy::rule();
 
         $data = $request->validate([
-            'token'    => ['required', 'string'],
-            'email'    => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', $passwordRule],
         ]);
 
         $status = Password::reset(
             [
-                'email'                 => Str::lower(trim($data['email'])),
-                'password'              => $data['password'],
+                'email' => Str::lower(trim($data['email'])),
+                'password' => $data['password'],
                 'password_confirmation' => $data['password_confirmation'] ?? $data['password'],
-                'token'                 => $data['token'],
+                'token' => $data['token'],
             ],
-            function (User $user, string $password) use ($request) {
-                $user->forceFill(['password' => Hash::make($password)])
-                     ->setRememberToken(Str::random(60));
+            function (User $user, string $password) {
+                $user->forceFill(['password' => Hash::make($password)])->setRememberToken(Str::random(60));
                 $user->save();
 
                 AuditLog::record('account.password_reset', 'Password reset via email link', $user);
-            }
+            },
         );
 
         if ($status !== Password::PASSWORD_RESET) {
@@ -382,39 +471,93 @@ class AuthController extends Controller
         $user->loadMissing('currentFactory:id,name,industry_type,timezone');
 
         return [
-            'id' => $user->id, 'name' => $user->name, 'email' => $user->email,
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
             'locale' => $user->locale ?: 'en',
-            'timezone' => $user->timezone ?: $user->currentFactory?->timezone ?: SystemSetting::valueFor('timezone', 'Africa/Kigali'),
-            'last_login_at' => $user->last_login_at, 'last_login_ip' => $user->last_login_ip,
-            'current_ip' => $request->ip(), 'created_at' => $user->created_at,
+            'timezone' => $user->timezone ?:
+                $user->currentFactory?->timezone ?:
+                SystemSetting::valueFor('timezone', 'Africa/Kigali'),
+            'last_login_at' => $user->last_login_at,
+            'last_login_ip' => $user->last_login_ip,
+            'current_ip' => $request->ip(),
+            'created_at' => $user->created_at,
             'factory' => $user->currentFactory,
         ];
     }
 
     private function userPayload(User $user): array
     {
-        $user->load('currentFactory:id,uuid,name,slug,industry_type,currency_code,timezone,default_locale', 'factories:id,uuid,name,slug', 'school:id,name,district,sector,contact_name,phone,email', 'employeeProfile.department:id,name,code', 'employeeProfile.workstation:id,name,code,type');
-        $roles = $user->roles()->wherePivot('factory_id', $user->current_factory_id)->with('permissions:id,slug')->get();
-        $permissions = $user->is_platform_admin ? collect(['*']) : $roles->pluck('permissions')->flatten()->pluck('slug')->unique()->values();
-        $subscription = $user->current_factory_id ? \App\Models\FactorySubscription::with('plan:id,name,code,features')->where('factory_id', $user->current_factory_id)->latest('ends_at')->first() : null;
+        $user->load(
+            'currentFactory:id,uuid,name,slug,industry_type,currency_code,timezone,default_locale',
+            'factories:id,uuid,name,slug',
+            'school:id,name,district,sector,contact_name,phone,email',
+            'employeeProfile.department:id,name,code',
+            'employeeProfile.workstation:id,name,code,type',
+        );
+        $roles = $user
+            ->roles()
+            ->wherePivot('factory_id', $user->current_factory_id)
+            ->with('permissions:id,slug')
+            ->get();
+        $permissions = $user->is_platform_admin
+            ? collect(['*'])
+            : $roles->pluck('permissions')->flatten()->pluck('slug')->unique()->values();
+        $subscription = $user->current_factory_id
+            ? FactorySubscription::with('plan:id,name,code,features')
+                ->where('factory_id', $user->current_factory_id)
+                ->latest('ends_at')
+                ->first()
+            : null;
 
         return [
-            'id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'locale' => $user->locale, 'timezone' => $user->timezone,
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'locale' => $user->locale,
+            'timezone' => $user->timezone,
             'is_platform_admin' => $user->is_platform_admin,
-            'current_factory' => $user->currentFactory, 'factories' => $user->factories,
+            'current_factory' => $user->currentFactory,
+            'factories' => $user->factories,
             'roles' => $roles->map->only(['id', 'name', 'slug', 'dashboard_key']),
             'permissions' => $permissions,
-            'subscription' => $subscription ? ['id' => $subscription->id, 'status' => $subscription->status, 'plan' => $subscription->plan] : null,
-            'workspace' => $user->is_platform_admin && ! $user->current_factory_id ? 'platform_admin' : ($roles->first()?->dashboard_key ?? 'operations'),
+            'subscription' => $subscription
+                ? ['id' => $subscription->id, 'status' => $subscription->status, 'plan' => $subscription->plan]
+                : null,
+            'workspace' => $user->is_platform_admin && ! $user->current_factory_id
+                    ? 'platform_admin'
+                    : $roles->first()?->dashboard_key ?? 'operations',
             'employee_profile' => $user->employeeProfile,
             'school' => $user->school,
             'unread_notifications_count' => $user->unreadNotifications()->count(),
             'notifications' => $user->notifications()->limit(5)->get(),
-            'pending_orders_count' => \App\Models\SalesDocument::where('factory_id', $user->current_factory_id)->where('status', 'pending')->count(),
-            'access_scope' => $user->current_factory_id ? \App\Support\Tenancy\OperationalScope::for($user)->payload() : null,
-            'active_assignments' => $user->workAssignments()->whereNotIn('status', ['completed', 'cancelled'])->orderBy('priority')->orderBy('due_at')->limit(10)->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
-            'announcements' => PlatformAnnouncement::whereNotNull('published_at')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->latest('published_at')->limit(10)->get(['id', 'title', 'message', 'severity', 'published_at']),
-            'system' => ['name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'), 'tagline' => SystemSetting::valueFor('system_tagline', 'Factory operations made clear.'), 'logo_url' => SystemSetting::valueFor('logo_url', '/assets/images/icyerekezo_oms_logo.svg'), 'support_email' => SystemSetting::valueFor('support_email'), 'support_phone' => SystemSetting::valueFor('support_phone'), 'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'), 'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali')],
+            'pending_orders_count' => SalesDocument::where('factory_id', $user->current_factory_id)
+                ->where('status', 'pending')
+                ->count(),
+            'access_scope' => $user->current_factory_id
+                ? OperationalScope::for($user)->payload()
+                : null,
+            'active_assignments' => $user
+                ->workAssignments()
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->orderBy('priority')
+                ->orderBy('due_at')
+                ->limit(10)
+                ->get(['id', 'assignment_type', 'title', 'priority', 'status', 'due_at']),
+            'announcements' => PlatformAnnouncement::whereNotNull('published_at')
+                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->latest('published_at')
+                ->limit(10)
+                ->get(['id', 'title', 'message', 'severity', 'published_at']),
+            'system' => [
+                'name' => SystemSetting::valueFor('system_name', 'ICYEREKEZO OMS'),
+                'tagline' => SystemSetting::valueFor('system_tagline', 'Factory operations made clear.'),
+                'logo_url' => SystemSetting::valueFor('logo_url', '/assets/images/icyerekezo_oms_logo.svg'),
+                'support_email' => SystemSetting::valueFor('support_email'),
+                'support_phone' => SystemSetting::valueFor('support_phone'),
+                'currency_code' => SystemSetting::valueFor('currency_code', 'RWF'),
+                'timezone' => SystemSetting::valueFor('timezone', 'Africa/Kigali'),
+            ],
         ];
     }
 
@@ -424,7 +567,7 @@ class AuthController extends Controller
         $slug = $base;
         $counter = 2;
         while (Factory::where('slug', $slug)->exists()) {
-            $slug = $base.'-'.$counter++;
+            $slug = $base . '-' . $counter++;
         }
 
         return $slug;

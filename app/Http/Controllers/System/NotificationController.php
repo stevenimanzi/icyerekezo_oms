@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\System;
 
+use App\Http\Controllers\Controller;
 use App\Models\PushSubscription;
+use App\Models\SalesDocument;
+use App\Models\SupportTicket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 
 class NotificationController extends Controller
 {
@@ -16,11 +18,11 @@ class NotificationController extends Controller
         $unreadCount = $user->unreadNotifications()->count();
 
         if ($user->current_factory_id) {
-            $pendingOrders = \App\Models\SalesDocument::where('factory_id', $user->current_factory_id)
+            $pendingOrders = SalesDocument::where('factory_id', $user->current_factory_id)
                 ->where('document_type', 'customer_order')
                 ->where('status', 'pending')
                 ->count();
-            
+
             if ($pendingOrders > 0) {
                 $notifications->prepend([
                     'id' => 'dyn-orders',
@@ -29,7 +31,7 @@ class NotificationController extends Controller
                         'title' => 'Incoming Orders',
                         'body' => "You have $pendingOrders incoming customer order(s) pending your review.",
                         'url' => '/app/sales',
-                        'icon' => 'shopping-cart'
+                        'icon' => 'shopping-cart',
                     ],
                     'read_at' => null,
                     'created_at' => now()->toIso8601String(),
@@ -37,10 +39,10 @@ class NotificationController extends Controller
                 $unreadCount++;
             }
 
-            $openTickets = \App\Models\SupportTicket::where('factory_id', $user->current_factory_id)
+            $openTickets = SupportTicket::where('factory_id', $user->current_factory_id)
                 ->whereNotIn('status', ['resolved', 'closed'])
                 ->count();
-            
+
             if ($openTickets > 0) {
                 $notifications->prepend([
                     'id' => 'dyn-tickets-factory',
@@ -49,7 +51,7 @@ class NotificationController extends Controller
                         'title' => 'Open Support Tickets',
                         'body' => "You have $openTickets open support ticket(s) awaiting resolution.",
                         'url' => '/app/support',
-                        'icon' => 'message-square'
+                        'icon' => 'message-square',
                     ],
                     'read_at' => null,
                     'created_at' => now()->toIso8601String(),
@@ -59,8 +61,8 @@ class NotificationController extends Controller
         }
 
         if ($user->is_platform_admin) {
-            $openTickets = \App\Models\SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count();
-            
+            $openTickets = SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count();
+
             if ($openTickets > 0) {
                 $notifications->prepend([
                     'id' => 'dyn-tickets-admin',
@@ -69,7 +71,7 @@ class NotificationController extends Controller
                         'title' => 'Unanswered Support Tickets',
                         'body' => "There are $openTickets support ticket(s) across the platform waiting for a response.",
                         'url' => '/admin',
-                        'icon' => 'message-square'
+                        'icon' => 'message-square',
                     ],
                     'read_at' => null,
                     'created_at' => now()->toIso8601String(),
@@ -97,7 +99,10 @@ class NotificationController extends Controller
 
     public function markAllRead(Request $request): JsonResponse
     {
-        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+        $request
+            ->user()
+            ->unreadNotifications()
+            ->update(['read_at' => now()]);
 
         return response()->json(['body' => 'All notifications marked as read']);
     }
@@ -122,7 +127,7 @@ class NotificationController extends Controller
                 'public_key' => $data['keys']['p256dh'],
                 'auth_token' => $data['keys']['auth'],
                 'content_encoding' => 'aes128gcm',
-            ]
+            ],
         );
 
         return response()->json(['body' => 'Push subscription saved'], 201);
@@ -136,4 +141,3 @@ class NotificationController extends Controller
         return response()->json(['body' => 'Push subscription removed']);
     }
 }
-

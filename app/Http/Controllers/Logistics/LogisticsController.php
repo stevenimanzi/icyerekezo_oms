@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Logistics;
 
+use App\Http\Controllers\Controller;
 use App\Models\AgreementDocument;
 use App\Models\AuditLog;
 use App\Models\DeliveryVehicle;
@@ -10,11 +11,11 @@ use App\Models\SalesDocumentLine;
 use App\Models\School;
 use App\Models\SchoolAgreementSignature;
 use App\Models\Shipment;
+use App\Support\Security\PrivateFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use App\Http\Controllers\Controller;
 
 class LogisticsController extends Controller
 {
@@ -32,25 +33,44 @@ class LogisticsController extends Controller
                 'ready' => (clone $shipments)->where('status', 'ready')->count(),
                 'in_transit' => (clone $shipments)->where('status', 'in_transit')->count(),
                 'delivered' => (clone $shipments)->where('status', 'delivered')->count(),
-                'delayed' => (clone $shipments)->whereNotIn('status', ['delivered', 'cancelled'])->where('planned_dispatch_at', '<', now())->count(),
+                'delayed' => (clone $shipments)
+                    ->whereNotIn('status', ['delivered', 'cancelled'])
+                    ->where('planned_dispatch_at', '<', now())
+                    ->count(),
                 'proof_of_delivery' => (clone $shipments)->whereNotNull('proof_reference')->count(),
                 'vehicles' => (clone $vehicles)->count(),
                 'available_vehicles' => (clone $vehicles)->where('status', 'available')->count(),
                 'delivered_items' => $schoolGarments
                     ? (int) SalesDocumentLine::sum('quantity_delivered')
-                    : (int) Shipment::where('shipments.status', 'delivered')->join('sales_documents', 'sales_documents.id', '=', 'shipments.sales_document_id')->sum('sales_documents.item_count'),
+                    : (int) Shipment::where('shipments.status', 'delivered')
+                        ->join('sales_documents', 'sales_documents.id', '=', 'shipments.sales_document_id')
+                        ->sum('sales_documents.item_count'),
                 'delivered_packages' => (int) (clone $shipments)->where('status', 'delivered')->sum('package_count'),
-                'delivered_today' => (clone $shipments)->where('status', 'delivered')->whereDate('delivered_at', today())->count(),
+                'delivered_today' => (clone $shipments)
+                    ->where('status', 'delivered')
+                    ->whereDate('delivered_at', today())
+                    ->count(),
                 'pending_to_be_delivered' => (clone $salesOrders)->where('status', 'pending')->count(),
                 'ready_to_be_delivered' => (clone $salesOrders)->where('status', 'accepted')->count(),
                 'partial_delivered' => (clone $salesOrders)->where('status', 'partial')->count(),
                 'delivered_orders' => (clone $salesOrders)->where('status', 'delivered')->count(),
             ],
-            'shipments' => Shipment::with(['vehicle', 'salesDocument:id,document_number'])->latest('planned_dispatch_at')->latest('id')->paginate(50),
+            'shipments' => Shipment::with(['vehicle', 'salesDocument:id,document_number'])
+                ->latest('planned_dispatch_at')
+                ->latest('id')
+                ->paginate(50),
             'vehicles' => DeliveryVehicle::latest()->get(),
-            'incoming_orders' => SalesDocument::where('document_type', 'customer_order')->whereIn('status', ['accepted', 'confirmed', 'processing', 'ready'])->whereDoesntHave('shipments', fn ($query) => $query->whereNotIn('status', ['cancelled']))->latest('document_date')->get(),
+            'incoming_orders' => SalesDocument::where('document_type', 'customer_order')
+                ->whereIn('status', ['accepted', 'confirmed', 'processing', 'ready'])
+                ->whereDoesntHave('shipments', fn ($query) => $query->whereNotIn('status', ['cancelled']))
+                ->latest('document_date')
+                ->get(),
             'specialization' => $schoolGarments ? ['type' => 'noguchi_school_garments'] : null,
-            'capabilities' => ['plan' => auth()->user()->hasPermission('logistics.plan'), 'dispatch' => auth()->user()->hasPermission('logistics.dispatch'), 'deliver' => auth()->user()->hasPermission('logistics.deliver')],
+            'capabilities' => [
+                'plan' => auth()->user()->hasPermission('logistics.plan'),
+                'dispatch' => auth()->user()->hasPermission('logistics.dispatch'),
+                'deliver' => auth()->user()->hasPermission('logistics.deliver'),
+            ],
             'updated_at' => now()->toIso8601String(),
         ]);
     }
@@ -59,86 +79,202 @@ class LogisticsController extends Controller
     {
         $factoryId = (int) $request->user()->current_factory_id;
         $data = $request->validate([
-            'sales_document_id' => ['required', Rule::exists('sales_documents', 'id')->where('factory_id', $factoryId)->where('document_type', 'customer_order')],
-            'delivery_vehicle_id' => ['nullable', Rule::exists('delivery_vehicles', 'id')->where('factory_id', $factoryId)],
-            'destination' => ['required', 'string', 'max:255'], 'package_count' => ['required', 'integer', 'min:1'],
-            'total_weight' => ['nullable', 'numeric', 'min:0'], 'weight_unit' => ['nullable', 'string', 'max:20'],
-            'planned_dispatch_at' => ['nullable', 'date'], 'delivery_notes' => ['nullable', 'string', 'max:2000'],
+            'sales_document_id' => [
+                'required',
+                Rule::exists('sales_documents', 'id')
+                    ->where('factory_id', $factoryId)
+                    ->where('document_type', 'customer_order'),
+            ],
+            'delivery_vehicle_id' => [
+                'nullable',
+                Rule::exists('delivery_vehicles', 'id')->where('factory_id', $factoryId),
+            ],
+            'destination' => ['required', 'string', 'max:255'],
+            'package_count' => ['required', 'integer', 'min:1'],
+            'total_weight' => ['nullable', 'numeric', 'min:0'],
+            'weight_unit' => ['nullable', 'string', 'max:20'],
+            'planned_dispatch_at' => ['nullable', 'date'],
+            'delivery_notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $order = SalesDocument::findOrFail($data['sales_document_id']);
-        abort_unless(in_array($order->status, ['accepted', 'confirmed', 'processing', 'ready'], true), 409, 'Accept the customer order before creating a shipment.');
-        abort_if(Shipment::where('sales_document_id', $order->id)->whereNotIn('status', ['cancelled'])->exists(), 409, 'This order already has an active shipment.');
+        abort_unless(
+            in_array($order->status, ['accepted', 'confirmed', 'processing', 'ready'], true),
+            409,
+            'Accept the customer order before creating a shipment.',
+        );
+        abort_if(
+            Shipment::where('sales_document_id', $order->id)
+                ->whereNotIn('status', ['cancelled'])
+                ->exists(),
+            409,
+            'This order already has an active shipment.',
+        );
         $next = Shipment::count() + 1;
-        $shipment = Shipment::create($data + ['shipment_number' => 'SHP-'.now()->format('Y').'-'.str_pad((string) $next, 6, '0', STR_PAD_LEFT), 'customer_name' => $order->customer_name, 'status' => empty($data['delivery_vehicle_id']) ? 'planned' : 'ready']);
+        $shipment = Shipment::create(
+            $data + [
+                'shipment_number' => 'SHP-' . now()->format('Y') . '-' . str_pad((string) $next, 6, '0', STR_PAD_LEFT),
+                'customer_name' => $order->customer_name,
+                'status' => empty($data['delivery_vehicle_id']) ? 'planned' : 'ready',
+            ],
+        );
         $order->update(['status' => 'processing']);
-        if ($shipment->delivery_vehicle_id) DeliveryVehicle::whereKey($shipment->delivery_vehicle_id)->update(['status' => 'assigned']);
-        AuditLog::record('logistics.shipment_created', "Created {$shipment->shipment_number} for {$order->document_number}", $shipment);
+        if ($shipment->delivery_vehicle_id) {
+            DeliveryVehicle::whereKey($shipment->delivery_vehicle_id)->update(['status' => 'assigned']);
+        }
+        AuditLog::record(
+            'logistics.shipment_created',
+            "Created {$shipment->shipment_number} for {$order->document_number}",
+            $shipment,
+        );
 
-        return response()->json(['message' => 'Shipment created.', 'shipment' => $shipment->load('vehicle', 'salesDocument')], 201);
+        return response()->json(
+            ['message' => 'Shipment created.', 'shipment' => $shipment->load('vehicle', 'salesDocument')],
+            201,
+        );
     }
 
     public function updateShipment(Request $request, Shipment $shipment): JsonResponse
     {
         $data = $request->validate([
             'action' => ['required', Rule::in(['ready', 'dispatch', 'deliver', 'cancel'])],
-            'delivery_vehicle_id' => ['nullable', Rule::exists('delivery_vehicles', 'id')->where('factory_id', $request->user()->current_factory_id)],
-            'planned_dispatch_at' => ['nullable', 'date'], 'received_by' => ['nullable', 'string', 'max:255'],
-            'proof_reference' => ['nullable', 'string', 'max:255'], 'delivery_notes' => ['nullable', 'string', 'max:2000'],
+            'delivery_vehicle_id' => [
+                'nullable',
+                Rule::exists('delivery_vehicles', 'id')->where('factory_id', $request->user()->current_factory_id),
+            ],
+            'planned_dispatch_at' => ['nullable', 'date'],
+            'received_by' => ['nullable', 'string', 'max:255'],
+            'proof_reference' => ['nullable', 'string', 'max:255'],
+            'delivery_notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $requiredPermission = match ($data['action']) {
             'ready', 'cancel' => 'logistics.plan',
             'dispatch' => 'logistics.dispatch',
             'deliver' => 'logistics.deliver',
         };
-        abort_unless($request->user()->hasPermission($requiredPermission), 403, 'You do not have permission for this shipment action.');
+        abort_unless(
+            $request->user()->hasPermission($requiredPermission),
+            403,
+            'You do not have permission for this shipment action.',
+        );
         $oldVehicle = $shipment->delivery_vehicle_id;
         DB::transaction(function () use ($shipment, $data, $oldVehicle) {
             if ($data['action'] === 'ready') {
-                abort_unless(in_array($shipment->status, ['planned', 'ready'], true), 409, 'Only planned shipments can be prepared.');
-                abort_unless($data['delivery_vehicle_id'] ?? $shipment->delivery_vehicle_id, 422, 'Assign a vehicle before marking the shipment ready.');
-                $shipment->update(['status' => 'ready', 'delivery_vehicle_id' => $data['delivery_vehicle_id'] ?? $shipment->delivery_vehicle_id, 'planned_dispatch_at' => $data['planned_dispatch_at'] ?? $shipment->planned_dispatch_at]);
+                abort_unless(
+                    in_array($shipment->status, ['planned', 'ready'], true),
+                    409,
+                    'Only planned shipments can be prepared.',
+                );
+                abort_unless(
+                    $data['delivery_vehicle_id'] ?? $shipment->delivery_vehicle_id,
+                    422,
+                    'Assign a vehicle before marking the shipment ready.',
+                );
+                $shipment->update([
+                    'status' => 'ready',
+                    'delivery_vehicle_id' => $data['delivery_vehicle_id'] ?? $shipment->delivery_vehicle_id,
+                    'planned_dispatch_at' => $data['planned_dispatch_at'] ?? $shipment->planned_dispatch_at,
+                ]);
             } elseif ($data['action'] === 'dispatch') {
-                abort_unless($shipment->status === 'ready' && $shipment->delivery_vehicle_id, 409, 'The shipment must be ready and assigned to a vehicle.');
+                abort_unless(
+                    $shipment->status === 'ready' && $shipment->delivery_vehicle_id,
+                    409,
+                    'The shipment must be ready and assigned to a vehicle.',
+                );
                 $shipment->update(['status' => 'in_transit', 'dispatched_at' => now()]);
             } elseif ($data['action'] === 'deliver') {
                 abort_unless($shipment->status === 'in_transit', 409, 'Only shipments in transit can be delivered.');
-                abort_unless(!empty($data['received_by']) && !empty($data['proof_reference']), 422, 'Receiver and proof reference are required.');
-                $shipment->update(['status' => 'delivered', 'delivered_at' => now(), 'received_by' => $data['received_by'], 'proof_reference' => $data['proof_reference'], 'delivery_notes' => $data['delivery_notes'] ?? $shipment->delivery_notes]);
+                abort_unless(
+                    ! empty($data['received_by']) && ! empty($data['proof_reference']),
+                    422,
+                    'Receiver and proof reference are required.',
+                );
+                $shipment->update([
+                    'status' => 'delivered',
+                    'delivered_at' => now(),
+                    'received_by' => $data['received_by'],
+                    'proof_reference' => $data['proof_reference'],
+                    'delivery_notes' => $data['delivery_notes'] ?? $shipment->delivery_notes,
+                ]);
                 $shipment->salesDocument?->update(['status' => 'completed']);
             } else {
-                abort_unless(in_array($shipment->status, ['planned', 'ready'], true), 409, 'Dispatched or delivered shipments cannot be cancelled.');
-                $shipment->update(['status' => 'cancelled', 'delivery_notes' => $data['delivery_notes'] ?? $shipment->delivery_notes]);
+                abort_unless(
+                    in_array($shipment->status, ['planned', 'ready'], true),
+                    409,
+                    'Dispatched or delivered shipments cannot be cancelled.',
+                );
+                $shipment->update([
+                    'status' => 'cancelled',
+                    'delivery_notes' => $data['delivery_notes'] ?? $shipment->delivery_notes,
+                ]);
                 $shipment->salesDocument?->update(['status' => 'accepted']);
             }
-            if ($oldVehicle && ($shipment->status === 'delivered' || $shipment->status === 'cancelled' || $oldVehicle !== $shipment->delivery_vehicle_id)) DeliveryVehicle::whereKey($oldVehicle)->update(['status' => 'available']);
-            if ($shipment->delivery_vehicle_id && in_array($shipment->status, ['ready', 'in_transit'], true)) DeliveryVehicle::whereKey($shipment->delivery_vehicle_id)->update(['status' => 'assigned']);
+            if (
+                $oldVehicle &&
+                ($shipment->status === 'delivered' ||
+                    $shipment->status === 'cancelled' ||
+                    $oldVehicle !== $shipment->delivery_vehicle_id)
+            ) {
+                DeliveryVehicle::whereKey($oldVehicle)->update(['status' => 'available']);
+            }
+            if ($shipment->delivery_vehicle_id && in_array($shipment->status, ['ready', 'in_transit'], true)) {
+                DeliveryVehicle::whereKey($shipment->delivery_vehicle_id)->update(['status' => 'assigned']);
+            }
         });
-        AuditLog::record('logistics.shipment_'.$data['action'], ucfirst($data['action'])." {$shipment->shipment_number}", $shipment);
+        AuditLog::record(
+            'logistics.shipment_' . $data['action'],
+            ucfirst($data['action']) . " {$shipment->shipment_number}",
+            $shipment,
+        );
 
-        return response()->json(['message' => 'Shipment updated.', 'shipment' => $shipment->fresh()->load('vehicle', 'salesDocument')]);
+        return response()->json([
+            'message' => 'Shipment updated.',
+            'shipment' => $shipment->fresh()->load('vehicle', 'salesDocument'),
+        ]);
     }
 
     public function storeVehicle(Request $request): JsonResponse
     {
         $vehicle = DeliveryVehicle::create($this->vehicleData($request));
-        AuditLog::record('logistics.vehicle_created', "Registered delivery vehicle {$vehicle->registration_number}", $vehicle);
+        AuditLog::record(
+            'logistics.vehicle_created',
+            "Registered delivery vehicle {$vehicle->registration_number}",
+            $vehicle,
+        );
+
         return response()->json(['message' => 'Vehicle registered.', 'vehicle' => $vehicle], 201);
     }
 
     public function updateVehicle(Request $request, DeliveryVehicle $vehicle): JsonResponse
     {
-        abort_if($vehicle->status === 'assigned' && $request->input('status') !== 'assigned', 409, 'Complete or cancel the active shipment before changing this vehicle status.');
+        abort_if(
+            $vehicle->status === 'assigned' && $request->input('status') !== 'assigned',
+            409,
+            'Complete or cancel the active shipment before changing this vehicle status.',
+        );
         $vehicle->update($this->vehicleData($request, $vehicle));
-        AuditLog::record('logistics.vehicle_updated', "Updated delivery vehicle {$vehicle->registration_number}", $vehicle);
+        AuditLog::record(
+            'logistics.vehicle_updated',
+            "Updated delivery vehicle {$vehicle->registration_number}",
+            $vehicle,
+        );
+
         return response()->json(['message' => 'Vehicle updated.', 'vehicle' => $vehicle->fresh()]);
     }
 
     public function destroyVehicle(DeliveryVehicle $vehicle): JsonResponse
     {
-        abort_if($vehicle->status === 'assigned' || Shipment::where('delivery_vehicle_id', $vehicle->id)->whereIn('status', ['ready', 'in_transit'])->exists(), 409, 'This vehicle is assigned to active delivery work.');
+        abort_if(
+            $vehicle->status === 'assigned' ||
+                Shipment::where('delivery_vehicle_id', $vehicle->id)
+                    ->whereIn('status', ['ready', 'in_transit'])
+                    ->exists(),
+            409,
+            'This vehicle is assigned to active delivery work.',
+        );
         $registration = $vehicle->registration_number;
         AuditLog::record('logistics.vehicle_deleted', "Deleted delivery vehicle {$registration}", $vehicle);
         $vehicle->delete();
+
         return response()->json(['message' => "Vehicle {$registration} deleted."]);
     }
 
@@ -162,7 +298,10 @@ class LogisticsController extends Controller
             $signature = $signatures->get($school->id);
 
             return [
-                'id' => $school->id, 'name' => $school->name, 'district' => $school->district, 'sector' => $school->sector,
+                'id' => $school->id,
+                'name' => $school->name,
+                'district' => $school->district,
+                'sector' => $school->sector,
                 'signed' => (bool) $signature,
                 'signed_at' => $signature?->submitted_at,
                 'file_url' => $signature?->file_url,
@@ -171,19 +310,42 @@ class LogisticsController extends Controller
         });
 
         $status = $request->string('status')->trim()->value();
-        if ($status === 'signed') $rows = $rows->where('signed', true)->values();
-        elseif ($status === 'unsigned') $rows = $rows->where('signed', false)->values();
+        if ($status === 'signed') {
+            $rows = $rows->where('signed', true)->values();
+        } elseif ($status === 'unsigned') {
+            $rows = $rows->where('signed', false)->values();
+        }
 
         $allSchoolIds = School::where('factory_id', $factoryId)->pluck('id');
-        $signedCount = $current ? SchoolAgreementSignature::where('agreement_document_id', $current->id)->whereIn('school_id', $allSchoolIds)->count() : 0;
+        $signedCount = $current
+            ? SchoolAgreementSignature::where('agreement_document_id', $current->id)
+                ->whereIn('school_id', $allSchoolIds)
+                ->count()
+            : 0;
 
         return response()->json([
             'current' => $current,
             'schools' => $rows->values(),
-            'summary' => ['total_schools' => $allSchoolIds->count(), 'signed' => $signedCount, 'unsigned' => max(0, $allSchoolIds->count() - $signedCount)],
+            'summary' => [
+                'total_schools' => $allSchoolIds->count(),
+                'signed' => $signedCount,
+                'unsigned' => max(0, $allSchoolIds->count() - $signedCount),
+            ],
             'filters' => [
-                'districts' => School::where('factory_id', $factoryId)->whereNotNull('district')->distinct()->orderBy('district')->pluck('district'),
-                'sectors_by_district' => School::where('factory_id', $factoryId)->whereNotNull('district')->whereNotNull('sector')->select('district', 'sector')->distinct()->orderBy('sector')->get()->groupBy('district')->map(fn ($group) => $group->pluck('sector')->values()),
+                'districts' => School::where('factory_id', $factoryId)
+                    ->whereNotNull('district')
+                    ->distinct()
+                    ->orderBy('district')
+                    ->pluck('district'),
+                'sectors_by_district' => School::where('factory_id', $factoryId)
+                    ->whereNotNull('district')
+                    ->whereNotNull('sector')
+                    ->select('district', 'sector')
+                    ->distinct()
+                    ->orderBy('sector')
+                    ->get()
+                    ->groupBy('district')
+                    ->map(fn ($group) => $group->pluck('sector')->values()),
             ],
         ]);
     }
@@ -192,25 +354,45 @@ class LogisticsController extends Controller
     {
         $factoryId = (int) $request->user()->current_factory_id;
         $data = $request->validate(['agreement' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:15360']]);
-        $path = \App\Support\Security\PrivateFile::store($data['agreement'], 'agreement/'.$factoryId);
+        $path = PrivateFile::store($data['agreement'], 'agreement/' . $factoryId);
         $document = AgreementDocument::create([
-            'factory_id' => $factoryId, 'file_path' => $path,
-            'original_name' => $data['agreement']->getClientOriginalName(), 'uploaded_by' => $request->user()->id,
+            'factory_id' => $factoryId,
+            'file_path' => $path,
+            'original_name' => $data['agreement']->getClientOriginalName(),
+            'uploaded_by' => $request->user()->id,
         ]);
-        AuditLog::record('logistics.agreement_uploaded', "Uploaded a new school agreement ({$document->original_name})", $document);
+        AuditLog::record(
+            'logistics.agreement_uploaded',
+            "Uploaded a new school agreement ({$document->original_name})",
+            $document,
+        );
 
-        return response()->json(['message' => 'Agreement uploaded. Schools will see this version and can sign it.', 'document' => $document->load('uploadedBy:id,name')], 201);
+        return response()->json(
+            [
+                'message' => 'Agreement uploaded. Schools will see this version and can sign it.',
+                'document' => $document->load('uploadedBy:id,name'),
+            ],
+            201,
+        );
     }
 
     private function vehicleData(Request $request, ?DeliveryVehicle $vehicle = null): array
     {
         $factoryId = (int) $request->user()->current_factory_id;
+
         return $request->validate([
-            'registration_number' => ['required', 'string', 'max:40', Rule::unique('delivery_vehicles')->where('factory_id', $factoryId)->ignore($vehicle?->id)],
-            'vehicle_type' => ['required', 'string', 'max:60'], 'driver_name' => ['nullable', 'string', 'max:255'],
-            'driver_phone' => ['nullable', 'string', 'max:40'], 'status' => ['required', Rule::in(['available', 'assigned', 'maintenance', 'inactive'])],
-            'capacity' => ['nullable', 'numeric', 'min:0'], 'capacity_unit' => ['nullable', 'string', 'max:20'],
+            'registration_number' => [
+                'required',
+                'string',
+                'max:40',
+                Rule::unique('delivery_vehicles')->where('factory_id', $factoryId)->ignore($vehicle?->id),
+            ],
+            'vehicle_type' => ['required', 'string', 'max:60'],
+            'driver_name' => ['nullable', 'string', 'max:255'],
+            'driver_phone' => ['nullable', 'string', 'max:40'],
+            'status' => ['required', Rule::in(['available', 'assigned', 'maintenance', 'inactive'])],
+            'capacity' => ['nullable', 'numeric', 'min:0'],
+            'capacity_unit' => ['nullable', 'string', 'max:20'],
         ]);
     }
 }
-

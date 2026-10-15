@@ -15,10 +15,18 @@ class FactoryRegistrationTest extends TestCase
 
     private function payload(array $overrides = []): array
     {
-        return array_merge([
-            'name' => 'Amina Owner', 'email' => 'amina@dairy.test', 'password' => 'StrongPass123!', 'password_confirmation' => 'StrongPass123!',
-            'factory_name' => 'Green Valley Dairy', 'industry_type' => 'dairy', 'locale' => 'en',
-        ], $overrides);
+        return array_merge(
+            [
+                'name' => 'Amina Owner',
+                'email' => 'amina@dairy.test',
+                'password' => 'StrongPass123!',
+                'password_confirmation' => 'StrongPass123!',
+                'factory_name' => 'Green Valley Dairy',
+                'industry_type' => 'dairy',
+                'locale' => 'en',
+            ],
+            $overrides,
+        );
     }
 
     public function test_registering_a_dairy_sets_the_factory_up_automatically(): void
@@ -30,21 +38,41 @@ class FactoryRegistrationTest extends TestCase
 
         $this->assertContains('Milk Receiving', $departments);
         $this->assertContains('Cold Storage', $departments);
-        $this->assertTrue(WorkflowTemplate::withoutGlobalScopes()->where(['factory_id' => $factory->id, 'code' => 'INDUSTRY-DEFAULT'])->exists());
-        $this->assertTrue(DB::table('units')->where(['factory_id' => $factory->id, 'symbol' => 'mL'])->exists());
+        $this->assertTrue(
+            WorkflowTemplate::withoutGlobalScopes()
+                ->where(['factory_id' => $factory->id, 'code' => 'INDUSTRY-DEFAULT'])
+                ->exists(),
+        );
+        $this->assertTrue(
+            DB::table('units')
+                ->where(['factory_id' => $factory->id, 'symbol' => 'mL'])
+                ->exists(),
+        );
         $this->assertTrue($factory->hasFeature('milk_intake'));
         $this->assertSame(['batch_tracked' => true, 'expiry_tracked' => true], $factory->itemDefaults());
     }
 
     public function test_a_factory_can_register_with_more_than_one_industry(): void
     {
-        $this->postJson('/api/auth/register', $this->payload(['industry_profiles' => ['food_processing', 'dairy']]))->assertCreated();
+        $this->postJson(
+            '/api/auth/register',
+            $this->payload(['industry_profiles' => ['food_processing', 'dairy']]),
+        )->assertCreated();
 
         $factory = Factory::where('name', 'Green Valley Dairy')->firstOrFail();
 
-        $this->assertSame(['food_processing'], $factory->industry_profiles, 'The primary industry is not repeated in the additional list.');
+        $this->assertSame(
+            ['food_processing'],
+            $factory->industry_profiles,
+            'The primary industry is not repeated in the additional list.',
+        );
         $this->assertSame(['dairy', 'food_processing'], $factory->profileKeys());
-        $codes = WorkflowTemplate::withoutGlobalScopes()->where('factory_id', $factory->id)->pluck('code')->sort()->values()->all();
+        $codes = WorkflowTemplate::withoutGlobalScopes()
+            ->where('factory_id', $factory->id)
+            ->pluck('code')
+            ->sort()
+            ->values()
+            ->all();
         $this->assertSame(['INDUSTRY-DEFAULT', 'PROFILE-FOOD-PROCESSING'], $codes);
     }
 
@@ -59,18 +87,31 @@ class FactoryRegistrationTest extends TestCase
 
     public function test_free_text_industry_still_registers_with_the_general_flow(): void
     {
-        $this->postJson('/api/auth/register', $this->payload(['industry_type' => 'Candle making', 'email' => 'c@candles.test', 'factory_name' => 'Candle Co']))->assertCreated();
+        $this->postJson(
+            '/api/auth/register',
+            $this->payload([
+                'industry_type' => 'Candle making',
+                'email' => 'c@candles.test',
+                'factory_name' => 'Candle Co',
+            ]),
+        )->assertCreated();
 
         $factory = Factory::where('name', 'Candle Co')->firstOrFail();
 
         $this->assertSame(['general_manufacturing'], $factory->profileKeys());
-        $this->assertContains('Quality Control', Department::withoutGlobalScopes()->where('factory_id', $factory->id)->pluck('name')->all());
+        $this->assertContains(
+            'Quality Control',
+            Department::withoutGlobalScopes()->where('factory_id', $factory->id)->pluck('name')->all(),
+        );
         $this->assertFalse($factory->hasFeature('milk_intake'));
     }
 
     public function test_a_weak_password_cannot_register_a_factory(): void
     {
-        $this->postJson('/api/auth/register', $this->payload(['password' => 'weakpass', 'password_confirmation' => 'weakpass']))
+        $this->postJson(
+            '/api/auth/register',
+            $this->payload(['password' => 'weakpass', 'password_confirmation' => 'weakpass']),
+        )
             ->assertUnprocessable()
             ->assertJsonValidationErrors('password');
     }

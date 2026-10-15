@@ -24,7 +24,9 @@ class SubscriptionExpiringSoon extends Notification implements ShouldQueue
     {
         return [
             'title' => 'Subscription expiring soon',
-            'body' => "Your factory's subscription for {$this->subscription->factory?->name} ends on {$this->subscription->ends_at->format('M j, Y')}. Renew to avoid losing access.",
+            'body' => "Your factory's subscription for {$this->subscription->factory?->name} ends on {$this->subscription->ends_at->format(
+                'M j, Y',
+            )}. Renew to avoid losing access.",
             'url' => '/executive/settings',
             'category' => 'subscription',
         ];
@@ -34,7 +36,9 @@ class SubscriptionExpiringSoon extends Notification implements ShouldQueue
     {
         return [
             'title' => 'Subscription expiring soon',
-            'body' => "Renew before {$this->subscription->ends_at->format('M j, Y')} to keep access to {$this->subscription->factory?->name}.",
+            'body' => "Renew before {$this->subscription->ends_at->format(
+                'M j, Y',
+            )} to keep access to {$this->subscription->factory?->name}.",
             'url' => '/executive/settings',
             'category' => 'subscription',
         ];
@@ -45,7 +49,7 @@ class SubscriptionExpiringSoon extends Notification implements ShouldQueue
         $daysLeft = max(0, now()->diffInDays($this->subscription->ends_at, false));
 
         return (new MailMessage)
-            ->subject('Your ICYEREKEZO OMS subscription expires in '.$daysLeft.' days')
+            ->subject('Your ICYEREKEZO OMS subscription expires in ' . $daysLeft . ' days')
             ->view('emails.subscription-expiring', [
                 'recipientName' => $notifiable->name ?? 'Administrator',
                 'factoryName' => $this->subscription->factory?->name ?? 'your factory',

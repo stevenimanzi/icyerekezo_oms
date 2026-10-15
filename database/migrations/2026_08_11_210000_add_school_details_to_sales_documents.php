@@ -17,6 +17,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('sales_documents', fn (Blueprint $table) => $table->dropColumn(['school_district', 'school_sector', 'academic_year']));
+        Schema::table(
+            'sales_documents',
+            fn (Blueprint $table) => $table->dropColumn(['school_district', 'school_sector', 'academic_year']),
+        );
     }
 };

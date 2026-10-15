@@ -13,7 +13,11 @@ return new class extends Migration
             $table->foreignId('factory_id')->constrained()->cascadeOnDelete();
             $table->string('inspection_number', 60);
             $table->foreignId('production_order_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('stage_execution_id')->nullable()->constrained('production_stage_executions')->nullOnDelete();
+            $table
+                ->foreignId('stage_execution_id')
+                ->nullable()
+                ->constrained('production_stage_executions')
+                ->nullOnDelete();
             $table->foreignId('item_id')->nullable()->constrained()->nullOnDelete();
             $table->string('inspection_type', 40)->index();
             $table->decimal('sample_size', 20, 6)->default(0);

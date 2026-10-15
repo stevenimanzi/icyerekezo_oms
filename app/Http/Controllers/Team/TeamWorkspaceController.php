@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Team;
 
+use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\EmployeeProfile;
@@ -10,14 +11,14 @@ use App\Models\School;
 use App\Models\User;
 use App\Models\WorkAssignment;
 use App\Services\DepartmentDeduplicationService;
+use App\Support\Notifications\FactoryNotifier;
+use App\Support\Security\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
-use App\Http\Controllers\Controller;
 
 class TeamWorkspaceController extends Controller
 {
@@ -33,18 +34,39 @@ class TeamWorkspaceController extends Controller
         $employeeUserIds = (clone $memberships)->pluck('user_id');
         $totalUsers = (clone $memberships)->count();
         $activeUsers = (clone $memberships)->where('is_active', true)->count();
-        $assignedUsers = EmployeeProfile::where('factory_id', $factoryId)->whereIn('user_id', $employeeUserIds)->whereNotNull('department_id')->count();
+        $assignedUsers = EmployeeProfile::where('factory_id', $factoryId)
+            ->whereIn('user_id', $employeeUserIds)
+            ->whereNotNull('department_id')
+            ->count();
         $productionDepartment = Department::where('factory_id', $factoryId)
-            ->where(fn ($query) => $query->where('code', 'PRODUCTION')->orWhereRaw('LOWER(TRIM(name)) = ?', ['production']))
+            ->where(
+                fn ($query) => $query->where('code', 'PRODUCTION')->orWhereRaw('LOWER(TRIM(name)) = ?', ['production']),
+            )
             ->first();
         if ($productionDepartment) {
             $productionDepartment->update(['name' => 'Production', 'is_active' => true]);
         } else {
-            Department::create(['factory_id' => $factoryId, 'code' => 'PRODUCTION', 'name' => 'Production', 'is_active' => true]);
+            Department::create([
+                'factory_id' => $factoryId,
+                'code' => 'PRODUCTION',
+                'name' => 'Production',
+                'is_active' => true,
+            ]);
         }
         $roles = Role::where('factory_id', $factoryId);
-        $isManagerOnly = $request->user()->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'factory-manager')->exists()
-            && ! $request->user()->roles()->wherePivot('factory_id', $factoryId)->whereIn('slug', ['factory-owner', 'factory-administrator'])->exists();
+        $isManagerOnly =
+            $request
+                ->user()
+                ->roles()
+                ->wherePivot('factory_id', $factoryId)
+                ->where('slug', 'factory-manager')
+                ->exists() &&
+            ! $request
+                ->user()
+                ->roles()
+                ->wherePivot('factory_id', $factoryId)
+                ->whereIn('slug', ['factory-owner', 'factory-administrator'])
+                ->exists();
         if ($isManagerOnly) {
             $roles->whereNotIn('slug', ['factory-owner', 'factory-administrator', 'factory-manager']);
         }
@@ -56,48 +78,117 @@ class TeamWorkspaceController extends Controller
                 'assigned_users' => $assignedUsers,
                 'unassigned_users' => max(0, $totalUsers - $assignedUsers),
             ],
-            'users' => User::where('is_platform_admin', false)->whereNull('school_id')->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_owner', false))->with(['factories' => fn ($q) => $q->where('factories.id', $factoryId), 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId), 'employeeProfile.department', 'employeeProfile.workstation'])->paginate(25),
-            'roles' => $roles->with('permissions:id,name,slug,module')->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
-            'departments' => Department::where('is_active', true)->with('manager:id,name,email')->withCount('employees')->orderBy('name')->get()
-                ->unique(fn (Department $department) => Str::lower(trim($department->name)))->values(),
+            'users' => User::where('is_platform_admin', false)
+                ->whereNull('school_id')
+                ->whereHas(
+                    'factories',
+                    fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_owner', false),
+                )
+                ->with([
+                    'factories' => fn ($q) => $q->where('factories.id', $factoryId),
+                    'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId),
+                    'employeeProfile.department',
+                    'employeeProfile.workstation',
+                ])
+                ->paginate(25),
+            'roles' => $roles
+                ->with('permissions:id,name,slug,module')
+                ->get(['id', 'name', 'slug', 'dashboard_key', 'is_system']),
+            'departments' => Department::where('is_active', true)
+                ->with('manager:id,name,email')
+                ->withCount('employees')
+                ->orderBy('name')
+                ->get()
+                ->unique(fn (Department $department) => Str::lower(trim($department->name)))
+                ->values(),
             'schools' => School::where('factory_id', $factoryId)->orderBy('name')->get(),
-            'school_users' => User::where('is_platform_admin', false)->whereNotNull('school_id')->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))->with(['school', 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId)])->get(),
+            'school_users' => User::where('is_platform_admin', false)
+                ->whereNotNull('school_id')
+                ->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId))
+                ->with(['school', 'roles' => fn ($q) => $q->wherePivot('factory_id', $factoryId)])
+                ->get(),
         ]);
     }
 
     public function storeUser(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
-        if (User::where('email', Str::lower((string) $request->input('email')))->where('is_platform_admin', true)->exists()) {
-            throw ValidationException::withMessages(['email' => 'This email belongs to a system administrator and cannot be added as a factory employee.']);
+        if (
+            User::where('email', Str::lower((string) $request->input('email')))
+                ->where('is_platform_admin', true)
+                ->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'email' => 'This email belongs to a system administrator and cannot be added as a factory employee.',
+            ]);
         }
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email:rfc', 'max:190'],
-            'password' => ['required', 'confirmed', \App\Support\Security\PasswordPolicy::rule()],
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email:rfc', 'max:190'],
+            'password' => ['required', 'confirmed', PasswordPolicy::rule()],
             'role_id' => ['required', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
             'school_id' => ['nullable', Rule::exists('schools', 'id')->where('factory_id', $factoryId)],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
             'workstation_id' => ['nullable', Rule::exists('workstations', 'id')->where('factory_id', $factoryId)],
-            'employee_number' => ['nullable', 'string', 'max:50', Rule::unique('employee_profiles')->where('factory_id', $factoryId)],
+            'employee_number' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('employee_profiles')->where('factory_id', $factoryId),
+            ],
             'job_title' => ['nullable', 'string', 'max:120'],
         ]);
         if (empty($data['employee_number'])) {
             do {
-                $data['employee_number'] = 'EMP-'.Str::upper(Str::random(8));
-            } while (EmployeeProfile::where('factory_id', $factoryId)->where('employee_number', $data['employee_number'])->exists());
+                $data['employee_number'] = 'EMP-' . Str::upper(Str::random(8));
+            } while (
+                EmployeeProfile::where('factory_id', $factoryId)
+                    ->where('employee_number', $data['employee_number'])
+                    ->exists()
+            );
         }
         $role = Role::where('factory_id', $factoryId)->with('permissions:id,slug')->findOrFail($data['role_id']);
         $this->assertCanGrantRole($request->user(), $role);
         if ($role->slug === 'school-user' && empty($data['school_id'])) {
-            $data['school_id'] = School::where('factory_id', $factoryId)->where('email', Str::lower($data['email']))->value('id');
-            if (! $data['school_id']) throw ValidationException::withMessages(['email' => 'Use the email saved on the school record so this account can be linked safely.']);
+            $data['school_id'] = School::where('factory_id', $factoryId)
+                ->where('email', Str::lower($data['email']))
+                ->value('id');
+            if (! $data['school_id']) {
+                throw ValidationException::withMessages([
+                    'email' => 'Use the email saved on the school record so this account can be linked safely.',
+                ]);
+            }
         }
         $user = DB::transaction(function () use ($data, $factoryId) {
-            $user = User::firstOrCreate(['email' => strtolower($data['email'])], ['name' => $data['name'], 'password' => $data['password'], 'locale' => 'en']);
-            if (($data['school_id'] ?? null)) $user->update(['school_id' => $data['school_id']]);
-            $user->factories()->syncWithoutDetaching([$factoryId => ['is_active' => true, 'is_owner' => false, 'joined_at' => now(), 'job_title' => $data['job_title'] ?? null]]);
+            $user = User::firstOrCreate(
+                ['email' => strtolower($data['email'])],
+                ['name' => $data['name'], 'password' => $data['password'], 'locale' => 'en'],
+            );
+            if ($data['school_id'] ?? null) {
+                $user->update(['school_id' => $data['school_id']]);
+            }
+            $user
+                ->factories()
+                ->syncWithoutDetaching([
+                    $factoryId => [
+                        'is_active' => true,
+                        'is_owner' => false,
+                        'joined_at' => now(),
+                        'job_title' => $data['job_title'] ?? null,
+                    ],
+                ]);
             $user->roles()->syncWithoutDetaching([$data['role_id'] => ['factory_id' => $factoryId]]);
-            EmployeeProfile::updateOrCreate(['factory_id' => $factoryId, 'user_id' => $user->id], ['department_id' => $data['department_id'] ?? null, 'workstation_id' => $data['workstation_id'] ?? null, 'employee_number' => $data['employee_number'], 'job_title' => $data['job_title'] ?? null, 'employment_status' => 'active', 'hired_at' => now()]);
+            EmployeeProfile::updateOrCreate(
+                ['factory_id' => $factoryId, 'user_id' => $user->id],
+                [
+                    'department_id' => $data['department_id'] ?? null,
+                    'workstation_id' => $data['workstation_id'] ?? null,
+                    'employee_number' => $data['employee_number'],
+                    'job_title' => $data['job_title'] ?? null,
+                    'employment_status' => 'active',
+                    'hired_at' => now(),
+                ],
+            );
             if (! $user->current_factory_id) {
                 $user->update(['current_factory_id' => $factoryId]);
             }
@@ -105,11 +196,14 @@ class TeamWorkspaceController extends Controller
             return $user;
         });
         AuditLog::record('team.user_created', "Created workspace account for {$user->name}", $user);
-        \App\Support\Notifications\FactoryNotifier::notify(
-            $factoryId, 'users.update',
+        FactoryNotifier::notify(
+            $factoryId,
+            'users.update',
             'New employee added',
             "{$user->name} was added to the team as {$role->name} by {$request->user()->name}.",
-            '/executive/team', 'team', $request->user()->id
+            '/executive/team',
+            'team',
+            $request->user()->id,
         );
 
         return response()->json($user->load('employeeProfile.department', 'employeeProfile.workstation'), 201);
@@ -126,9 +220,13 @@ class TeamWorkspaceController extends Controller
             'role_id' => ['nullable', Rule::exists('roles', 'id')->where('factory_id', $factoryId)],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('factory_id', $factoryId)],
             'workstation_id' => ['nullable', Rule::exists('workstations', 'id')->where('factory_id', $factoryId)],
-            'job_title' => ['nullable', 'string', 'max:120'], 'is_active' => ['nullable', 'boolean'],
+            'job_title' => ['nullable', 'string', 'max:120'],
+            'is_active' => ['nullable', 'boolean'],
         ]);
-        $accountData = collect($data)->only(['name', 'email'])->filter(fn ($value) => $value !== null && $value !== '')->all();
+        $accountData = collect($data)
+            ->only(['name', 'email'])
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->all();
         if (! empty($accountData['email'])) {
             $accountData['email'] = strtolower($accountData['email']);
         }
@@ -141,7 +239,9 @@ class TeamWorkspaceController extends Controller
             $user->roles()->wherePivot('factory_id', $factoryId)->detach();
             $user->roles()->attach($role->id, ['factory_id' => $factoryId]);
         }
-        $profileData = collect($data)->only(['department_id', 'workstation_id', 'job_title'])->all();
+        $profileData = collect($data)
+            ->only(['department_id', 'workstation_id', 'job_title'])
+            ->all();
         if ($profileData) {
             EmployeeProfile::where(['factory_id' => $factoryId, 'user_id' => $user->id])->update($profileData);
         }
@@ -170,11 +270,14 @@ class TeamWorkspaceController extends Controller
             }
         });
         AuditLog::record('team.user_removed', "Removed {$name} from this factory", $user);
-        \App\Support\Notifications\FactoryNotifier::notify(
-            $factoryId, 'users.update',
+        FactoryNotifier::notify(
+            $factoryId,
+            'users.update',
             'Employee removed',
             "{$name} was removed from the team by {$request->user()->name}.",
-            '/executive/team', 'team', $request->user()->id
+            '/executive/team',
+            'team',
+            $request->user()->id,
         );
 
         return response()->json(['message' => 'User removed from this factory']);
@@ -186,12 +289,12 @@ class TeamWorkspaceController extends Controller
         $membership = $user->factories()->where('factories.id', $factoryId)->firstOrFail()->pivot;
         abort_if($membership->is_owner, 422, 'The factory owner account cannot be changed here.');
         $data = $request->validate([
-            'password' => ['required', 'confirmed', \App\Support\Security\PasswordPolicy::rule()],
+            'password' => ['required', 'confirmed', PasswordPolicy::rule()],
         ]);
-        
+
         $user->update(['password' => bcrypt($data['password'])]);
         AuditLog::record('team.user_password_reset', "Reset password for {$user->name}", $user);
-        
+
         return response()->json(['message' => 'Password reset successfully']);
     }
 
@@ -200,7 +303,10 @@ class TeamWorkspaceController extends Controller
         $factoryId = $request->user()->current_factory_id;
         abort_unless($department->factory_id === $factoryId, 404);
         $data = $request->validate([
-            'manager_id' => ['nullable', Rule::exists('factory_user', 'user_id')->where('factory_id', $factoryId)->where('is_active', true)],
+            'manager_id' => [
+                'nullable',
+                Rule::exists('factory_user', 'user_id')->where('factory_id', $factoryId)->where('is_active', true),
+            ],
         ]);
 
         DB::transaction(function () use ($department, $data, $factoryId) {
@@ -219,7 +325,16 @@ class TeamWorkspaceController extends Controller
     public function assign(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
-        $data = $request->validate(['user_id' => ['required', Rule::exists('factory_user', 'user_id')->where('factory_id', $factoryId)], 'workstation_id' => ['nullable', Rule::exists('workstations', 'id')->where('factory_id', $factoryId)], 'assignment_type' => ['required', 'string', 'max:60'], 'title' => ['required', 'string', 'max:180'], 'instructions' => ['nullable', 'string', 'max:2000'], 'priority' => ['nullable', Rule::in(['low', 'normal', 'high', 'urgent'])], 'starts_at' => ['nullable', 'date'], 'due_at' => ['nullable', 'date', 'after_or_equal:starts_at']]);
+        $data = $request->validate([
+            'user_id' => ['required', Rule::exists('factory_user', 'user_id')->where('factory_id', $factoryId)],
+            'workstation_id' => ['nullable', Rule::exists('workstations', 'id')->where('factory_id', $factoryId)],
+            'assignment_type' => ['required', 'string', 'max:60'],
+            'title' => ['required', 'string', 'max:180'],
+            'instructions' => ['nullable', 'string', 'max:2000'],
+            'priority' => ['nullable', Rule::in(['low', 'normal', 'high', 'urgent'])],
+            'starts_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+        ]);
         $assignment = WorkAssignment::create($data + ['assigned_by' => $request->user()->id]);
         AuditLog::record('work.assigned', "Assigned {$assignment->title}", $assignment);
 
@@ -233,8 +348,19 @@ class TeamWorkspaceController extends Controller
             ->where('manager_id', $request->user()->id)
             ->whereHas('employees', fn ($query) => $query->where('user_id', $assignment->user_id))
             ->exists();
-        abort_unless($assignment->user_id === $request->user()->id || $request->user()->hasPermission('users.update') || $managesAssigneeDepartment, 403, 'You cannot update this assignment.');
-        $data = $request->validate(['status' => ['required', Rule::in(['assigned', 'ready', 'in_progress', 'blocked', 'completed', 'cancelled'])]]);
+        abort_unless(
+            $assignment->user_id === $request->user()->id ||
+                $request->user()->hasPermission('users.update') ||
+                $managesAssigneeDepartment,
+            403,
+            'You cannot update this assignment.',
+        );
+        $data = $request->validate([
+            'status' => [
+                'required',
+                Rule::in(['assigned', 'ready', 'in_progress', 'blocked', 'completed', 'cancelled']),
+            ],
+        ]);
         $assignment->update($data + ['completed_at' => $data['status'] === 'completed' ? now() : null]);
         AuditLog::record('work.status_changed', "Assignment changed to {$assignment->status}", $assignment);
 
@@ -244,10 +370,19 @@ class TeamWorkspaceController extends Controller
     private function assertCanGrantRole(User $actor, Role $role): void
     {
         if ($role->slug === 'factory-owner') {
-            throw ValidationException::withMessages(['role_id' => 'The factory owner account is protected and cannot be assigned or changed from Team & Shifts.']);
+            throw ValidationException::withMessages([
+                'role_id' => 'The factory owner account is protected and cannot be assigned or changed from Team & Shifts.',
+            ]);
         }
-        $isFactoryManager = $actor->roles()->wherePivot('factory_id', $actor->current_factory_id)->where('slug', 'factory-manager')->exists();
-        if ($isFactoryManager && ! in_array($role->slug, ['factory-owner', 'factory-administrator', 'factory-manager'], true)) {
+        $isFactoryManager = $actor
+            ->roles()
+            ->wherePivot('factory_id', $actor->current_factory_id)
+            ->where('slug', 'factory-manager')
+            ->exists();
+        if (
+            $isFactoryManager &&
+            ! in_array($role->slug, ['factory-owner', 'factory-administrator', 'factory-manager'], true)
+        ) {
             return;
         }
         $this->assertCanGrantPermissions($actor, $role->permissions->pluck('slug')->all());
@@ -255,7 +390,11 @@ class TeamWorkspaceController extends Controller
 
     private function assertCanGrantPermissions(User $actor, array $permissions): void
     {
-        $isFactoryAdministrator = $actor->roles()->wherePivot('factory_id', $actor->current_factory_id)->whereIn('slug', ['factory-owner', 'factory-administrator'])->exists();
+        $isFactoryAdministrator = $actor
+            ->roles()
+            ->wherePivot('factory_id', $actor->current_factory_id)
+            ->whereIn('slug', ['factory-owner', 'factory-administrator'])
+            ->exists();
         if ($actor->is_platform_admin || $isFactoryAdministrator) {
             return;
         }

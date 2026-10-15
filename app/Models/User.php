@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +12,26 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['current_factory_id', 'school_id', 'name', 'username', 'email', 'locale', 'timezone', 'password', 'last_login_at', 'last_login_ip', 'is_platform_admin', 'is_active', 'email_verified_at', 'otp_code', 'otp_expires_at', 'otp_attempts'])]
+#[
+    Fillable([
+        'current_factory_id',
+        'school_id',
+        'name',
+        'username',
+        'email',
+        'locale',
+        'timezone',
+        'password',
+        'last_login_at',
+        'last_login_ip',
+        'is_platform_admin',
+        'is_active',
+        'email_verified_at',
+        'otp_code',
+        'otp_expires_at',
+        'otp_attempts',
+    ]),
+]
 #[Hidden(['password', 'remember_token', 'otp_code'])]
 class User extends Authenticatable
 {
@@ -38,7 +56,9 @@ class User extends Authenticatable
 
     public function factories(): BelongsToMany
     {
-        return $this->belongsToMany(Factory::class)->withPivot(['job_title', 'is_owner', 'is_active', 'joined_at'])->withTimestamps();
+        return $this->belongsToMany(Factory::class)
+            ->withPivot(['job_title', 'is_owner', 'is_active', 'joined_at'])
+            ->withTimestamps();
     }
 
     public function roles(): BelongsToMany
@@ -51,7 +71,10 @@ class User extends Authenticatable
         return $this->hasOne(EmployeeProfile::class);
     }
 
-    public function school(): BelongsTo { return $this->belongsTo(School::class); }
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
 
     public function workAssignments(): HasMany
     {
@@ -70,6 +93,9 @@ class User extends Authenticatable
         }
         $factoryId ??= $this->current_factory_id;
 
-        return $this->roles()->wherePivot('factory_id', $factoryId)->whereHas('permissions', fn ($query) => $query->where('slug', $permission))->exists();
+        return $this->roles()
+            ->wherePivot('factory_id', $factoryId)
+            ->whereHas('permissions', fn ($query) => $query->where('slug', $permission))
+            ->exists();
     }
 }

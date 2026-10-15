@@ -11,3 +11,4 @@ Documents
 package-lock.json
 composer.lock
 *.blade.php
+*.php

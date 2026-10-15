@@ -6,7 +6,25 @@ use App\Models\Concerns\BelongsToFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['factory_id', 'user_id', 'workstation_id', 'assignment_type', 'assignable_type', 'assignable_id', 'title', 'instructions', 'priority', 'status', 'starts_at', 'due_at', 'completed_at', 'assigned_by', 'metadata'])]
+#[
+    Fillable([
+        'factory_id',
+        'user_id',
+        'workstation_id',
+        'assignment_type',
+        'assignable_type',
+        'assignable_id',
+        'title',
+        'instructions',
+        'priority',
+        'status',
+        'starts_at',
+        'due_at',
+        'completed_at',
+        'assigned_by',
+        'metadata',
+    ]),
+]
 class WorkAssignment extends Model
 {
     use BelongsToFactory;

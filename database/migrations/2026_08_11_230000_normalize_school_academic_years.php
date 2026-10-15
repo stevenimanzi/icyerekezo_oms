@@ -10,7 +10,7 @@ return new class extends Migration
         foreach (range(2026, 2031) as $endingYear) {
             DB::table('sales_documents')
                 ->where('academic_year', (string) $endingYear)
-                ->update(['academic_year' => ($endingYear - 1).'-'.$endingYear]);
+                ->update(['academic_year' => $endingYear - 1 . '-' . $endingYear]);
         }
     }
 
@@ -18,7 +18,7 @@ return new class extends Migration
     {
         foreach (range(2026, 2031) as $endingYear) {
             DB::table('sales_documents')
-                ->where('academic_year', ($endingYear - 1).'-'.$endingYear)
+                ->where('academic_year', $endingYear - 1 . '-' . $endingYear)
                 ->update(['academic_year' => (string) $endingYear]);
         }
     }

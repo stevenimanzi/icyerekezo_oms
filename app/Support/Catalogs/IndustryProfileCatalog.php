@@ -13,11 +13,7 @@ final class IndustryProfileCatalog
         ['Metre', 'm', 'length', 3],
     ];
 
-    private const CONVERSIONS = [
-        ['kg', 'g', 1000],
-        ['t', 'kg', 1000],
-        ['L', 'mL', 1000],
-    ];
+    private const CONVERSIONS = [['kg', 'g', 1000], ['t', 'kg', 1000], ['L', 'mL', 1000]];
 
     public static function definitions(): array
     {
@@ -30,23 +26,59 @@ final class IndustryProfileCatalog
                 'label' => 'Food safety',
                 'internal' => true,
                 'units' => [['Gram', 'g', 'mass', 3]],
-                'categories' => [['INGREDIENTS', 'Ingredients'], ['PACKAGING', 'Packaging materials'], ['FOODPRODUCTS', 'Finished food products']],
+                'categories' => [
+                    ['INGREDIENTS', 'Ingredients'],
+                    ['PACKAGING', 'Packaging materials'],
+                    ['FOODPRODUCTS', 'Finished food products'],
+                ],
                 'item_defaults' => ['batch_tracked' => true, 'expiry_tracked' => true],
-                'features' => ['haccp_records', 'lot_traceability', 'recall_management', 'supplier_approval', 'allergen_control'],
+                'features' => [
+                    'haccp_records',
+                    'lot_traceability',
+                    'recall_management',
+                    'supplier_approval',
+                    'allergen_control',
+                ],
             ],
 
-            'clothing_textiles' => ['label' => 'Clothing and textiles', 'departments' => ['Design', 'Raw Materials', 'Cutting', 'Sewing', 'Quality Control', 'Packaging', 'Finished Goods', 'Logistics']],
+            'clothing_textiles' => [
+                'label' => 'Clothing and textiles',
+                'departments' => [
+                    'Design',
+                    'Raw Materials',
+                    'Cutting',
+                    'Sewing',
+                    'Quality Control',
+                    'Packaging',
+                    'Finished Goods',
+                    'Logistics',
+                ],
+            ],
 
             'food_processing' => [
                 'label' => 'Food processing',
                 'extends' => ['food_safety'],
-                'departments' => ['Raw Material Receiving', 'Processing', 'Quality Laboratory', 'Packaging', 'Finished Goods', 'Logistics'],
+                'departments' => [
+                    'Raw Material Receiving',
+                    'Processing',
+                    'Quality Laboratory',
+                    'Packaging',
+                    'Finished Goods',
+                    'Logistics',
+                ],
             ],
 
             'dairy' => [
                 'label' => 'Milk and dairy products',
                 'extends' => ['food_safety'],
-                'departments' => ['Milk Receiving', 'Processing', 'Quality Laboratory', 'Packaging', 'Cold Storage', 'Logistics'],
+                'departments' => [
+                    'Milk Receiving',
+                    'Processing',
+                    'Quality Laboratory',
+                    'Packaging',
+                    'Cold Storage',
+                    'Logistics',
+                ],
                 'units' => [['Millilitre', 'mL', 'volume', 0]],
                 'categories' => [['RAWMILK', 'Raw milk'], ['DAIRYPRODUCTS', 'Dairy products']],
                 'features' => ['milk_intake', 'pasteurization_records', 'cold_chain_logs'],
@@ -55,33 +87,101 @@ final class IndustryProfileCatalog
             'beverages' => [
                 'label' => 'Beverages and drinks',
                 'extends' => ['food_safety'],
-                'departments' => ['Raw Material Receiving', 'Mixing and Processing', 'Bottling', 'Quality Laboratory', 'Packaging', 'Finished Goods', 'Logistics'],
-                'units' => [['Millilitre', 'mL', 'volume', 0], ['Bottle', 'btl', 'count', 0], ['Crate', 'crate', 'count', 0]],
+                'departments' => [
+                    'Raw Material Receiving',
+                    'Mixing and Processing',
+                    'Bottling',
+                    'Quality Laboratory',
+                    'Packaging',
+                    'Finished Goods',
+                    'Logistics',
+                ],
+                'units' => [
+                    ['Millilitre', 'mL', 'volume', 0],
+                    ['Bottle', 'btl', 'count', 0],
+                    ['Crate', 'crate', 'count', 0],
+                ],
             ],
 
             'grain_flour_milling' => [
                 'label' => 'Maize, grain and flour milling',
                 'extends' => ['food_safety'],
-                'departments' => ['Grain Receiving', 'Cleaning and Sorting', 'Milling', 'Quality Laboratory', 'Packing', 'Finished Goods', 'Logistics'],
+                'departments' => [
+                    'Grain Receiving',
+                    'Cleaning and Sorting',
+                    'Milling',
+                    'Quality Laboratory',
+                    'Packing',
+                    'Finished Goods',
+                    'Logistics',
+                ],
                 'units' => [['Tonne', 't', 'mass', 3], ['Bag', 'bag', 'count', 0]],
             ],
 
             'pharmaceuticals_medicines' => [
                 'label' => 'Medicines and pharmaceuticals',
-                'departments' => ['Raw Materials', 'Formulation', 'Controlled Production', 'Quality Assurance', 'Packaging', 'Finished Goods', 'Logistics'],
+                'departments' => [
+                    'Raw Materials',
+                    'Formulation',
+                    'Controlled Production',
+                    'Quality Assurance',
+                    'Packaging',
+                    'Finished Goods',
+                    'Logistics',
+                ],
                 'item_defaults' => ['batch_tracked' => true, 'expiry_tracked' => true],
                 'features' => ['lot_traceability', 'recall_management'],
             ],
 
-            'plastics_rubber' => ['label' => 'Plastics and rubber materials', 'departments' => ['Raw Materials', 'Moulding and Extrusion', 'Trimming and Finishing', 'Quality Control', 'Packaging', 'Finished Goods', 'Logistics']],
-            'steel_metals' => ['label' => 'Steel and metal products', 'departments' => ['Raw Materials', 'Cutting', 'Fabrication', 'Welding', 'Finishing', 'Quality Control', 'Finished Goods', 'Logistics']],
-            'furniture_wood' => ['label' => 'Furniture and wood products', 'departments' => ['Raw Materials', 'Cutting', 'Assembly', 'Finishing', 'Quality Control', 'Packaging', 'Finished Goods']],
+            'plastics_rubber' => [
+                'label' => 'Plastics and rubber materials',
+                'departments' => [
+                    'Raw Materials',
+                    'Moulding and Extrusion',
+                    'Trimming and Finishing',
+                    'Quality Control',
+                    'Packaging',
+                    'Finished Goods',
+                    'Logistics',
+                ],
+            ],
+            'steel_metals' => [
+                'label' => 'Steel and metal products',
+                'departments' => [
+                    'Raw Materials',
+                    'Cutting',
+                    'Fabrication',
+                    'Welding',
+                    'Finishing',
+                    'Quality Control',
+                    'Finished Goods',
+                    'Logistics',
+                ],
+            ],
+            'furniture_wood' => [
+                'label' => 'Furniture and wood products',
+                'departments' => [
+                    'Raw Materials',
+                    'Cutting',
+                    'Assembly',
+                    'Finishing',
+                    'Quality Control',
+                    'Packaging',
+                    'Finished Goods',
+                ],
+            ],
 
             'agriculture_animal_feed' => ['label' => 'Agriculture and animal feed', 'extends' => [self::GENERIC]],
-            'construction_materials' => ['label' => 'Construction materials, cement and bricks', 'extends' => [self::GENERIC]],
+            'construction_materials' => [
+                'label' => 'Construction materials, cement and bricks',
+                'extends' => [self::GENERIC],
+            ],
             'paper_packaging_printing' => ['label' => 'Paper, packaging and printing', 'extends' => [self::GENERIC]],
             'chemicals_cosmetics_soap' => ['label' => 'Chemicals, cosmetics and soap', 'extends' => [self::GENERIC]],
-            'electronics_electrical' => ['label' => 'Electronics and electrical products', 'extends' => [self::GENERIC]],
+            'electronics_electrical' => [
+                'label' => 'Electronics and electrical products',
+                'extends' => [self::GENERIC],
+            ],
             'automotive_machinery' => ['label' => 'Automotive parts and machinery', 'extends' => [self::GENERIC]],
             'recycling_waste' => ['label' => 'Recycling and waste processing', 'extends' => [self::GENERIC]],
         ];
@@ -97,10 +197,12 @@ final class IndustryProfileCatalog
         $selectable = self::keys();
         $first = in_array($primary, $selectable, true) ? $primary : self::GENERIC;
 
-        return array_values(array_unique([
-            $first,
-            ...array_filter($additional, fn ($key) => is_string($key) && in_array($key, $selectable, true)),
-        ]));
+        return array_values(
+            array_unique([
+                $first,
+                ...array_filter($additional, fn ($key) => is_string($key) && in_array($key, $selectable, true)),
+            ]),
+        );
     }
 
     public static function resolve(array $profileKeys): array
@@ -173,7 +275,13 @@ final class IndustryProfileCatalog
     private static function mergeWithParents(string $key): array
     {
         $definition = self::definitions()[$key] ?? [];
-        $result = ['departments' => $definition['departments'] ?? [], 'units' => [], 'categories' => [], 'item_defaults' => [], 'features' => []];
+        $result = [
+            'departments' => $definition['departments'] ?? [],
+            'units' => [],
+            'categories' => [],
+            'item_defaults' => [],
+            'features' => [],
+        ];
 
         foreach ($definition['extends'] ?? [] as $parentKey) {
             $parent = self::mergeWithParents($parentKey);

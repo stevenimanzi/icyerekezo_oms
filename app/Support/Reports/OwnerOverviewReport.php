@@ -77,15 +77,15 @@ final class OwnerOverviewReport
     private function growth(): array
     {
         return [
-            'revenue' => $this->compare(fn($from, $to) => $this->revenueBetween($from, $to)),
+            'revenue' => $this->compare(fn ($from, $to) => $this->revenueBetween($from, $to)),
             'orders' => $this->compare(
-                fn($from, $to) => $this->countedOrders()
+                fn ($from, $to) => $this->countedOrders()
                     ->whereBetween('document_date', [$from->toDateString(), $to->toDateString()])
                     ->count(),
             ),
-            'units_delivered' => $this->compare(fn($from, $to) => $this->unitsDeliveredBetween($from, $to)),
-            'output' => $this->compare(fn($from, $to) => $this->outputBetween($from, $to)),
-            'collected' => $this->compare(fn($from, $to) => $this->collectedBetween($from, $to)),
+            'units_delivered' => $this->compare(fn ($from, $to) => $this->unitsDeliveredBetween($from, $to)),
+            'output' => $this->compare(fn ($from, $to) => $this->outputBetween($from, $to)),
+            'collected' => $this->compare(fn ($from, $to) => $this->collectedBetween($from, $to)),
         ];
     }
 
@@ -176,12 +176,11 @@ final class OwnerOverviewReport
             'reject_rate' => $completed + $rejected > 0 ? round(($rejected / ($completed + $rejected)) * 100, 1) : null,
             'open_orders' => (clone $orders)->whereIn('status', self::OPEN_PRODUCTION_STATUSES)->count(),
             'late_orders' => (clone $late)->count(),
-            'on_time_rate' =>
-                $finished->count() > 0
+            'on_time_rate' => $finished->count() > 0
                     ? round(
                         ($finished
                             ->filter(
-                                fn($order) => $order->completed_at->toDateString() <=
+                                fn ($order) => $order->completed_at->toDateString() <=
                                     $order->planned_end->toDateString(),
                             )
                             ->count() /
@@ -227,8 +226,8 @@ final class OwnerOverviewReport
             'value' => (float) (clone $balances)
                 ->join('items', 'items.id', '=', 'stock_balances.item_id')
                 ->sum(DB::raw('stock_balances.quantity_on_hand * items.standard_cost')),
-            'low_stock' => $levels->filter(fn($row) => (float) $row->on_hand <= (float) $row->reorder_level)->count(),
-            'out_of_stock' => $levels->filter(fn($row) => (float) $row->on_hand <= 0)->count(),
+            'low_stock' => $levels->filter(fn ($row) => (float) $row->on_hand <= (float) $row->reorder_level)->count(),
+            'out_of_stock' => $levels->filter(fn ($row) => (float) $row->on_hand <= 0)->count(),
             'expiring_soon' => $expiringSoon,
             'tracked_items' => $levels->count(),
         ];
@@ -253,7 +252,7 @@ final class OwnerOverviewReport
             ->limit(5)
             ->get()
             ->map(
-                fn($row) => ['name' => $row->name, 'orders' => (int) $row->orders, 'revenue' => (float) $row->revenue],
+                fn ($row) => ['name' => $row->name, 'orders' => (int) $row->orders, 'revenue' => (float) $row->revenue],
             );
 
         $ordered = (float) $this->lines()->sum('quantity_ordered');
@@ -404,9 +403,9 @@ final class OwnerOverviewReport
         ];
 
         return collect($rules)
-            ->filter(fn(array $rule) => $rule[2] > 0)
+            ->filter(fn (array $rule) => $rule[2] > 0)
             ->map(
-                fn(array $rule) => [
+                fn (array $rule) => [
                     'key' => $rule[0],
                     'level' => $rule[1],
                     'count' => (int) $rule[2],
@@ -425,7 +424,7 @@ final class OwnerOverviewReport
             ->limit(12)
             ->get(['id', 'user_id', 'event', 'description', 'created_at'])
             ->map(
-                fn($log) => [
+                fn ($log) => [
                     'id' => $log->id,
                     'who' => $log->user?->name ?? 'System',
                     'event' => $log->event,
@@ -462,7 +461,7 @@ final class OwnerOverviewReport
             ->where('factory_id', $this->factoryId)
             ->whereHas(
                 'document',
-                fn($query) => $query
+                fn ($query) => $query
                     ->withoutGlobalScopes()
                     ->where('document_type', 'customer_order')
                     ->whereNotIn('status', self::NOT_COUNTED_ORDER_STATUSES),

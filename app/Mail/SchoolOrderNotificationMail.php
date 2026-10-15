@@ -14,10 +14,7 @@ class SchoolOrderNotificationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(
-        public SalesDocument $document,
-        public string $eventType
-    ) {}
+    public function __construct(public SalesDocument $document, public string $eventType) {}
 
     public function envelope(): Envelope
     {
@@ -27,9 +24,7 @@ class SchoolOrderNotificationMail extends Mailable implements ShouldQueue
             default => 'School Order Notification - ' . $this->document->document_number,
         };
 
-        return new Envelope(
-            subject: $subject,
-        );
+        return new Envelope(subject: $subject);
     }
 
     public function content(): Content
@@ -39,7 +34,7 @@ class SchoolOrderNotificationMail extends Mailable implements ShouldQueue
             with: [
                 'document' => $this->document,
                 'eventType' => $this->eventType,
-            ]
+            ],
         );
     }
 }

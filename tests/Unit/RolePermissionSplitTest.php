@@ -38,10 +38,13 @@ class RolePermissionSplitTest extends TestCase
                     continue;
                 }
                 $matches = str_contains($pattern, '*')
-                    ? preg_grep('/^'.str_replace('\*', '.*', preg_quote($pattern, '/')).'$/', $known)
+                    ? preg_grep('/^' . str_replace('\*', '.*', preg_quote($pattern, '/')) . '$/', $known)
                     : array_intersect([$pattern], $known);
 
-                $this->assertNotEmpty($matches, "Role [$slug] grants [$pattern], which matches no permission in PermissionCatalog.");
+                $this->assertNotEmpty(
+                    $matches,
+                    "Role [$slug] grants [$pattern], which matches no permission in PermissionCatalog.",
+                );
             }
         }
     }

@@ -5,7 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['factory_id', 'user_id', 'event', 'auditable_type', 'auditable_id', 'description', 'old_values', 'new_values', 'ip_address', 'user_agent', 'request_id'])]
+#[
+    Fillable([
+        'factory_id',
+        'user_id',
+        'event',
+        'auditable_type',
+        'auditable_id',
+        'description',
+        'old_values',
+        'new_values',
+        'ip_address',
+        'user_agent',
+        'request_id',
+    ]),
+]
 class AuditLog extends Model
 {
     public const UPDATED_AT = null;
@@ -25,8 +39,13 @@ class AuditLog extends Model
         return $this->belongsTo(Factory::class);
     }
 
-    public static function record(string $event, string $description, ?Model $subject = null, array $old = [], array $new = []): self
-    {
+    public static function record(
+        string $event,
+        string $description,
+        ?Model $subject = null,
+        array $old = [],
+        array $new = [],
+    ): self {
         $request = request();
 
         return self::create([

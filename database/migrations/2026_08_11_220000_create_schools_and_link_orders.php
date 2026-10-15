@@ -25,21 +25,53 @@ return new class extends Migration
         });
 
         if (! Schema::hasColumn('sales_documents', 'academic_year')) {
-            Schema::table('sales_documents', fn (Blueprint $table) => $table->string('academic_year', 20)->nullable()->after('customer_email')->index());
+            Schema::table(
+                'sales_documents',
+                fn (Blueprint $table) => $table
+                    ->string('academic_year', 20)
+                    ->nullable()
+                    ->after('customer_email')
+                    ->index(),
+            );
         }
-        Schema::table('sales_documents', fn (Blueprint $table) => $table->foreignId('school_id')->nullable()->after('factory_id')->constrained()->nullOnDelete());
+        Schema::table(
+            'sales_documents',
+            fn (Blueprint $table) => $table
+                ->foreignId('school_id')
+                ->nullable()
+                ->after('factory_id')
+                ->constrained()
+                ->nullOnDelete(),
+        );
 
         if (Schema::hasColumn('sales_documents', 'school_district')) {
-            DB::table('sales_documents')->where('document_type', 'customer_order')->orderBy('id')->each(function ($order) {
-                $schoolQuery = DB::table('schools')->where('factory_id', $order->factory_id)->where('name', $order->customer_name);
-                $order->school_district ? $schoolQuery->where('district', $order->school_district) : $schoolQuery->whereNull('district');
-                $order->school_sector ? $schoolQuery->where('sector', $order->school_sector) : $schoolQuery->whereNull('sector');
-                $schoolId = $schoolQuery->value('id') ?? DB::table('schools')->insertGetId([
-                    'factory_id' => $order->factory_id, 'name' => $order->customer_name, 'district' => $order->school_district,
-                    'sector' => $order->school_sector, 'created_at' => now(), 'updated_at' => now(),
-                ]);
-                DB::table('sales_documents')->where('id', $order->id)->update(['school_id' => $schoolId]);
-            });
+            DB::table('sales_documents')
+                ->where('document_type', 'customer_order')
+                ->orderBy('id')
+                ->each(function ($order) {
+                    $schoolQuery = DB::table('schools')
+                        ->where('factory_id', $order->factory_id)
+                        ->where('name', $order->customer_name);
+                    $order->school_district
+                        ? $schoolQuery->where('district', $order->school_district)
+                        : $schoolQuery->whereNull('district');
+                    $order->school_sector
+                        ? $schoolQuery->where('sector', $order->school_sector)
+                        : $schoolQuery->whereNull('sector');
+                    $schoolId =
+                        $schoolQuery->value('id') ??
+                        DB::table('schools')->insertGetId([
+                            'factory_id' => $order->factory_id,
+                            'name' => $order->customer_name,
+                            'district' => $order->school_district,
+                            'sector' => $order->school_sector,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    DB::table('sales_documents')
+                        ->where('id', $order->id)
+                        ->update(['school_id' => $schoolId]);
+                });
         }
     }
 

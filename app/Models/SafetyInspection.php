@@ -16,5 +16,8 @@ class SafetyInspection extends Model
         return ['inspection_date' => 'date'];
     }
 
-    public function inspector() { return $this->belongsTo(User::class, 'inspector_id'); }
+    public function inspector()
+    {
+        return $this->belongsTo(User::class, 'inspector_id');
+    }
 }

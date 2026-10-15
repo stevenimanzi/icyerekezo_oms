@@ -13,7 +13,5 @@ return new class extends Migration
         Factory::query()->each(fn (Factory $factory) => RoleTemplateCatalog::createFor($factory));
     }
 
-    public function down(): void
-    {
-    }
+    public function down(): void {}
 };

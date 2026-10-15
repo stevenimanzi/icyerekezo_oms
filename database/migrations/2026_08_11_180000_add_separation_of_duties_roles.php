@@ -32,6 +32,8 @@ return new class extends Migration
     public function down(): void
     {
         DB::table('roles')->whereIn('slug', self::ROLE_SLUGS)->delete();
-        DB::table('permissions')->whereIn('module', ['hr', 'safety'])->delete();
+        DB::table('permissions')
+            ->whereIn('module', ['hr', 'safety'])
+            ->delete();
     }
 };

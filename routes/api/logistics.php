@@ -8,7 +8,9 @@ Route::controller(LogisticsController::class)
     ->group(function () {
         Route::get('/overview', 'overview')->middleware('permission:logistics.view');
         Route::post('/shipments', 'storeShipment')->middleware('permission:logistics.plan');
-        Route::patch('/shipments/{shipment}', 'updateShipment')->middleware('permission:logistics.dispatch|logistics.deliver');
+        Route::patch('/shipments/{shipment}', 'updateShipment')->middleware(
+            'permission:logistics.dispatch|logistics.deliver',
+        );
         Route::post('/vehicles', 'storeVehicle')->middleware('permission:logistics.plan');
         Route::patch('/vehicles/{vehicle}', 'updateVehicle')->middleware('permission:logistics.plan');
         Route::delete('/vehicles/{vehicle}', 'destroyVehicle')->middleware('permission:logistics.plan');

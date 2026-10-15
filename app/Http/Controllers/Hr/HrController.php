@@ -2,23 +2,29 @@
 
 namespace App\Http\Controllers\Hr;
 
+use App\Http\Controllers\Controller;
 use App\Models\EmployeeAttendance;
 use App\Models\LeaveRequest;
 use App\Models\Training;
 use App\Models\TrainingParticipant;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Http\Controllers\Controller;
 
 class HrController extends Controller
 {
     private function employees(int $factoryId)
     {
-        return User::where('is_platform_admin', false)->whereNull('school_id')
-            ->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_active', true))
-            ->orderBy('name')->get(['id', 'name', 'email']);
+        return User::where('is_platform_admin', false)
+            ->whereNull('school_id')
+            ->whereHas(
+                'factories',
+                fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_active', true),
+            )
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
     }
 
     public function overview(Request $request): JsonResponse
@@ -26,28 +32,41 @@ class HrController extends Controller
         $factoryId = $request->user()->current_factory_id;
         $from = today()->subDays(13)->toDateString();
 
-        $attendanceTrend = collect(range(6, 0))->map(function (int $daysAgo) {
-            $day = today()->subDays($daysAgo);
-            $dayRecords = EmployeeAttendance::whereDate('date', $day);
+        $attendanceTrend = collect(range(6, 0))
+            ->map(function (int $daysAgo) {
+                $day = today()->subDays($daysAgo);
+                $dayRecords = EmployeeAttendance::whereDate('date', $day);
 
-            return [
-                'date' => $day->format('M j'),
-                'present' => (clone $dayRecords)->whereIn('status', ['present', 'late'])->count(),
-                'absent' => (clone $dayRecords)->where('status', 'absent')->count(),
-            ];
-        })->values();
+                return [
+                    'date' => $day->format('M j'),
+                    'present' => (clone $dayRecords)->whereIn('status', ['present', 'late'])->count(),
+                    'absent' => (clone $dayRecords)->where('status', 'absent')->count(),
+                ];
+            })
+            ->values();
 
         return response()->json([
             'employees' => $this->employees($factoryId),
-            'attendance' => EmployeeAttendance::with('user:id,name')->where('date', '>=', $from)->orderByDesc('date')->get(),
+            'attendance' => EmployeeAttendance::with('user:id,name')
+                ->where('date', '>=', $from)
+                ->orderByDesc('date')
+                ->get(),
             'attendance_trend' => $attendanceTrend,
-            'leave_requests' => LeaveRequest::with(['user:id,name', 'reviewer:id,name'])->latest()->limit(100)->get(),
-            'trainings' => Training::with(['participants.user:id,name', 'creator:id,name'])->orderByDesc('scheduled_at')->limit(50)->get(),
+            'leave_requests' => LeaveRequest::with(['user:id,name', 'reviewer:id,name'])
+                ->latest()
+                ->limit(100)
+                ->get(),
+            'trainings' => Training::with(['participants.user:id,name', 'creator:id,name'])
+                ->orderByDesc('scheduled_at')
+                ->limit(50)
+                ->get(),
             'stats' => [
                 'present_today' => EmployeeAttendance::whereDate('date', today())->where('status', 'present')->count(),
                 'absent_today' => EmployeeAttendance::whereDate('date', today())->where('status', 'absent')->count(),
                 'pending_leave' => LeaveRequest::where('status', 'pending')->count(),
-                'upcoming_trainings' => Training::where('status', 'scheduled')->where('scheduled_at', '>=', today())->count(),
+                'upcoming_trainings' => Training::where('status', 'scheduled')
+                    ->where('scheduled_at', '>=', today())
+                    ->count(),
             ],
         ]);
     }
@@ -65,7 +84,7 @@ class HrController extends Controller
         ]);
         $record = EmployeeAttendance::updateOrCreate(
             ['factory_id' => $factoryId, 'user_id' => $data['user_id'], 'date' => $data['date']],
-            [...$data, 'recorded_by' => $request->user()->id]
+            [...$data, 'recorded_by' => $request->user()->id],
         );
 
         return response()->json($record->load('user:id,name'), 201);
@@ -81,7 +100,7 @@ class HrController extends Controller
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'reason' => ['nullable', 'string', 'max:2000'],
         ]);
-        $days = \Carbon\Carbon::parse($data['starts_at'])->diffInDays(\Carbon\Carbon::parse($data['ends_at'])) + 1;
+        $days = Carbon::parse($data['starts_at'])->diffInDays(Carbon::parse($data['ends_at'])) + 1;
         $leave = LeaveRequest::create([...$data, 'days_requested' => $days, 'status' => 'pending']);
 
         return response()->json($leave->load('user:id,name'), 201);
@@ -115,11 +134,22 @@ class HrController extends Controller
             'scheduled_at' => ['required', 'date'],
             'duration_hours' => ['required', 'numeric', 'min:0.5', 'max:200'],
             'participant_ids' => ['nullable', 'array'],
-            'participant_ids.*' => ['integer', Rule::exists('factory_user', 'user_id')->where('factory_id', $factoryId)],
+            'participant_ids.*' => [
+                'integer',
+                Rule::exists('factory_user', 'user_id')->where('factory_id', $factoryId),
+            ],
         ]);
-        $training = Training::create([...collect($data)->except('participant_ids')->all(), 'status' => 'scheduled', 'created_by' => $request->user()->id]);
+        $training = Training::create([
+            ...collect($data)->except('participant_ids')->all(),
+            'status' => 'scheduled',
+            'created_by' => $request->user()->id,
+        ]);
         foreach ($data['participant_ids'] ?? [] as $userId) {
-            TrainingParticipant::create(['training_id' => $training->id, 'user_id' => $userId, 'status' => 'registered']);
+            TrainingParticipant::create([
+                'training_id' => $training->id,
+                'user_id' => $userId,
+                'status' => 'registered',
+            ]);
         }
 
         return response()->json($training->load('participants.user:id,name'), 201);

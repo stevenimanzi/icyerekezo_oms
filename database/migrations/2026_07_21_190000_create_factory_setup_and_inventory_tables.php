@@ -161,7 +161,10 @@ return new class extends Migration
             $table->decimal('quantity_reserved', 20, 6)->default(0);
             $table->decimal('quantity_quarantined', 20, 6)->default(0);
             $table->timestamps();
-            $table->unique(['factory_id', 'item_id', 'warehouse_id', 'location_id', 'batch_id'], 'stock_balance_dimension_unique');
+            $table->unique(
+                ['factory_id', 'item_id', 'warehouse_id', 'location_id', 'batch_id'],
+                'stock_balance_dimension_unique',
+            );
         });
         Schema::create('stock_transactions', function (Blueprint $table) {
             $table->id();
@@ -180,7 +183,11 @@ return new class extends Migration
             $table->nullableMorphs('reference');
             $table->text('reason')->nullable();
             $table->foreignId('performed_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('reverses_transaction_id')->nullable()->constrained('stock_transactions')->restrictOnDelete();
+            $table
+                ->foreignId('reverses_transaction_id')
+                ->nullable()
+                ->constrained('stock_transactions')
+                ->restrictOnDelete();
             $table->timestamp('occurred_at')->index();
             $table->timestamps();
             $table->index(['factory_id', 'item_id', 'warehouse_id', 'occurred_at'], 'stock_ledger_lookup');

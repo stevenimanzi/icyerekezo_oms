@@ -7,7 +7,28 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 
-#[Fillable(['uuid', 'factory_id', 'item_id', 'warehouse_id', 'location_id', 'batch_id', 'type', 'quantity_delta', 'reserved_delta', 'quarantined_delta', 'unit_cost', 'balance_after', 'reference_type', 'reference_id', 'reason', 'performed_by', 'reverses_transaction_id', 'occurred_at'])]
+#[
+    Fillable([
+        'uuid',
+        'factory_id',
+        'item_id',
+        'warehouse_id',
+        'location_id',
+        'batch_id',
+        'type',
+        'quantity_delta',
+        'reserved_delta',
+        'quarantined_delta',
+        'unit_cost',
+        'balance_after',
+        'reference_type',
+        'reference_id',
+        'reason',
+        'performed_by',
+        'reverses_transaction_id',
+        'occurred_at',
+    ]),
+]
 class StockTransaction extends Model
 {
     use BelongsToFactory;

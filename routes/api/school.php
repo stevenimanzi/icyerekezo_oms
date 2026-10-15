@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\School\SchoolPortalController;
+use Illuminate\Support\Facades\Route;
 
 Route::controller(SchoolPortalController::class)
     ->prefix('school')

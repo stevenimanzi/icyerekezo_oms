@@ -10,7 +10,11 @@ class RequirePermission
 {
     public function handle(Request $request, Closure $next, string $permission): Response
     {
-        abort_unless($request->attributes->has('factory') && $request->attributes->has('factory_roles'), 403, 'Factory context was not verified.');
+        abort_unless(
+            $request->attributes->has('factory') && $request->attributes->has('factory_roles'),
+            403,
+            'Factory context was not verified.',
+        );
         $permissions = explode('|', $permission);
         $hasPermission = false;
 

@@ -12,18 +12,11 @@ class OtpVerificationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(
-        public string $recipientName,
-        public string $code,
-        public int $expiresInMinutes,
-    ) {
-    }
+    public function __construct(public string $recipientName, public string $code, public int $expiresInMinutes) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: "{$this->code} is your ICYEREKEZO OMS verification code",
-        );
+        return new Envelope(subject: "{$this->code} is your ICYEREKEZO OMS verification code");
     }
 
     public function content(): Content

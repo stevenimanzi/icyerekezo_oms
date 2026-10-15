@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Safety;
 
+use App\Http\Controllers\Controller;
 use App\Models\CorrectiveAction;
 use App\Models\PpeAssignment;
 use App\Models\SafetyIncident;
@@ -10,42 +11,61 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Http\Controllers\Controller;
 
 class SafetyController extends Controller
 {
     private function employees(int $factoryId)
     {
-        return User::where('is_platform_admin', false)->whereNull('school_id')
-            ->whereHas('factories', fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_active', true))
-            ->orderBy('name')->get(['id', 'name', 'email']);
+        return User::where('is_platform_admin', false)
+            ->whereNull('school_id')
+            ->whereHas(
+                'factories',
+                fn ($q) => $q->where('factories.id', $factoryId)->where('factory_user.is_active', true),
+            )
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
     }
 
     public function overview(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
 
-        $incidentTrend = collect(range(6, 0))->map(function (int $daysAgo) {
-            $day = today()->subDays($daysAgo);
+        $incidentTrend = collect(range(6, 0))
+            ->map(function (int $daysAgo) {
+                $day = today()->subDays($daysAgo);
 
-            return [
-                'date' => $day->format('M j'),
-                'incidents' => SafetyIncident::whereDate('incident_date', $day)->count(),
-                'resolved' => SafetyIncident::whereDate('resolved_at', $day)->count(),
-            ];
-        })->values();
+                return [
+                    'date' => $day->format('M j'),
+                    'incidents' => SafetyIncident::whereDate('incident_date', $day)->count(),
+                    'resolved' => SafetyIncident::whereDate('resolved_at', $day)->count(),
+                ];
+            })
+            ->values();
 
         return response()->json([
             'employees' => $this->employees($factoryId),
-            'incidents' => SafetyIncident::with(['reporter:id,name', 'resolver:id,name'])->latest('incident_date')->limit(100)->get(),
+            'incidents' => SafetyIncident::with(['reporter:id,name', 'resolver:id,name'])
+                ->latest('incident_date')
+                ->limit(100)
+                ->get(),
             'incident_trend' => $incidentTrend,
             'inspections' => SafetyInspection::with('inspector:id,name')->latest('inspection_date')->limit(100)->get(),
-            'ppe_assignments' => PpeAssignment::with(['user:id,name', 'issuer:id,name'])->latest('issued_at')->limit(100)->get(),
-            'corrective_actions' => CorrectiveAction::with(['assignee:id,name', 'creator:id,name'])->latest()->limit(100)->get(),
+            'ppe_assignments' => PpeAssignment::with(['user:id,name', 'issuer:id,name'])
+                ->latest('issued_at')
+                ->limit(100)
+                ->get(),
+            'corrective_actions' => CorrectiveAction::with(['assignee:id,name', 'creator:id,name'])
+                ->latest()
+                ->limit(100)
+                ->get(),
             'stats' => [
                 'open_incidents' => SafetyIncident::whereIn('status', ['reported', 'investigating'])->count(),
-                'incidents_this_month' => SafetyIncident::whereMonth('incident_date', now()->month)->whereYear('incident_date', now()->year)->count(),
-                'failed_inspections' => SafetyInspection::where('result', 'fail')->whereMonth('inspection_date', now()->month)->count(),
+                'incidents_this_month' => SafetyIncident::whereMonth('incident_date', now()->month)
+                    ->whereYear('incident_date', now()->year)
+                    ->count(),
+                'failed_inspections' => SafetyInspection::where('result', 'fail')
+                    ->whereMonth('inspection_date', now()->month)
+                    ->count(),
                 'open_actions' => CorrectiveAction::whereIn('status', ['open', 'in_progress'])->count(),
             ],
         ]);
