@@ -4,12 +4,13 @@ import { postJson } from '../../../../core/liveData';
 import type { Locale } from '../../../../core/types';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
-import type { OptionItem, StageKey } from '../types';
+import type { OptionItem, PieceLot, StageKey } from '../types';
 
 type Props = {
     stage: StageKey;
     previous: StageKey | null;
     options: OptionItem[];
+    lots: PieceLot[];
     locale: Locale;
     text: FlowText;
     onClose: () => void;
@@ -23,6 +24,7 @@ export function NewRequestModal({
     stage,
     previous,
     options,
+    lots,
     locale,
     text,
     onClose,
@@ -31,6 +33,7 @@ export function NewRequestModal({
     const t = text.materials;
     const [kind, setKind] = useState<Kind>(previous ? 'stage' : 'warehouse');
     const [itemId, setItemId] = useState('');
+    const [lotId, setLotId] = useState('');
     const [quantity, setQuantity] = useState('');
     const [reason, setReason] = useState('');
     const [error, setError] = useState('');
@@ -39,9 +42,11 @@ export function NewRequestModal({
     const pieces = kind === 'stage';
     const item = options.find((option) => String(option.id) === itemId);
     const amount = Number(quantity);
+    const lot = lots.find((row) => String(row.id) === lotId);
     const ready =
-        (pieces ? Number.isInteger(amount) && amount > 0 : item !== undefined && amount > 0) &&
-        reason.trim().length >= 3;
+        (pieces
+            ? Number.isInteger(amount) && amount > 0 && lot !== undefined && amount <= lot.ready
+            : item !== undefined && amount > 0) && reason.trim().length >= 3;
     const from = stageLabel(previous, locale);
 
     const submit = async () => {
@@ -52,6 +57,7 @@ export function NewRequestModal({
                 stage,
                 source: kind,
                 item_id: pieces ? null : Number(itemId),
+                lot_id: pieces ? Number(lotId) : null,
                 quantity: amount,
                 reason: reason.trim(),
             });
@@ -93,6 +99,20 @@ export function NewRequestModal({
 
             <span className="ui-help">{pieces ? t.piecesHint(from) : t.requestHint}</span>
 
+            {pieces && (
+                <label className="ui-field">
+                    {t.lot}
+                    <select value={lotId} onChange={(event) => setLotId(event.target.value)}>
+                        <option value="">{lots.length ? t.chooseItem : t.noCutItems}</option>
+                        {lots.map((row) => (
+                            <option key={row.id} value={row.id}>
+                                {t.lotOption(row)}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            )}
+
             {!pieces && (
                 <label className="ui-field">
                     {t.requestItem}
@@ -114,6 +134,7 @@ export function NewRequestModal({
                 <input
                     type="number"
                     min={pieces ? 1 : 0}
+                    max={pieces ? lot?.ready : undefined}
                     step={pieces ? 1 : 'any'}
                     value={quantity}
                     onChange={(event) => setQuantity(event.target.value)}

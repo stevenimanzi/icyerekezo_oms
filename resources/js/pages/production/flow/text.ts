@@ -1,4 +1,5 @@
 import type { Locale } from '../../../core/types';
+import type { PieceLot } from './types';
 
 const en = {
     refresh: 'Refresh',
@@ -204,10 +205,10 @@ const en = {
         kindMaterial: 'Warehouse (zippers, thread, buttons…)',
         piecesHint: (from: string) =>
             `${from} sees your request and sends the pieces. It closes by itself when they send them.`,
-        lot: 'Which lot? (optional)',
-        anyLot: 'Any lot',
-        lotOption: (lot: string, product: string, ready: number) =>
-            `${lot} · ${product} · ${ready} ready`,
+        lot: 'Cut items available',
+        noCutItems: 'Nothing is ready to send yet',
+        lotOption: (lot: PieceLot) =>
+            `${[lot.product, lot.color, lot.size].filter(Boolean).join(' · ')} (${lot.lot_number}) — ${lot.ready} available`,
         piecesQuantity: 'How many pieces?',
         piecesReasonHint: 'For example: to finish the school polo order',
         requestItem: 'What do you need?',
@@ -505,9 +506,10 @@ const fr: typeof en = {
         kindMaterial: 'Entrepôt (fermetures, fil, boutons…)',
         piecesHint: (from) =>
             `${from} voit votre demande et envoie les pièces. Elle se ferme toute seule à l’envoi.`,
-        lot: 'Quel lot ? (facultatif)',
-        anyLot: 'N’importe quel lot',
-        lotOption: (lot, product, ready) => `${lot} · ${product} · ${ready} prêtes`,
+        lot: 'Articles coupés disponibles',
+        noCutItems: 'Rien n’est prêt à être envoyé',
+        lotOption: (lot) =>
+            `${[lot.product, lot.color, lot.size].filter(Boolean).join(' · ')} (${lot.lot_number}) — ${lot.ready} disponibles`,
         piecesQuantity: 'Combien de pièces ?',
         piecesReasonHint: 'Par exemple : pour finir la commande de polos scolaires',
         requestItem: 'De quoi avez-vous besoin ?',

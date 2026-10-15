@@ -71,8 +71,13 @@ class MaterialRequestService
         $from = ProductionFlowCatalog::previous($stage);
         abort_unless($from !== null && FlowAccess::for($user)->canWork($stage), 403, 'You cannot ask another stage for pieces.');
 
-        $lot = ! empty($data['lot_id']) ? ProductionLot::findOrFail($data['lot_id']) : null;
+        $lot = ProductionLot::findOrFail($data['lot_id'] ?? 0);
         $quantity = (int) $data['quantity'];
+        $ready = app(FlowBalances::class)->forLot($lot->id)['stages'][$from]['outbox'];
+
+        if ($quantity > $ready) {
+            throw ValidationException::withMessages(['quantity' => "Only {$ready} pieces of {$lot->lot_number} are ready to send."]);
+        }
 
         $request = MaterialRequest::create([
             'request_number' => $this->nextNumber(),

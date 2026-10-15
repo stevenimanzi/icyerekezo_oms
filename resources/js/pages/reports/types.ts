@@ -90,6 +90,8 @@ export type RegisterData = {
         date: string;
         groups: (string | number)[][][];
         quality: (string | number)[][];
+        cut_damaged: (string | number)[][];
+        sew_damaged: (string | number)[][];
         sales: (string | number)[][];
     }[];
     truncated: boolean;

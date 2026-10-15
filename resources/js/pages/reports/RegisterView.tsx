@@ -6,7 +6,7 @@ type Props = { register: RegisterData; text: ReportText; format: Format };
 
 type Columns = keyof ReportText['register']['columns'];
 type GroupSpec = {
-    source: number | 'quality' | 'sales';
+    source: number | 'quality' | 'sales' | 'cut_damaged' | 'sew_damaged';
     label: keyof ReportText['register']['groups'];
     columns: Columns[];
     numeric: number[];
@@ -32,6 +32,12 @@ const BLOCKS: Record<RegisterBlock, { colour: string; groups: GroupSpec[] }> = {
                 columns: ['colour', 'metresUsed', 'style', 'size', 'pieces'],
                 numeric: [1, 4],
             },
+            {
+                source: 'cut_damaged',
+                label: 'damaged',
+                columns: ['colour', 'style', 'size', 'damagedPieces', 'fabricLost'],
+                numeric: [3, 4],
+            },
         ],
     },
     prod: {
@@ -44,6 +50,12 @@ const BLOCKS: Record<RegisterBlock, { colour: string; groups: GroupSpec[] }> = {
                 numeric: [3],
             },
             { source: 6, label: 'done', columns: ['colour', 'style', 'size', 'qty'], numeric: [3] },
+            {
+                source: 'sew_damaged',
+                label: 'damaged',
+                columns: ['colour', 'style', 'size', 'damagedPieces'],
+                numeric: [3],
+            },
         ],
     },
     fin: {

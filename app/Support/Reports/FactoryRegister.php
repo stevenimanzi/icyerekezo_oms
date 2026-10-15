@@ -32,7 +32,7 @@ final class FactoryRegister
         $end = $to->copy()->endOfDay();
         $days = [];
 
-        $blank = fn () => ['groups' => array_fill(0, 10, []), 'quality' => [], 'sales' => []];
+        $blank = fn () => ['groups' => array_fill(0, 10, []), 'quality' => [], 'sales' => [], 'cut_damaged' => [], 'sew_damaged' => []];
         $add = function (string $date, int $group, array $row) use (&$days, $blank) {
             $days[$date] ??= $blank();
             $days[$date]['groups'][$group][] = $row;
@@ -64,6 +64,15 @@ final class FactoryRegister
             $style = (string) $lot?->product?->name;
             $size = (string) $lot?->size;
             $good = (float) $entry->good_quantity;
+            $damaged = (float) $entry->damaged_quantity;
+            $waste = (float) $entry->fabric_waste;
+
+            if ($entry->stage === 'cutting' && in_array('cutting', $allowed, true) && ($damaged > 0 || $waste > 0)) {
+                $extra($date, 'cut_damaged', [$colour, $style, $size, $damaged, $waste]);
+            }
+            if ($entry->stage === 'sewing' && in_array('sewing', $allowed, true) && $damaged > 0) {
+                $extra($date, 'sew_damaged', [$colour, $style, $size, $damaged]);
+            }
 
             match ($entry->stage) {
                 'cutting' => in_array('cutting', $allowed, true) ? $add($date, 4, [$colour, (float) $entry->fabric_used, $style, $size, $good]) : null,
@@ -102,6 +111,8 @@ final class FactoryRegister
                     $this->arrange($groups[9], 0, 1, 2),
                 ],
                 'quality' => $this->arrange($day['quality'], 0, 1, 2),
+                'cut_damaged' => $this->arrange($day['cut_damaged'], 0, 1, 2),
+                'sew_damaged' => $this->arrange($day['sew_damaged'], 0, 1, 2),
                 'sales' => collect($day['sales'])->sortByDesc(fn (array $row) => $row[1])->values()->all(),
             ];
         })->values()->all();

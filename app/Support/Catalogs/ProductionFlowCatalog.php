@@ -33,7 +33,7 @@ final class ProductionFlowCatalog
     public const WAREHOUSE_ROLES = ['warehouse-keeper', 'factory-administrator'];
 
     /** Stages a lot may skip: pieces can go from the stage before straight to the one after. */
-    public const SKIPPABLE = ['finishing'];
+    public const SKIPPABLE = [];
 
     public static function keys(): array
     {

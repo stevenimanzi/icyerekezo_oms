@@ -348,6 +348,7 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                     stage={stage}
                     previous={data.capabilities.previous}
                     options={data.options}
+                    lots={data.lots}
                     locale={locale}
                     text={text}
                     onClose={() => setCreating(false)}

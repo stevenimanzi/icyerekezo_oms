@@ -137,7 +137,7 @@ class ProductionFlowController extends Controller
             'stage' => ['required', Rule::in(ProductionFlowCatalog::keys())],
             'source' => ['nullable', Rule::in(['warehouse', 'stage'])],
             'item_id' => ['required_unless:source,stage', 'nullable', 'integer', Rule::exists('items', 'id')->where('factory_id', $factoryId)],
-            'lot_id' => ['nullable', 'integer', Rule::exists('production_lots', 'id')->where('factory_id', $factoryId)],
+            'lot_id' => ['required_if:source,stage', 'nullable', 'integer', Rule::exists('production_lots', 'id')->where('factory_id', $factoryId)],
             'quantity' => ['required', 'numeric', 'gt:0', 'max:1000000', Rule::when($request->input('source') === 'stage', ['integer'])],
             'reason' => ['required', 'string', 'min:3', 'max:255'],
         ]);

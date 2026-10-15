@@ -241,25 +241,18 @@ class ProductionFlowTest extends TestCase
         $this->as('sewing-operator')->postJson("/api/flow/lots/{$lot}/send", ['from_stage' => 'sewing', 'quantity' => 41])->assertUnprocessable();
     }
 
-    public function test_sewing_can_send_straight_to_packing_but_other_stages_cannot_skip_ahead(): void
+    public function test_pieces_only_go_to_the_next_stage_and_cannot_skip_ahead(): void
     {
         $this->approvedFabric();
         $lot = $this->cutLot(100);
         $this->receive('sewing-operator', $this->send('cutting-operator', $lot, 'cutting', 60), 60);
         $this->work('sewing-operator', $lot, 'sewing', 50)->assertCreated();
 
-        $this->as('cutting-operator')->postJson("/api/flow/lots/{$lot}/send", ['from_stage' => 'cutting', 'to_stage' => 'packing', 'quantity' => 10])->assertUnprocessable();
-
         $overview = $this->as('sewing-operator')->getJson('/api/flow/overview')->assertOk();
-        $this->assertSame(['finishing', 'packing'], $overview->json('stage.destinations'));
+        $this->assertSame(['finishing'], $overview->json('stage.destinations'));
 
-        $transfer = $this->as('sewing-operator')->postJson("/api/flow/lots/{$lot}/send", ['from_stage' => 'sewing', 'to_stage' => 'packing', 'quantity' => 50])
-            ->assertCreated()->json('transfer.id');
-        $this->receive('packaging-operator', $transfer, 50);
-
-        $this->assertSame(0, $this->stages($lot)['sewing']['outbox']);
-        $this->assertSame(50, $this->stages($lot)['packing']['wip']);
-        $this->assertSame(0, $this->stages($lot)['finishing']['wip']);
+        $this->as('sewing-operator')->postJson("/api/flow/lots/{$lot}/send", ['from_stage' => 'sewing', 'to_stage' => 'packing', 'quantity' => 50])->assertUnprocessable();
+        $this->as('sewing-operator')->postJson("/api/flow/lots/{$lot}/send", ['from_stage' => 'sewing', 'to_stage' => 'finishing', 'quantity' => 50])->assertCreated();
     }
 
     public function test_a_stage_can_ask_the_stage_before_for_pieces_and_the_delivery_closes_the_request(): void
@@ -268,7 +261,7 @@ class ProductionFlowTest extends TestCase
         $lot = $this->cutLot(100);
 
         $id = $this->as('sewing-operator')->postJson('/api/flow/requests', [
-            'stage' => 'sewing', 'source' => 'stage', 'quantity' => 60, 'reason' => 'School polo order',
+            'stage' => 'sewing', 'source' => 'stage', 'lot_id' => $lot, 'quantity' => 60, 'reason' => 'School polo order',
         ])->assertCreated()->json('request.id');
 
         $this->as('cutting-operator')->getJson('/api/flow/requests?stage=cutting&direction=asked')
@@ -278,6 +271,8 @@ class ProductionFlowTest extends TestCase
             ->assertJsonPath('requests.0.from_stage', 'cutting')->assertJsonPath('capabilities.previous', 'cutting');
         $this->as('warehouse-keeper')->getJson('/api/flow/requests?status=pending')->assertOk()->assertJsonCount(0, 'requests');
         $this->as('warehouse-keeper')->postJson("/api/flow/requests/{$id}/decision", ['decision' => 'approve'])->assertUnprocessable();
+
+        $this->as('sewing-operator')->postJson('/api/flow/requests', ['stage' => 'sewing', 'source' => 'stage', 'lot_id' => $lot, 'quantity' => 101, 'reason' => 'Too many'])->assertUnprocessable();
 
         $this->send('cutting-operator', $lot, 'cutting', 25);
         $this->assertSame(['pending', 25], [MaterialRequest::find($id)->status, MaterialRequest::find($id)->fulfilled_quantity]);
@@ -289,8 +284,10 @@ class ProductionFlowTest extends TestCase
 
     public function test_the_stage_that_was_asked_can_decline_but_nobody_else_and_the_first_stage_cannot_ask_for_pieces(): void
     {
+        $this->approvedFabric();
+        $lot = $this->cutLot(100);
         $id = $this->as('sewing-operator')->postJson('/api/flow/requests', [
-            'stage' => 'sewing', 'source' => 'stage', 'quantity' => 10, 'reason' => 'Rush order',
+            'stage' => 'sewing', 'source' => 'stage', 'lot_id' => $lot, 'quantity' => 10, 'reason' => 'Rush order',
         ])->assertCreated()->json('request.id');
 
         $this->as('sewing-operator')->postJson("/api/flow/requests/{$id}/answer", ['note' => 'I do not need it'])->assertForbidden();
@@ -298,7 +295,7 @@ class ProductionFlowTest extends TestCase
         $this->assertSame('rejected', MaterialRequest::find($id)->status);
 
         $this->as('cutting-operator')->postJson('/api/flow/requests', [
-            'stage' => 'cutting', 'source' => 'stage', 'quantity' => 10, 'reason' => 'Nothing before cutting',
+            'stage' => 'cutting', 'source' => 'stage', 'lot_id' => $lot, 'quantity' => 10, 'reason' => 'Nothing before cutting',
         ])->assertForbidden();
     }
 
