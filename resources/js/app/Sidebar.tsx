@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, LifeBuoy, LogOut, Settings, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, LogOut, MessageCircle, Settings, X } from 'lucide-react';
 import type { Labels } from '../core/labels';
 import type { AuthUser, Locale } from '../core/types';
 import type { NavEntry } from './navigation';
@@ -13,6 +13,7 @@ type Props = {
     activePage: string;
     open: boolean;
     lowStockCount: number;
+    chatUnread: number;
     showSettings: boolean;
     showSupport: boolean;
     isOwner: boolean;
@@ -25,8 +26,18 @@ type Props = {
 };
 
 export function Sidebar(props: Props) {
-    const { user, locale, labels, entries, activePage, open, lowStockCount, onNavigate, onClose } =
-        props;
+    const {
+        user,
+        locale,
+        labels,
+        entries,
+        activePage,
+        open,
+        lowStockCount,
+        chatUnread,
+        onNavigate,
+        onClose,
+    } = props;
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     const [switcherOpen, setSwitcherOpen] = useState(false);
     const text = (en: string, fr: string) => (locale === 'en' ? en : fr);
@@ -180,8 +191,13 @@ export function Sidebar(props: Props) {
                                 className={`nav-item ${activePage === 'support' ? 'active' : ''}`}
                                 onClick={() => go('support')}
                             >
-                                <LifeBuoy size={18} />
+                                <MessageCircle size={18} />
                                 <span>{labels.support}</span>
+                                {chatUnread > 0 && (
+                                    <i title={text('New chat messages', 'Nouveaux messages')}>
+                                        {chatUnread}
+                                    </i>
+                                )}
                             </button>
                         )}
                     </>

@@ -4,7 +4,7 @@ import { startPolling } from './polling';
 
 const REFRESH_EVERY_MS = 15000;
 
-export function useLiveData<T>(url: string) {
+export function useLiveData<T>(url: string, refreshMs: number = REFRESH_EVERY_MS) {
     const [data, setData] = useState<T | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -24,10 +24,10 @@ export function useLiveData<T>(url: string) {
     useEffect(() => {
         setData(null);
         load();
-        const timer = startPolling(load, REFRESH_EVERY_MS);
+        const timer = startPolling(load, refreshMs);
 
         return () => window.clearInterval(timer);
-    }, [load]);
+    }, [load, refreshMs]);
 
     return { data, error, loading, reload: load };
 }

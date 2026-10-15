@@ -63,11 +63,7 @@ const TeamManagementPage = lazy(() =>
         default: module.TeamManagementPage,
     })),
 );
-const UserSupportChat = lazy(() =>
-    import('../pages/shared/UserSupportChat').then((module) => ({
-        default: module.UserSupportChat,
-    })),
-);
+const ChatPage = lazy(() => import('../pages/chat/ChatPage'));
 
 type Props = {
     user: AuthUser;
@@ -171,7 +167,7 @@ function CurrentPage({
 
     if (user.is_platform_admin) return <SystemAdminPage page={activePage} locale={locale} />;
 
-    if (activePage === 'support') return <UserSupportChat user={user} locale={locale} />;
+    if (activePage === 'support') return <ChatPage user={user} locale={locale} />;
 
     if (flags.hasProductionFlow) {
         const flowStage = FLOW_STAGE_PAGES[activePage];

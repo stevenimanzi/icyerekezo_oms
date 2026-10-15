@@ -7,6 +7,7 @@ import { buildRoleContext, navGroupsFor } from '../roles/registry';
 import { useAppearance } from './hooks/useAppearance';
 import { useConnectivity } from './hooks/useConnectivity';
 import { useLowStockCount } from './hooks/useLowStockCount';
+import { useChatUnread } from './hooks/useChatUnread';
 import { useNotifications } from './hooks/useNotifications';
 import { usePageNavigation } from './hooks/usePageNavigation';
 import { createAccess, groupNav, visibleNav } from './navigation';
@@ -56,6 +57,7 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
         setActivePage(pageKeyFromPath(user, url)),
     );
     const lowStockCount = useLowStockCount(user, access.can('inventory.view'));
+    const chatUnread = useChatUnread(user, showSupport);
 
     const switchFactory = async (factoryId: number) => {
         setSwitchingFactory(factoryId);
@@ -83,6 +85,7 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
                 activePage={activePage}
                 open={sidebarOpen}
                 lowStockCount={lowStockCount}
+                chatUnread={chatUnread}
                 showSettings={showSettings}
                 showSupport={showSupport}
                 isOwner={flags.isFactoryOwner}

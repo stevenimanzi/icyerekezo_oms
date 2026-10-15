@@ -20,6 +20,7 @@ Route::prefix('api')->group(function () {
         Route::prefix('platform')->middleware('platform')->group(base_path('routes/api/platform.php'));
 
         Route::middleware('tenant')->group(function () {
+            Route::group([], base_path('routes/api/chat.php'));
             Route::group([], base_path('routes/api/dashboard.php'));
             Route::group([], base_path('routes/api/factory.php'));
             Route::group([], base_path('routes/api/team.php'));
