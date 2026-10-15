@@ -56,6 +56,9 @@ const SchoolPortalPage = lazy(() => import('../roles/school/SchoolPortalPage'));
 const SewingWorkspacePage = lazy(
     () => import('../pages/production/textile/sewing/SewingWorkspacePage'),
 );
+const MaterialRequestsPage = lazy(
+    () => import('../pages/production/flow/materials/MaterialRequestsPage'),
+);
 const StageWorkspace = lazy(() => import('../pages/production/flow/StageWorkspace'));
 const SystemAdminPage = lazy(() => import('../roles/system-admin/SystemAdminPage'));
 const TeamManagementPage = lazy(() =>
@@ -91,14 +94,17 @@ const FLOW_STAGE_PAGES: Record<string, { stage: StageKey; tab: FlowTab }> = {
     'cutting-workspace': { stage: 'cutting', tab: 'work' },
     'cut-fabrics': { stage: 'cutting', tab: 'work' },
     'damaged-fabrics': { stage: 'cutting', tab: 'work' },
-    'fabric-request': { stage: 'cutting', tab: 'materials' },
     'cutting-report': { stage: 'cutting', tab: 'report' },
     'sewing-workspace': { stage: 'sewing', tab: 'work' },
-    'sewing-materials': { stage: 'sewing', tab: 'materials' },
     'finishing-workspace': { stage: 'finishing', tab: 'work' },
-    'finishing-materials': { stage: 'finishing', tab: 'materials' },
     'packing-workspace': { stage: 'packing', tab: 'work' },
-    'packing-materials': { stage: 'packing', tab: 'materials' },
+};
+
+const FLOW_MATERIAL_PAGES: Record<string, StageKey> = {
+    'fabric-request': 'cutting',
+    'sewing-materials': 'sewing',
+    'finishing-materials': 'finishing',
+    'packing-materials': 'packing',
 };
 
 const LOGISTICS_TABS: Record<string, string> = {
@@ -183,6 +189,18 @@ function CurrentPage({
                     locale={locale}
                     stage={flowStage.stage}
                     initialTab={flowStage.tab}
+                />
+            );
+        }
+        const materialStage = FLOW_MATERIAL_PAGES[activePage];
+
+        if (materialStage) {
+            return (
+                <MaterialRequestsPage
+                    key={materialStage}
+                    user={user}
+                    locale={locale}
+                    stage={materialStage}
                 />
             );
         }

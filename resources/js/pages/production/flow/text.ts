@@ -24,7 +24,7 @@ const en = {
     flowEnd: 'Quality check, then stock',
     flowStart: 'Warehouse fabric',
 
-    tabs: { work: 'Work', materials: 'Materials', history: 'History', report: 'Report' },
+    tabs: { work: 'Work', history: 'History', report: 'Report' },
 
     kpi: {
         arriving: 'Arriving',
@@ -131,6 +131,31 @@ const en = {
         quantity: 'How much is damaged?',
         reason: 'What happened?',
         save: 'Record damage',
+    },
+
+    requestsPage: {
+        title: 'Request materials',
+        subtitle: 'Ask the warehouse for what your team needs and follow every request.',
+        newRequest: 'New request',
+        kpiWaiting: 'Waiting for the warehouse',
+        kpiApproved: 'Approved',
+        kpiDeclined: 'Declined',
+        kpiAll: 'All requests',
+        status: 'Status',
+        allStatuses: 'All requests',
+        search: 'Search number, item or reason',
+        from: 'From',
+        to: 'To',
+        clear: 'Clear filters',
+        item: 'Item',
+        quantity: 'Quantity',
+        reason: 'What it is for',
+        requested: 'Asked',
+        answer: 'Answer',
+        waitingAnswer: 'Waiting for the warehouse',
+        takenFrom: (warehouse: string) => `Taken from ${warehouse}`,
+        empty: 'No requests match these filters.',
+        emptyFirst: 'You have not asked for anything yet. Press “New request” to start.',
     },
 
     materials: {
@@ -254,7 +279,7 @@ const fr: typeof en = {
     flowEnd: 'Contrôle qualité, puis stock',
     flowStart: 'Tissu de l’entrepôt',
 
-    tabs: { work: 'Travail', materials: 'Matières', history: 'Historique', report: 'Rapport' },
+    tabs: { work: 'Travail', history: 'Historique', report: 'Rapport' },
 
     kpi: {
         arriving: 'En route vers vous',
@@ -362,6 +387,32 @@ const fr: typeof en = {
         quantity: 'Quelle quantité est abîmée ?',
         reason: 'Que s’est-il passé ?',
         save: 'Enregistrer les dégâts',
+    },
+
+    requestsPage: {
+        title: 'Demander des matières',
+        subtitle: 'Demandez à l’entrepôt ce dont votre équipe a besoin et suivez chaque demande.',
+        newRequest: 'Nouvelle demande',
+        kpiWaiting: 'En attente de l’entrepôt',
+        kpiApproved: 'Approuvées',
+        kpiDeclined: 'Refusées',
+        kpiAll: 'Toutes les demandes',
+        status: 'Statut',
+        allStatuses: 'Toutes les demandes',
+        search: 'Chercher un numéro, un article ou un motif',
+        from: 'Du',
+        to: 'Au',
+        clear: 'Effacer les filtres',
+        item: 'Article',
+        quantity: 'Quantité',
+        reason: 'C’est pour quoi',
+        requested: 'Demandé',
+        answer: 'Réponse',
+        waitingAnswer: 'En attente de l’entrepôt',
+        takenFrom: (warehouse) => `Prélevé dans ${warehouse}`,
+        empty: 'Aucune demande ne correspond à ces filtres.',
+        emptyFirst:
+            'Vous n’avez encore rien demandé. Appuyez sur « Nouvelle demande » pour commencer.',
     },
 
     materials: {

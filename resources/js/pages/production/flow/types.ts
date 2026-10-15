@@ -292,7 +292,9 @@ export type FlowReport = {
 };
 
 export type RequestsOverview = {
-    capabilities: { approve: boolean };
+    capabilities: { approve: boolean; request: boolean };
+    counts: { pending: number; approved: number; rejected: number; cancelled: number; all: number };
+    options: OptionItem[];
     requests: RequestRow[];
     warehouses: { id: number; name: string }[];
 };

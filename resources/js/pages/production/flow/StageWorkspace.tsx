@@ -8,7 +8,6 @@ import { CutModal } from './stage/CutModal';
 import { FabricLossModal } from './stage/FabricLossModal';
 import { FlowChain } from './stage/FlowChain';
 import { HistoryTab } from './stage/HistoryTab';
-import { MaterialsTab } from './stage/MaterialsTab';
 import { ReceiveModal } from './stage/ReceiveModal';
 import { RecordWorkModal } from './stage/RecordWorkModal';
 import { ReportTab } from './stage/ReportTab';
@@ -19,9 +18,9 @@ import { flowText } from './text';
 import type { StageKey, StageOverview } from './types';
 import { useLiveData } from '../../../core/liveData';
 
-export type Tab = 'work' | 'materials' | 'history' | 'report';
+export type Tab = 'work' | 'history' | 'report';
 
-const TABS: Tab[] = ['work', 'materials', 'history', 'report'];
+const TABS: Tab[] = ['work', 'history', 'report'];
 const NOTICE_MS = 7000;
 
 type Props = { user: AuthUser; locale: Locale; stage: StageKey; initialTab?: Tab };
@@ -129,15 +128,6 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                             text={text}
                             format={format}
                             onModal={setModal}
-                        />
-                    )}
-                    {tab === 'materials' && (
-                        <MaterialsTab
-                            data={data}
-                            locale={locale}
-                            text={text}
-                            format={format}
-                            onChanged={done}
                         />
                     )}
                     {tab === 'history' && (
