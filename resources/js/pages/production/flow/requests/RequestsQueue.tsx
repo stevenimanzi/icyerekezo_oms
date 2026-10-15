@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
 import { Modal } from '../../../../components/Modal';
 import { makeFormat } from '../../../../core/format';
 import type { AuthUser, Locale } from '../../../../core/types';
@@ -18,7 +17,7 @@ type Decision = { row: RequestRow; kind: 'approve' | 'reject' };
 const FILTERS: Filter[] = ['pending', 'approved', 'rejected', 'all'];
 const NOTICE_MS = 7000;
 
-export default function MaterialRequestsPage({ locale }: Props) {
+export default function RequestsQueue({ locale }: Props) {
     const text = flowText[locale];
     const words = monitorText[locale].requests;
     const format = useMemo(() => makeFormat(locale, ''), [locale]);
@@ -32,7 +31,6 @@ export default function MaterialRequestsPage({ locale }: Props) {
     const {
         data,
         error: loadError,
-        loading,
         reload,
     } = useLiveData<RequestsOverview>(`/api/flow/requests?status=${filter}`);
 
@@ -73,20 +71,7 @@ export default function MaterialRequestsPage({ locale }: Props) {
     const canApprove = Boolean(data?.capabilities.approve);
 
     return (
-        <section className="ui">
-            <div className="page-heading">
-                <div>
-                    <h1>{words.title}</h1>
-                    <p>{words.subtitle}</p>
-                </div>
-                <div className="ui-actions">
-                    <button className="secondary-btn" onClick={reload} disabled={loading}>
-                        <RefreshCw size={15} />
-                        {text.refresh}
-                    </button>
-                </div>
-            </div>
-
+        <>
             {loadError && <div className="ui-error">{loadError}</div>}
             {notice && (
                 <div className="ui-notice" role="status">
@@ -287,6 +272,6 @@ export default function MaterialRequestsPage({ locale }: Props) {
                     )}
                 </Modal>
             )}
-        </section>
+        </>
     );
 }
