@@ -9,7 +9,7 @@ export const qualityManagerRole: RoleModule = {
         [
             'quality',
             ClipboardCheck,
-            text('Quality management', 'Gestion de la qualite'),
+            text('Quality', 'Qualité'),
             'quality.view',
         ],
         ['reports', FileText, labels.reports, 'reports.view'],

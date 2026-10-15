@@ -7,7 +7,7 @@ export const procurementRole: RoleModule = {
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['procurement', ShoppingCart, labels.procurement, 'procurement.view'],
-        ['inventory', Warehouse, text('Stock levels', 'Niveaux de stock'), 'inventory.view'],
+        ['inventory', Warehouse, text('Stock', 'Stock'), 'inventory.view'],
         ['products', Boxes, labels.products, 'products.view'],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],

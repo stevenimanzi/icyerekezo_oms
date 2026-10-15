@@ -9,7 +9,7 @@ export const productionSupervisorRole: RoleModule = {
         [
             'production',
             Gauge,
-            text('Daily production control', 'Controle quotidien de production'),
+            text('Production', 'Production'),
             'production.view',
         ],
         ['quality', ClipboardCheck, labels.control, 'quality.view'],

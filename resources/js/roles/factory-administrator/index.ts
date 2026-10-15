@@ -30,7 +30,7 @@ export const factoryAdministratorRole: RoleModule = {
         [
             'logistics-reports',
             Truck,
-            text('Logistics report', 'Rapport logistique'),
+            text('Delivery report', 'Rapport de livraison'),
             'reports.view',
         ],
         ['reports', FileText, labels.reports, 'reports.view'],
@@ -39,12 +39,12 @@ export const factoryAdministratorRole: RoleModule = {
 
 export const executiveNavGroups = ({ text }: RoleContext): Record<string, NavGroup> => ({
     supply: {
-        label: text('Supply Chain', "Chaîne d'approvisionnement"),
+        label: text('Buying & stock', 'Achats et stock'),
         icon: ShoppingCart,
         children: ['procurement', 'inventory', 'products'],
     },
     operations: {
-        label: text('Operations', 'Opérations'),
+        label: text('Factory work', 'Travail en usine'),
         icon: Gauge,
         children: ['production', 'quality', 'machines'],
     },

@@ -9,7 +9,7 @@ export const factoryManagerRole: RoleModule = {
         [
             'production',
             Gauge,
-            text('Production Configuration', 'Configuration de production'),
+            text('Production setup', 'Réglage production'),
             'production.view',
         ],
         ['team', Users, labels.people, 'users.view'],
@@ -17,7 +17,7 @@ export const factoryManagerRole: RoleModule = {
         [
             'logistics-reports',
             Truck,
-            text('Logistics report', 'Rapport logistique'),
+            text('Delivery report', 'Rapport de livraison'),
             'reports.view',
         ],
         ['reports', FileText, labels.reports, 'reports.view'],

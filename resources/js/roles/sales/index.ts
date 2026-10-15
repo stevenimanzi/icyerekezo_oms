@@ -11,7 +11,7 @@ export const salesRole: RoleModule = {
         [
             'inventory',
             Warehouse,
-            text('Stock availability', 'Disponibilité du stock'),
+            text('Stock', 'Stock'),
             'inventory.view',
         ],
         ['reports', FileText, labels.reports, 'reports.view'],

@@ -9,14 +9,14 @@ export const productionPlannerRole: RoleModule = {
         [
             'production',
             Gauge,
-            text('Production planning', 'Planification de production'),
+            text('Planning', 'Planification'),
             'production.view',
         ],
         ['products', Boxes, labels.products, 'products.view'],
         [
             'inventory',
             Warehouse,
-            text('Material availability', 'Disponibilite des matieres'),
+            text('Materials', 'Matières'),
             'inventory.view',
         ],
         ['reports', FileText, labels.reports, 'reports.view'],

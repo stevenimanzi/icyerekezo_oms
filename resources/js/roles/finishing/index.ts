@@ -9,7 +9,7 @@ export const finishingRole: RoleModule = {
         [
             'finishing-workspace',
             Gauge,
-            text('Record finishing', 'Enregistrer la finition'),
+            text('Finishing', 'Finition'),
             'production.view',
         ],
         ['reports', FileText, labels.reports, 'reports.view'],

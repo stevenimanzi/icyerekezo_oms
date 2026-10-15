@@ -20,32 +20,32 @@ export const logisticsRole: RoleModule = {
                   [
                       'inventory',
                       Warehouse,
-                      text('Available goods', 'Produits disponibles'),
+                      text('Stock', 'Stock'),
                       'inventory.view',
                   ],
                   ['logistics', Truck, text('Shipments', 'Expéditions'), 'logistics.view'],
                   [
                       'dispatch',
                       Activity,
-                      text('Dispatch board', 'Planification'),
+                      text('Dispatch', 'Départs'),
                       'logistics.dispatch',
                   ],
                   [
                       'vehicles',
                       Truck,
-                      text('Vehicles & drivers', 'Véhicules et chauffeurs'),
+                      text('Vehicles', 'Véhicules'),
                       'logistics.view',
                   ],
               ];
 
         return [
             ['dashboard', LayoutDashboard, text('Dashboard', 'Tableau de bord'), '*'],
-            ['sales', PackageOpen, text('Incoming orders', 'Commandes entrantes'), 'sales.view'],
+            ['sales', PackageOpen, text('Orders', 'Commandes'), 'sales.view'],
             ...shipping,
             [
                 'delivery-confirmation',
                 PackageCheck,
-                text('Delivery confirmation', 'Confirmation de livraison'),
+                text('Confirm delivery', 'Confirmer la livraison'),
                 'logistics.deliver',
             ],
             ['agreement', FileSignature, text('Agreement', 'Accord'), 'logistics.view'],

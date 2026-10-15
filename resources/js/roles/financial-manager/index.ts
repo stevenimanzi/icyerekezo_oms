@@ -6,12 +6,12 @@ export const financialManagerRole: RoleModule = {
     matches: ({ flags }) => flags.isFinancialManager,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['finance', Wallet, text('Finance overview', 'Vue financière'), 'finance.view'],
-        ['sales', PackageOpen, text('Orders & invoices', 'Commandes et factures'), 'sales.view'],
+        ['finance', Wallet, text('Finance', 'Finance'), 'finance.view'],
+        ['sales', PackageOpen, text('Orders', 'Commandes'), 'sales.view'],
         [
             'finance-reports',
             FileText,
-            text('Financial reports', 'Rapports financiers'),
+            text('Finance reports', 'Rapports financiers'),
             'reports.view',
         ],
     ],

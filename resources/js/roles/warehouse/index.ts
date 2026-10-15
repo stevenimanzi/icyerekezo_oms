@@ -9,19 +9,19 @@ export const warehouseRole: RoleModule = {
         [
             'incoming-requests',
             Inbox,
-            text('Incoming requests', 'Demandes entrantes'),
+            text('Stock out', 'Sortie de stock'),
             'inventory.view',
         ],
         ['inventory', Warehouse, labels.warehouse, 'inventory.view'],
         ['products', Boxes, labels.products, 'products.view'],
-        ['procurement', ShoppingCart, text('Incoming goods', 'Réceptions'), 'procurement.view'],
+        ['procurement', ShoppingCart, text('Stock in', 'Entrée de stock'), 'procurement.view'],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };
 
 export const warehouseNavGroups = ({ text }: RoleContext): Record<string, NavGroup> => ({
     stock: {
-        label: text('Stock Management', 'Gestion de stock'),
+        label: text('Stock', 'Stock'),
         icon: Warehouse,
         children: ['incoming-requests', 'inventory', 'products'],
     },

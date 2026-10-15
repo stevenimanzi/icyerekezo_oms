@@ -9,7 +9,7 @@ export const cuttingRole: RoleModule = {
         [
             'cutting-workspace',
             Scissors,
-            text('Cutting workspace', 'Espace de coupe'),
+            text('Cutting', 'Coupe'),
             'production.view',
         ],
         ['cutting-report', FileText, text('Report', 'Rapport'), 'production.view'],

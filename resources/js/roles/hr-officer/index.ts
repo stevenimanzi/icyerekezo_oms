@@ -6,11 +6,11 @@ export const hrOfficerRole: RoleModule = {
     matches: ({ flags }) => flags.isHrOfficer,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['team', Users, text('People and workforce', 'Personnel'), 'users.view'],
+        ['team', Users, text('Employees', 'Employés'), 'users.view'],
         [
             'hr',
             Activity,
-            text('Attendance, leave and training', 'Presence, conges et formation'),
+            text('Attendance & leave', 'Présence et congés'),
             'hr.view',
         ],
         ['reports', FileText, labels.reports, 'reports.view'],

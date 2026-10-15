@@ -9,7 +9,7 @@ export const sewingRole: RoleModule = {
         [
             'sewing-workspace',
             Gauge,
-            text('Record sewing', 'Enregistrer la couture'),
+            text('Sewing', 'Couture'),
             'production.view',
         ],
         ['reports', FileText, labels.reports, 'reports.view'],

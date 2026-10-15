@@ -9,10 +9,10 @@ export const maintenanceTechnicianRole: RoleModule = {
         [
             'machines',
             Wrench,
-            text('Maintenance work orders', 'Ordres de maintenance'),
+            text('Repairs', 'Réparations'),
             'maintenance.view',
         ],
-        ['inventory', Warehouse, text('Spare parts', 'Pieces de rechange'), 'inventory.view'],
+        ['inventory', Warehouse, text('Spare parts', 'Pièces de rechange'), 'inventory.view'],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };

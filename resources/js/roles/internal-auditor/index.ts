@@ -16,22 +16,22 @@ export const internalAuditorRole: RoleModule = {
         [
             'inventory',
             Warehouse,
-            text('Inventory movements', 'Mouvements de stock'),
+            text('Stock', 'Stock'),
             'inventory.view',
         ],
         [
             'production',
             Gauge,
-            text('Production records', 'Dossiers de production'),
+            text('Production', 'Production'),
             'production.view',
         ],
-        ['quality', ClipboardCheck, text('Quality records', 'Dossiers qualite'), 'quality.view'],
+        ['quality', ClipboardCheck, text('Quality', 'Qualité'), 'quality.view'],
         [
             'procurement',
             ShoppingCart,
-            text('Procurement records', 'Dossiers achats'),
+            text('Purchases', 'Achats'),
             'procurement.view',
         ],
-        ['reports', FileText, text('Financial reports', 'Rapports financiers'), 'reports.view'],
+        ['reports', FileText, text('Reports', 'Rapports'), 'reports.view'],
     ],
 };
