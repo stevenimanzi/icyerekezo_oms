@@ -6,7 +6,7 @@ import {
     Locale,
     productionApi,
     StockPopupModal,
-} from '../../pages/production/shared';
+} from '../../shared';
 
 type SewingTab = 'request' | 'sew' | 'damaged' | 'report';
 type AuthUser = {

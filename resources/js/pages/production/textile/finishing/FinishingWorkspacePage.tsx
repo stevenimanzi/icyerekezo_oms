@@ -6,7 +6,7 @@ import {
     Locale,
     productionApi,
     StockPopupModal,
-} from '../../pages/production/shared';
+} from '../../shared';
 
 type FinishingTab = 'request' | 'materials' | 'finish';
 type AuthUser = {

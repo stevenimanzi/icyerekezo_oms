@@ -6,8 +6,8 @@ import {
     Locale,
     productionApi,
     StockPopupModal,
-} from '../../pages/production/shared';
-import { OrderDetailsModal } from '../../pages/sales/SalesOverviewPage';
+} from '../../shared';
+import { OrderDetailsModal } from '../../../sales/SalesOverviewPage';
 
 type PackingTab = 'request' | 'finish' | 'orders';
 type AuthUser = {

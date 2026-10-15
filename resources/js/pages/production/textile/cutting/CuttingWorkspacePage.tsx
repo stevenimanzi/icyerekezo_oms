@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, FileText, Package, RefreshCw, Scissors, Send } from 'lucide-react';
-import { Locale, productionApi, StockPopupModal } from '../../pages/production/shared';
+import { Locale, productionApi, StockPopupModal } from '../../shared';
 
 type CuttingTab = 'request' | 'cut' | 'damaged' | 'report';
 type AuthUser = {
