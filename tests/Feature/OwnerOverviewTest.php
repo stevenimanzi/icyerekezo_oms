@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\Factory;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -166,5 +168,47 @@ class OwnerOverviewTest extends TestCase
     public function test_an_unsupported_period_falls_back_to_thirty_days(): void
     {
         $this->assertSame(30, $this->overview('?days=9999')['period']['days']);
+    }
+
+    private function allowAudit(): void
+    {
+        $permission = Permission::firstOrCreate(['slug' => 'audit.view'], ['name' => 'View audit', 'module' => 'audit']);
+        $this->owner->roles()->first()->permissions()->attach($permission->id);
+    }
+
+    private function log(Factory $factory, string $event, string $description, ?User $by = null): void
+    {
+        AuditLog::create([
+            'factory_id' => $factory->id, 'user_id' => $by?->id, 'event' => $event, 'description' => $description,
+        ]);
+    }
+
+    public function test_the_activity_log_needs_the_audit_permission(): void
+    {
+        $this->actingAs($this->owner)->getJson('/api/executive/activity')->assertForbidden();
+    }
+
+    public function test_the_activity_log_lists_only_this_factory_and_can_be_filtered(): void
+    {
+        $this->allowAudit();
+        $other = $this->makeFactory('Other', 'other');
+
+        $this->log($this->factory, 'inventory.adjusted', 'Adjusted cotton stock', $this->owner);
+        $this->log($this->factory, 'sales.order_created', 'Created order CO-1', $this->owner);
+        $this->log($other, 'inventory.adjusted', 'Secret other factory movement');
+
+        $all = $this->actingAs($this->owner)->getJson('/api/executive/activity')->assertOk()->json();
+
+        $this->assertSame(2, $all['meta']['total']);
+        $this->assertSame(['inventory', 'sales'], $all['modules']);
+        $this->assertSame('Created order CO-1', $all['data'][0]['description'], 'Newest first.');
+        $this->assertStringNotContainsString('Secret', json_encode($all));
+
+        $stock = $this->getJson('/api/executive/activity?module=inventory')->json();
+        $this->assertSame(1, $stock['meta']['total']);
+        $this->assertSame('inventory', $stock['data'][0]['module']);
+
+        $search = $this->getJson('/api/executive/activity?q=order')->json();
+        $this->assertSame(1, $search['meta']['total']);
     }
 }
