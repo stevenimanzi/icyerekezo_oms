@@ -1,6 +1,6 @@
 import type { Format } from '../../../../core/format';
 import type { Locale } from '../../../../core/types';
-import { ColourSize } from '../ColourSize';
+import { LotFilters, useLotFilters } from '../LotFilters';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
 import type { LotRow, StageOverview, TransferRow } from '../types';
@@ -25,27 +25,43 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
     const canWork = capabilities.work;
     const isCutting = stage.key === 'cutting';
     const isPacking = stage.key === 'packing';
-    const lots = isCutting
+    const here = isCutting
         ? data.lots
         : data.lots.filter(
               (lot) => lot.wip + lot.good + lot.damaged + lot.outbox + lot.awaiting_quality > 0,
           );
+    const everything = [...here, ...data.incoming];
+    const filters = useLotFilters(everything);
+    const lots = here.filter((lot) => filters.filtered.includes(lot));
+    const arriving = data.incoming.filter((transfer) => filters.filtered.includes(transfer));
     const next = stage.next ? stageLabel(stage.next, locale) : '';
 
     return (
         <>
+            <article className="panel">
+                <LotFilters
+                    values={filters.values}
+                    options={filters.options}
+                    text={text}
+                    onChange={filters.setValues}
+                    onClear={filters.clear}
+                    active={filters.active}
+                />
+            </article>
+
             {!isCutting && (
                 <article className="panel">
                     <div className="panel-title">
                         <h2>{text.work.arrivingTitle(stageLabel(stage.previous, locale))}</h2>
                     </div>
                     <div className="ui-table-wrap">
-                        <table className="ui-table" style={{ minWidth: 640 }}>
+                        <table className="ui-table" style={{ minWidth: 720 }}>
                             <thead>
                                 <tr>
                                     <th>{text.work.lot}</th>
                                     <th>{text.work.product}</th>
-                                    <th>{text.work.colorSize}</th>
+                                    <th>{text.work.colour}</th>
+                                    <th>{text.work.size}</th>
                                     <th className="num">{text.work.sent}</th>
                                     <th>{text.work.sentBy}</th>
                                     <th>{text.work.note}</th>
@@ -53,20 +69,23 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.incoming.length ? (
-                                    data.incoming.map((transfer) => (
+                                {arriving.length ? (
+                                    arriving.map((transfer) => (
                                         <tr key={transfer.id}>
                                             <td>
                                                 <b>{transfer.lot_number}</b>
                                             </td>
                                             <td>{transfer.product ?? text.none}</td>
                                             <td>
-                                                <ColourSize
-                                                    color={transfer.color}
-                                                    size={transfer.size}
-                                                    none={text.none}
-                                                />
+                                                {transfer.color ? (
+                                                    <span className="ui-colour">
+                                                        {transfer.color}
+                                                    </span>
+                                                ) : (
+                                                    text.none
+                                                )}
                                             </td>
+                                            <td>{transfer.size ?? text.none}</td>
                                             <td className="num">
                                                 <b>{format.whole(transfer.quantity_sent)}</b>
                                             </td>
@@ -91,8 +110,10 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={7} className="empty">
-                                            {text.work.arrivingEmpty}
+                                        <td colSpan={8} className="empty">
+                                            {filters.active && data.incoming.length
+                                                ? text.work.noMatch
+                                                : text.work.arrivingEmpty}
                                         </td>
                                     </tr>
                                 )}
@@ -107,12 +128,14 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                     <h2>{text.work.lotsTitle}</h2>
                 </div>
                 <div className="ui-table-wrap">
-                    <table className="ui-table" style={{ minWidth: 760 }}>
+                    <table className="ui-table" style={{ minWidth: 920 }}>
                         <thead>
                             <tr>
                                 <th>{text.work.lot}</th>
                                 <th>{text.work.product}</th>
-                                <th>{text.work.colorSize}</th>
+                                <th>{text.work.colour}</th>
+                                <th>{text.work.size}</th>
+                                <th>{text.work.fabric}</th>
                                 {isCutting ? (
                                     <>
                                         <th className="num">{text.work.cutTotal}</th>
@@ -152,12 +175,14 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                         </td>
                                         <td>{lot.product ?? text.none}</td>
                                         <td>
-                                            <ColourSize
-                                                color={lot.color}
-                                                size={lot.size}
-                                                none={text.none}
-                                            />
+                                            {lot.color ? (
+                                                <span className="ui-colour">{lot.color}</span>
+                                            ) : (
+                                                text.none
+                                            )}
                                         </td>
+                                        <td>{lot.size ?? text.none}</td>
+                                        <td>{lot.fabric ?? text.none}</td>
                                         {isCutting ? (
                                             <>
                                                 <td className="num">{format.whole(lot.cut)}</td>
@@ -228,10 +253,12 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={isCutting ? 6 : 8} className="empty">
-                                        {isCutting
-                                            ? text.work.lotsEmptyCutting
-                                            : text.work.lotsEmpty}
+                                    <td colSpan={isCutting ? 8 : 10} className="empty">
+                                        {filters.active && here.length
+                                            ? text.work.noMatch
+                                            : isCutting
+                                              ? text.work.lotsEmptyCutting
+                                              : text.work.lotsEmpty}
                                     </td>
                                 </tr>
                             )}

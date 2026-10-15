@@ -33,6 +33,10 @@ class ProductionFlowController extends Controller
         $filters = $request->validate([
             'status' => ['nullable', Rule::in(['open', 'held', 'completed', 'all'])],
             'q' => ['nullable', 'string', 'max:80'],
+            'color' => ['nullable', 'string', 'max:80'],
+            'size' => ['nullable', 'string', 'max:40'],
+            'product_id' => ['nullable', 'integer'],
+            'fabric_id' => ['nullable', 'integer'],
         ]);
 
         return response()->json($queries->monitor($filters) + [

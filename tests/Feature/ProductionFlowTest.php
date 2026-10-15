@@ -347,6 +347,33 @@ class ProductionFlowTest extends TestCase
         $this->assertNull(collect($options['materials'])->firstWhere('item_id', $this->fabric->id)['color']);
     }
 
+    public function test_lots_can_be_filtered_by_colour_size_product_and_fabric(): void
+    {
+        $this->approvedFabric(80);
+        $blueMedium = $this->cutLot(10, ['product_name' => 'Polo shirt', 'color' => 'Blue', 'size' => 'M', 'fabric_used' => 10]);
+        $redLarge = $this->cutLot(10, ['product_name' => 'School skirt', 'color' => 'Red', 'size' => 'L', 'fabric_used' => 10]);
+        ProductionLot::whereKey($redLarge)->update(['color' => 'Red']);
+
+        $ids = fn (string $query) => collect($this->as('quality-officer')->getJson("/api/flow/monitor?status=all{$query}")->assertOk()->json('lots'))->pluck('id')->all();
+
+        $this->assertEqualsCanonicalizing([$blueMedium, $redLarge], $ids(''));
+        $this->assertSame([$blueMedium], $ids('&color=Blue'));
+        $this->assertSame([$redLarge], $ids('&size=L'));
+        $this->assertSame([$redLarge], $ids('&product_id=' . ProductionLot::find($redLarge)->product_item_id));
+        $this->assertEqualsCanonicalizing([$blueMedium, $redLarge], $ids('&fabric_id=' . $this->fabric->id));
+        $this->assertSame([], $ids('&color=Blue&size=L'));
+
+        $options = $this->as('quality-officer')->getJson('/api/flow/monitor')->json('filter_options');
+        $this->assertSame(['Blue', 'Red'], $options['colors']);
+        $this->assertSame(['L', 'M'], $options['sizes']);
+        $this->assertSame(['Polo shirt', 'School skirt'], array_column($options['products'], 'name'));
+        $this->assertSame([$this->fabric->name], array_column($options['fabrics'], 'name'));
+
+        $row = collect($this->as('cutting-operator')->getJson('/api/flow/overview?stage=cutting')->json('lots'))->firstWhere('id', $blueMedium);
+        $this->assertSame($this->fabric->name, $row['fabric']);
+        $this->assertSame('M', $row['size']);
+    }
+
     public function test_a_team_can_filter_its_own_material_requests_and_see_every_status(): void
     {
         $approved = $this->as('cutting-operator')->postJson('/api/flow/requests', ['stage' => 'cutting', 'item_id' => $this->fabric->id, 'quantity' => 10, 'reason' => 'Polo order'])->json('request.id');

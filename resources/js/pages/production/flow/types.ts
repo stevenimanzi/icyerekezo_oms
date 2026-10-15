@@ -11,6 +11,7 @@ export type LotRow = {
     id: number;
     lot_number: string;
     product: string | null;
+    fabric: string | null;
     style: string | null;
     color: string | null;
     size: string | null;
@@ -32,6 +33,7 @@ export type TransferRow = {
     lot_id: number;
     lot_number: string | null;
     product: string | null;
+    fabric: string | null;
     color: string | null;
     size: string | null;
     from: StageKey;
@@ -155,6 +157,7 @@ export type MonitorLot = {
     id: number;
     lot_number: string;
     product: string | null;
+    fabric: string | null;
     style: string | null;
     color: string | null;
     size: string | null;
@@ -220,6 +223,12 @@ export type FlowMonitor = {
     };
     inspections: InspectionRow[];
     filters: { status: string; q: string };
+    filter_options: {
+        colors: string[];
+        sizes: string[];
+        products: { id: number; name: string }[];
+        fabrics: { id: number; name: string }[];
+    };
     capabilities: { inspect: boolean };
     stages: StageInfo[];
 };

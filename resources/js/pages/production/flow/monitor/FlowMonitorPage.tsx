@@ -5,7 +5,6 @@ import type { AuthUser, Locale } from '../../../../core/types';
 import '../../../../components/ui.css';
 import '../flow.css';
 import { FlowReportView } from '../report/FlowReportView';
-import { ColourSize } from '../ColourSize';
 import { stageLabel } from '../stages';
 import { flowText } from '../text';
 import type { FlowMonitor, LotBalances } from '../types';
@@ -28,6 +27,10 @@ export default function FlowMonitorPage({ locale }: Props) {
     const format = useMemo(() => makeFormat(locale, ''), [locale]);
     const [tab, setTab] = useState<Tab>('monitor');
     const [status, setStatus] = useState<Status>('open');
+    const [color, setColor] = useState('');
+    const [size, setSize] = useState('');
+    const [productId, setProductId] = useState('');
+    const [fabricId, setFabricId] = useState('');
     const [search, setSearch] = useState('');
     const [query, setQuery] = useState('');
     const [openLot, setOpenLot] = useState<number | null>(null);
@@ -49,7 +52,13 @@ export default function FlowMonitorPage({ locale }: Props) {
         return () => window.clearTimeout(timer);
     }, [notice]);
 
-    const url = `/api/flow/monitor?status=${status}&q=${encodeURIComponent(query)}`;
+    const params = new URLSearchParams({ status, q: query });
+    if (color) params.set('color', color);
+    if (size) params.set('size', size);
+    if (productId) params.set('product_id', productId);
+    if (fabricId) params.set('fabric_id', fabricId);
+    const url = `/api/flow/monitor?${params.toString()}`;
+    const filtered = Boolean(color || size || productId || fabricId || query);
     const { data, error, loading, reload } = useLiveData<FlowMonitor>(url);
 
     const changed = (message: string) => {
@@ -222,13 +231,90 @@ export default function FlowMonitorPage({ locale }: Props) {
                                     onChange={(event) => setSearch(event.target.value)}
                                 />
                             </label>
+                            {data.filter_options.products.length > 0 && (
+                                <label>
+                                    <select
+                                        value={productId}
+                                        onChange={(event) => setProductId(event.target.value)}
+                                    >
+                                        <option value="">{text.work.allProducts}</option>
+                                        {data.filter_options.products.map((option) => (
+                                            <option key={option.id} value={option.id}>
+                                                {option.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
+                            {data.filter_options.colors.length > 0 && (
+                                <label>
+                                    <select
+                                        value={color}
+                                        onChange={(event) => setColor(event.target.value)}
+                                    >
+                                        <option value="">{text.work.allColours}</option>
+                                        {data.filter_options.colors.map((option) => (
+                                            <option key={option} value={option}>
+                                                {option}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
+                            {data.filter_options.sizes.length > 0 && (
+                                <label>
+                                    <select
+                                        value={size}
+                                        onChange={(event) => setSize(event.target.value)}
+                                    >
+                                        <option value="">{text.work.allSizes}</option>
+                                        {data.filter_options.sizes.map((option) => (
+                                            <option key={option} value={option}>
+                                                {option}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
+                            {data.filter_options.fabrics.length > 0 && (
+                                <label>
+                                    <select
+                                        value={fabricId}
+                                        onChange={(event) => setFabricId(event.target.value)}
+                                    >
+                                        <option value="">{text.work.allFabrics}</option>
+                                        {data.filter_options.fabrics.map((option) => (
+                                            <option key={option.id} value={option.id}>
+                                                {option.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
+                            {filtered && (
+                                <button
+                                    className="secondary-btn"
+                                    onClick={() => {
+                                        setSearch('');
+                                        setColor('');
+                                        setSize('');
+                                        setProductId('');
+                                        setFabricId('');
+                                    }}
+                                >
+                                    {text.work.clearFilters}
+                                </button>
+                            )}
                         </div>
                         <div className="ui-table-wrap">
-                            <table className="ui-table" style={{ minWidth: 960 }}>
+                            <table className="ui-table" style={{ minWidth: 1180 }}>
                                 <thead>
                                     <tr>
                                         <th>{words.lot}</th>
                                         <th>{words.product}</th>
+                                        <th>{text.work.colour}</th>
+                                        <th>{text.work.size}</th>
+                                        <th>{text.work.fabric}</th>
                                         {data.stages.map((stage) => (
                                             <th key={stage.key} className="num">
                                                 {stageLabel(stage.key, locale)}
@@ -251,16 +337,18 @@ export default function FlowMonitorPage({ locale }: Props) {
                                                         {words.age}: {words.days(lot.age_days)}
                                                     </small>
                                                 </td>
+                                                <td>{lot.product ?? text.none}</td>
                                                 <td>
-                                                    {lot.product ?? text.none}
-                                                    <small>
-                                                        <ColourSize
-                                                            color={lot.color}
-                                                            size={lot.size}
-                                                            none=""
-                                                        />
-                                                    </small>
+                                                    {lot.color ? (
+                                                        <span className="ui-colour">
+                                                            {lot.color}
+                                                        </span>
+                                                    ) : (
+                                                        text.none
+                                                    )}
                                                 </td>
+                                                <td>{lot.size ?? text.none}</td>
+                                                <td>{lot.fabric ?? text.none}</td>
                                                 {data.stages.map((stage) => (
                                                     <td key={stage.key} className="num">
                                                         {format.whole(lot.stages[stage.key].here)}
@@ -305,7 +393,7 @@ export default function FlowMonitorPage({ locale }: Props) {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={data.stages.length + 5} className="empty">
+                                            <td colSpan={data.stages.length + 8} className="empty">
                                                 {words.lotsEmpty}
                                             </td>
                                         </tr>

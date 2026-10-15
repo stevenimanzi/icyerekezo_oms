@@ -32,7 +32,7 @@ class FlowQueries
     public function stage(User $user, string $stage): array
     {
         $access = FlowAccess::for($user);
-        $lots = ProductionLot::where('status', 'open')->with('product:id,name')->latest('id')->limit(300)->get();
+        $lots = ProductionLot::where('status', 'open')->with(['product:id,name', 'fabric:id,name'])->latest('id')->limit(300)->get();
         $balances = $this->balances->forLots($lots->pluck('id'));
 
         $rows = $lots->map(fn (ProductionLot $lot) => $this->stageRow($lot, $balances[$lot->id], $stage))
@@ -43,7 +43,7 @@ class FlowQueries
             ->selectRaw('COALESCE(SUM(good_quantity), 0) as good, COALESCE(SUM(damaged_quantity), 0) as damaged')->first();
 
         $incoming = ProductionTransfer::where('to_stage', $stage)->where('status', 'sent')
-            ->with(['lot.product:id,name', 'sender:id,name'])->orderBy('sent_at')->get()
+            ->with(['lot.product:id,name', 'lot.fabric:id,name', 'sender:id,name'])->orderBy('sent_at')->get()
             ->map(fn (ProductionTransfer $transfer) => $this->transferRow($transfer));
 
         $sentToday = (int) ProductionTransfer::where('from_stage', $stage)->whereIn('status', ['sent', 'received'])->where('sent_at', '>=', today())->sum('quantity_sent');
@@ -77,7 +77,7 @@ class FlowQueries
     public function monitor(array $filters): array
     {
         $status = $filters['status'] ?? 'open';
-        $query = ProductionLot::with(['product:id,name', 'creator:id,name'])->latest('id');
+        $query = ProductionLot::with(['product:id,name', 'creator:id,name', 'fabric:id,name'])->latest('id');
 
         match ($status) {
             'held' => $query->whereNotNull('held_at'),
@@ -92,6 +92,18 @@ class FlowQueries
                 ->orWhereHas('product', fn ($product) => $product->where('name', 'like', $like)));
         }
 
+        foreach (['color', 'size'] as $column) {
+            if (! empty($filters[$column])) {
+                $query->where($column, $filters[$column]);
+            }
+        }
+        if (! empty($filters['product_id'])) {
+            $query->where('product_item_id', $filters['product_id']);
+        }
+        if (! empty($filters['fabric_id'])) {
+            $query->where('fabric_item_id', $filters['fabric_id']);
+        }
+
         $lots = $query->limit(120)->get();
         $balances = $this->balances->forLots($lots->pluck('id'));
         $moved = $this->lastMovement($lots->pluck('id'));
@@ -104,6 +116,7 @@ class FlowQueries
                 'id' => $lot->id,
                 'lot_number' => $lot->lot_number,
                 'product' => $lot->product?->name,
+                'fabric' => $lot->fabric?->name,
                 'style' => $lot->style,
                 'color' => $lot->color,
                 'size' => $lot->size,
@@ -160,7 +173,17 @@ class FlowQueries
             'inspections' => QualityInspection::whereNotNull('lot_id')->with(['lot:id,lot_number', 'inspector:id,name'])->latest('id')->limit(15)->get()
                 ->map(fn (QualityInspection $i) => $this->inspectionRow($i)),
             'filters' => ['status' => $status, 'q' => $filters['q'] ?? ''],
+            'filter_options' => $this->lotFilterOptions(),
         ];
+    }
+
+    private function lotFilterOptions(): array
+    {
+        $lots = ProductionLot::where('status', '!=', 'cancelled')->with(['product:id,name', 'fabric:id,name'])->get(['id', 'product_item_id', 'fabric_item_id', 'color', 'size']);
+        $unique = fn (string $column) => $lots->pluck($column)->filter()->unique()->sort()->values()->all();
+        $named = fn (string $relation) => $lots->pluck($relation)->filter()->unique('id')->sortBy('name')->map(fn ($item) => ['id' => $item->id, 'name' => $item->name])->values()->all();
+
+        return ['colors' => $unique('color'), 'sizes' => $unique('size'), 'products' => $named('product'), 'fabrics' => $named('fabric')];
     }
 
     public function lot(ProductionLot $lot): array
@@ -312,6 +335,7 @@ class FlowQueries
             'id' => $lot->id,
             'lot_number' => $lot->lot_number,
             'product' => $lot->product?->name,
+            'fabric' => $lot->fabric?->name,
             'style' => $lot->style,
             'color' => $lot->color,
             'size' => $lot->size,
@@ -359,6 +383,7 @@ class FlowQueries
             'lot_id' => $transfer->lot_id,
             'lot_number' => $transfer->lot?->lot_number,
             'product' => $transfer->lot?->product?->name,
+            'fabric' => $transfer->lot?->fabric?->name,
             'color' => $transfer->lot?->color,
             'size' => $transfer->lot?->size,
             'from' => $transfer->from_stage,
