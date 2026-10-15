@@ -26,6 +26,7 @@ export type HomeProps = {
     user: AuthUser;
     locale: Locale;
     onNavigate: (page: string) => void;
+    pages: string[];
 };
 
 export type HomeComponent = ComponentType<HomeProps>;

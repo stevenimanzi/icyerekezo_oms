@@ -1,0 +1,412 @@
+.ow {
+    --ow-good: #15803d;
+    --ow-warn: #b45309;
+    --ow-bad: #b91c1c;
+    --ow-good-bg: #dcfce7;
+    --ow-warn-bg: #fef3c7;
+    --ow-bad-bg: #fee2e2;
+    --ow-info-bg: #dbeafe;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+[data-theme='dark'] .ow {
+    --ow-good: #4ade80;
+    --ow-warn: #fbbf24;
+    --ow-bad: #f87171;
+    --ow-good-bg: #14301f;
+    --ow-warn-bg: #3a2a0c;
+    --ow-bad-bg: #3b1616;
+    --ow-info-bg: #172a4d;
+}
+
+.ow .page-heading {
+    margin-bottom: 0;
+}
+
+.ow-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.ow-controls select,
+.ow-controls input[type='search'] {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 12px;
+}
+
+.ow-controls input[type='search'] {
+    width: 260px;
+    max-width: 100%;
+}
+
+.ow-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.ow-status i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ow-good);
+}
+
+.ow-status i.busy {
+    opacity: 0.4;
+}
+
+.ow-empty-page,
+.ow-empty {
+    padding: 36px 20px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 13px;
+}
+
+.ow-alerts ul {
+    margin: 0;
+    padding: 6px 20px 12px;
+    list-style: none;
+}
+
+.ow-alerts li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+}
+
+.ow-alerts li:last-child {
+    border-bottom: 0;
+}
+
+.ow-alerts li p {
+    flex: 1;
+    margin: 0;
+}
+
+.ow-alerts.clear {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    font-size: 13px;
+}
+
+.ow-alerts.clear p {
+    margin: 0;
+    color: var(--ow-good);
+    font-weight: 600;
+}
+
+.ow-dot {
+    width: 9px;
+    height: 9px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--muted);
+}
+
+.ow-dot.good {
+    background: var(--ow-good);
+}
+
+.ow-dot.info {
+    background: var(--brand);
+}
+
+.ow-dot.warning {
+    background: var(--ow-warn);
+}
+
+.ow-dot.critical {
+    background: var(--ow-bad);
+}
+
+.ow-kpis {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.ow-kpi {
+    min-width: 0;
+    padding: 18px;
+}
+
+.ow-kpi small {
+    display: block;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.ow-kpi strong {
+    display: block;
+    margin: 6px 0 4px;
+    font-size: 23px;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+}
+
+.ow-kpi-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.ow-change {
+    font-weight: 700;
+}
+
+.ow-change.up {
+    color: var(--ow-good);
+}
+
+.ow-change.down {
+    color: var(--ow-bad);
+}
+
+.ow-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.ow-tabs button {
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ow-tabs button.active {
+    background: var(--ow-info-bg);
+    color: var(--brand);
+}
+
+.ow-chart {
+    height: 280px;
+    padding: 14px 12px 6px;
+}
+
+.ow-chart .ow-empty {
+    margin: 0;
+    padding-top: 100px;
+}
+
+.ow-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+.ow-card {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.ow-headline {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 16px 20px 4px;
+}
+
+.ow-headline strong {
+    font-size: 26px;
+    letter-spacing: -0.02em;
+}
+
+.ow-headline span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.ow-rows {
+    margin: 0;
+    padding: 6px 20px 14px;
+}
+
+.ow-rows div {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+}
+
+.ow-rows div:last-child {
+    border-bottom: 0;
+}
+
+.ow-rows dt {
+    color: var(--muted);
+}
+
+.ow-rows dd {
+    margin: 0;
+    font-weight: 700;
+    text-align: right;
+}
+
+.ow .good {
+    color: var(--ow-good);
+}
+
+.ow .warn {
+    color: var(--ow-warn);
+}
+
+.ow .bad {
+    color: var(--ow-bad);
+}
+
+.ow-top {
+    padding: 0 20px 16px;
+    border-top: 1px solid var(--line);
+}
+
+.ow-top h3 {
+    margin: 14px 0 6px;
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.ow-top ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ow-top li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+    font-size: 13px;
+}
+
+.ow-top li small {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.ow-activity ul {
+    margin: 0;
+    padding: 4px 20px 10px;
+    list-style: none;
+}
+
+.ow-activity li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.ow-activity li:last-child {
+    border-bottom: 0;
+}
+
+.ow-activity li strong {
+    display: block;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.ow-activity li small,
+.ow-activity time {
+    color: var(--muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.ow-activity li small {
+    display: block;
+    margin-top: 2px;
+    text-transform: capitalize;
+}
+
+.ow-log table {
+    min-width: 640px;
+}
+
+.ow-log td {
+    font-size: 12px;
+}
+
+.ow-cap {
+    text-transform: capitalize;
+}
+
+.ow-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.ow-pager div {
+    display: flex;
+    gap: 8px;
+}
+
+@media (max-width: 1200px) {
+    .ow-kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ow-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .ow-kpis,
+    .ow-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ow-kpi small,
+    .ow-kpi strong {
+        white-space: normal;
+    }
+
+    .ow-controls,
+    .ow-controls select,
+    .ow-controls input[type='search'] {
+        width: 100%;
+    }
+}
