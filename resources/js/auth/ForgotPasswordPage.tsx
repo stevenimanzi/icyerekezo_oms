@@ -3,6 +3,7 @@ import { Languages, Mail, Send, ShieldCheck } from 'lucide-react';
 import { api } from '../core/api';
 import { type Locale } from '../core/types';
 import { Logo } from '../app/Logo';
+import { AuthInput } from './AuthInput';
 
 export function ForgotPasswordPage() {
     const [locale, setLocale] = useState<Locale>("en");

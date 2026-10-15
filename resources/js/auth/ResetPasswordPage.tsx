@@ -3,6 +3,7 @@ import { ChevronRight, Eye, EyeOff, Languages, LockKeyhole, Mail, ShieldCheck } 
 import { api } from '../core/api';
 import { type Locale } from '../core/types';
 import { Logo } from '../app/Logo';
+import { AuthInput } from './AuthInput';
 
 export function ResetPasswordPage() {
     const token = window.location.pathname.split("/reset-password/")[1] ?? "";

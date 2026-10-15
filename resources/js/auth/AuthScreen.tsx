@@ -3,6 +3,7 @@ import { Activity, Building2, ChevronDown, ChevronRight, Eye, EyeOff, Factory, L
 import { api } from '../core/api';
 import { type AuthUser, type Locale } from '../core/types';
 import { Logo } from '../app/Logo';
+import { AuthInput } from './AuthInput';
 
 // Keys match the backend IndustryProfileCatalog. "Other" is free text and has no profile of its own.
 export const INDUSTRY_OPTIONS: [key: string, en: string, fr: string][] = [
@@ -678,18 +679,5 @@ export function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated
                 )}
             </section>
         </main>
-    );
-}
-
-function AuthInput({ icon, label, action, children }: { icon: React.ReactNode; label: string; action?: React.ReactNode; children: React.ReactNode }) {
-    return (
-        <label className="auth-field">
-            <span>{label}</span>
-            <div>
-                {icon}
-                {children}
-                {action}
-            </div>
-        </label>
     );
 }

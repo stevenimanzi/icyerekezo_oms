@@ -87,20 +87,28 @@ export function Sidebar(props: Props) {
             </div>
             <nav>
                 <p className="nav-label">{labels.general}</p>
-                {entries.map((entry) =>
-                    entry.type === 'item' ? (
-                        <button key={entry.key} className={`nav-item ${activePage === entry.key ? 'active' : ''}`} onClick={() => go(entry.key)}>
-                            <entry.item.1 size={18} />
-                            <span>{entry.item[2]}</span>
-                            {badge(entry.key)}
-                        </button>
-                    ) : (
+                {entries.map((entry) => {
+                    if (entry.type === 'item') {
+                        const ItemIcon = entry.item[1];
+
+                        return (
+                            <button key={entry.key} className={`nav-item ${activePage === entry.key ? 'active' : ''}`} onClick={() => go(entry.key)}>
+                                <ItemIcon size={18} />
+                                <span>{entry.item[2]}</span>
+                                {badge(entry.key)}
+                            </button>
+                        );
+                    }
+
+                    const GroupIcon = entry.icon;
+
+                    return (
                         <div
                             key={entry.key}
                             className={`nav-group ${openGroups[entry.key] ? 'expanded' : ''} ${entry.items.some(([page]) => activePage === page) ? 'has-active' : ''}`}
                         >
                             <button className="nav-group-toggle" onClick={() => setOpenGroups((current) => ({ ...current, [entry.key]: !current[entry.key] }))}>
-                                <entry.icon size={18} />
+                                <GroupIcon size={18} />
                                 <span>{entry.label}</span>
                                 <ChevronDown size={14} className="nav-group-chevron" />
                             </button>
@@ -114,8 +122,8 @@ export function Sidebar(props: Props) {
                                 ))}
                             </div>
                         </div>
-                    ),
-                )}
+                    );
+                })}
                 {!user.is_platform_admin && (
                     <>
                         <p className="nav-label">{props.isOwner ? 'ASSISTANCE' : labels.management}</p>
