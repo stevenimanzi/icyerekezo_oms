@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronRight, PackageOpen } from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+    Area,
+    AreaChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
 
 async function loadDashboard(period: string) {
     const response = await fetch(`/api/executive/dashboard?period=${period}`, {
@@ -73,8 +81,8 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
             ? `Bonjour, ${user.name}. Voici les performances actuelles de votre usine.`
             : `Welcome, ${user.name}. Here is your factory’s current performance.`
         : locale === 'fr'
-            ? `Bonjour, ${user.name}. Voici les travaux importants de votre usine.`
-            : `Welcome, ${user.name}. Here is the work that needs your attention.`;
+          ? `Bonjour, ${user.name}. Voici les travaux importants de votre usine.`
+          : `Welcome, ${user.name}. Here is the work that needs your attention.`;
 
     return (
         <section className="executive-live">
@@ -90,8 +98,8 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                 ? "Performances de l'usine"
                                 : 'Factory performance'
                             : locale === 'fr'
-                                ? "Opérations de l'usine"
-                                : 'Factory operations'}
+                              ? "Opérations de l'usine"
+                              : 'Factory operations'}
                     </h1>
                     <p>{greeting}</p>
                 </div>
@@ -107,14 +115,20 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                         }}
                     >
                         <option value="daily">{locale === 'fr' ? 'Quotidien' : 'Daily'}</option>
-                        <option value="weekly">{locale === 'fr' ? 'Hebdomadaire' : 'Weekly'}</option>
+                        <option value="weekly">
+                            {locale === 'fr' ? 'Hebdomadaire' : 'Weekly'}
+                        </option>
                         <option value="monthly">{locale === 'fr' ? 'Mensuel' : 'Monthly'}</option>
                         <option value="yearly">{locale === 'fr' ? 'Annuel' : 'Yearly'}</option>
-                        <option value="all_time">{locale === 'fr' ? 'Tout le temps' : 'All Time'}</option>
+                        <option value="all_time">
+                            {locale === 'fr' ? 'Tout le temps' : 'All Time'}
+                        </option>
                     </select>
                     {!isOwner && !isSpecialized && (
                         <button className="primary-btn" onClick={() => onNavigate('production')}>
-                            {locale === 'fr' ? 'Nouvel ordre de production' : 'New production order'}
+                            {locale === 'fr'
+                                ? 'Nouvel ordre de production'
+                                : 'New production order'}
                         </button>
                     )}
                 </div>
@@ -129,8 +143,8 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                         ? (locale === 'fr' ? 'Données actualisées à ' : 'Data updated at ') +
                           updatedAt.toLocaleTimeString()
                         : locale === 'fr'
-                            ? 'Connexion aux données…'
-                            : 'Connecting to live data…'}
+                          ? 'Connexion aux données…'
+                          : 'Connecting to live data…'}
                 </span>
             </div>
 
@@ -157,7 +171,9 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                         value={`RWF ${number(metrics.totalRevenue)}`}
                     />
                     <Metric
-                        label={locale === 'fr' ? 'Achèvement des livraisons' : 'Delivery completion'}
+                        label={
+                            locale === 'fr' ? 'Achèvement des livraisons' : 'Delivery completion'
+                        }
                         value={`${number(metrics.completionRate)}%`}
                     />
                 </section>
@@ -190,8 +206,8 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                 ? 'Performances des commandes et livraisons'
                                 : 'Order and delivery performance'
                             : locale === 'fr'
-                                ? 'Production'
-                                : 'Production output'
+                              ? 'Production'
+                              : 'Production output'
                     }
                     action={
                         <div className="chart-legend">
@@ -201,8 +217,8 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                         ? 'Livré'
                                         : 'Delivered'
                                     : locale === 'fr'
-                                        ? 'Réel'
-                                        : 'Actual'}
+                                      ? 'Réel'
+                                      : 'Actual'}
                             </span>
                             <span className="target-dot">
                                 {isSpecialized
@@ -210,8 +226,8 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                         ? 'Commandé'
                                         : 'Ordered'
                                     : locale === 'fr'
-                                        ? 'Planifié'
-                                        : 'Planned'}
+                                      ? 'Planifié'
+                                      : 'Planned'}
                             </span>
                         </div>
                     }
@@ -220,7 +236,11 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                     {data ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={data.chart}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--line)" />
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    vertical={false}
+                                    stroke="var(--line)"
+                                />
                                 <XAxis dataKey="date" tickLine={false} axisLine={false} />
                                 <YAxis tickLine={false} axisLine={false} />
                                 <Tooltip />
@@ -241,7 +261,13 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                             </AreaChart>
                         </ResponsiveContainer>
                     ) : (
-                        <Empty text={locale === 'fr' ? 'Chargement des données…' : 'Loading performance data…'} />
+                        <Empty
+                            text={
+                                locale === 'fr'
+                                    ? 'Chargement des données…'
+                                    : 'Loading performance data…'
+                            }
+                        />
                     )}
                 </div>
             </article>
@@ -254,8 +280,8 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                 ? 'Commandes récentes'
                                 : 'Recent customer orders'
                             : locale === 'fr'
-                                ? 'Ordres de production actifs'
-                                : 'Active production orders'
+                              ? 'Ordres de production actifs'
+                              : 'Active production orders'
                     }
                     action={
                         <button
@@ -278,8 +304,8 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                             ? 'École / Client'
                                             : 'School / Customer'
                                         : locale === 'fr'
-                                            ? 'Produit'
-                                            : 'Product'}
+                                          ? 'Produit'
+                                          : 'Product'}
                                 </th>
                                 <th>{locale === 'fr' ? 'Statut' : 'Status'}</th>
                                 <th>{locale === 'fr' ? 'Échéance' : 'Due date'}</th>
@@ -297,9 +323,13 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                                 <div className="product-cell">
                                                     <div>
                                                         <strong>
-                                                            {item.school_name || item.item?.name || 'Order'}
+                                                            {item.school_name ||
+                                                                item.item?.name ||
+                                                                'Order'}
                                                         </strong>
-                                                        <small>{item.location || item.item?.sku || ''}</small>
+                                                        <small>
+                                                            {item.location || item.item?.sku || ''}
+                                                        </small>
                                                     </div>
                                                 </div>
                                             </td>
