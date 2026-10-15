@@ -8,7 +8,12 @@ export const safetyOfficerRole: RoleModule = {
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['safety', ShieldCheck, text('Health and safety', 'Sante et securite'), 'safety.view'],
         ['team', Users, text('Workers and training', 'Personnel et formation'), 'users.view'],
-        ['machines', Wrench, text('Equipment safety', 'Securite des equipements'), 'maintenance.view'],
+        [
+            'machines',
+            Wrench,
+            text('Equipment safety', 'Securite des equipements'),
+            'maintenance.view',
+        ],
         ['reports', FileText, text('Compliance reports', 'Rapports de conformite'), 'reports.view'],
     ],
 };

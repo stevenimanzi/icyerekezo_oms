@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+    Area,
+    AreaChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
 import type { Format } from '../format';
 import type { ownerText } from '../text';
 import type { OwnerOverview } from '../types';
@@ -17,7 +25,8 @@ type Props = {
 export function TrendChart({ trend, text, format, currency }: Props) {
     const [metric, setMetric] = useState<Metric>('revenue');
 
-    const formatValue = (value: number) => (metric === 'revenue' ? `${currency} ${format.whole(value)}` : format.whole(value));
+    const formatValue = (value: number) =>
+        metric === 'revenue' ? `${currency} ${format.whole(value)}` : format.whole(value);
     const hasData = trend.some((point) => point[metric] > 0);
 
     return (
@@ -26,7 +35,13 @@ export function TrendChart({ trend, text, format, currency }: Props) {
                 <h2>{text.trend}</h2>
                 <div className="ow-tabs" role="tablist">
                     {(Object.keys(text.trendTabs) as Metric[]).map((key) => (
-                        <button key={key} role="tab" aria-selected={metric === key} className={metric === key ? 'active' : ''} onClick={() => setMetric(key)}>
+                        <button
+                            key={key}
+                            role="tab"
+                            aria-selected={metric === key}
+                            className={metric === key ? 'active' : ''}
+                            onClick={() => setMetric(key)}
+                        >
                             {text.trendTabs[key]}
                         </button>
                     ))}
@@ -42,14 +57,39 @@ export function TrendChart({ trend, text, format, currency }: Props) {
                                     <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--line)" />
-                            <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--muted)', fontSize: 12 }} />
-                            <YAxis tickLine={false} axisLine={false} width={56} tick={{ fill: 'var(--muted)', fontSize: 12 }} tickFormatter={(value: number) => format.compact(value)} />
+                            <CartesianGrid
+                                strokeDasharray="3 3"
+                                vertical={false}
+                                stroke="var(--line)"
+                            />
+                            <XAxis
+                                dataKey="label"
+                                tickLine={false}
+                                axisLine={false}
+                                tick={{ fill: 'var(--muted)', fontSize: 12 }}
+                            />
+                            <YAxis
+                                tickLine={false}
+                                axisLine={false}
+                                width={56}
+                                tick={{ fill: 'var(--muted)', fontSize: 12 }}
+                                tickFormatter={(value: number) => format.compact(value)}
+                            />
                             <Tooltip
                                 formatter={(value) => formatValue(Number(value))}
-                                contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 10 }}
+                                contentStyle={{
+                                    background: 'var(--panel)',
+                                    border: '1px solid var(--line)',
+                                    borderRadius: 10,
+                                }}
                             />
-                            <Area type="monotone" dataKey={metric} stroke="#2563eb" strokeWidth={3} fill="url(#owTrendFill)" />
+                            <Area
+                                type="monotone"
+                                dataKey={metric}
+                                stroke="#2563eb"
+                                strokeWidth={3}
+                                fill="url(#owTrendFill)"
+                            />
                         </AreaChart>
                     </ResponsiveContainer>
                 ) : (

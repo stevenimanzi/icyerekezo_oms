@@ -42,8 +42,10 @@ export function createAccess(user: AuthUser) {
     const features = user.subscription?.plan?.features;
 
     return {
-        can: (permission: string) => user.permissions.includes('*') || user.permissions.includes(permission),
-        hasFeature: (page: string) => !features || features.includes(FEATURE_FOR_PAGE[page] || page),
+        can: (permission: string) =>
+            user.permissions.includes('*') || user.permissions.includes(permission),
+        hasFeature: (page: string) =>
+            !features || features.includes(FEATURE_FOR_PAGE[page] || page),
     };
 }
 

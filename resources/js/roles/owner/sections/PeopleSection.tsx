@@ -14,7 +14,11 @@ export function PeopleSection({ data, text, format }: SectionProps<OwnerOverview
                 { label: t.late, value: format.whole(data.late), tone: toneFor(data.late) },
                 { label: t.absent, value: format.whole(data.absent), tone: toneFor(data.absent) },
                 { label: t.leaveToday, value: format.whole(data.on_leave_today) },
-                { label: t.leavePending, value: format.whole(data.pending_leave), tone: toneFor(data.pending_leave) },
+                {
+                    label: t.leavePending,
+                    value: format.whole(data.pending_leave),
+                    tone: toneFor(data.pending_leave),
+                },
             ]}
         />
     );

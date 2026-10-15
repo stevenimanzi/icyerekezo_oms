@@ -8,7 +8,9 @@ const NOTIFICATION_REFRESH_MS = 20000;
 
 export function useNotifications(user: AuthUser, onMaintenance: (message: string) => void) {
     const [announcements, setAnnouncements] = useState(user.announcements || []);
-    const [notifications, setNotifications] = useState<AppNotificationItem[]>(user.notifications || []);
+    const [notifications, setNotifications] = useState<AppNotificationItem[]>(
+        user.notifications || [],
+    );
     const [unreadCount, setUnreadCount] = useState(user.unread_notifications_count || 0);
     const [pushSubscribed, setPushSubscribed] = useState(false);
 
@@ -26,7 +28,9 @@ export function useNotifications(user: AuthUser, onMaintenance: (message: string
 
     useEffect(() => {
         const refresh = () =>
-            api<{ notifications: AppNotificationItem[]; unread_count: number }>('/api/notifications')
+            api<{ notifications: AppNotificationItem[]; unread_count: number }>(
+                '/api/notifications',
+            )
                 .then((result) => {
                     setNotifications(result.notifications || []);
                     setUnreadCount(result.unread_count || 0);
@@ -48,7 +52,11 @@ export function useNotifications(user: AuthUser, onMaintenance: (message: string
     const markRead = (id: string) =>
         api('/api/notifications/' + id + '/read', { method: 'POST' })
             .then(() => {
-                setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read_at: new Date().toISOString() } : item)));
+                setNotifications((current) =>
+                    current.map((item) =>
+                        item.id === id ? { ...item, read_at: new Date().toISOString() } : item,
+                    ),
+                );
                 setUnreadCount((count) => Math.max(0, count - 1));
             })
             .catch(() => {});
@@ -56,7 +64,12 @@ export function useNotifications(user: AuthUser, onMaintenance: (message: string
     const markAllRead = () =>
         api('/api/notifications/read-all', { method: 'POST' })
             .then(() => {
-                setNotifications((current) => current.map((item) => ({ ...item, read_at: item.read_at || new Date().toISOString() })));
+                setNotifications((current) =>
+                    current.map((item) => ({
+                        ...item,
+                        read_at: item.read_at || new Date().toISOString(),
+                    })),
+                );
                 setUnreadCount(0);
             })
             .catch(() => {});
@@ -77,14 +90,25 @@ export function useNotifications(user: AuthUser, onMaintenance: (message: string
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(public_key) as BufferSource,
             });
-            await api('/api/push/subscriptions', { method: 'POST', body: JSON.stringify(subscription.toJSON()) });
+            await api('/api/push/subscriptions', {
+                method: 'POST',
+                body: JSON.stringify(subscription.toJSON()),
+            });
             setPushSubscribed(true);
         } catch {
             // Permission denied or not supported: browser notifications simply stay off.
         }
     };
 
-    return { announcements, notifications, unreadCount, markRead, markAllRead, pushSubscribed, enablePush };
+    return {
+        announcements,
+        notifications,
+        unreadCount,
+        markRead,
+        markAllRead,
+        pushSubscribed,
+        enablePush,
+    };
 }
 
 export type NotificationsState = ReturnType<typeof useNotifications>;

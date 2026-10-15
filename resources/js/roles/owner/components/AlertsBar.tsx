@@ -33,7 +33,9 @@ export function AlertsBar({ alerts, openablePages, text, onNavigate }: Props) {
                     return (
                         <li key={alert.key} className={alert.level}>
                             <span className={`ow-dot ${alert.level}`} />
-                            <p>{describe ? describe(alert.count) : `${alert.key}: ${alert.count}`}</p>
+                            <p>
+                                {describe ? describe(alert.count) : `${alert.key}: ${alert.count}`}
+                            </p>
                             {canOpen && (
                                 <button className="text-btn" onClick={() => onNavigate(alert.page)}>
                                     {text.openPage}

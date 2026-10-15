@@ -1,4 +1,15 @@
-import { Bell, Building2, CreditCard, Database, LayoutDashboard, Megaphone, MessageSquare, Settings, ShieldCheck, Users } from 'lucide-react';
+import {
+    Bell,
+    Building2,
+    CreditCard,
+    Database,
+    LayoutDashboard,
+    Megaphone,
+    MessageSquare,
+    Settings,
+    ShieldCheck,
+    Users,
+} from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const platformAdminRole: RoleModule = {

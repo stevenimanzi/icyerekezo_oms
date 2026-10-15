@@ -15,7 +15,7 @@ class OwnerOverviewController extends Controller
     {
         $days = (int) $request->query('days', 30);
 
-        if (! in_array($days, self::ALLOWED_DAYS, true)) {
+        if (!in_array($days, self::ALLOWED_DAYS, true)) {
             $days = 30;
         }
 

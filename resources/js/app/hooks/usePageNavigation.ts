@@ -13,7 +13,8 @@ export function usePageNavigation(user: AuthUser, allowedPages: string[]) {
 
         if (skipHistory.current) {
             skipHistory.current = false;
-            if (window.location.pathname !== path) window.history.replaceState({ page: activePage }, '', path);
+            if (window.location.pathname !== path)
+                window.history.replaceState({ page: activePage }, '', path);
         } else if (window.location.pathname !== path) {
             window.history.pushState({ page: activePage }, '', path);
         }
@@ -31,7 +32,9 @@ export function usePageNavigation(user: AuthUser, allowedPages: string[]) {
 
     useEffect(() => {
         if (!allowedPages.includes(activePage)) {
-            setActivePage(user.is_platform_admin ? 'platform-dashboard' : allowedPages[0] || 'notifications');
+            setActivePage(
+                user.is_platform_admin ? 'platform-dashboard' : allowedPages[0] || 'notifications',
+            );
         }
     }, [activePage, allowedPages, user.is_platform_admin]);
 

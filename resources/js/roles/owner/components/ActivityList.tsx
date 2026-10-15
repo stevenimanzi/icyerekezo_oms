@@ -30,7 +30,8 @@ export function ActivityList({ entries, text, format, onViewAll }: Props) {
                             <div>
                                 <strong>{entry.description || humanize(entry.event)}</strong>
                                 <small>
-                                    {entry.who === 'System' ? text.system : entry.who} · {humanize(entry.event.split('.')[0])}
+                                    {entry.who === 'System' ? text.system : entry.who} ·{' '}
+                                    {humanize(entry.event.split('.')[0])}
                                 </small>
                             </div>
                             <time dateTime={entry.at ?? undefined}>{format.timeAgo(entry.at)}</time>

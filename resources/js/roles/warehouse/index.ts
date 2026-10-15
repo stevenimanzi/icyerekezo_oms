@@ -6,7 +6,12 @@ export const warehouseRole: RoleModule = {
     matches: ({ flags }) => flags.isWarehouseUser,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['incoming-requests', Inbox, text('Incoming requests', 'Demandes entrantes'), 'inventory.view'],
+        [
+            'incoming-requests',
+            Inbox,
+            text('Incoming requests', 'Demandes entrantes'),
+            'inventory.view',
+        ],
         ['inventory', Warehouse, labels.warehouse, 'inventory.view'],
         ['products', Boxes, labels.products, 'products.view'],
         ['procurement', ShoppingCart, text('Incoming goods', 'Réceptions'), 'procurement.view'],

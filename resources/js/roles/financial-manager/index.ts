@@ -8,6 +8,11 @@ export const financialManagerRole: RoleModule = {
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['finance', Wallet, text('Finance overview', 'Vue financière'), 'finance.view'],
         ['sales', PackageOpen, text('Orders & invoices', 'Commandes et factures'), 'sales.view'],
-        ['finance-reports', FileText, text('Financial reports', 'Rapports financiers'), 'reports.view'],
+        [
+            'finance-reports',
+            FileText,
+            text('Financial reports', 'Rapports financiers'),
+            'reports.view',
+        ],
     ],
 };

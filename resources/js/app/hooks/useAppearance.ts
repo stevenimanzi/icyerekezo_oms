@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import type { Locale } from '../../core/types';
 
 export function useAppearance() {
-    const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('icy_locale') as Locale) || 'en');
+    const [locale, setLocale] = useState<Locale>(
+        () => (localStorage.getItem('icy_locale') as Locale) || 'en',
+    );
     const [dark, setDark] = useState(() => localStorage.getItem('icy_theme') === 'dark');
 
     useEffect(() => {

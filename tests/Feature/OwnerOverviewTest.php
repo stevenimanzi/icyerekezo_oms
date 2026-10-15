@@ -27,12 +27,18 @@ class OwnerOverviewTest extends TestCase
         parent::setUp();
 
         $this->factory = $this->makeFactory('Test Works', 'test-works');
-        $this->owner = User::factory()->create(['email' => 'owner@test.test', 'current_factory_id' => $this->factory->id]);
+        $this->owner = User::factory()->create([
+            'email' => 'owner@test.test',
+            'current_factory_id' => $this->factory->id,
+        ]);
         $this->owner->factories()->attach($this->factory->id, ['is_owner' => true, 'is_active' => true]);
 
         $role = Role::create([
-            'factory_id' => $this->factory->id, 'name' => 'Factory Owner', 'slug' => 'factory-owner',
-            'dashboard_key' => 'executive', 'is_system' => true,
+            'factory_id' => $this->factory->id,
+            'name' => 'Factory Owner',
+            'slug' => 'factory-owner',
+            'dashboard_key' => 'executive',
+            'is_system' => true,
         ]);
         $this->owner->roles()->attach($role->id, ['factory_id' => $this->factory->id]);
     }
@@ -40,7 +46,11 @@ class OwnerOverviewTest extends TestCase
     private function makeFactory(string $name, string $slug): Factory
     {
         return Factory::create([
-            'uuid' => (string) Str::uuid(), 'name' => $name, 'slug' => $slug, 'industry_type' => 'clothing', 'status' => 'active',
+            'uuid' => (string) Str::uuid(),
+            'name' => $name,
+            'slug' => $slug,
+            'industry_type' => 'clothing',
+            'status' => 'active',
         ]);
     }
 
@@ -48,22 +58,43 @@ class OwnerOverviewTest extends TestCase
     {
         $this->orderNumber++;
 
-        DB::table('sales_documents')->insert(array_merge([
-            'factory_id' => $factory->id, 'document_type' => 'customer_order', 'document_number' => 'CO-'.$this->orderNumber,
-            'customer_name' => 'Customer A', 'status' => 'accepted', 'currency_code' => 'RWF', 'total_amount' => 1000,
-            'paid_amount' => 0, 'payment_status' => 'unpaid', 'item_count' => 1, 'document_date' => today()->toDateString(),
-            'created_at' => now(), 'updated_at' => now(),
-        ], $values));
+        DB::table('sales_documents')->insert(
+            array_merge(
+                [
+                    'factory_id' => $factory->id,
+                    'document_type' => 'customer_order',
+                    'document_number' => 'CO-' . $this->orderNumber,
+                    'customer_name' => 'Customer A',
+                    'status' => 'accepted',
+                    'currency_code' => 'RWF',
+                    'total_amount' => 1000,
+                    'paid_amount' => 0,
+                    'payment_status' => 'unpaid',
+                    'item_count' => 1,
+                    'document_date' => today()->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                $values,
+            ),
+        );
     }
 
     private function overview(string $query = ''): array
     {
-        return $this->actingAs($this->owner)->getJson('/api/executive/owner-overview'.$query)->assertOk()->json();
+        return $this->actingAs($this->owner)
+            ->getJson('/api/executive/owner-overview' . $query)
+            ->assertOk()
+            ->json();
     }
 
     public function test_it_compares_this_period_revenue_with_the_one_before_and_reports_receivables(): void
     {
-        $this->order($this->factory, ['total_amount' => 3000, 'paid_amount' => 1000, 'payment_status' => 'partially_paid']);
+        $this->order($this->factory, [
+            'total_amount' => 3000,
+            'paid_amount' => 1000,
+            'payment_status' => 'partially_paid',
+        ]);
         $this->order($this->factory, ['total_amount' => 1000, 'document_date' => today()->subDays(40)->toDateString()]);
         $this->order($this->factory, ['total_amount' => 9999, 'status' => 'cancelled']);
         $this->order($this->factory, [
@@ -114,29 +145,52 @@ class OwnerOverviewTest extends TestCase
 
         foreach (['passed', 'passed', 'passed', 'failed'] as $i => $result) {
             DB::table('quality_inspections')->insert([
-                'factory_id' => $id, 'inspection_number' => 'QI-'.$i, 'inspection_type' => 'final', 'result' => $result, 'inspector_id' => $this->owner->id,
-                'inspected_quantity' => 10, 'passed_quantity' => 8, 'rejected_quantity' => 2,
-                'inspected_at' => $now, 'created_at' => $now, 'updated_at' => $now,
+                'factory_id' => $id,
+                'inspection_number' => 'QI-' . $i,
+                'inspection_type' => 'final',
+                'result' => $result,
+                'inspector_id' => $this->owner->id,
+                'inspected_quantity' => 10,
+                'passed_quantity' => 8,
+                'rejected_quantity' => 2,
+                'inspected_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
 
         $worker = User::factory()->create(['current_factory_id' => $id]);
         foreach (['present', 'present', 'late', 'absent'] as $day => $status) {
             DB::table('employee_attendances')->insert([
-                'factory_id' => $id, 'user_id' => $worker->id, 'date' => today()->subDays($day)->toDateString(),
-                'status' => $status, 'created_at' => $now, 'updated_at' => $now,
+                'factory_id' => $id,
+                'user_id' => $worker->id,
+                'date' => today()->subDays($day)->toDateString(),
+                'status' => $status,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
 
         DB::table('safety_incidents')->insert([
-            'factory_id' => $id, 'reported_by' => $worker->id, 'incident_date' => today()->subDays(5)->toDateString(),
-            'description' => 'Cut', 'severity' => 'severe', 'status' => 'reported', 'created_at' => $now, 'updated_at' => $now,
+            'factory_id' => $id,
+            'reported_by' => $worker->id,
+            'incident_date' => today()->subDays(5)->toDateString(),
+            'description' => 'Cut',
+            'severity' => 'severe',
+            'status' => 'reported',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
         foreach (['operational', 'down'] as $i => $status) {
             DB::table('machines')->insert([
-                'factory_id' => $id, 'name' => 'Machine '.$i, 'code' => 'M'.$i, 'type' => 'sewing', 'status' => $status,
-                'created_at' => $now, 'updated_at' => $now,
+                'factory_id' => $id,
+                'name' => 'Machine ' . $i,
+                'code' => 'M' . $i,
+                'type' => 'sewing',
+                'status' => $status,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
 
@@ -172,14 +226,20 @@ class OwnerOverviewTest extends TestCase
 
     private function allowAudit(): void
     {
-        $permission = Permission::firstOrCreate(['slug' => 'audit.view'], ['name' => 'View audit', 'module' => 'audit']);
+        $permission = Permission::firstOrCreate(
+            ['slug' => 'audit.view'],
+            ['name' => 'View audit', 'module' => 'audit'],
+        );
         $this->owner->roles()->first()->permissions()->attach($permission->id);
     }
 
     private function log(Factory $factory, string $event, string $description, ?User $by = null): void
     {
         AuditLog::create([
-            'factory_id' => $factory->id, 'user_id' => $by?->id, 'event' => $event, 'description' => $description,
+            'factory_id' => $factory->id,
+            'user_id' => $by?->id,
+            'event' => $event,
+            'description' => $description,
         ]);
     }
 

@@ -1,4 +1,16 @@
-import { Boxes, ClipboardCheck, FileText, Gauge, LayoutDashboard, PackageOpen, ShoppingCart, Truck, Users, Warehouse, Wrench } from 'lucide-react';
+import {
+    Boxes,
+    ClipboardCheck,
+    FileText,
+    Gauge,
+    LayoutDashboard,
+    PackageOpen,
+    ShoppingCart,
+    Truck,
+    Users,
+    Warehouse,
+    Wrench,
+} from 'lucide-react';
 import type { NavGroup, RoleContext, RoleModule } from '../types';
 
 export const factoryAdministratorRole: RoleModule = {
@@ -15,7 +27,12 @@ export const factoryAdministratorRole: RoleModule = {
         ['logistics', Truck, labels.logistics, 'logistics.view'],
         ['team', Users, labels.people, 'users.view'],
         ['machines', Wrench, labels.machines, 'maintenance.view'],
-        ['logistics-reports', Truck, text('Logistics report', 'Rapport logistique'), 'reports.view'],
+        [
+            'logistics-reports',
+            Truck,
+            text('Logistics report', 'Rapport logistique'),
+            'reports.view',
+        ],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };

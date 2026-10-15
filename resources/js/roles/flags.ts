@@ -10,11 +10,20 @@ const SPECIALIZED_OPERATOR_ROLES = [
     'machine-operator',
 ];
 
-const OPERATOR_WORKSPACES = ['workstation', 'sewing', 'finishing', 'mixing', 'processing', 'bottling', 'packaging'];
+const OPERATOR_WORKSPACES = [
+    'workstation',
+    'sewing',
+    'finishing',
+    'mixing',
+    'processing',
+    'bottling',
+    'packaging',
+];
 
 export function getRoleFlags(user: AuthUser) {
     const hasRole = (slug: string) => user.roles.some((role) => role.slug === slug);
-    const inWorkspaceOrRole = (workspace: string, slug: string) => user.workspace === workspace || hasRole(slug);
+    const inWorkspaceOrRole = (workspace: string, slug: string) =>
+        user.workspace === workspace || hasRole(slug);
 
     const jobTitle = user.employee_profile?.job_title?.toLowerCase() ?? '';
 
@@ -22,7 +31,9 @@ export function getRoleFlags(user: AuthUser) {
         isExecutiveUser:
             user.is_platform_admin ||
             user.workspace === 'executive' ||
-            user.roles.some((role) => ['factory-owner', 'factory-administrator', 'factory-manager'].includes(role.slug)),
+            user.roles.some((role) =>
+                ['factory-owner', 'factory-administrator', 'factory-manager'].includes(role.slug),
+            ),
         isFactoryOwner: hasRole('factory-owner'),
         isFactoryAdmin: hasRole('factory-administrator'),
         isFactoryManager: hasRole('factory-manager'),
@@ -40,7 +51,9 @@ export function getRoleFlags(user: AuthUser) {
         isPackagingUser:
             user.workspace === 'packaging' ||
             user.workspace === 'packing' ||
-            user.roles.some((role) => role.slug === 'packing-manager' || role.slug === 'packaging-operator'),
+            user.roles.some(
+                (role) => role.slug === 'packing-manager' || role.slug === 'packaging-operator',
+            ),
         isMachineOperator:
             OPERATOR_WORKSPACES.includes(user.workspace) ||
             user.roles.some((role) => SPECIALIZED_OPERATOR_ROLES.includes(role.slug)),
@@ -48,14 +61,18 @@ export function getRoleFlags(user: AuthUser) {
         isProcurementUser: inWorkspaceOrRole('procurement', 'procurement-officer'),
         isQualityUser:
             user.workspace === 'quality' ||
-            user.roles.some((role) => role.slug?.includes('quality') || role.name?.toLowerCase().includes('quality')) ||
+            user.roles.some(
+                (role) =>
+                    role.slug?.includes('quality') || role.name?.toLowerCase().includes('quality'),
+            ) ||
             Boolean(jobTitle && jobTitle.includes('quality')) ||
             user.name.includes('Quality Control Manager'),
         isSchoolUser: user.workspace === 'school' || hasRole('school-user'),
         isLogisticsUser: inWorkspaceOrRole('logistics', 'logistics-officer'),
         isSalesUser: inWorkspaceOrRole('sales', 'sales-officer'),
         isFinanceUser: inWorkspaceOrRole('finance', 'accountant'),
-        isNoguchiFactory: user.current_factory?.name?.trim().toLowerCase() === 'noguchi holdings ltd',
+        isNoguchiFactory:
+            user.current_factory?.name?.trim().toLowerCase() === 'noguchi holdings ltd',
     };
 }
 

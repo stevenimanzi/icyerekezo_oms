@@ -25,7 +25,8 @@ type Props = {
 };
 
 export function Sidebar(props: Props) {
-    const { user, locale, labels, entries, activePage, open, lowStockCount, onNavigate, onClose } = props;
+    const { user, locale, labels, entries, activePage, open, lowStockCount, onNavigate, onClose } =
+        props;
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     const [switcherOpen, setSwitcherOpen] = useState(false);
     const text = (en: string, fr: string) => (locale === 'en' ? en : fr);
@@ -46,11 +47,23 @@ export function Sidebar(props: Props) {
 
     const badge = (page: string) => {
         if (page === 'inventory' && lowStockCount > 0) {
-            return <i title={text('Low-stock items that need attention', 'Articles en stock faible nécessitant une attention')}>{lowStockCount}</i>;
+            return (
+                <i
+                    title={text(
+                        'Low-stock items that need attention',
+                        'Articles en stock faible nécessitant une attention',
+                    )}
+                >
+                    {lowStockCount}
+                </i>
+            );
         }
         if (page === 'sales' && (user.pending_orders_count ?? 0) > 0) {
             return (
-                <i className="bg-blue-500" title={text('Pending incoming orders', 'Commandes entrantes en attente')}>
+                <i
+                    className="bg-blue-500"
+                    title={text('Pending incoming orders', 'Commandes entrantes en attente')}
+                >
                     {user.pending_orders_count}
                 </i>
             );
@@ -74,7 +87,15 @@ export function Sidebar(props: Props) {
             setSwitcherOpen((current) => !current);
             return;
         }
-        onNavigate(user.is_platform_admin ? 'system-settings' : props.isSchoolUser ? 'school-profile' : props.isOwner ? 'dashboard' : 'settings');
+        onNavigate(
+            user.is_platform_admin
+                ? 'system-settings'
+                : props.isSchoolUser
+                  ? 'school-profile'
+                  : props.isOwner
+                    ? 'dashboard'
+                    : 'settings',
+        );
     };
 
     return (
@@ -92,7 +113,11 @@ export function Sidebar(props: Props) {
                         const ItemIcon = entry.item[1];
 
                         return (
-                            <button key={entry.key} className={`nav-item ${activePage === entry.key ? 'active' : ''}`} onClick={() => go(entry.key)}>
+                            <button
+                                key={entry.key}
+                                className={`nav-item ${activePage === entry.key ? 'active' : ''}`}
+                                onClick={() => go(entry.key)}
+                            >
                                 <ItemIcon size={18} />
                                 <span>{entry.item[2]}</span>
                                 {badge(entry.key)}
@@ -107,14 +132,26 @@ export function Sidebar(props: Props) {
                             key={entry.key}
                             className={`nav-group ${openGroups[entry.key] ? 'expanded' : ''} ${entry.items.some(([page]) => activePage === page) ? 'has-active' : ''}`}
                         >
-                            <button className="nav-group-toggle" onClick={() => setOpenGroups((current) => ({ ...current, [entry.key]: !current[entry.key] }))}>
+                            <button
+                                className="nav-group-toggle"
+                                onClick={() =>
+                                    setOpenGroups((current) => ({
+                                        ...current,
+                                        [entry.key]: !current[entry.key],
+                                    }))
+                                }
+                            >
                                 <GroupIcon size={18} />
                                 <span>{entry.label}</span>
                                 <ChevronDown size={14} className="nav-group-chevron" />
                             </button>
                             <div className="nav-group-children">
                                 {entry.items.map(([page, Icon, label]) => (
-                                    <button key={page} className={`nav-item nav-child ${activePage === page ? 'active' : ''}`} onClick={() => go(page)}>
+                                    <button
+                                        key={page}
+                                        className={`nav-item nav-child ${activePage === page ? 'active' : ''}`}
+                                        onClick={() => go(page)}
+                                    >
                                         <Icon size={16} />
                                         <span>{label}</span>
                                         {badge(page)}
@@ -126,15 +163,23 @@ export function Sidebar(props: Props) {
                 })}
                 {!user.is_platform_admin && (
                     <>
-                        <p className="nav-label">{props.isOwner ? 'ASSISTANCE' : labels.management}</p>
+                        <p className="nav-label">
+                            {props.isOwner ? 'ASSISTANCE' : labels.management}
+                        </p>
                         {props.showSettings && (
-                            <button className={`nav-item ${activePage === 'settings' ? 'active' : ''}`} onClick={() => go('settings')}>
+                            <button
+                                className={`nav-item ${activePage === 'settings' ? 'active' : ''}`}
+                                onClick={() => go('settings')}
+                            >
                                 <Settings size={18} />
                                 <span>{labels.settings}</span>
                             </button>
                         )}
                         {props.showSupport && (
-                            <button className={`nav-item ${activePage === 'support' ? 'active' : ''}`} onClick={() => go('support')}>
+                            <button
+                                className={`nav-item ${activePage === 'support' ? 'active' : ''}`}
+                                onClick={() => go('support')}
+                            >
                                 <HelpCircle size={18} />
                                 <span>{labels.support}</span>
                             </button>
@@ -144,15 +189,22 @@ export function Sidebar(props: Props) {
             </nav>
             <div className="popover-anchor">
                 <button className="factory-card" onClick={onFactoryCardClick}>
-                    <div className="factory-avatar">{user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}</div>
+                    <div className="factory-avatar">
+                        {user.current_factory?.name.slice(0, 2).toUpperCase() || 'IC'}
+                    </div>
                     <div>
-                        <strong>{user.current_factory?.name || user.system?.name || 'ICYEREKEZO OMS'}</strong>
+                        <strong>
+                            {user.current_factory?.name || user.system?.name || 'ICYEREKEZO OMS'}
+                        </strong>
                         <span>{factoryCardSubtitle}</span>
                     </div>
                     <ChevronRight size={17} />
                 </button>
                 {switcherOpen && canSwitchFactory && (
-                    <div className="top-popover" style={{ bottom: 'calc(100% + 12px)', top: 'auto' }}>
+                    <div
+                        className="top-popover"
+                        style={{ bottom: 'calc(100% + 12px)', top: 'auto' }}
+                    >
                         <strong>{text('Switch factory', "Changer d'usine")}</strong>
                         {(user.factories || []).map((factory) => (
                             <button
@@ -165,15 +217,28 @@ export function Sidebar(props: Props) {
                                     }
                                     props.onSwitchFactory(factory.id);
                                 }}
-                                style={{ fontWeight: factory.id === user.current_factory?.id ? 700 : 500, color: factory.id === user.current_factory?.id ? 'var(--brand)' : undefined }}
+                                style={{
+                                    fontWeight: factory.id === user.current_factory?.id ? 700 : 500,
+                                    color:
+                                        factory.id === user.current_factory?.id
+                                            ? 'var(--brand)'
+                                            : undefined,
+                                }}
                             >
-                                {props.switchingFactory === factory.id ? text('Switching…', 'Changement…') : factory.name}
+                                {props.switchingFactory === factory.id
+                                    ? text('Switching…', 'Changement…')
+                                    : factory.name}
                             </button>
                         ))}
                     </div>
                 )}
             </div>
-            <button type="button" className="sidebar-logout-btn" onClick={props.onLogout} title={text('Sign out', 'Se déconnecter')}>
+            <button
+                type="button"
+                className="sidebar-logout-btn"
+                onClick={props.onLogout}
+                title={text('Sign out', 'Se déconnecter')}
+            >
                 <LogOut size={16} />
                 <span>{text('Sign out', 'Se déconnecter')}</span>
             </button>

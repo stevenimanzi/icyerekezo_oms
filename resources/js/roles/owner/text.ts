@@ -8,7 +8,12 @@ const en = {
     connecting: 'Connecting to live data…',
     loading: 'Loading your factory figures…',
     refresh: 'Refresh',
-    periods: { 7: 'Last 7 days', 30: 'Last 30 days', 90: 'Last 90 days', 365: 'Last 12 months' } as Record<number, string>,
+    periods: {
+        7: 'Last 7 days',
+        30: 'Last 30 days',
+        90: 'Last 90 days',
+        365: 'Last 12 months',
+    } as Record<number, string>,
     comparedWith: (days: number) => `vs previous ${days === 365 ? '12 months' : `${days} days`}`,
     noEarlierData: 'No earlier period to compare',
     noChange: 'No change',
@@ -16,16 +21,26 @@ const en = {
     attention: 'Needs your attention',
     allClear: 'All clear. Nothing needs your attention right now.',
     alerts: {
-        serious_incident: (n: number) => `${n} serious safety ${n === 1 ? 'incident is' : 'incidents are'} still open`,
-        machines_down: (n: number) => `${n} ${n === 1 ? 'machine is' : 'machines are'} out of service`,
-        overdue_payments: (n: number) => `${n} customer ${n === 1 ? 'order is' : 'orders are'} overdue for payment`,
-        late_orders: (n: number) => `${n} customer ${n === 1 ? 'order is' : 'orders are'} late for delivery`,
-        late_production: (n: number) => `${n} production ${n === 1 ? 'order is' : 'orders are'} behind schedule`,
-        low_stock: (n: number) => `${n} ${n === 1 ? 'item is' : 'items are'} at or below the reorder level`,
-        expiring_batches: (n: number) => `${n} ${n === 1 ? 'batch expires' : 'batches expire'} within 30 days`,
-        service_overdue: (n: number) => `${n} ${n === 1 ? 'machine is' : 'machines are'} overdue for service`,
-        failed_inspections: (n: number) => `${n} quality ${n === 1 ? 'inspection' : 'inspections'} failed this period`,
-        payment_receipts: (n: number) => `${n} payment ${n === 1 ? 'receipt is' : 'receipts are'} waiting for review`,
+        serious_incident: (n: number) =>
+            `${n} serious safety ${n === 1 ? 'incident is' : 'incidents are'} still open`,
+        machines_down: (n: number) =>
+            `${n} ${n === 1 ? 'machine is' : 'machines are'} out of service`,
+        overdue_payments: (n: number) =>
+            `${n} customer ${n === 1 ? 'order is' : 'orders are'} overdue for payment`,
+        late_orders: (n: number) =>
+            `${n} customer ${n === 1 ? 'order is' : 'orders are'} late for delivery`,
+        late_production: (n: number) =>
+            `${n} production ${n === 1 ? 'order is' : 'orders are'} behind schedule`,
+        low_stock: (n: number) =>
+            `${n} ${n === 1 ? 'item is' : 'items are'} at or below the reorder level`,
+        expiring_batches: (n: number) =>
+            `${n} ${n === 1 ? 'batch expires' : 'batches expire'} within 30 days`,
+        service_overdue: (n: number) =>
+            `${n} ${n === 1 ? 'machine is' : 'machines are'} overdue for service`,
+        failed_inspections: (n: number) =>
+            `${n} quality ${n === 1 ? 'inspection' : 'inspections'} failed this period`,
+        payment_receipts: (n: number) =>
+            `${n} payment ${n === 1 ? 'receipt is' : 'receipts are'} waiting for review`,
     } as Record<string, (n: number) => string>,
 
     kpi: {
@@ -82,7 +97,7 @@ const en = {
         returns: 'Returns',
         top: 'Top customers',
         noCustomers: 'No customer orders in this period.',
-        orders: 'orders',
+        orders: (n: number) => `${n} ${n === 1 ? 'order' : 'orders'}`,
     },
     quality: {
         title: 'Quality',
@@ -135,13 +150,14 @@ const en = {
         who: 'Who',
         area: 'Area',
         what: 'What happened',
+        loading: 'Loading activity…',
         none: 'No activity matches your search.',
         previous: 'Previous',
         next: 'Next',
-        page: (page: number, last: number, total: number) => `Page ${page} of ${last} · ${total} records`,
+        page: (page: number, last: number, total: number) =>
+            `Page ${page} of ${last} · ${total} records`,
     },
     openPage: 'Open',
-    errorFallback: 'Unable to load the dashboard.',
 };
 
 const fr: typeof en = {
@@ -152,24 +168,37 @@ const fr: typeof en = {
     connecting: 'Connexion aux données…',
     loading: 'Chargement des chiffres de votre usine…',
     refresh: 'Actualiser',
-    periods: { 7: '7 derniers jours', 30: '30 derniers jours', 90: '90 derniers jours', 365: '12 derniers mois' },
-    comparedWith: (days) => `par rapport aux ${days === 365 ? '12 mois' : `${days} jours`} précédents`,
+    periods: {
+        7: '7 derniers jours',
+        30: '30 derniers jours',
+        90: '90 derniers jours',
+        365: '12 derniers mois',
+    },
+    comparedWith: (days) =>
+        `par rapport aux ${days === 365 ? '12 mois' : `${days} jours`} précédents`,
     noEarlierData: 'Aucune période précédente à comparer',
     noChange: 'Aucun changement',
 
     attention: 'À votre attention',
     allClear: 'Tout va bien. Rien ne demande votre attention pour le moment.',
     alerts: {
-        serious_incident: (n) => `${n} incident${n === 1 ? ' grave de sécurité est' : 's graves de sécurité sont'} encore ouvert${n === 1 ? '' : 's'}`,
+        serious_incident: (n) =>
+            `${n} incident${n === 1 ? ' grave de sécurité est' : 's graves de sécurité sont'} encore ouvert${n === 1 ? '' : 's'}`,
         machines_down: (n) => `${n} machine${n === 1 ? ' est' : 's sont'} hors service`,
-        overdue_payments: (n) => `${n} commande${n === 1 ? ' client est' : 's clients sont'} en retard de paiement`,
-        late_orders: (n) => `${n} commande${n === 1 ? ' client est' : 's clients sont'} en retard de livraison`,
-        late_production: (n) => `${n} ordre${n === 1 ? ' de production est' : 's de production sont'} en retard`,
-        low_stock: (n) => `${n} article${n === 1 ? ' est' : 's sont'} au niveau de réapprovisionnement ou en dessous`,
+        overdue_payments: (n) =>
+            `${n} commande${n === 1 ? ' client est' : 's clients sont'} en retard de paiement`,
+        late_orders: (n) =>
+            `${n} commande${n === 1 ? ' client est' : 's clients sont'} en retard de livraison`,
+        late_production: (n) =>
+            `${n} ordre${n === 1 ? ' de production est' : 's de production sont'} en retard`,
+        low_stock: (n) =>
+            `${n} article${n === 1 ? ' est' : 's sont'} au niveau de réapprovisionnement ou en dessous`,
         expiring_batches: (n) => `${n} lot${n === 1 ? ' expire' : 's expirent'} dans les 30 jours`,
         service_overdue: (n) => `${n} machine${n === 1 ? ' est' : 's sont'} en retard d’entretien`,
-        failed_inspections: (n) => `${n} inspection${n === 1 ? '' : 's'} qualité en échec sur la période`,
-        payment_receipts: (n) => `${n} reçu${n === 1 ? ' de paiement attend' : 's de paiement attendent'} une vérification`,
+        failed_inspections: (n) =>
+            `${n} inspection${n === 1 ? '' : 's'} qualité en échec sur la période`,
+        payment_receipts: (n) =>
+            `${n} reçu${n === 1 ? ' de paiement attend' : 's de paiement attendent'} une vérification`,
     },
 
     kpi: {
@@ -226,7 +255,7 @@ const fr: typeof en = {
         returns: 'Retours',
         top: 'Meilleurs clients',
         noCustomers: 'Aucune commande client sur cette période.',
-        orders: 'commandes',
+        orders: (n) => `${n} commande${n === 1 ? '' : 's'}`,
     },
     quality: {
         title: 'Qualité',
@@ -279,13 +308,13 @@ const fr: typeof en = {
         who: 'Qui',
         area: 'Domaine',
         what: 'Ce qui s’est passé',
+        loading: 'Chargement de l’activité…',
         none: 'Aucune activité ne correspond à votre recherche.',
         previous: 'Précédent',
         next: 'Suivant',
         page: (page, last, total) => `Page ${page} sur ${last} · ${total} enregistrements`,
     },
     openPage: 'Ouvrir',
-    errorFallback: 'Impossible de charger le tableau de bord.',
 };
 
 export const ownerText: Record<Locale, typeof en> = { en, fr };

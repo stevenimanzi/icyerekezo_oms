@@ -81,27 +81,35 @@ final class OwnerOverviewReport
     private function growth(): array
     {
         return [
-            'revenue' => $this->compare(fn ($from, $to) => $this->revenueBetween($from, $to)),
-            'orders' => $this->compare(fn ($from, $to) => $this->countedOrders()->whereBetween('document_date', [$from->toDateString(), $to->toDateString()])->count()),
-            'units_delivered' => $this->compare(fn ($from, $to) => $this->unitsDeliveredBetween($from, $to)),
-            'output' => $this->compare(fn ($from, $to) => $this->outputBetween($from, $to)),
-            'collected' => $this->compare(fn ($from, $to) => $this->collectedBetween($from, $to)),
+            'revenue' => $this->compare(fn($from, $to) => $this->revenueBetween($from, $to)),
+            'orders' => $this->compare(
+                fn($from, $to) => $this->countedOrders()
+                    ->whereBetween('document_date', [$from->toDateString(), $to->toDateString()])
+                    ->count(),
+            ),
+            'units_delivered' => $this->compare(fn($from, $to) => $this->unitsDeliveredBetween($from, $to)),
+            'output' => $this->compare(fn($from, $to) => $this->outputBetween($from, $to)),
+            'collected' => $this->compare(fn($from, $to) => $this->collectedBetween($from, $to)),
         ];
     }
 
     private function monthlyTrend(): array
     {
-        return collect(range(11, 0))->map(function (int $monthsAgo) {
-            $from = now()->startOfMonth()->subMonths($monthsAgo);
-            $to = $from->copy()->endOfMonth();
+        return collect(range(11, 0))
+            ->map(function (int $monthsAgo) {
+                $from = now()->startOfMonth()->subMonths($monthsAgo);
+                $to = $from->copy()->endOfMonth();
 
-            return [
-                'label' => $from->format('M y'),
-                'revenue' => $this->revenueBetween($from, $to),
-                'orders' => $this->countedOrders()->whereBetween('document_date', [$from->toDateString(), $to->toDateString()])->count(),
-                'output' => $this->outputBetween($from, $to),
-            ];
-        })->all();
+                return [
+                    'label' => $from->format('M y'),
+                    'revenue' => $this->revenueBetween($from, $to),
+                    'orders' => $this->countedOrders()
+                        ->whereBetween('document_date', [$from->toDateString(), $to->toDateString()])
+                        ->count(),
+                    'output' => $this->outputBetween($from, $to),
+                ];
+            })
+            ->all();
     }
 
     private function cash(): array
@@ -123,10 +131,16 @@ final class OwnerOverviewReport
             'billed' => $billed,
             'collected' => $paid,
             'receivable' => max(0, $billed - $paid),
-            'collection_rate' => $billed > 0 ? round($paid / $billed * 100, 1) : null,
-            'overdue_receivable' => (float) (clone $overdue)->selectRaw('COALESCE(SUM(total_amount - paid_amount), 0) as due')->value('due'),
+            'collection_rate' => $billed > 0 ? round(($paid / $billed) * 100, 1) : null,
+            'overdue_receivable' => (float) (clone $overdue)
+                ->selectRaw('COALESCE(SUM(total_amount - paid_amount), 0) as due')
+                ->value('due'),
             'overdue_orders' => (clone $overdue)->count(),
-            'payable' => max(0, (float) (clone $supplierBills)->sum('total_amount') - (float) (clone $supplierBills)->sum('paid_amount')),
+            'payable' => max(
+                0,
+                (float) (clone $supplierBills)->sum('total_amount') -
+                    (float) (clone $supplierBills)->sum('paid_amount'),
+            ),
             'pending_receipts' => SchoolPaymentSubmission::withoutGlobalScopes()
                 ->where('factory_id', $this->factoryId)
                 ->where('status', 'pending')
@@ -160,15 +174,26 @@ final class OwnerOverviewReport
         return [
             'planned' => $planned,
             'completed' => $completed,
-            'completion_rate' => $planned > 0 ? round($completed / $planned * 100, 1) : null,
+            'completion_rate' => $planned > 0 ? round(($completed / $planned) * 100, 1) : null,
             'rejected' => $rejected,
             'waste' => $waste,
-            'reject_rate' => ($completed + $rejected) > 0 ? round($rejected / ($completed + $rejected) * 100, 1) : null,
+            'reject_rate' => $completed + $rejected > 0 ? round(($rejected / ($completed + $rejected)) * 100, 1) : null,
             'open_orders' => (clone $orders)->whereIn('status', self::OPEN_PRODUCTION_STATUSES)->count(),
             'late_orders' => (clone $late)->count(),
-            'on_time_rate' => $finished->count() > 0
-                ? round($finished->filter(fn ($order) => $order->completed_at->toDateString() <= $order->planned_end->toDateString())->count() / $finished->count() * 100, 1)
-                : null,
+            'on_time_rate' =>
+                $finished->count() > 0
+                    ? round(
+                        ($finished
+                            ->filter(
+                                fn($order) => $order->completed_at->toDateString() <=
+                                    $order->planned_end->toDateString(),
+                            )
+                            ->count() /
+                            $finished->count()) *
+                            100,
+                        1,
+                    )
+                    : null,
             'downtime_minutes' => (int) ProductionStageExecution::withoutGlobalScopes()
                 ->where('factory_id', $this->factoryId)
                 ->whereBetween('created_at', [$this->start, $this->end])
@@ -194,7 +219,8 @@ final class OwnerOverviewReport
             ->whereNotNull('expires_at')
             ->whereBetween('expires_at', [today(), today()->addDays(30)])
             ->whereExists(function ($query) {
-                $query->select(DB::raw(1))
+                $query
+                    ->select(DB::raw(1))
                     ->from('stock_balances')
                     ->whereColumn('stock_balances.batch_id', 'batches.id')
                     ->where('stock_balances.quantity_on_hand', '>', 0);
@@ -205,8 +231,8 @@ final class OwnerOverviewReport
             'value' => (float) (clone $balances)
                 ->join('items', 'items.id', '=', 'stock_balances.item_id')
                 ->sum(DB::raw('stock_balances.quantity_on_hand * items.standard_cost')),
-            'low_stock' => $levels->filter(fn ($row) => (float) $row->on_hand <= (float) $row->reorder_level)->count(),
-            'out_of_stock' => $levels->filter(fn ($row) => (float) $row->on_hand <= 0)->count(),
+            'low_stock' => $levels->filter(fn($row) => (float) $row->on_hand <= (float) $row->reorder_level)->count(),
+            'out_of_stock' => $levels->filter(fn($row) => (float) $row->on_hand <= 0)->count(),
             'expiring_soon' => $expiringSoon,
             'tracked_items' => $levels->count(),
         ];
@@ -223,23 +249,29 @@ final class OwnerOverviewReport
 
         $topCustomers = (clone $orders)
             ->whereBetween('document_date', [$this->start->toDateString(), $this->end->toDateString()])
-            ->selectRaw('COALESCE(customer_name, \'Unknown\') as name, COUNT(*) as orders, COALESCE(SUM(total_amount), 0) as revenue')
+            ->selectRaw(
+                'COALESCE(customer_name, \'Unknown\') as name, COUNT(*) as orders, COALESCE(SUM(total_amount), 0) as revenue',
+            )
             ->groupBy('customer_name')
             ->orderByDesc('revenue')
             ->limit(5)
             ->get()
-            ->map(fn ($row) => ['name' => $row->name, 'orders' => (int) $row->orders, 'revenue' => (float) $row->revenue]);
+            ->map(
+                fn($row) => ['name' => $row->name, 'orders' => (int) $row->orders, 'revenue' => (float) $row->revenue],
+            );
 
         $ordered = (float) $this->lines()->sum('quantity_ordered');
         $delivered = (float) $this->lines()->sum('quantity_delivered');
 
         return [
-            'received' => (clone $orders)->whereBetween('document_date', [$this->start->toDateString(), $this->end->toDateString()])->count(),
+            'received' => (clone $orders)
+                ->whereBetween('document_date', [$this->start->toDateString(), $this->end->toDateString()])
+                ->count(),
             'open' => (clone $orders)->whereNotIn('status', ['delivered', 'completed'])->count(),
             'late' => (clone $late)->count(),
             'units_ordered' => $ordered,
             'units_delivered' => $delivered,
-            'fulfilment_rate' => $ordered > 0 ? round($delivered / $ordered * 100, 1) : null,
+            'fulfilment_rate' => $ordered > 0 ? round(($delivered / $ordered) * 100, 1) : null,
             'returns' => SalesDocument::withoutGlobalScopes()
                 ->where('factory_id', $this->factoryId)
                 ->where('document_type', 'return')
@@ -261,7 +293,7 @@ final class OwnerOverviewReport
         $rate = function ($query) {
             $total = (clone $query)->count();
 
-            return $total > 0 ? round((clone $query)->where('result', 'passed')->count() / $total * 100, 1) : null;
+            return $total > 0 ? round(((clone $query)->where('result', 'passed')->count() / $total) * 100, 1) : null;
         };
 
         return [
@@ -272,7 +304,10 @@ final class OwnerOverviewReport
             'pass_rate' => $rate($current),
             'previous_pass_rate' => $rate($previous),
             'rejected_quantity' => (float) (clone $current)->sum('rejected_quantity'),
-            'pending' => QualityInspection::withoutGlobalScopes()->where('factory_id', $this->factoryId)->where('result', 'pending')->count(),
+            'pending' => QualityInspection::withoutGlobalScopes()
+                ->where('factory_id', $this->factoryId)
+                ->where('result', 'pending')
+                ->count(),
         ];
     }
 
@@ -290,7 +325,7 @@ final class OwnerOverviewReport
                 ->where('factory_id', $this->factoryId)
                 ->where('employment_status', 'active')
                 ->count(),
-            'attendance_rate' => $marked > 0 ? round($present / $marked * 100, 1) : null,
+            'attendance_rate' => $marked > 0 ? round(($present / $marked) * 100, 1) : null,
             'late' => (clone $attendance)->where('status', 'late')->count(),
             'absent' => (clone $attendance)->where('status', 'absent')->count(),
             'on_leave_today' => LeaveRequest::withoutGlobalScopes()
@@ -313,16 +348,23 @@ final class OwnerOverviewReport
         $lastIncident = (clone $incidents)->max('incident_date');
 
         return [
-            'incidents' => (clone $incidents)->whereBetween('incident_date', [$this->start->toDateString(), $this->end->toDateString()])->count(),
+            'incidents' => (clone $incidents)
+                ->whereBetween('incident_date', [$this->start->toDateString(), $this->end->toDateString()])
+                ->count(),
             'open' => (clone $incidents)->where('status', '!=', 'resolved')->count(),
-            'serious_open' => (clone $incidents)->where('status', '!=', 'resolved')->whereIn('severity', ['severe', 'critical'])->count(),
+            'serious_open' => (clone $incidents)
+                ->where('status', '!=', 'resolved')
+                ->whereIn('severity', ['severe', 'critical'])
+                ->count(),
             'days_without_incident' => $lastIncident ? (int) abs(today()->diffInDays($lastIncident)) : null,
         ];
     }
 
     private function equipment(): array
     {
-        $machines = Machine::withoutGlobalScopes()->where('factory_id', $this->factoryId)->where('status', '!=', 'retired');
+        $machines = Machine::withoutGlobalScopes()
+            ->where('factory_id', $this->factoryId)
+            ->where('status', '!=', 'retired');
 
         $total = (clone $machines)->count();
         $broken = (clone $machines)->whereIn('status', self::BROKEN_MACHINE_STATUSES)->count();
@@ -330,8 +372,11 @@ final class OwnerOverviewReport
         return [
             'machines' => $total,
             'unavailable' => $broken,
-            'availability_rate' => $total > 0 ? round(($total - $broken) / $total * 100, 1) : null,
-            'service_overdue' => (clone $machines)->whereNotNull('next_maintenance_at')->where('next_maintenance_at', '<', now())->count(),
+            'availability_rate' => $total > 0 ? round((($total - $broken) / $total) * 100, 1) : null,
+            'service_overdue' => (clone $machines)
+                ->whereNotNull('next_maintenance_at')
+                ->where('next_maintenance_at', '<', now())
+                ->count(),
             'downtime_minutes' => (int) $this->maintenanceInPeriod()->sum('downtime_minutes'),
             'open_jobs' => MaintenanceRecord::withoutGlobalScopes()
                 ->where('factory_id', $this->factoryId)
@@ -340,8 +385,15 @@ final class OwnerOverviewReport
         ];
     }
 
-    private function alerts(array $cash, array $production, array $stock, array $customers, array $quality, array $safety, array $equipment): array
-    {
+    private function alerts(
+        array $cash,
+        array $production,
+        array $stock,
+        array $customers,
+        array $quality,
+        array $safety,
+        array $equipment,
+    ): array {
         $rules = [
             ['serious_incident', 'critical', $safety['serious_open'], 'safety'],
             ['machines_down', 'critical', $equipment['unavailable'], 'machines'],
@@ -356,8 +408,15 @@ final class OwnerOverviewReport
         ];
 
         return collect($rules)
-            ->filter(fn (array $rule) => $rule[2] > 0)
-            ->map(fn (array $rule) => ['key' => $rule[0], 'level' => $rule[1], 'count' => (int) $rule[2], 'page' => $rule[3]])
+            ->filter(fn(array $rule) => $rule[2] > 0)
+            ->map(
+                fn(array $rule) => [
+                    'key' => $rule[0],
+                    'level' => $rule[1],
+                    'count' => (int) $rule[2],
+                    'page' => $rule[3],
+                ],
+            )
             ->values()
             ->all();
     }
@@ -369,13 +428,15 @@ final class OwnerOverviewReport
             ->latest()
             ->limit(12)
             ->get(['id', 'user_id', 'event', 'description', 'created_at'])
-            ->map(fn ($log) => [
-                'id' => $log->id,
-                'who' => $log->user?->name ?? 'System',
-                'event' => $log->event,
-                'description' => $log->description,
-                'at' => $log->created_at?->toIso8601String(),
-            ])
+            ->map(
+                fn($log) => [
+                    'id' => $log->id,
+                    'who' => $log->user?->name ?? 'System',
+                    'event' => $log->event,
+                    'description' => $log->description,
+                    'at' => $log->created_at?->toIso8601String(),
+                ],
+            )
             ->all();
     }
 
@@ -387,7 +448,7 @@ final class OwnerOverviewReport
         return [
             'current' => $current,
             'previous' => $previous,
-            'change' => $previous > 0 ? round(($current - $previous) / $previous * 100, 1) : null,
+            'change' => $previous > 0 ? round((($current - $previous) / $previous) * 100, 1) : null,
         ];
     }
 
@@ -403,9 +464,13 @@ final class OwnerOverviewReport
     {
         return SalesDocumentLine::withoutGlobalScopes()
             ->where('factory_id', $this->factoryId)
-            ->whereHas('document', fn ($query) => $query->withoutGlobalScopes()
-                ->where('document_type', 'customer_order')
-                ->whereNotIn('status', self::NOT_COUNTED_ORDER_STATUSES));
+            ->whereHas(
+                'document',
+                fn($query) => $query
+                    ->withoutGlobalScopes()
+                    ->where('document_type', 'customer_order')
+                    ->whereNotIn('status', self::NOT_COUNTED_ORDER_STATUSES),
+            );
     }
 
     private function revenueBetween(CarbonInterface $from, CarbonInterface $to): float
@@ -417,7 +482,9 @@ final class OwnerOverviewReport
 
     private function unitsDeliveredBetween(CarbonInterface $from, CarbonInterface $to): float
     {
-        return (float) $this->lines()->whereBetween('updated_at', [$from, $to])->sum('quantity_delivered');
+        return (float) $this->lines()
+            ->whereBetween('updated_at', [$from, $to])
+            ->sum('quantity_delivered');
     }
 
     private function outputBetween(CarbonInterface $from, CarbonInterface $to): float

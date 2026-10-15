@@ -8,7 +8,12 @@ export const salesRole: RoleModule = {
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['sales', PackageOpen, labels.sales, 'sales.view'],
         ['products', Boxes, labels.products, 'products.view'],
-        ['inventory', Warehouse, text('Stock availability', 'Disponibilité du stock'), 'inventory.view'],
+        [
+            'inventory',
+            Warehouse,
+            text('Stock availability', 'Disponibilité du stock'),
+            'inventory.view',
+        ],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };

@@ -1,4 +1,13 @@
-import { Activity, FileSignature, FileText, LayoutDashboard, PackageCheck, PackageOpen, Truck, Warehouse } from 'lucide-react';
+import {
+    Activity,
+    FileSignature,
+    FileText,
+    LayoutDashboard,
+    PackageCheck,
+    PackageOpen,
+    Truck,
+    Warehouse,
+} from 'lucide-react';
 import type { NavGroup, NavItem, RoleContext, RoleModule } from '../types';
 
 export const logisticsRole: RoleModule = {
@@ -8,17 +17,37 @@ export const logisticsRole: RoleModule = {
         const shipping: NavItem[] = flags.isNoguchiFactory
             ? []
             : [
-                  ['inventory', Warehouse, text('Available goods', 'Produits disponibles'), 'inventory.view'],
+                  [
+                      'inventory',
+                      Warehouse,
+                      text('Available goods', 'Produits disponibles'),
+                      'inventory.view',
+                  ],
                   ['logistics', Truck, text('Shipments', 'Expéditions'), 'logistics.view'],
-                  ['dispatch', Activity, text('Dispatch board', 'Planification'), 'logistics.dispatch'],
-                  ['vehicles', Truck, text('Vehicles & drivers', 'Véhicules et chauffeurs'), 'logistics.view'],
+                  [
+                      'dispatch',
+                      Activity,
+                      text('Dispatch board', 'Planification'),
+                      'logistics.dispatch',
+                  ],
+                  [
+                      'vehicles',
+                      Truck,
+                      text('Vehicles & drivers', 'Véhicules et chauffeurs'),
+                      'logistics.view',
+                  ],
               ];
 
         return [
             ['dashboard', LayoutDashboard, text('Dashboard', 'Tableau de bord'), '*'],
             ['sales', PackageOpen, text('Incoming orders', 'Commandes entrantes'), 'sales.view'],
             ...shipping,
-            ['delivery-confirmation', PackageCheck, text('Delivery confirmation', 'Confirmation de livraison'), 'logistics.deliver'],
+            [
+                'delivery-confirmation',
+                PackageCheck,
+                text('Delivery confirmation', 'Confirmation de livraison'),
+                'logistics.deliver',
+            ],
             ['agreement', FileSignature, text('Agreement', 'Accord'), 'logistics.view'],
             ['reports', FileText, labels.reports, 'reports.view'],
         ];

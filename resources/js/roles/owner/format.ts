@@ -15,9 +15,14 @@ export function makeFormat(locale: Locale, currency: string) {
         money: (value: number) => `${currency} ${whole.format(value)}`,
         moneyShort: (value: number) => `${currency} ${compact.format(value)}`,
         percent: (value: number | null) => (value === null ? '—' : `${plain.format(value)}%`),
-        signedPercent: (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${plain.format(Math.abs(value))}%`,
-        hours: (minutes: number) => (minutes >= 60 ? `${plain.format(minutes / 60)} h` : `${whole.format(minutes)} min`),
-        dateTime: (iso: string | null) => (iso ? new Date(iso).toLocaleString(tag, { dateStyle: 'medium', timeStyle: 'short' }) : '—'),
+        signedPercent: (value: number) =>
+            `${value > 0 ? '+' : value < 0 ? '−' : ''}${plain.format(Math.abs(value))}%`,
+        hours: (minutes: number) =>
+            minutes >= 60 ? `${plain.format(minutes / 60)} h` : `${whole.format(minutes)} min`,
+        dateTime: (iso: string | null) =>
+            iso
+                ? new Date(iso).toLocaleString(tag, { dateStyle: 'medium', timeStyle: 'short' })
+                : '—',
         timeAgo: (iso: string | null) => {
             if (!iso) return '—';
             const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000);
@@ -28,7 +33,8 @@ export function makeFormat(locale: Locale, currency: string) {
                 ['minute', 60],
             ];
             for (const [unit, size] of steps) {
-                if (Math.abs(seconds) >= size) return formatter.format(Math.round(seconds / size), unit);
+                if (Math.abs(seconds) >= size)
+                    return formatter.format(Math.round(seconds / size), unit);
             }
             return formatter.format(seconds, 'second');
         },

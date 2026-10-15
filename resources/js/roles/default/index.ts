@@ -1,4 +1,16 @@
-import { Boxes, ClipboardCheck, FileText, Gauge, LayoutDashboard, PackageOpen, ShoppingCart, Truck, Users, Warehouse, Wrench } from 'lucide-react';
+import {
+    Boxes,
+    ClipboardCheck,
+    FileText,
+    Gauge,
+    LayoutDashboard,
+    PackageOpen,
+    ShoppingCart,
+    Truck,
+    Users,
+    Warehouse,
+    Wrench,
+} from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const defaultRole: RoleModule = {

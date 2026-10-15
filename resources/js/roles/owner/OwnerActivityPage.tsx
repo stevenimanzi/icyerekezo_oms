@@ -10,8 +10,11 @@ const SEARCH_DELAY_MS = 300;
 
 export default function OwnerActivityPage({ user, locale }: HomeProps) {
     const text = ownerText[locale].activityPage;
-    const labels = ownerText[locale];
-    const format = useMemo(() => makeFormat(locale, user.current_factory?.currency_code || 'RWF'), [locale, user]);
+    const system = ownerText[locale].system;
+    const format = useMemo(
+        () => makeFormat(locale, user.current_factory?.currency_code || 'RWF'),
+        [locale, user],
+    );
 
     const [search, setSearch] = useState('');
     const [query, setQuery] = useState('');
@@ -50,7 +53,13 @@ export default function OwnerActivityPage({ user, locale }: HomeProps) {
                     <p>{text.subtitle}</p>
                 </div>
                 <div className="ow-controls">
-                    <input type="search" value={search} placeholder={text.search} aria-label={text.search} onChange={(event) => setSearch(event.target.value)} />
+                    <input
+                        type="search"
+                        value={search}
+                        placeholder={text.search}
+                        aria-label={text.search}
+                        onChange={(event) => setSearch(event.target.value)}
+                    />
                     <select
                         aria-label={text.area}
                         value={module}
@@ -87,7 +96,7 @@ export default function OwnerActivityPage({ user, locale }: HomeProps) {
                                 result.data.map((entry) => (
                                     <tr key={entry.id}>
                                         <td>{format.dateTime(entry.at)}</td>
-                                        <td>{entry.who === 'System' ? labels.system : entry.who}</td>
+                                        <td>{entry.who === 'System' ? system : entry.who}</td>
                                         <td className="ow-cap">{humanize(entry.module)}</td>
                                         <td>{entry.description || humanize(entry.event)}</td>
                                     </tr>
@@ -95,7 +104,7 @@ export default function OwnerActivityPage({ user, locale }: HomeProps) {
                             ) : (
                                 <tr>
                                     <td colSpan={4} className="empty-cell">
-                                        {result ? text.none : labels.loading}
+                                        {result ? text.none : text.loading}
                                     </td>
                                 </tr>
                             )}
@@ -104,12 +113,22 @@ export default function OwnerActivityPage({ user, locale }: HomeProps) {
                 </div>
                 {result && result.meta.last_page > 1 && (
                     <div className="ow-pager">
-                        <span>{text.page(result.meta.page, result.meta.last_page, result.meta.total)}</span>
+                        <span>
+                            {text.page(result.meta.page, result.meta.last_page, result.meta.total)}
+                        </span>
                         <div>
-                            <button className="secondary-btn" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                            <button
+                                className="secondary-btn"
+                                disabled={page <= 1}
+                                onClick={() => setPage(page - 1)}
+                            >
                                 {text.previous}
                             </button>
-                            <button className="secondary-btn" disabled={page >= result.meta.last_page} onClick={() => setPage(page + 1)}>
+                            <button
+                                className="secondary-btn"
+                                disabled={page >= result.meta.last_page}
+                                onClick={() => setPage(page + 1)}
+                            >
                                 {text.next}
                             </button>
                         </div>

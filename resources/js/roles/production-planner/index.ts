@@ -6,9 +6,19 @@ export const productionPlannerRole: RoleModule = {
     matches: ({ flags }) => flags.isProductionPlanner,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['production', Gauge, text('Production planning', 'Planification de production'), 'production.view'],
+        [
+            'production',
+            Gauge,
+            text('Production planning', 'Planification de production'),
+            'production.view',
+        ],
         ['products', Boxes, labels.products, 'products.view'],
-        ['inventory', Warehouse, text('Material availability', 'Disponibilite des matieres'), 'inventory.view'],
+        [
+            'inventory',
+            Warehouse,
+            text('Material availability', 'Disponibilite des matieres'),
+            'inventory.view',
+        ],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };

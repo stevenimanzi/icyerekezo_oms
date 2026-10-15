@@ -6,7 +6,12 @@ export const sewingRole: RoleModule = {
     matches: ({ user, flags }) => flags.isNoguchiFactory && user.workspace === 'sewing',
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['sewing-workspace', Gauge, text('Record sewing', 'Enregistrer la couture'), 'production.view'],
+        [
+            'sewing-workspace',
+            Gauge,
+            text('Record sewing', 'Enregistrer la couture'),
+            'production.view',
+        ],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };

@@ -1,4 +1,14 @@
-import { Building2, CreditCard, FileSignature, FileText, LayoutDashboard, Plus, RefreshCw, RotateCcw, ShoppingCart } from 'lucide-react';
+import {
+    Building2,
+    CreditCard,
+    FileSignature,
+    FileText,
+    LayoutDashboard,
+    Plus,
+    RefreshCw,
+    RotateCcw,
+    ShoppingCart,
+} from 'lucide-react';
 import type { NavGroup, RoleContext, RoleModule } from '../types';
 
 export const SCHOOL_PAGES = [
@@ -28,6 +38,14 @@ export const schoolRole: RoleModule = {
 };
 
 export const schoolNavGroups = ({ text }: RoleContext): Record<string, NavGroup> => ({
-    orders: { label: text('Orders', 'Commandes'), icon: ShoppingCart, children: ['new-order', 'order-history'] },
-    returns: { label: text('Returns', 'Retours'), icon: RotateCcw, children: ['return-items', 'returns-history'] },
+    orders: {
+        label: text('Orders', 'Commandes'),
+        icon: ShoppingCart,
+        children: ['new-order', 'order-history'],
+    },
+    returns: {
+        label: text('Returns', 'Retours'),
+        icon: RotateCcw,
+        children: ['return-items', 'returns-history'],
+    },
 });

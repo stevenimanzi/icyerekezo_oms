@@ -39,7 +39,11 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
                     <p>{text.greeting(user.name)}</p>
                 </div>
                 <div className="ow-controls">
-                    <select aria-label="Period" value={days} onChange={(event) => setDays(Number(event.target.value))}>
+                    <select
+                        aria-label="Period"
+                        value={days}
+                        onChange={(event) => setDays(Number(event.target.value))}
+                    >
                         {PERIODS.map((period) => (
                             <option key={period} value={period}>
                                 {text.periods[period]}
@@ -52,28 +56,75 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
                 </div>
             </div>
 
-            {error && <div className="admin-alert error">{error || text.errorFallback}</div>}
+            {error && <div className="admin-alert error">{error}</div>}
 
             <p className="ow-status">
                 <i className={loading ? 'busy' : ''}></i>
-                {updatedAt ? `${text.updatedAt} ${updatedAt.toLocaleTimeString()}` : text.connecting}
+                {updatedAt
+                    ? `${text.updatedAt} ${updatedAt.toLocaleTimeString()}`
+                    : text.connecting}
             </p>
 
             {!data ? (
                 <div className="panel ow-empty-page">{text.loading}</div>
             ) : (
                 <>
-                    <AlertsBar alerts={data.alerts} openablePages={pages} text={text} onNavigate={onNavigate} />
+                    <AlertsBar
+                        alerts={data.alerts}
+                        openablePages={pages}
+                        text={text}
+                        onNavigate={onNavigate}
+                    />
 
                     <div className="ow-kpis">
-                        <KpiCard label={text.kpi.revenue} value={format.moneyShort(data.growth.revenue.current)} comparison={data.growth.revenue} days={days} text={text} format={format} />
-                        <KpiCard label={text.kpi.orders} value={format.whole(data.growth.orders.current)} comparison={data.growth.orders} days={days} text={text} format={format} />
-                        <KpiCard label={text.kpi.units} value={format.whole(data.growth.units_delivered.current)} comparison={data.growth.units_delivered} days={days} text={text} format={format} />
-                        <KpiCard label={text.kpi.output} value={format.whole(data.growth.output.current)} comparison={data.growth.output} days={days} text={text} format={format} />
-                        <KpiCard label={text.kpi.collected} value={format.moneyShort(data.growth.collected.current)} comparison={data.growth.collected} days={days} text={text} format={format} />
+                        <KpiCard
+                            label={text.kpi.revenue}
+                            value={format.moneyShort(data.growth.revenue.current)}
+                            comparison={data.growth.revenue}
+                            days={days}
+                            text={text}
+                            format={format}
+                        />
+                        <KpiCard
+                            label={text.kpi.orders}
+                            value={format.whole(data.growth.orders.current)}
+                            comparison={data.growth.orders}
+                            days={days}
+                            text={text}
+                            format={format}
+                        />
+                        <KpiCard
+                            label={text.kpi.units}
+                            value={format.whole(data.growth.units_delivered.current)}
+                            comparison={data.growth.units_delivered}
+                            days={days}
+                            text={text}
+                            format={format}
+                        />
+                        <KpiCard
+                            label={text.kpi.output}
+                            value={format.whole(data.growth.output.current)}
+                            comparison={data.growth.output}
+                            days={days}
+                            text={text}
+                            format={format}
+                        />
+                        <KpiCard
+                            label={text.kpi.collected}
+                            value={format.moneyShort(data.growth.collected.current)}
+                            comparison={data.growth.collected}
+                            days={days}
+                            text={text}
+                            format={format}
+                        />
                     </div>
 
-                    <TrendChart trend={data.trend} text={text} format={format} currency={currency} />
+                    <TrendChart
+                        trend={data.trend}
+                        text={text}
+                        format={format}
+                        currency={currency}
+                    />
 
                     <div className="ow-grid">
                         <CashSection data={data.cash} text={text} format={format} />
@@ -88,7 +139,11 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
                             entries={data.activity}
                             text={text}
                             format={format}
-                            onViewAll={pages.includes('activity') ? () => onNavigate('activity') : undefined}
+                            onViewAll={
+                                pages.includes('activity')
+                                    ? () => onNavigate('activity')
+                                    : undefined
+                            }
                         />
                     </div>
                 </>

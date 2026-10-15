@@ -15,7 +15,11 @@ export function CustomersSection({ data, text, format }: SectionProps<OwnerOverv
                 { label: t.late, value: format.whole(data.late), tone: toneFor(data.late, 'bad') },
                 { label: t.ordered, value: format.number(data.units_ordered) },
                 { label: t.delivered, value: format.number(data.units_delivered) },
-                { label: t.returns, value: format.whole(data.returns), tone: toneFor(data.returns) },
+                {
+                    label: t.returns,
+                    value: format.whole(data.returns),
+                    tone: toneFor(data.returns),
+                },
             ]}
         >
             <div className="ow-top">
@@ -26,9 +30,7 @@ export function CustomersSection({ data, text, format }: SectionProps<OwnerOverv
                             <li key={customer.name}>
                                 <span>
                                     {customer.name}
-                                    <small>
-                                        {customer.orders} {t.orders}
-                                    </small>
+                                    <small>{t.orders(customer.orders)}</small>
                                 </span>
                                 <b>{format.moneyShort(customer.revenue)}</b>
                             </li>

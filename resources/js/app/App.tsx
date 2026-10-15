@@ -11,15 +11,15 @@ import { MaintenanceScreen } from './MaintenanceScreen';
 export function App() {
     const path = window.location.pathname;
 
-    if (path === "/forgot-password") return <ForgotPasswordPage />;
-    if (path.startsWith("/reset-password/")) return <ResetPasswordPage />;
+    if (path === '/forgot-password') return <ForgotPasswordPage />;
+    if (path.startsWith('/reset-password/')) return <ResetPasswordPage />;
 
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
-    const [maintenance, setMaintenance] = useState("");
+    const [maintenance, setMaintenance] = useState('');
 
     useEffect(() => {
-        api<{ user: AuthUser }>("/api/auth/me")
+        api<{ user: AuthUser }>('/api/auth/me')
             .then((data) => setUser(data.user))
             .catch((reason: any) => {
                 setUser(null);
@@ -28,18 +28,32 @@ export function App() {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return <div className="boot-screen"><Logo /></div>;
-    if (maintenance) return <MaintenanceScreen message={maintenance} onRetry={() => window.location.reload()} onAdmin={() => setMaintenance("")} />;
+    if (loading)
+        return (
+            <div className="boot-screen">
+                <Logo />
+            </div>
+        );
+    if (maintenance)
+        return (
+            <MaintenanceScreen
+                message={maintenance}
+                onRetry={() => window.location.reload()}
+                onAdmin={() => setMaintenance('')}
+            />
+        );
     if (!user) return <AuthScreen onAuthenticated={setUser} onMaintenance={setMaintenance} />;
 
     const logout = async () => {
         setUser(null);
         try {
-            await api("/api/auth/logout", { method: "POST" });
+            await api('/api/auth/logout', { method: 'POST' });
         } finally {
-            try { sessionStorage.clear(); } catch {}
-            window.history.replaceState(null, "", "/");
-            window.location.replace("/");
+            try {
+                sessionStorage.clear();
+            } catch {}
+            window.history.replaceState(null, '', '/');
+            window.location.replace('/');
         }
     };
     return <AppShell user={user} onLogout={logout} onMaintenance={setMaintenance} />;

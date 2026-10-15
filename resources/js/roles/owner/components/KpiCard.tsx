@@ -25,7 +25,9 @@ export function KpiCard({ label, value, comparison, days, text, format }: Props)
                 <p className="ow-kpi-note">{text.noEarlierData}</p>
             ) : (
                 <p className="ow-kpi-note">
-                    <b className={`ow-change ${tone}`}>{change === 0 ? text.noChange : format.signedPercent(change)}</b>{' '}
+                    <b className={`ow-change ${tone}`}>
+                        {change === 0 ? text.noChange : format.signedPercent(change)}
+                    </b>{' '}
                     {text.comparedWith(days)}
                 </p>
             )}

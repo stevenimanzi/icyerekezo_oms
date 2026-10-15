@@ -35,7 +35,8 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
     const entries = useMemo(() => groupNav(nav, navGroupsFor(context)), [nav, context]);
     const availablePages = useMemo(() => nav.map(([page]) => page), [nav]);
 
-    const showSettings = !user.is_platform_admin && !flags.isFactoryOwner && access.can('factory.manage');
+    const showSettings =
+        !user.is_platform_admin && !flags.isFactoryOwner && access.can('factory.manage');
     const showSupport = !user.is_platform_admin && access.hasFeature('support');
 
     const allowedPages = useMemo(() => {
@@ -51,13 +52,18 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
 
     const { activePage, setActivePage } = usePageNavigation(user, allowedPages);
     const notifications = useNotifications(user, onMaintenance);
-    const { isOnline, pendingSyncCount } = useConnectivity((url) => setActivePage(pageKeyFromPath(user, url)));
+    const { isOnline, pendingSyncCount } = useConnectivity((url) =>
+        setActivePage(pageKeyFromPath(user, url)),
+    );
     const lowStockCount = useLowStockCount(user, access.can('inventory.view'));
 
     const switchFactory = async (factoryId: number) => {
         setSwitchingFactory(factoryId);
         try {
-            await api('/api/factories/switch', { method: 'POST', body: JSON.stringify({ factory_id: factoryId }) });
+            await api('/api/factories/switch', {
+                method: 'POST',
+                body: JSON.stringify({ factory_id: factoryId }),
+            });
             window.location.href = '/dashboard';
         } catch (reason: any) {
             setNotice(reason instanceof Error ? reason.message : 'Unable to switch factory.');
@@ -87,7 +93,13 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
                 onSwitchFactory={switchFactory}
                 onLogout={onLogout}
             />
-            {sidebarOpen && <button className="backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
+            {sidebarOpen && (
+                <button
+                    className="backdrop"
+                    aria-label="Close menu"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
             <main className="main-area">
                 <Topbar
                     user={user}

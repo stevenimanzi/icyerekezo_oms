@@ -6,7 +6,12 @@ export const qualityManagerRole: RoleModule = {
     matches: ({ flags }) => flags.isQualityManager,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['quality', ClipboardCheck, text('Quality management', 'Gestion de la qualite'), 'quality.view'],
+        [
+            'quality',
+            ClipboardCheck,
+            text('Quality management', 'Gestion de la qualite'),
+            'quality.view',
+        ],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };

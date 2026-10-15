@@ -56,10 +56,17 @@ const CUTTING_TABS: Record<string, 'request' | 'cut' | 'damaged' | 'report'> = {
     'cutting-report': 'report',
 };
 
-const LOGISTICS_TABS: Record<string, string> = { dispatch: 'dispatch', vehicles: 'vehicles', 'delivery-confirmation': 'proof' };
+const LOGISTICS_TABS: Record<string, string> = {
+    dispatch: 'dispatch',
+    vehicles: 'vehicles',
+    'delivery-confirmation': 'proof',
+};
 
 export function PageRouter(props: Props) {
-    const resetKey = props.flags.isSchoolUser && SCHOOL_PAGES.includes(props.activePage) ? `school-${props.activePage}` : props.activePage;
+    const resetKey =
+        props.flags.isSchoolUser && SCHOOL_PAGES.includes(props.activePage)
+            ? `school-${props.activePage}`
+            : props.activePage;
 
     return (
         <PageBoundary resetKey={resetKey}>
@@ -68,7 +75,19 @@ export function PageRouter(props: Props) {
     );
 }
 
-function CurrentPage({ user, locale, dark, flags, access, activePage, availablePages, notifications, onNavigate, onLocaleChange, onThemeChange }: Props) {
+function CurrentPage({
+    user,
+    locale,
+    dark,
+    flags,
+    access,
+    activePage,
+    availablePages,
+    notifications,
+    onNavigate,
+    onLocaleChange,
+    onThemeChange,
+}: Props) {
     const { can } = access;
 
     if (flags.isSchoolUser && SCHOOL_PAGES.includes(activePage)) {
@@ -76,7 +95,15 @@ function CurrentPage({ user, locale, dark, flags, access, activePage, availableP
     }
 
     if (activePage === 'profile') {
-        return <ProfileSettingsPage user={user} locale={locale} dark={dark} onLocaleChange={onLocaleChange} onThemeChange={onThemeChange} />;
+        return (
+            <ProfileSettingsPage
+                user={user}
+                locale={locale}
+                dark={dark}
+                onLocaleChange={onLocaleChange}
+                onThemeChange={onThemeChange}
+            />
+        );
     }
 
     if (activePage === 'notifications') {
@@ -98,10 +125,20 @@ function CurrentPage({ user, locale, dark, flags, access, activePage, availableP
 
     if (activePage === 'support') return <UserSupportChat user={user} locale={locale} />;
 
-    if (activePage in CUTTING_TABS) return <CuttingWorkspacePage user={user} locale={locale} initialTab={CUTTING_TABS[activePage]} />;
-    if (activePage === 'sewing-workspace') return <SewingWorkspacePage user={user} locale={locale} />;
-    if (activePage === 'finishing-workspace') return <FinishingWorkspacePage user={user} locale={locale} />;
-    if (activePage === 'packing-workspace') return <PackingWorkspacePage user={user} locale={locale} />;
+    if (activePage in CUTTING_TABS)
+        return (
+            <CuttingWorkspacePage
+                user={user}
+                locale={locale}
+                initialTab={CUTTING_TABS[activePage]}
+            />
+        );
+    if (activePage === 'sewing-workspace')
+        return <SewingWorkspacePage user={user} locale={locale} />;
+    if (activePage === 'finishing-workspace')
+        return <FinishingWorkspacePage user={user} locale={locale} />;
+    if (activePage === 'packing-workspace')
+        return <PackingWorkspacePage user={user} locale={locale} />;
 
     if (activePage === 'dashboard') {
         const Home = homeFor(flags);
@@ -110,7 +147,14 @@ function CurrentPage({ user, locale, dark, flags, access, activePage, availableP
     }
 
     if (activePage === 'activity') {
-        return <OwnerActivityPage user={user} locale={locale} onNavigate={onNavigate} pages={availablePages} />;
+        return (
+            <OwnerActivityPage
+                user={user}
+                locale={locale}
+                onNavigate={onNavigate}
+                pages={availablePages}
+            />
+        );
     }
 
     switch (activePage) {
@@ -136,7 +180,12 @@ function CurrentPage({ user, locale, dark, flags, access, activePage, availableP
         case 'dispatch':
         case 'vehicles':
         case 'delivery-confirmation':
-            return <LogisticsOverviewPage can={can} initialTab={LOGISTICS_TABS[activePage] || 'shipments'} />;
+            return (
+                <LogisticsOverviewPage
+                    can={can}
+                    initialTab={LOGISTICS_TABS[activePage] || 'shipments'}
+                />
+            );
         case 'agreement':
             if (flags.isLogisticsUser) return <AgreementWorkspacePage can={can} />;
             break;
@@ -151,7 +200,11 @@ function CurrentPage({ user, locale, dark, flags, access, activePage, availableP
                     key={activePage}
                     canExport={can('reports.export')}
                     productionOnly={user.workspace === 'production' && !flags.isExecutiveUser}
-                    forcedScope={activePage === 'logistics-reports' || flags.isLogisticsUser ? 'logistics' : undefined}
+                    forcedScope={
+                        activePage === 'logistics-reports' || flags.isLogisticsUser
+                            ? 'logistics'
+                            : undefined
+                    }
                 />
             );
         case 'quality':
@@ -159,17 +212,33 @@ function CurrentPage({ user, locale, dark, flags, access, activePage, availableP
         case 'machines':
             return <MachinesPage can={can} />;
         case 'production':
-            return can('factory.manage') ? <ProductionFlowPage /> : <ProductionOperations can={can} />;
+            return can('factory.manage') ? (
+                <ProductionFlowPage />
+            ) : (
+                <ProductionOperations can={can} />
+            );
     }
 
     return <PageNotFound locale={locale} onNavigate={onNavigate} />;
 }
 
-function PageNotFound({ locale, onNavigate }: { locale: Locale; onNavigate: (page: string) => void }) {
+function PageNotFound({
+    locale,
+    onNavigate,
+}: {
+    locale: Locale;
+    onNavigate: (page: string) => void;
+}) {
     return (
         <div className="panel empty-state">
-            <h3>{locale === 'en' ? 'This page is not available' : "Cette page n'est pas disponible"}</h3>
-            <p>{locale === 'en' ? 'It may have moved, or you may not have access to it.' : "Elle a peut-être été déplacée, ou vous n'y avez pas accès."}</p>
+            <h3>
+                {locale === 'en' ? 'This page is not available' : "Cette page n'est pas disponible"}
+            </h3>
+            <p>
+                {locale === 'en'
+                    ? 'It may have moved, or you may not have access to it.'
+                    : "Elle a peut-être été déplacée, ou vous n'y avez pas accès."}
+            </p>
             <button className="secondary-btn" onClick={() => onNavigate('dashboard')}>
                 {locale === 'en' ? 'Go to the dashboard' : 'Aller au tableau de bord'}
             </button>

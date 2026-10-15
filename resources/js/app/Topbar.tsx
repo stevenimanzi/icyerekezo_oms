@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, Languages, LogOut, Menu, Moon, Search, Sun, UserRound } from 'lucide-react';
+import {
+    Bell,
+    ChevronDown,
+    Languages,
+    LogOut,
+    Menu,
+    Moon,
+    Search,
+    Sun,
+    UserRound,
+} from 'lucide-react';
 import type { Labels } from '../core/labels';
 import type { AuthUser, Locale } from '../core/types';
 import { useGlobalSearch } from './hooks/useGlobalSearch';
@@ -21,12 +31,24 @@ type Props = {
 
 type Popover = 'search' | 'notifications' | 'profile' | null;
 
-export function Topbar({ user, locale, labels, dark, notifications, onLocaleChange, onThemeChange, onNavigate, onOpenMenu, onLogout }: Props) {
+export function Topbar({
+    user,
+    locale,
+    labels,
+    dark,
+    notifications,
+    onLocaleChange,
+    onThemeChange,
+    onNavigate,
+    onOpenMenu,
+    onLogout,
+}: Props) {
     const ref = useRef<HTMLElement>(null);
     const [popover, setPopover] = useState<Popover>(null);
     const search = useGlobalSearch();
     const text = (en: string, fr: string) => (locale === 'en' ? en : fr);
-    const toggle = (name: Exclude<Popover, null>) => setPopover((current) => (current === name ? null : name));
+    const toggle = (name: Exclude<Popover, null>) =>
+        setPopover((current) => (current === name ? null : name));
 
     useEffect(() => {
         const closeOnOutsideClick = (event: MouseEvent) => {
@@ -81,7 +103,9 @@ export function Topbar({ user, locale, labels, dark, notifications, onLocaleChan
                     <div className="top-popover search-popover">
                         <strong>{text('Live search results', 'Résultats en direct')}</strong>
                         {!search.hasEnoughLetters ? (
-                            <span>{text('Type at least 2 letters', 'Saisissez au moins 2 lettres')}</span>
+                            <span>
+                                {text('Type at least 2 letters', 'Saisissez au moins 2 lettres')}
+                            </span>
                         ) : search.results.length ? (
                             search.results.map((item, index) => (
                                 <button
@@ -105,15 +129,26 @@ export function Topbar({ user, locale, labels, dark, notifications, onLocaleChan
                 )}
             </label>
             <div className="top-actions">
-                <button className="locale-btn" onClick={() => onLocaleChange(locale === 'en' ? 'fr' : 'en')}>
+                <button
+                    className="locale-btn"
+                    onClick={() => onLocaleChange(locale === 'en' ? 'fr' : 'en')}
+                >
                     <Languages size={17} />
                     <span>{locale === 'en' ? 'FR' : 'EN'}</span>
                 </button>
-                <button className="icon-btn" onClick={() => onThemeChange(!dark)} aria-label="Toggle theme">
+                <button
+                    className="icon-btn"
+                    onClick={() => onThemeChange(!dark)}
+                    aria-label="Toggle theme"
+                >
                     {dark ? <Sun size={19} /> : <Moon size={19} />}
                 </button>
                 <div className="popover-anchor">
-                    <button className="icon-btn notification" aria-label="Notifications" onClick={() => toggle('notifications')}>
+                    <button
+                        className="icon-btn notification"
+                        aria-label="Notifications"
+                        onClick={() => toggle('notifications')}
+                    >
                         <Bell size={19} />
                         <b>{notifications.unreadCount + notifications.announcements.length}</b>
                     </button>
@@ -122,7 +157,14 @@ export function Topbar({ user, locale, labels, dark, notifications, onLocaleChan
                             <strong>Notifications</strong>
                             {notifications.notifications.length ? (
                                 notifications.notifications.slice(0, 4).map((item) => (
-                                    <span key={item.id} style={{ cursor: 'pointer', opacity: item.read_at ? 0.62 : 1 }} onClick={() => openNotification(item)}>
+                                    <span
+                                        key={item.id}
+                                        style={{
+                                            cursor: 'pointer',
+                                            opacity: item.read_at ? 0.62 : 1,
+                                        }}
+                                        onClick={() => openNotification(item)}
+                                    >
                                         <b>{item.data.title}</b>
                                         {item.data.body}
                                     </span>
@@ -135,12 +177,17 @@ export function Topbar({ user, locale, labels, dark, notifications, onLocaleChan
                                     </span>
                                 ))
                             ) : (
-                                <span>{text('No new notifications', 'Aucune nouvelle notification')}</span>
+                                <span>
+                                    {text('No new notifications', 'Aucune nouvelle notification')}
+                                </span>
                             )}
                             {!notifications.pushSubscribed && (
                                 <button onClick={notifications.enablePush}>
                                     <Bell size={14} />
-                                    {text('Enable browser notifications', 'Activer les notifications')}
+                                    {text(
+                                        'Enable browser notifications',
+                                        'Activer les notifications',
+                                    )}
                                 </button>
                             )}
                             <button
@@ -159,7 +206,13 @@ export function Topbar({ user, locale, labels, dark, notifications, onLocaleChan
                         <span className="avatar">{initials}</span>
                         <span className="user-copy">
                             <strong>{user.name}</strong>
-                            <small>{user.employee_profile?.job_title || user.roles[0]?.name || (user.is_platform_admin ? 'Platform administrator' : 'Team member')}</small>
+                            <small>
+                                {user.employee_profile?.job_title ||
+                                    user.roles[0]?.name ||
+                                    (user.is_platform_admin
+                                        ? 'Platform administrator'
+                                        : 'Team member')}
+                            </small>
                         </span>
                         <ChevronDown size={16} />
                     </button>
