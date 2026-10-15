@@ -1,0 +1,444 @@
+<?php
+
+namespace App\Services\ProductionFlow;
+
+use App\Models\Item;
+use App\Models\MaterialRequest;
+use App\Models\ProductionEntry;
+use App\Models\ProductionLot;
+use App\Models\ProductionTransfer;
+use App\Models\QualityInspection;
+use App\Models\StockBalance;
+use App\Models\User;
+use App\Models\Warehouse;
+use App\Support\Catalogs\ProductionFlowCatalog;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+
+class FlowQueries
+{
+    private const RECENT = 30;
+
+    private const STUCK_AFTER_HOURS = 24;
+
+    private const IDLE_AFTER_DAYS = 3;
+
+    public function __construct(
+        private readonly FlowBalances $balances,
+        private readonly MaterialRequestService $materials,
+    ) {}
+
+    public function stage(User $user, string $stage): array
+    {
+        $access = FlowAccess::for($user);
+        $lots = ProductionLot::where('status', 'open')->with('product:id,name')->latest('id')->limit(300)->get();
+        $balances = $this->balances->forLots($lots->pluck('id'));
+
+        $rows = $lots->map(fn (ProductionLot $lot) => $this->stageRow($lot, $balances[$lot->id], $stage))
+            ->filter(fn (array $row) => $row['wip'] + $row['outbox'] + $row['incoming'] + $row['awaiting_quality'] > 0 || ($stage === 'cutting' && $row['cut_on'] >= today()->subDays(14)->toDateString()))
+            ->values();
+
+        $today = ProductionEntry::where('stage', $stage)->whereNull('voided_at')->where('entry_date', '>=', today()->toDateString())->where('entry_date', '<', today()->addDay()->toDateString())
+            ->selectRaw('COALESCE(SUM(good_quantity), 0) as good, COALESCE(SUM(damaged_quantity), 0) as damaged')->first();
+
+        $incoming = ProductionTransfer::where('to_stage', $stage)->where('status', 'sent')
+            ->with(['lot.product:id,name', 'sender:id,name'])->orderBy('sent_at')->get()
+            ->map(fn (ProductionTransfer $transfer) => $this->transferRow($transfer));
+
+        $sentToday = (int) ProductionTransfer::where('from_stage', $stage)->whereIn('status', ['sent', 'received'])->where('sent_at', '>=', today())->sum('quantity_sent');
+
+        return [
+            'stage' => $this->stageInfo($stage),
+            'capabilities' => $this->capabilities($access, $stage),
+            'summary' => [
+                'incoming' => (int) $incoming->sum('quantity_sent'),
+                'in_work' => (int) $rows->sum('wip'),
+                'ready_to_send' => (int) $rows->sum('outbox'),
+                'awaiting_quality' => (int) $rows->sum('awaiting_quality'),
+                'done_today' => (int) $today->good,
+                'damaged_today' => (int) $today->damaged,
+                'sent_today' => $sentToday,
+            ],
+            'lots' => $rows,
+            'incoming' => $incoming,
+            'entries' => ProductionEntry::where('stage', $stage)->with(['lot:id,lot_number', 'recorder:id,name', 'fabric:id,name'])->latest('id')->limit(self::RECENT)->get()
+                ->map(fn (ProductionEntry $entry) => $this->entryRow($entry, $access)),
+            'transfers' => ProductionTransfer::where(fn ($query) => $query->where('from_stage', $stage)->orWhere('to_stage', $stage))
+                ->with(['lot:id,lot_number', 'sender:id,name', 'receiver:id,name'])->latest('id')->limit(self::RECENT)->get()
+                ->map(fn (ProductionTransfer $transfer) => $this->transferRow($transfer) + ['direction' => $transfer->from_stage === $stage ? 'out' : 'in']),
+            'requests' => MaterialRequest::where('stage', $stage)->with(['item.unit:id,symbol', 'requester:id,name', 'decider:id,name'])->latest('id')->limit(self::RECENT)->get()
+                ->map(fn (MaterialRequest $request) => $this->requestRow($request)),
+            'materials' => $this->materials->onHand($stage),
+            'options' => $this->options($stage),
+        ];
+    }
+
+    public function monitor(array $filters): array
+    {
+        $status = $filters['status'] ?? 'open';
+        $query = ProductionLot::with(['product:id,name', 'creator:id,name'])->latest('id');
+
+        match ($status) {
+            'held' => $query->whereNotNull('held_at'),
+            'completed' => $query->where('status', 'completed'),
+            'all' => $query->where('status', '!=', 'cancelled'),
+            default => $query->where('status', 'open'),
+        };
+
+        if (! empty($filters['q'])) {
+            $like = '%' . addcslashes($filters['q'], '\\%_') . '%';
+            $query->where(fn ($match) => $match->where('lot_number', 'like', $like)->orWhere('color', 'like', $like)->orWhere('style', 'like', $like)
+                ->orWhereHas('product', fn ($product) => $product->where('name', 'like', $like)));
+        }
+
+        $lots = $query->limit(120)->get();
+        $balances = $this->balances->forLots($lots->pluck('id'));
+        $moved = $this->lastMovement($lots->pluck('id'));
+
+        $rows = $lots->map(function (ProductionLot $lot) use ($balances, $moved) {
+            $b = $balances[$lot->id];
+            $last = $moved[$lot->id] ?? $lot->created_at;
+
+            return [
+                'id' => $lot->id,
+                'lot_number' => $lot->lot_number,
+                'product' => $lot->product?->name,
+                'style' => $lot->style,
+                'color' => $lot->color,
+                'size' => $lot->size,
+                'cut_on' => $lot->cut_on?->toDateString(),
+                'status' => $lot->held_at ? 'held' : $lot->status,
+                'hold_reason' => $lot->hold_reason,
+                'age_days' => (int) $lot->created_at->diffInDays(now()),
+                'idle_days' => (int) $last->diffInDays(now()),
+                'cut' => $b['cut'],
+                'in_progress' => $b['in_progress'],
+                'finished' => $b['finished'],
+                'damaged' => $b['damaged'],
+                'rejected' => $b['rejected'],
+                'shortage' => $b['shortage'],
+                'stages' => collect($b['stages'])->map(fn (array $s) => [
+                    'here' => $s['wip'] + $s['outbox'] + $s['awaiting_quality'],
+                    'arriving' => $s['incoming'],
+                ])->all(),
+            ];
+        });
+
+        $open = ProductionLot::where('status', 'open')->get(['id']);
+        $openBalances = $this->balances->forLots($open->pluck('id'));
+        $flow = collect(ProductionFlowCatalog::keys())->map(function (string $stage) use ($openBalances) {
+            $b = collect($openBalances)->pluck("stages.{$stage}");
+
+            return $this->stageInfo($stage) + [
+                'here' => (int) $b->sum(fn ($s) => $s['wip'] + $s['outbox'] + $s['awaiting_quality']),
+                'arriving' => (int) $b->sum('incoming'),
+                'in_work' => (int) $b->sum('wip'),
+                'ready_to_send' => (int) $b->sum('outbox'),
+                'awaiting_quality' => (int) $b->sum('awaiting_quality'),
+                'damaged' => (int) $b->sum('damaged'),
+                'rejected' => (int) $b->sum('quality_rejected'),
+                'shortage' => (int) $b->sum('shortage'),
+            ];
+        })->values();
+
+        $held = ProductionLot::whereNotNull('held_at')->with('product:id,name')->get(['id', 'lot_number', 'product_item_id', 'hold_reason', 'held_at']);
+
+        return [
+            'flow' => $flow,
+            'lots' => $rows,
+            'alerts' => [
+                'held' => $held->map(fn (ProductionLot $lot) => ['id' => $lot->id, 'lot_number' => $lot->lot_number, 'product' => $lot->product?->name, 'reason' => $lot->hold_reason, 'since' => $lot->held_at?->toIso8601String()]),
+                'awaiting_final_check' => $rows->filter(fn ($row) => ($row['stages']['packing']['here'] ?? 0) > 0)->values()
+                    ->map(fn ($row) => ['id' => $row['id'], 'lot_number' => $row['lot_number'], 'product' => $row['product'], 'pieces' => $row['stages']['packing']['here']]),
+                'stuck_deliveries' => (int) ProductionTransfer::where('status', 'sent')->where('sent_at', '<', now()->subHours(self::STUCK_AFTER_HOURS))->count(),
+                'idle_lots' => $rows->filter(fn ($row) => $row['status'] === 'open' && $row['in_progress'] > 0 && $row['idle_days'] >= self::IDLE_AFTER_DAYS)->values()
+                    ->map(fn ($row) => ['id' => $row['id'], 'lot_number' => $row['lot_number'], 'idle_days' => $row['idle_days']]),
+                'missing_pieces' => (int) collect($openBalances)->sum('shortage'),
+            ],
+            'inspections' => QualityInspection::whereNotNull('lot_id')->with(['lot:id,lot_number', 'inspector:id,name'])->latest('id')->limit(15)->get()
+                ->map(fn (QualityInspection $i) => $this->inspectionRow($i)),
+            'filters' => ['status' => $status, 'q' => $filters['q'] ?? ''],
+        ];
+    }
+
+    public function lot(ProductionLot $lot): array
+    {
+        $lot->load(['product:id,name', 'creator:id,name', 'fabric:id,name']);
+        $balances = $this->balances->forLot($lot->id);
+
+        $timeline = collect()
+            ->merge($lot->entries()->with(['recorder:id,name', 'fabric:id,name'])->get()->map(fn (ProductionEntry $e) => [
+                'kind' => 'entry', 'at' => $e->created_at->toIso8601String(), 'stage' => $e->stage, 'who' => $e->recorder?->name,
+                'good' => $e->good_quantity, 'damaged' => $e->damaged_quantity, 'fabric' => $e->fabric?->name, 'fabric_used' => (float) $e->fabric_used, 'fabric_waste' => (float) $e->fabric_waste,
+                'note' => $e->notes, 'voided' => $e->voided_at !== null, 'void_reason' => $e->void_reason,
+            ]))
+            ->merge($lot->transfers()->with(['sender:id,name', 'receiver:id,name'])->get()->map(fn (ProductionTransfer $t) => [
+                'kind' => 'transfer', 'at' => $t->created_at->toIso8601String(), 'from' => $t->from_stage, 'to' => $t->to_stage,
+                'sent' => $t->quantity_sent, 'received' => $t->quantity_received, 'status' => $t->status, 'who' => $t->sender?->name, 'received_by' => $t->receiver?->name,
+                'received_at' => $t->received_at?->toIso8601String(), 'note' => $t->note, 'receive_note' => $t->receive_note,
+            ]))
+            ->merge($lot->inspections()->with('inspector:id,name')->get()->map(fn (QualityInspection $i) => $this->inspectionRow($i) + ['kind' => 'inspection', 'at' => $i->created_at->toIso8601String()]))
+            ->sortBy('at')->values();
+
+        return [
+            'lot' => [
+                'id' => $lot->id, 'lot_number' => $lot->lot_number, 'product' => $lot->product?->name, 'style' => $lot->style, 'color' => $lot->color, 'size' => $lot->size,
+                'cut_on' => $lot->cut_on?->toDateString(), 'status' => $lot->held_at ? 'held' : $lot->status, 'hold_reason' => $lot->hold_reason,
+                'held_since' => $lot->held_at?->toIso8601String(), 'created_by' => $lot->creator?->name, 'notes' => $lot->notes, 'fabric' => $lot->fabric?->name,
+            ],
+            'balances' => $balances,
+            'timeline' => $timeline,
+        ];
+    }
+
+    public function requests(User $user, string $status): array
+    {
+        $access = FlowAccess::for($user);
+        $requests = MaterialRequest::with(['item.unit:id,symbol', 'requester:id,name', 'decider:id,name', 'warehouse:id,name'])
+            ->when($status !== 'all', fn ($query) => $query->where('status', $status))
+            ->latest('id')->limit(100)->get();
+
+        $available = StockBalance::whereIn('item_id', $requests->pluck('item_id'))
+            ->selectRaw('item_id, warehouse_id, SUM(quantity_on_hand - quantity_reserved - quantity_quarantined) as available')
+            ->groupBy('item_id', 'warehouse_id')->get()->groupBy('item_id');
+
+        $warehouses = Warehouse::where('is_active', true)->get(['id', 'name'])->keyBy('id');
+
+        return [
+            'capabilities' => ['approve' => $access->canApproveRequests()],
+            'requests' => $requests->map(fn (MaterialRequest $request) => $this->requestRow($request) + [
+                'stock' => $available->get($request->item_id, collect())->map(fn ($row) => [
+                    'warehouse_id' => (int) $row->warehouse_id,
+                    'warehouse' => $warehouses[$row->warehouse_id]->name ?? 'Warehouse',
+                    'available' => (float) $row->available,
+                ])->filter(fn ($row) => $row['available'] > 0)->values(),
+                'own' => (int) $request->requested_by === (int) $user->id,
+            ]),
+            'warehouses' => $warehouses->values(),
+        ];
+    }
+
+    public function report(CarbonInterface $from, CarbonInterface $to): array
+    {
+        $start = $from->copy()->startOfDay();
+        $end = $to->copy()->addDay()->startOfDay();
+
+        $entries = ProductionEntry::whereNull('voided_at')->where('entry_date', '>=', $start->toDateString())->where('entry_date', '<', $end->toDateString());
+
+        $byStage = (clone $entries)->selectRaw('stage, COALESCE(SUM(good_quantity), 0) as good, COALESCE(SUM(damaged_quantity), 0) as damaged, COALESCE(SUM(fabric_used), 0) as fabric_used, COALESCE(SUM(fabric_waste), 0) as fabric_waste')
+            ->groupBy('stage')->get()->keyBy('stage');
+
+        $quality = QualityInspection::whereNotNull('lot_id')->where('created_at', '>=', $start)->where('created_at', '<', $end)
+            ->selectRaw('stage, COUNT(*) as checks, COALESCE(SUM(inspected_quantity), 0) as inspected, COALESCE(SUM(passed_quantity), 0) as passed, COALESCE(SUM(rejected_quantity), 0) as rejected')
+            ->groupBy('stage')->get()->keyBy('stage');
+
+        $sent = ProductionTransfer::whereIn('status', ['sent', 'received'])->where('sent_at', '>=', $start)->where('sent_at', '<', $end)
+            ->selectRaw('from_stage as stage, COALESCE(SUM(quantity_sent), 0) as sent, COALESCE(SUM(quantity_sent - COALESCE(quantity_received, quantity_sent)), 0) as missing')
+            ->groupBy('from_stage')->get()->keyBy('stage');
+
+        $stages = collect(ProductionFlowCatalog::keys())->map(function (string $stage) use ($byStage, $quality, $sent) {
+            $row = $byStage->get($stage);
+            $q = $quality->get($stage);
+            $good = (int) ($row->good ?? 0);
+            $damaged = (int) ($row->damaged ?? 0);
+
+            return $this->stageInfo($stage) + [
+                'good' => $good,
+                'damaged' => $damaged,
+                'damage_rate' => $good + $damaged > 0 ? round($damaged / ($good + $damaged) * 100, 1) : null,
+                'sent' => (int) ($sent->get($stage)->sent ?? 0),
+                'missing' => (int) ($sent->get($stage)->missing ?? 0),
+                'checks' => (int) ($q->checks ?? 0),
+                'inspected' => (int) ($q->inspected ?? 0),
+                'passed' => (int) ($q->passed ?? 0),
+                'rejected' => (int) ($q->rejected ?? 0),
+            ];
+        })->values();
+
+        $daily = (clone $entries)->selectRaw('entry_date as day, stage, SUM(good_quantity) as good, SUM(damaged_quantity) as damaged')
+            ->groupBy('entry_date', 'stage')->orderBy('entry_date')->get()
+            ->groupBy(fn ($row) => substr((string) $row->day, 0, 10))
+            ->map(fn (Collection $rows, string $day) => ['day' => $day] + collect(ProductionFlowCatalog::keys())->mapWithKeys(fn (string $stage) => [
+                $stage => ['good' => (int) ($rows->firstWhere('stage', $stage)->good ?? 0), 'damaged' => (int) ($rows->firstWhere('stage', $stage)->damaged ?? 0)],
+            ])->all())->values();
+
+        $fabric = (clone $entries)->where('stage', 'cutting')->whereNotNull('fabric_item_id')
+            ->selectRaw('fabric_item_id, SUM(fabric_used) as used, SUM(fabric_waste) as waste')->groupBy('fabric_item_id')->get();
+        $names = Item::with('unit:id,symbol')->whereIn('id', $fabric->pluck('fabric_item_id'))->get()->keyBy('id');
+
+        return [
+            'period' => ['from' => $start->toDateString(), 'to' => $to->toDateString()],
+            'stages' => $stages,
+            'daily' => $daily,
+            'fabric' => $fabric->map(fn ($row) => [
+                'name' => $names[$row->fabric_item_id]->name ?? 'Fabric',
+                'unit' => $names[$row->fabric_item_id]->unit->symbol ?? null,
+                'used' => (float) $row->used,
+                'waste' => (float) $row->waste,
+                'waste_rate' => (float) $row->used + (float) $row->waste > 0 ? round((float) $row->waste / ((float) $row->used + (float) $row->waste) * 100, 1) : null,
+            ])->values(),
+        ];
+    }
+
+    private function stageRow(ProductionLot $lot, array $balance, string $stage): array
+    {
+        $b = $balance['stages'][$stage];
+
+        return [
+            'id' => $lot->id,
+            'lot_number' => $lot->lot_number,
+            'product' => $lot->product?->name,
+            'style' => $lot->style,
+            'color' => $lot->color,
+            'size' => $lot->size,
+            'cut_on' => $lot->cut_on?->toDateString(),
+            'held' => $lot->held_at !== null,
+            'hold_reason' => $lot->hold_reason,
+            'cut' => $balance['cut'],
+            'wip' => $b['wip'],
+            'outbox' => $b['outbox'],
+            'incoming' => $b['incoming'],
+            'awaiting_quality' => $b['awaiting_quality'],
+            'good' => $b['good'],
+            'damaged' => $b['damaged'],
+            'sent' => $b['sent'],
+        ];
+    }
+
+    private function entryRow(ProductionEntry $entry, FlowAccess $access): array
+    {
+        $own = (int) $entry->recorded_by === (int) $access->user()->id;
+
+        return [
+            'id' => $entry->id,
+            'lot_id' => $entry->lot_id,
+            'lot_number' => $entry->lot?->lot_number,
+            'date' => $entry->entry_date?->toDateString(),
+            'good' => $entry->good_quantity,
+            'damaged' => $entry->damaged_quantity,
+            'fabric' => $entry->fabric?->name,
+            'fabric_used' => (float) $entry->fabric_used,
+            'fabric_waste' => (float) $entry->fabric_waste,
+            'note' => $entry->notes,
+            'by' => $entry->recorder?->name,
+            'at' => $entry->created_at->toIso8601String(),
+            'voided' => $entry->voided_at !== null,
+            'void_reason' => $entry->void_reason,
+            'can_void' => $entry->voided_at === null && ($access->isManager() || ($own && $entry->created_at->diffInHours(now()) <= 48)),
+        ];
+    }
+
+    private function transferRow(ProductionTransfer $transfer): array
+    {
+        return [
+            'id' => $transfer->id,
+            'lot_id' => $transfer->lot_id,
+            'lot_number' => $transfer->lot?->lot_number,
+            'product' => $transfer->lot?->product?->name,
+            'color' => $transfer->lot?->color,
+            'size' => $transfer->lot?->size,
+            'from' => $transfer->from_stage,
+            'to' => $transfer->to_stage,
+            'quantity_sent' => $transfer->quantity_sent,
+            'quantity_received' => $transfer->quantity_received,
+            'status' => $transfer->status,
+            'note' => $transfer->note,
+            'receive_note' => $transfer->receive_note,
+            'sent_by' => $transfer->sender?->name,
+            'received_by' => $transfer->receiver?->name,
+            'sent_at' => $transfer->sent_at?->toIso8601String(),
+            'received_at' => $transfer->received_at?->toIso8601String(),
+        ];
+    }
+
+    private function requestRow(MaterialRequest $request): array
+    {
+        return [
+            'id' => $request->id,
+            'number' => $request->request_number,
+            'stage' => $request->stage,
+            'item_id' => $request->item_id,
+            'item' => $request->item?->name,
+            'unit' => $request->item?->unit?->symbol,
+            'quantity' => (float) $request->quantity,
+            'reason' => $request->reason,
+            'status' => $request->status,
+            'requested_by' => $request->requester?->name,
+            'decided_by' => $request->decider?->name,
+            'decision_note' => $request->decision_note,
+            'warehouse' => $request->warehouse?->name,
+            'at' => $request->created_at->toIso8601String(),
+            'decided_at' => $request->decided_at?->toIso8601String(),
+        ];
+    }
+
+    private function inspectionRow(QualityInspection $inspection): array
+    {
+        return [
+            'id' => $inspection->id,
+            'number' => $inspection->inspection_number,
+            'lot_id' => $inspection->lot_id,
+            'lot_number' => $inspection->lot?->lot_number,
+            'stage' => $inspection->stage,
+            'inspected' => (float) $inspection->inspected_quantity,
+            'passed' => (float) $inspection->passed_quantity,
+            'rejected' => (float) $inspection->rejected_quantity,
+            'result' => $inspection->result,
+            'defects' => $inspection->defect_details,
+            'notes' => $inspection->notes,
+            'who' => $inspection->inspector?->name,
+            'at' => $inspection->created_at->toIso8601String(),
+        ];
+    }
+
+    private function stageInfo(string $stage): array
+    {
+        return [
+            'key' => $stage,
+            'label' => ProductionFlowCatalog::STAGES[$stage]['label'],
+            'previous' => ProductionFlowCatalog::previous($stage),
+            'next' => ProductionFlowCatalog::next($stage),
+        ];
+    }
+
+    private function capabilities(FlowAccess $access, string $stage): array
+    {
+        return [
+            'work' => $access->canWork($stage),
+            'inspect' => $access->canInspect(),
+            'manage' => $access->isManager(),
+            'stages' => $access->workStages(),
+        ];
+    }
+
+    private function options(string $stage): array
+    {
+        $items = Item::with('unit:id,symbol')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku', 'type', 'unit_id']);
+        $pick = fn (Item $item) => ['id' => $item->id, 'name' => $item->name, 'sku' => $item->sku, 'unit' => $item->unit?->symbol];
+
+        return [
+            'requestable' => $items->whereIn('type', MaterialRequestService::REQUESTABLE_TYPES)->map($pick)->values(),
+            'fabrics' => $items->where('type', 'raw_material')->map($pick)->values(),
+            'products' => $stage === 'cutting' ? $items->where('type', 'finished_good')->map($pick)->values() : [],
+        ];
+    }
+
+    /** @return array<int, Carbon> */
+    private function lastMovement(Collection $lotIds): array
+    {
+        $latest = [];
+
+        foreach ([ProductionEntry::class, ProductionTransfer::class, QualityInspection::class] as $model) {
+            $model::whereIn('lot_id', $lotIds)->selectRaw('lot_id, MAX(updated_at) as moved')->groupBy('lot_id')->get()
+                ->each(function ($row) use (&$latest) {
+                    $moved = Carbon::parse($row->moved);
+                    if (! isset($latest[$row->lot_id]) || $moved->gt($latest[$row->lot_id])) {
+                        $latest[$row->lot_id] = $moved;
+                    }
+                });
+        }
+
+        return $latest;
+    }
+}

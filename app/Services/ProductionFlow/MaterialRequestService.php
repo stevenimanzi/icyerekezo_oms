@@ -48,7 +48,7 @@ class MaterialRequestService
             $user->current_factory_id,
             ProductionFlowCatalog::WAREHOUSE_ROLES,
             'New material request',
-            "{$user->name} asked for {$data['quantity']} {$item->name} for ".strtolower(ProductionFlowCatalog::STAGES[$stage]['label']['en']).'.',
+            "{$user->name} asked for {$data['quantity']} {$item->name} for " . strtolower(ProductionFlowCatalog::STAGES[$stage]['label']['en']) . '.',
             '/warehouse/incoming-requests',
             'inventory',
             $user->id,
@@ -171,17 +171,17 @@ class MaterialRequestService
     private function tellRequester(MaterialRequest $request, string $title, string $body): void
     {
         if ($request->requested_by) {
-            FactoryNotifier::notifyUser($request->requested_by, $title, $body, '/production/'.$request->stage.'-workspace', 'inventory');
+            FactoryNotifier::notifyUser($request->requested_by, $title, $body, '/production/' . $request->stage . '-workspace', 'inventory');
         }
     }
 
     private function nextNumber(): string
     {
-        $prefix = 'REQ-'.now()->format('Y').'-';
-        $next = MaterialRequest::where('request_number', 'like', $prefix.'%')->count() + 1;
+        $prefix = 'REQ-' . now()->format('Y') . '-';
+        $next = MaterialRequest::where('request_number', 'like', $prefix . '%')->count() + 1;
 
         do {
-            $number = $prefix.str_pad((string) $next++, 4, '0', STR_PAD_LEFT);
+            $number = $prefix . str_pad((string) $next++, 4, '0', STR_PAD_LEFT);
         } while (MaterialRequest::withoutGlobalScopes()->where('factory_id', auth()->user()->current_factory_id)->where('request_number', $number)->exists());
 
         return $number;

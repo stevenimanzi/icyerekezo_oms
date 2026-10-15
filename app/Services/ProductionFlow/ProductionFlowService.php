@@ -122,7 +122,7 @@ class ProductionFlowService
 
             if ($good + $damaged > $waiting) {
                 throw ValidationException::withMessages([
-                    'good_quantity' => "Only {$waiting} pieces are waiting at ".$this->label($stage).' for this lot. Receive the pieces from the stage before first.',
+                    'good_quantity' => "Only {$waiting} pieces are waiting at " . $this->label($stage) . ' for this lot. Receive the pieces from the stage before first.',
                 ]);
             }
 
@@ -160,7 +160,7 @@ class ProductionFlowService
 
             if ($quantity < 1 || $quantity > $ready) {
                 throw ValidationException::withMessages([
-                    'quantity' => "Only {$ready} pieces are ready to send from ".$this->label($fromStage).' for this lot.',
+                    'quantity' => "Only {$ready} pieces are ready to send from " . $this->label($fromStage) . ' for this lot.',
                 ]);
             }
 
@@ -215,7 +215,7 @@ class ProductionFlowService
                     $user->current_factory_id,
                     array_merge(ProductionFlowCatalog::MANAGER_ROLES, ['quality-officer', 'quality-manager']),
                     'Pieces missing between stages',
-                    "{$lot->lot_number}: ".($transfer->quantity_sent - $quantity)." fewer arrived at {$this->label($transfer->to_stage)} than were sent.",
+                    "{$lot->lot_number}: " . ($transfer->quantity_sent - $quantity) . " fewer arrived at {$this->label($transfer->to_stage)} than were sent.",
                     '/quality/production-flow',
                     'production',
                     $user->id,
@@ -330,14 +330,14 @@ class ProductionFlowService
                 }
             } elseif ($rejected > $balance['outbox']) {
                 throw ValidationException::withMessages([
-                    'rejected_quantity' => "Only {$balance['outbox']} pieces are ready to send from ".$this->label($stage).'. Reject pieces that are finished at the stage, not ones still being worked on.',
+                    'rejected_quantity' => "Only {$balance['outbox']} pieces are ready to send from " . $this->label($stage) . '. Reject pieces that are finished at the stage, not ones still being worked on.',
                 ]);
             }
 
             $result = $rejected === 0 ? 'passed' : ($passed === 0 && $inspected === $rejected ? 'failed' : 'conditional');
 
             $inspection = QualityInspection::create([
-                'inspection_number' => 'QI-'.now()->format('ymd').'-'.Str::upper(Str::random(6)),
+                'inspection_number' => 'QI-' . now()->format('ymd') . '-' . Str::upper(Str::random(6)),
                 'lot_id' => $lot->id,
                 'stage' => $stage,
                 'item_id' => $lot->product_item_id,
@@ -511,11 +511,11 @@ class ProductionFlowService
 
     private function nextLotNumber(): string
     {
-        $prefix = 'CUT-'.now()->format('ymd').'-';
-        $next = ProductionLot::where('lot_number', 'like', $prefix.'%')->count() + 1;
+        $prefix = 'CUT-' . now()->format('ymd') . '-';
+        $next = ProductionLot::where('lot_number', 'like', $prefix . '%')->count() + 1;
 
         do {
-            $number = $prefix.str_pad((string) $next++, 3, '0', STR_PAD_LEFT);
+            $number = $prefix . str_pad((string) $next++, 3, '0', STR_PAD_LEFT);
         } while (ProductionLot::where('lot_number', $number)->exists());
 
         return $number;
