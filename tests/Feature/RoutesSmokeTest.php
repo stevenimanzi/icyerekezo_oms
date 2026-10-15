@@ -23,6 +23,7 @@ class RoutesSmokeTest extends TestCase
             '/api/auth/me',
             '/api/platform/overview',
             '/api/executive/dashboard',
+            '/api/executive/owner-overview',
             '/api/factory/settings',
             '/api/team/workspaces',
             '/api/hr/overview',
