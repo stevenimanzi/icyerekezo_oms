@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Inventory\InventoryController;
 use App\Http\Controllers\Inventory\ProductCatalogController;
+use App\Http\Controllers\Inventory\StockMovementController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(InventoryController::class)
@@ -34,3 +35,12 @@ Route::controller(ProductCatalogController::class)
     });
 
 Route::get('/products/overview', ProductCatalogController::class)->middleware('permission:products.view');
+
+Route::controller(StockMovementController::class)
+    ->prefix('stock')
+    ->group(function () {
+        Route::get('/analytics', 'analytics')->middleware('permission:inventory.view');
+        Route::get('/movements', 'index')->middleware('permission:inventory.view');
+        Route::post('/receipts', 'receive')->middleware('permission:inventory.receive');
+        Route::post('/issues', 'issue')->middleware('permission:inventory.issue');
+    });

@@ -4,7 +4,7 @@ import type { Locale } from '../../../../core/types';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
 import type { LotRow, StageInfo } from '../types';
-import { postFlow } from '../useFlowData';
+import { postJson } from '../../../../core/liveData';
 
 type Props = {
     lot: LotRow;
@@ -27,7 +27,7 @@ export function SendModal({ lot, stage, locale, text, onClose, onDone }: Props) 
         setBusy(true);
         setError('');
         try {
-            await postFlow(`/api/flow/lots/${lot.id}/send`, {
+            await postJson(`/api/flow/lots/${lot.id}/send`, {
                 from_stage: stage.key,
                 quantity: Number(quantity),
                 note: note.trim() || null,

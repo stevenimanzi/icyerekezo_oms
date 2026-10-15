@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-    Activity,
-    Boxes,
     Factory,
     FileText,
     PackageCheck,
@@ -808,7 +806,6 @@ function WarehouseStockChart({ trends, fr, number }: any) {
                                 : 'Quantity received and issued each day'}
                         </p>
                     </div>
-                    <Activity size={20} />
                 </header>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
@@ -948,7 +945,6 @@ function OperationalPanels({
                                 : 'Recent quantities recorded by your department'}
                         </p>
                     </div>
-                    <Activity size={20} />
                 </header>
                 <div className="stage-activity-list">
                     {stages.length ? (
@@ -995,7 +991,6 @@ function StockStatusPanel({ items, fr, number }: any) {
                             : 'Current quantity by item, with low-stock items surfaced first'}
                     </p>
                 </div>
-                <Boxes size={20} />
             </header>
             <div className="stage-activity-list">
                 {list.length ? (
@@ -1418,7 +1413,6 @@ function QualityRecentInspections({ inspections, fr, status }: any) {
                                 : 'Latest quality control inspections performed'}
                         </p>
                     </div>
-                    <ClipboardCheck size={20} />
                 </header>
                 <div className="stage-activity-list">
                     {inspections.length ? (

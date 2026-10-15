@@ -4,7 +4,7 @@ import type { Locale } from '../../../../core/types';
 import { STAGE_ORDER, stageLabel } from '../stages';
 import type { FlowText } from '../text';
 import type { LotBalances, MonitorLot, StageKey } from '../types';
-import { postFlow } from '../useFlowData';
+import { postJson } from '../../../../core/liveData';
 import type { MonitorText } from './monitorText';
 
 type Props = {
@@ -59,7 +59,7 @@ export function InspectModal({
         setBusy(true);
         setError('');
         try {
-            const result = await postFlow<{ message: string }>('/api/flow/inspections', {
+            const result = await postJson<{ message: string }>('/api/flow/inspections', {
                 lot_id: Number(lotId),
                 stage,
                 inspected_quantity: checked,

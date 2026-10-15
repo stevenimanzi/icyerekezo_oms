@@ -3,7 +3,7 @@ import type { Format } from '../../../../core/format';
 import type { Locale } from '../../../../core/types';
 import type { FlowText } from '../text';
 import type { StageOverview } from '../types';
-import { postFlow } from '../useFlowData';
+import { postJson } from '../../../../core/liveData';
 
 type Props = {
     data: StageOverview;
@@ -25,7 +25,7 @@ export function MaterialsTab({ data, text, format, onChanged }: Props) {
         setBusy(true);
         setError('');
         try {
-            const result = await postFlow<{ request: { request_number: string } }>(
+            const result = await postJson<{ request: { request_number: string } }>(
                 '/api/flow/requests',
                 {
                     stage: data.stage.key,
@@ -48,7 +48,7 @@ export function MaterialsTab({ data, text, format, onChanged }: Props) {
     const cancel = async (id: number) => {
         setError('');
         try {
-            await postFlow(`/api/flow/requests/${id}/cancel`);
+            await postJson(`/api/flow/requests/${id}/cancel`);
             onChanged(t.status_.cancelled);
         } catch (reasonError) {
             setError(reasonError instanceof Error ? reasonError.message : '');

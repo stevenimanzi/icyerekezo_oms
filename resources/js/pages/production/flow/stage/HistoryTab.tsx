@@ -5,7 +5,7 @@ import type { Locale } from '../../../../core/types';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
 import type { EntryRow, StageOverview } from '../types';
-import { postFlow } from '../useFlowData';
+import { postJson } from '../../../../core/liveData';
 
 type Props = {
     data: StageOverview;
@@ -27,7 +27,7 @@ export function HistoryTab({ data, locale, text, format, onChanged }: Props) {
         setBusy(true);
         setError('');
         try {
-            await postFlow(`/api/flow/entries/${voiding.id}/void`, { reason: reason.trim() });
+            await postJson(`/api/flow/entries/${voiding.id}/void`, { reason: reason.trim() });
             setVoiding(null);
             setReason('');
             onChanged(t.cancelTitle);
@@ -41,7 +41,7 @@ export function HistoryTab({ data, locale, text, format, onChanged }: Props) {
     const takeBack = async (id: number) => {
         setError('');
         try {
-            await postFlow(`/api/flow/transfers/${id}/cancel`);
+            await postJson(`/api/flow/transfers/${id}/cancel`);
             onChanged(t.takeBack);
         } catch (reasonError) {
             setError(reasonError instanceof Error ? reasonError.message : '');

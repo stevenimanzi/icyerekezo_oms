@@ -8,7 +8,7 @@ import { FlowReportView } from '../report/FlowReportView';
 import { stageLabel } from '../stages';
 import { flowText } from '../text';
 import type { FlowMonitor, LotBalances } from '../types';
-import { useFlowData } from '../useFlowData';
+import { useLiveData } from '../../../../core/liveData';
 import { InspectModal } from './InspectModal';
 import { LotDetailModal } from './LotDetailModal';
 import { monitorText } from './monitorText';
@@ -49,7 +49,7 @@ export default function FlowMonitorPage({ locale }: Props) {
     }, [notice]);
 
     const url = `/api/flow/monitor?status=${status}&q=${encodeURIComponent(query)}`;
-    const { data, error, loading, reload } = useFlowData<FlowMonitor>(url);
+    const { data, error, loading, reload } = useLiveData<FlowMonitor>(url);
 
     const changed = (message: string) => {
         setNotice(message);

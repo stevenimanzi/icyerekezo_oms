@@ -8,7 +8,7 @@ import '../flow.css';
 import { stageLabel } from '../stages';
 import { flowText } from '../text';
 import type { RequestRow, RequestsOverview } from '../types';
-import { postFlow, useFlowData } from '../useFlowData';
+import { postJson, useLiveData } from '../../../../core/liveData';
 import { monitorText } from '../monitor/monitorText';
 
 type Props = { user: AuthUser; locale: Locale };
@@ -34,7 +34,7 @@ export default function MaterialRequestsPage({ locale }: Props) {
         error: loadError,
         loading,
         reload,
-    } = useFlowData<RequestsOverview>(`/api/flow/requests?status=${filter}`);
+    } = useLiveData<RequestsOverview>(`/api/flow/requests?status=${filter}`);
 
     useEffect(() => {
         if (!notice) return;
@@ -55,7 +55,7 @@ export default function MaterialRequestsPage({ locale }: Props) {
         setBusy(true);
         setError('');
         try {
-            await postFlow(`/api/flow/requests/${deciding.row.id}/decision`, {
+            await postJson(`/api/flow/requests/${deciding.row.id}/decision`, {
                 decision: deciding.kind,
                 warehouse_id: warehouseId ? Number(warehouseId) : null,
                 note: note.trim() || null,

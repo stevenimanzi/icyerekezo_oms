@@ -3,7 +3,7 @@ import { Modal } from '../../../../components/Modal';
 import type { Format } from '../../../../core/format';
 import type { FlowText } from '../text';
 import type { StageOverview } from '../types';
-import { postFlow } from '../useFlowData';
+import { postJson } from '../../../../core/liveData';
 
 type Props = {
     data: StageOverview;
@@ -29,7 +29,7 @@ export function FabricLossModal({ data, text, format, onClose, onDone }: Props) 
         setBusy(true);
         setError('');
         try {
-            await postFlow('/api/flow/fabric-loss', {
+            await postJson('/api/flow/fabric-loss', {
                 fabric_item_id: Number(fabricId),
                 fabric_waste: Number(quantity),
                 notes: reason.trim(),

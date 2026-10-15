@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal } from '../../../../components/Modal';
 import type { FlowText } from '../text';
 import type { TransferRow } from '../types';
-import { postFlow } from '../useFlowData';
+import { postJson } from '../../../../core/liveData';
 
 type Props = {
     transfer: TransferRow;
@@ -24,7 +24,7 @@ export function ReceiveModal({ transfer, text, onClose, onDone }: Props) {
         setBusy(true);
         setError('');
         try {
-            await postFlow(`/api/flow/transfers/${transfer.id}/receive`, {
+            await postJson(`/api/flow/transfers/${transfer.id}/receive`, {
                 quantity: Number(quantity),
                 note: note.trim() || null,
             });

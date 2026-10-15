@@ -3,7 +3,7 @@ import { Modal } from '../../../../components/Modal';
 import type { Format } from '../../../../core/format';
 import type { FlowText } from '../text';
 import type { LotRow, StageOverview } from '../types';
-import { postFlow } from '../useFlowData';
+import { postJson } from '../../../../core/liveData';
 
 type Props = {
     lot?: LotRow;
@@ -49,7 +49,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
         setBusy(true);
         setError('');
         try {
-            const created = await postFlow<{ lot: { lot_number: string } }>('/api/flow/cutting', {
+            const created = await postJson<{ lot: { lot_number: string } }>('/api/flow/cutting', {
                 lot_id: lot?.id ?? null,
                 product_item_id: lot ? null : (knownProduct?.id ?? null),
                 product_name: lot || knownProduct ? null : product.trim(),

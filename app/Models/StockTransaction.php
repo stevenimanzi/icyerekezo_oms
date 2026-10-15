@@ -43,4 +43,24 @@ class StockTransaction extends Model
         static::updating(fn () => throw new LogicException('Stock ledger entries are immutable.'));
         static::deleting(fn () => throw new LogicException('Stock ledger entries cannot be deleted.'));
     }
+
+    public function item()
+    {
+        return $this->belongsTo(Item::class);
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class);
+    }
+
+    public function performer()
+    {
+        return $this->belongsTo(User::class, 'performed_by');
+    }
 }

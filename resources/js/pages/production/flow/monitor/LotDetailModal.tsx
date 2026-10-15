@@ -5,7 +5,7 @@ import type { Locale } from '../../../../core/types';
 import { STAGE_ORDER, stageLabel } from '../stages';
 import type { FlowText } from '../text';
 import type { LotDetail, StageKey, TimelineItem } from '../types';
-import { postFlow, useFlowData } from '../useFlowData';
+import { postJson, useLiveData } from '../../../../core/liveData';
 import type { MonitorText } from './monitorText';
 
 type Props = {
@@ -32,7 +32,7 @@ export function LotDetailModal({
     onChanged,
 }: Props) {
     const t = words.detail;
-    const { data, error: loadError, reload } = useFlowData<LotDetail>(`/api/flow/lots/${lotId}`);
+    const { data, error: loadError, reload } = useLiveData<LotDetail>(`/api/flow/lots/${lotId}`);
     const [holding, setHolding] = useState(false);
     const [reason, setReason] = useState('');
     const [error, setError] = useState('');
@@ -42,7 +42,7 @@ export function LotDetailModal({
         setBusy(true);
         setError('');
         try {
-            await postFlow(`/api/flow/lots/${lotId}/${path}`, body);
+            await postJson(`/api/flow/lots/${lotId}/${path}`, body);
             setHolding(false);
             setReason('');
             reload();

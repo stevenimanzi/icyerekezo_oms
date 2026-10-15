@@ -4,7 +4,7 @@ import type { Locale } from '../../../../core/types';
 import { STAGE_ORDER, stageLabel } from '../stages';
 import type { FlowText } from '../text';
 import type { FlowReport, StageKey } from '../types';
-import { useFlowData } from '../useFlowData';
+import { useLiveData } from '../../../../core/liveData';
 
 type Period = 'today' | 'week' | 'month' | 'thisMonth';
 
@@ -27,7 +27,7 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
     const t = text.report;
     const [period, setPeriod] = useState<Period>('week');
     const range = useMemo(() => rangeFor(period), [period]);
-    const { data, error, loading } = useFlowData<FlowReport>(
+    const { data, error, loading } = useLiveData<FlowReport>(
         `/api/flow/report?from=${range.from}&to=${range.to}`,
     );
 

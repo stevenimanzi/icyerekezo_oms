@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '../../../core/api';
-import { startPolling } from '../../../core/polling';
+import { api } from './api';
+import { startPolling } from './polling';
 
 const REFRESH_EVERY_MS = 15000;
 
-export function useFlowData<T>(url: string) {
+export function useLiveData<T>(url: string) {
     const [data, setData] = useState<T | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -32,6 +32,6 @@ export function useFlowData<T>(url: string) {
     return { data, error, loading, reload: load };
 }
 
-export async function postFlow<T = unknown>(url: string, body: object = {}): Promise<T> {
+export async function postJson<T = unknown>(url: string, body: object = {}): Promise<T> {
     return api<T>(url, { method: 'POST', body: JSON.stringify(body) });
 }

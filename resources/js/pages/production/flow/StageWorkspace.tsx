@@ -17,7 +17,7 @@ import { WorkTab, type WorkModal } from './stage/WorkTab';
 import { buildKpis } from './stage/kpis';
 import { flowText } from './text';
 import type { StageKey, StageOverview } from './types';
-import { useFlowData } from './useFlowData';
+import { useLiveData } from '../../../core/liveData';
 
 export type Tab = 'work' | 'materials' | 'history' | 'report';
 
@@ -32,7 +32,7 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
     const [tab, setTab] = useState<Tab>(initialTab);
     const [modal, setModal] = useState<WorkModal | null>(null);
     const [notice, setNotice] = useState('');
-    const { data, error, loading, reload } = useFlowData<StageOverview>(
+    const { data, error, loading, reload } = useLiveData<StageOverview>(
         `/api/flow/overview?stage=${stage}`,
     );
 
