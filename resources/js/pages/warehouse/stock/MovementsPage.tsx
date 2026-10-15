@@ -27,7 +27,10 @@ const isoDay = (date: Date) => date.toLocaleDateString('en-CA');
 export default function MovementsPage({ user, locale, direction, tabs, alternate }: Props) {
     const text = stockText[locale];
     const copy = direction === 'in' ? text.stockIn : text.stockOut;
-    const format = useMemo(() => makeFormat(locale, user.current_factory?.currency_code ?? ''), [locale, user]);
+    const format = useMemo(
+        () => makeFormat(locale, user.current_factory?.currency_code ?? ''),
+        [locale, user],
+    );
     const [days, setDays] = useState<number>(30);
     const [search, setSearch] = useState('');
     const [query, setQuery] = useState('');
@@ -93,7 +96,11 @@ export default function MovementsPage({ user, locale, direction, tabs, alternate
                         {text.refresh}
                     </button>
                     {canRecord && (
-                        <button className="primary-btn" onClick={() => setModal(true)} disabled={!data}>
+                        <button
+                            className="primary-btn"
+                            onClick={() => setModal(true)}
+                            disabled={!data}
+                        >
                             + {copy.record}
                         </button>
                     )}
@@ -124,16 +131,30 @@ export default function MovementsPage({ user, locale, direction, tabs, alternate
                         <div className="ui-toolbar">
                             <label>
                                 {text.filters.period}
-                                <select value={days} onChange={(event) => { setDays(Number(event.target.value)); setPage(1); }}>
+                                <select
+                                    value={days}
+                                    onChange={(event) => {
+                                        setDays(Number(event.target.value));
+                                        setPage(1);
+                                    }}
+                                >
                                     {PERIODS.map((value) => (
                                         <option key={value} value={value}>
-                                            {value === 7 ? text.filters.last7 : value === 30 ? text.filters.last30 : text.filters.last90}
+                                            {value === 7
+                                                ? text.filters.last7
+                                                : value === 30
+                                                  ? text.filters.last30
+                                                  : text.filters.last90}
                                         </option>
                                     ))}
                                 </select>
                             </label>
                             <label className="grow">
-                                <input value={search} placeholder={text.filters.search} onChange={(event) => setSearch(event.target.value)} />
+                                <input
+                                    value={search}
+                                    placeholder={text.filters.search}
+                                    onChange={(event) => setSearch(event.target.value)}
+                                />
                             </label>
                         </div>
                         <div className="ui-table-wrap">
@@ -162,21 +183,33 @@ export default function MovementsPage({ user, locale, direction, tabs, alternate
                                                     <small>{row.sku}</small>
                                                 </td>
                                                 <td>
-                                                    <span className={`ui-chip ${direction === 'in' ? 'ok' : row.type === 'waste' ? 'bad' : 'warn'}`}>
+                                                    <span
+                                                        className={`ui-chip ${direction === 'in' ? 'ok' : row.type === 'waste' ? 'bad' : 'warn'}`}
+                                                    >
                                                         {typeLabels[row.type] ?? row.type}
                                                     </span>
                                                 </td>
                                                 <td className="num">
-                                                    <b>{format.number(row.quantity)}</b> {row.unit ?? ''}
+                                                    <b>{format.number(row.quantity)}</b>{' '}
+                                                    {row.unit ?? ''}
                                                 </td>
                                                 <td className="num">{format.money(row.value)}</td>
                                                 <td>{row.warehouse ?? text.none}</td>
                                                 <td>
-                                                    {row.note ?? text.none}
+                                                    {row.supplier && (
+                                                        <b>{text.stockIn.from(row.supplier)}</b>
+                                                    )}
+                                                    {row.supplier ? (
+                                                        <small>{row.note}</small>
+                                                    ) : (
+                                                        (row.note ?? text.none)
+                                                    )}
                                                     {row.batch && (
                                                         <small>
                                                             {text.table.batch}: {row.batch}
-                                                            {row.expires_on ? ` · ${text.table.expires} ${format.date(row.expires_on)}` : ''}
+                                                            {row.expires_on
+                                                                ? ` · ${text.table.expires} ${format.date(row.expires_on)}`
+                                                                : ''}
                                                         </small>
                                                     )}
                                                 </td>
@@ -194,11 +227,24 @@ export default function MovementsPage({ user, locale, direction, tabs, alternate
                         </div>
                         {data && data.movements.last_page > 1 && (
                             <div className="ui-pager">
-                                <button className="secondary-btn" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                                <button
+                                    className="secondary-btn"
+                                    disabled={page <= 1}
+                                    onClick={() => setPage(page - 1)}
+                                >
                                     {text.previous}
                                 </button>
-                                <span>{text.pageOf(data.movements.current_page, data.movements.last_page)}</span>
-                                <button className="secondary-btn" disabled={page >= data.movements.last_page} onClick={() => setPage(page + 1)}>
+                                <span>
+                                    {text.pageOf(
+                                        data.movements.current_page,
+                                        data.movements.last_page,
+                                    )}
+                                </span>
+                                <button
+                                    className="secondary-btn"
+                                    disabled={page >= data.movements.last_page}
+                                    onClick={() => setPage(page + 1)}
+                                >
                                     {text.next}
                                 </button>
                             </div>
@@ -207,8 +253,23 @@ export default function MovementsPage({ user, locale, direction, tabs, alternate
                 </>
             )}
 
-            {modal && data && direction === 'in' && <RecordReceiptModal data={data} text={text} onClose={() => setModal(false)} onDone={done} />}
-            {modal && data && direction === 'out' && <RecordIssueModal data={data} text={text} format={format} onClose={() => setModal(false)} onDone={done} />}
+            {modal && data && direction === 'in' && (
+                <RecordReceiptModal
+                    data={data}
+                    text={text}
+                    onClose={() => setModal(false)}
+                    onDone={done}
+                />
+            )}
+            {modal && data && direction === 'out' && (
+                <RecordIssueModal
+                    data={data}
+                    text={text}
+                    format={format}
+                    onClose={() => setModal(false)}
+                    onDone={done}
+                />
+            )}
         </section>
     );
 }

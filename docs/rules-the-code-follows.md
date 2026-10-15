@@ -17,6 +17,10 @@ These are rules that are not obvious from reading one file. If you change the co
 - Only a warehouse keeper may edit older stock movements.
 - Delivering an order never fails because the stock movement could not be posted. If no single warehouse holds enough, the stock step is skipped and the delivery is still recorded.
 
+- Stock in and stock out are recorded through the stock ledger only, with who did it, when and why. Damaged or lost stock is posted as waste so it shows in the loss figures.
+- Anything that leaves stock takes from the batch that expires first, and a delivery of a batch-tracked item must name its batch (and expiry date when the item expires).
+- Finished pieces waiting for the final quality check are counted as held, not available, in the stock page.
+
 ## Orders, packing and delivery
 - Packing records what is physically ready. It never changes the delivered quantity, stock or order status.
 - Delivery can never be more than what was packed. Logistics delivers what packing prepared.

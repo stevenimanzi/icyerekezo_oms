@@ -12,7 +12,8 @@ type Props = {
 
 const GROUPS = ['raw_material', 'finished_good', 'other'] as const;
 
-const groupOf = (type: string) => (type === 'raw_material' || type === 'finished_good' ? type : 'other');
+const groupOf = (type: string) =>
+    type === 'raw_material' || type === 'finished_good' ? type : 'other';
 
 /** A drop-down of the product catalogue, grouped into raw materials, finished products and the rest. */
 export function ItemSelect({ items, value, text, onChange, describe, onlyInStock = false }: Props) {

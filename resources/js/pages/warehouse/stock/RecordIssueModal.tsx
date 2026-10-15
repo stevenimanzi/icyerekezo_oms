@@ -27,7 +27,11 @@ export function RecordIssueModal({ data, text, format, onClose, onDone }: Props)
     const item = data.items.find((row) => String(row.id) === itemId);
     const tooMuch = item !== undefined && Number(quantity) > item.available;
     const needsNote = reason !== 'used';
-    const ready = item !== undefined && Number(quantity) > 0 && !tooMuch && (!needsNote || note.trim().length >= 3);
+    const ready =
+        item !== undefined &&
+        Number(quantity) > 0 &&
+        !tooMuch &&
+        (!needsNote || note.trim().length >= 3);
 
     const submit = async () => {
         setBusy(true);
@@ -78,12 +82,25 @@ export function RecordIssueModal({ data, text, format, onClose, onDone }: Props)
             <div className="ui-grid">
                 <label className="ui-field">
                     {t.quantity}
-                    <input type="number" min={0} step="any" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
-                    {tooMuch && item && <span className="ui-error">{t.inStock(format.number(item.available), item.unit ?? '')}</span>}
+                    <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={quantity}
+                        onChange={(event) => setQuantity(event.target.value)}
+                    />
+                    {tooMuch && item && (
+                        <span className="ui-error">
+                            {t.inStock(format.number(item.available), item.unit ?? '')}
+                        </span>
+                    )}
                 </label>
                 <label className="ui-field">
                     {t.warehouse}
-                    <select value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)}>
+                    <select
+                        value={warehouseId}
+                        onChange={(event) => setWarehouseId(event.target.value)}
+                    >
                         <option value="">{t.bestWarehouse}</option>
                         {data.warehouses.map((warehouse) => (
                             <option key={warehouse.id} value={warehouse.id}>

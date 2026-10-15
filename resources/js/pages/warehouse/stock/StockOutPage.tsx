@@ -38,7 +38,9 @@ function StockOutWithRequests({ user, locale }: Omit<Props, 'showRequests'>) {
             locale={locale}
             direction="out"
             tabs={tabs}
-            alternate={tab === 'requests' ? <RequestsQueue user={user} locale={locale} /> : undefined}
+            alternate={
+                tab === 'requests' ? <RequestsQueue user={user} locale={locale} /> : undefined
+            }
         />
     );
 }

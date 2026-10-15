@@ -8,6 +8,7 @@ use App\Models\Batch;
 use App\Models\Item;
 use App\Models\StockBalance;
 use App\Models\StockTransaction;
+use App\Models\Supplier;
 use App\Models\Warehouse;
 use App\Services\InventoryLedger;
 use App\Services\StockAnalytics;
@@ -75,6 +76,7 @@ class StockMovementController extends Controller
         }
 
         $summary = (clone $query)->get(['quantity_delta', 'unit_cost', 'item_id', 'occurred_at']);
+        $suppliers = Supplier::pluck('name', 'id');
         $page = $query
             ->with(['item:id,name,sku,type,unit_id', 'item.unit:id,symbol', 'warehouse:id,name', 'batch:id,batch_number,expires_at', 'performer:id,name'])
             ->latest('stock_transactions.occurred_at')
@@ -82,6 +84,7 @@ class StockMovementController extends Controller
             ->paginate(20)
             ->through(fn (StockTransaction $row) => [
                 'id' => $row->id,
+                'supplier' => $row->reference_type === Supplier::class ? ($suppliers[$row->reference_id] ?? null) : null,
                 'at' => $row->occurred_at?->toIso8601String(),
                 'type' => $row->type,
                 'item' => $row->item?->name,
@@ -131,6 +134,7 @@ class StockMovementController extends Controller
                 ])
                 ->values(),
             'warehouses' => Warehouse::whereIn('id', $warehouseIds)->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'suppliers' => $this->supplierList(),
             'reasons' => array_keys(self::ISSUE_REASONS),
         ]);
     }
@@ -143,7 +147,7 @@ class StockMovementController extends Controller
             'warehouse_id' => ['required', 'integer', Rule::in($scope->warehouseIds()->all())],
             'quantity' => ['required', 'numeric', 'gt:0', 'max:100000000'],
             'unit_cost' => ['nullable', 'numeric', 'min:0'],
-            'source' => ['nullable', 'string', 'max:120'],
+            'supplier_id' => ['required', 'integer', Rule::exists('suppliers', 'id')->where('factory_id', $request->user()->current_factory_id)->where('status', 'active')->whereNull('deleted_at')],
             'reference' => ['nullable', 'string', 'max:80'],
             'note' => ['nullable', 'string', 'max:500'],
             'received_on' => ['nullable', 'date', 'before_or_equal:today'],
@@ -151,6 +155,7 @@ class StockMovementController extends Controller
             'expires_on' => ['nullable', 'date'],
         ]);
         $item = Item::where('is_active', true)->where('type', '!=', 'service')->findOrFail($data['item_id']);
+        $supplier = Supplier::where('status', 'active')->findOrFail($data['supplier_id']);
 
         if ($item->batch_tracked && empty($data['batch_number'])) {
             throw ValidationException::withMessages(['batch_number' => 'Write the batch or lot number printed on the delivery.']);
@@ -165,12 +170,12 @@ class StockMovementController extends Controller
         $batch = $item->batch_tracked
             ? Batch::firstOrCreate(
                 ['item_id' => $item->id, 'batch_number' => trim($data['batch_number'])],
-                ['expires_at' => $data['expires_on'] ?? null, 'status' => 'released'],
+                ['supplier_id' => $supplier->id, 'expires_at' => $data['expires_on'] ?? null, 'status' => 'released'],
             )
             : null;
 
         $receivedOn = isset($data['received_on']) ? Carbon::parse($data['received_on']) : now();
-        $parts = array_filter(['Received', $data['source'] ?? null ? 'from ' . $data['source'] : null, $data['reference'] ?? null ? '(ref ' . $data['reference'] . ')' : null, $data['note'] ?? null ? '- ' . $data['note'] : null]);
+        $parts = array_filter(['Received from ' . $supplier->name, $data['reference'] ?? null ? '(ref ' . $data['reference'] . ')' : null, $data['note'] ?? null ? '- ' . $data['note'] : null]);
 
         $transaction = $ledger->post([
             'item_id' => $item->id,
@@ -180,6 +185,8 @@ class StockMovementController extends Controller
             'quantity' => $data['quantity'],
             'unit_cost' => $data['unit_cost'] ?? null,
             'reason' => implode(' ', $parts),
+            'reference_type' => Supplier::class,
+            'reference_id' => $supplier->id,
             'occurred_at' => $receivedOn->isToday() ? now() : $receivedOn->setTime(12, 0),
         ]);
 
@@ -208,5 +215,45 @@ class StockMovementController extends Controller
         AuditLog::record('stock.issued', "Stock out {$data['quantity']} of {$item->name} ({$data['reason_type']})", $posted[0]);
 
         return response()->json(['message' => "{$item->name}: {$data['quantity']} taken out of stock."], 201);
+    }
+
+    public function storeSupplier(Request $request): JsonResponse
+    {
+        $factoryId = $request->user()->current_factory_id;
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:160', Rule::unique('suppliers', 'name')->where('factory_id', $factoryId)->whereNull('deleted_at')],
+            'contact_person' => ['nullable', 'string', 'max:120'],
+            'phone' => ['required', 'string', 'max:40'],
+            'email' => ['nullable', 'email', 'max:160'],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'tax_number' => ['nullable', 'string', 'max:80'],
+            'payment_terms_days' => ['nullable', 'integer', 'min:0', 'max:365'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $data['payment_terms_days'] ??= 0;
+        $data['code'] = 'SUP-' . str_pad((string) (Supplier::withTrashed()->where('factory_id', $factoryId)->count() + 1), 5, '0', STR_PAD_LEFT);
+        $data['status'] = 'active';
+
+        $supplier = Supplier::create($data);
+        AuditLog::record('stock.supplier_added', "Added supplier {$supplier->name}", $supplier);
+
+        return response()->json(['message' => "{$supplier->name} was saved as a supplier.", 'supplier' => $this->supplierRow($supplier)], 201);
+    }
+
+    private function supplierList()
+    {
+        return Supplier::where('status', 'active')->orderBy('name')->get()->map(fn (Supplier $supplier) => $this->supplierRow($supplier))->values();
+    }
+
+    private function supplierRow(Supplier $supplier): array
+    {
+        return [
+            'id' => $supplier->id,
+            'code' => $supplier->code,
+            'name' => $supplier->name,
+            'contact_person' => $supplier->contact_person,
+            'phone' => $supplier->phone,
+            'email' => $supplier->email,
+        ];
     }
 }

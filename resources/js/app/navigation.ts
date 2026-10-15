@@ -9,6 +9,7 @@ const FEATURE_FOR_PAGE: Record<string, string> = {
     procurement: 'procurement',
     inventory: 'inventory',
     'incoming-requests': 'inventory',
+    'stock-in': 'inventory',
     products: 'products',
     production: 'production',
     'production-flow': 'production',

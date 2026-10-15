@@ -41,6 +41,7 @@ Route::controller(StockMovementController::class)
     ->group(function () {
         Route::get('/analytics', 'analytics')->middleware('permission:inventory.view');
         Route::get('/movements', 'index')->middleware('permission:inventory.view');
+        Route::post('/suppliers', 'storeSupplier')->middleware('permission:inventory.receive');
         Route::post('/receipts', 'receive')->middleware('permission:inventory.receive');
         Route::post('/issues', 'issue')->middleware('permission:inventory.issue');
     });

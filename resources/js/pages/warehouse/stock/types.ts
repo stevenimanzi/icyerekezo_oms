@@ -10,8 +10,18 @@ export type StockItemOption = {
     available: number;
 };
 
+export type SupplierOption = {
+    id: number;
+    code: string;
+    name: string;
+    contact_person: string | null;
+    phone: string | null;
+    email: string | null;
+};
+
 export type Movement = {
     id: number;
+    supplier: string | null;
     at: string | null;
     type: string;
     item: string | null;
@@ -35,6 +45,7 @@ export type MovementsResponse = {
     movements: { data: Movement[]; current_page: number; last_page: number; total: number };
     items: StockItemOption[];
     warehouses: { id: number; name: string }[];
+    suppliers: SupplierOption[];
     reasons: string[];
 };
 

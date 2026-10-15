@@ -23,12 +23,12 @@ const FinishingWorkspacePage = lazy(
 );
 const HrOverviewPage = lazy(() => import('../pages/hr/HrOverviewPage'));
 const IncomingRequestsPage = lazy(() => import('../pages/warehouse/IncomingRequestsPage'));
+const StockInPage = lazy(() => import('../pages/warehouse/stock/StockInPage'));
+const StockOutPage = lazy(() => import('../pages/warehouse/stock/StockOutPage'));
+const StockOverviewPage = lazy(() => import('../pages/warehouse/stock/StockOverviewPage'));
 const InventoryManagementPage = lazy(() => import('../pages/warehouse/InventoryManagementPage'));
 const LogisticsOverviewPage = lazy(() => import('../pages/logistics/LogisticsOverviewPage'));
 const MachinesPage = lazy(() => import('../pages/production/MachinesPage'));
-const MaterialRequestsPage = lazy(
-    () => import('../pages/production/flow/requests/MaterialRequestsPage'),
-);
 const NotificationsPage = lazy(() =>
     import('../pages/shared/NotificationsPage').then((module) => ({
         default: module.NotificationsPage,
@@ -189,8 +189,6 @@ function CurrentPage({
         }
         if (activePage === 'production-flow')
             return <FlowMonitorPage user={user} locale={locale} />;
-        if (activePage === 'incoming-requests')
-            return <MaterialRequestsPage user={user} locale={locale} />;
     }
 
     if (activePage in CUTTING_TABS)
@@ -226,10 +224,20 @@ function CurrentPage({
     }
 
     switch (activePage) {
+        case 'stock-in':
+            return <StockInPage user={user} locale={locale} />;
         case 'incoming-requests':
-            return <IncomingRequestsPage />;
+            return flags.isNoguchiFactory ? (
+                <IncomingRequestsPage />
+            ) : (
+                <StockOutPage user={user} locale={locale} showRequests={flags.hasProductionFlow} />
+            );
         case 'inventory':
-            return <InventoryManagementPage user={user} locale={locale} />;
+            return user.workspace === 'logistics' ? (
+                <InventoryManagementPage user={user} locale={locale} />
+            ) : (
+                <StockOverviewPage user={user} locale={locale} />
+            );
         case 'products':
             return <ProductCatalogPage user={user} locale={locale} />;
         case 'procurement':
