@@ -53,6 +53,7 @@ final class IndustryProfileCatalog
                     'Finished Goods',
                     'Logistics',
                 ],
+                'features' => ['garment_flow'],
             ],
 
             'food_processing' => [

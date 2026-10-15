@@ -32,6 +32,8 @@ class Factory extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $appends = ['feature_flags'];
+
     protected function casts(): array
     {
         return ['settings' => 'array', 'industry_profiles' => 'array'];
@@ -45,6 +47,11 @@ class Factory extends Model
     public function features(): array
     {
         return IndustryProfileCatalog::resolve($this->profileKeys())['features'];
+    }
+
+    public function getFeatureFlagsAttribute(): array
+    {
+        return $this->features();
     }
 
     public function hasFeature(string $feature): bool
