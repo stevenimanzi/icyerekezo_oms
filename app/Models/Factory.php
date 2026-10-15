@@ -21,7 +21,6 @@ class Factory extends Model
         return ['settings' => 'array', 'industry_profiles' => 'array'];
     }
 
-    /** Industry profiles in effect: the primary industry first, then any additional ones. */
     public function profileKeys(): array
     {
         return IndustryProfileCatalog::normalize($this->industry_type, $this->industry_profiles ?? []);
@@ -37,7 +36,6 @@ class Factory extends Model
         return in_array($feature, $this->features(), true);
     }
 
-    /** Tracking flags new items start with, for example batch and expiry for food and dairy. */
     public function itemDefaults(): array
     {
         return IndustryProfileCatalog::resolve($this->profileKeys())['item_defaults'];

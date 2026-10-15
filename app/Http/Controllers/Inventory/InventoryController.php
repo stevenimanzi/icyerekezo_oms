@@ -106,8 +106,6 @@ class InventoryController extends Controller
         $this->ensureWarehouseKeeper($request);
         $factoryId = $request->user()->current_factory_id;
         $data = $request->validate(['name' => ['required', 'string', 'max:160', Rule::unique('items')->where('factory_id', $factoryId)], 'category_id' => ['nullable', Rule::exists('item_categories', 'id')->where('factory_id', $factoryId)], 'type' => ['required', Rule::in(['raw_material', 'semi_finished', 'finished_good', 'packaging', 'spare_part', 'waste', 'by_product', 'service'])], 'unit_id' => ['required', Rule::exists('units', 'id')->where('factory_id', $factoryId)], 'standard_cost' => ['nullable', 'numeric', 'min:0'], 'minimum_stock' => ['nullable', 'numeric', 'min:0'], 'reorder_level' => ['nullable', 'numeric', 'min:0'], 'batch_tracked' => ['nullable', 'boolean'], 'expiry_tracked' => ['nullable', 'boolean']]);
-        // Industry defaults (for example batch and expiry tracking for food and dairy) apply
-        // unless the person creating the item chose a value explicitly.
         foreach ($request->user()->currentFactory->itemDefaults() as $flag => $value) {
             if (! $request->has($flag)) {
                 $data[$flag] = $value;
@@ -163,11 +161,6 @@ class InventoryController extends Controller
         return response()->json($batch, 201);
     }
 
-    /**
-     * A narrow item-creation endpoint for production staff: only ever creates a
-     * finished_good, so it can be safely opened to packing roles without granting
-     * them the full storeItem/ensureWarehouseKeeper permission surface.
-     */
     public function storeFinishedItem(Request $request): JsonResponse
     {
         $factoryId = $request->user()->current_factory_id;
@@ -215,7 +208,6 @@ class InventoryController extends Controller
 
         abort_unless((int) $transaction->factory_id === (int) $request->user()->current_factory_id, 404);
 
-        // Prevent editing old transactions unless warehouse keeper
         if (! $roles['warehouseKeeper'] && $transaction->occurred_at->diffInHours(now()) > 24) {
             abort(403, 'You can only edit recent transactions. Please contact the warehouse keeper.');
         }
@@ -282,10 +274,6 @@ class InventoryController extends Controller
         abort_unless($allowed, 403, 'Only the assigned Warehouse Keeper can record or change stock.');
     }
 
-    /**
-     * Which production-floor role(s) the current user holds, keyed for the
-     * per-transaction-type permission checks in postTransaction/correctTransaction.
-     */
     private function productionRoles(Request $request): array
     {
         $factoryId = $request->user()->current_factory_id;
@@ -302,12 +290,6 @@ class InventoryController extends Controller
         ];
     }
 
-    /**
-     * Fallback for every role outside the bespoke garment pipeline above (mixing,
-     * processing, bottling, maintenance, logistics, and any future industry role):
-     * trust the same inventory.receive/issue/adjust permissions the route middleware
-     * already enforces, mapped to the transaction types each permission covers.
-     */
     private function allowedByGenericPermission(Request $request, string $type): bool
     {
         $user = $request->user();
@@ -343,12 +325,6 @@ class InventoryController extends Controller
         return response()->json(Warehouse::create($data), 201);
     }
 
-    /**
-     * Batches currently sitting (with positive stock) at a given production stage,
-     * across the given warehouses. Backs the cross-stage "pending pieces to accept"
-     * lists and the QC queue with real Batch/StockBalance rows instead of parsing
-     * synthetic ids out of free-text transaction reasons.
-     */
     public static function batchesAtStage(iterable $warehouseIds, string $stage, ?string $qcStatus = null): array
     {
         return StockBalance::query()

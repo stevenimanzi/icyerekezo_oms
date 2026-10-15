@@ -28,9 +28,6 @@ class Item extends Model
         return $this->belongsTo(Unit::class);
     }
 
-    /**
-     * A factory-unique SKU for a new item, prefixed by its type (e.g. FIN-XXXXXXXX).
-     */
     public static function generateSku(int $factoryId, string $type): string
     {
         $prefix = self::SKU_PREFIXES[$type] ?? 'STK';
@@ -41,11 +38,6 @@ class Item extends Model
         return $sku;
     }
 
-    /**
-     * The catalog item a finished product name (e.g. a school garment_category like
-     * "T-shirt") represents, creating it on first use so production and sales always
-     * agree on what a product is without requiring a manual catalog setup step first.
-     */
     public static function resolveFinishedGood(int $factoryId, string $name): self
     {
         return self::withoutGlobalScopes()->firstOrCreate(

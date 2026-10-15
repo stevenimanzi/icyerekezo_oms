@@ -11,15 +11,6 @@ use App\Support\Catalogs\IndustryProfileCatalog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-/**
- * Sets a factory up from its industry profiles: units and conversions, item categories,
- * departments with a main workstation each, and one ordered work flow per profile.
- *
- * Safe to run repeatedly. It creates what is missing and never deletes departments or
- * history, so it can run at registration and again whenever the profiles change.
- * All queries bypass the tenant global scope and carry an explicit factory_id, because it
- * also runs before anyone is signed in, or by an administrator acting on another tenant.
- */
 class FactoryProfileApplier
 {
     public function apply(Factory $factory): WorkflowTemplate
@@ -74,7 +65,6 @@ class FactoryProfileApplier
         }
     }
 
-    /** @return array<string, array{department: Department, workstation: Workstation}> keyed by lower-cased name */
     private function ensureDepartments(Factory $factory, array $names): array
     {
         $existing = Department::withoutGlobalScopes()->where('factory_id', $factory->id)->get();
@@ -121,8 +111,6 @@ class FactoryProfileApplier
         }
         $workflow->save();
 
-        // Park existing stages in a temporary sequence range first so inserting a stage
-        // before them cannot collide with the unique (template, sequence) key.
         foreach ($workflow->stages()->lockForUpdate()->get()->values() as $index => $stage) {
             $stage->update(['sequence' => 65000 - $index]);
         }
@@ -138,8 +126,6 @@ class FactoryProfileApplier
             $stageIds[] = $stage->id;
         }
 
-        // Stages that are no longer part of the profile: keep them (after the current ones) if
-        // production already ran through them, otherwise remove them.
         $nextSequence = count($stageIds) + 1;
         foreach ($workflow->stages()->whereNotIn('id', $stageIds)->get() as $obsolete) {
             if (DB::table('production_stage_executions')->where('workflow_stage_id', $obsolete->id)->exists()) {

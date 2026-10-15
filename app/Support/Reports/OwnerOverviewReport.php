@@ -21,10 +21,6 @@ use App\Models\StockBalance;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Everything the factory owner sees on the dashboard, computed for one factory over one period
- * and compared with the period just before it. Each section is its own method.
- */
 final class OwnerOverviewReport
 {
     private const NOT_COUNTED_ORDER_STATUSES = ['cancelled', 'rejected'];

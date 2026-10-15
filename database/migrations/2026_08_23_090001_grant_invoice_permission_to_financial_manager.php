@@ -15,7 +15,5 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Re-running createFor with the previous template list would require reverting the
-        // catalog change first; nothing to safely undo here on its own.
     }
 };

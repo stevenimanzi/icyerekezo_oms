@@ -12,7 +12,6 @@ return new class extends Migration
         $professionalFeatures = [...$starterFeatures, 'procurement', 'quality', 'sales'];
         $enterpriseFeatures = SubscriptionFeatureCatalog::keys();
 
-        // 1. Starter Plan (100,000 RWF / month)
         SubscriptionPlan::updateOrCreate(
             ['code' => 'STARTER'],
             [
@@ -25,7 +24,6 @@ return new class extends Migration
             ]
         );
 
-        // 2. Professional Plan (200,000 RWF / month)
         SubscriptionPlan::updateOrCreate(
             ['code' => 'PROFESSIONAL'],
             [
@@ -38,7 +36,6 @@ return new class extends Migration
             ]
         );
 
-        // 3. Unlimited Enterprise (300,000 RWF / month)
         $enterprise = SubscriptionPlan::where('code', 'UNLIMITED-ENT')->orWhere('code', 'ENTERPRISE')->first();
         if ($enterprise) {
             $enterprise->update([

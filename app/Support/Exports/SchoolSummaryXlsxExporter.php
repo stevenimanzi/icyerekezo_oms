@@ -76,26 +76,24 @@ class SchoolSummaryXlsxExporter
                 $row[] = $rowTotal ?: '—';
                 $districtTotalAll += $rowTotal;
                 $grandTotalAll += $rowTotal;
-                $rows[] = [$row, 0]; // row values, style
+                $rows[] = [$row, 0];
             }
             
-            // District subtotal row
             $subtotalRow = [$district . ' Total', ''];
             foreach (self::CATEGORIES as $cat) {
                 $subtotalRow[] = $districtTotals[$cat] ?: '—';
             }
             $subtotalRow[] = $districtTotalAll ?: '—';
-            $rows[] = [$subtotalRow, 3]; // style 3 for bold/highlighted
+            $rows[] = [$subtotalRow, 3];
         }
 
-        // Grand total row
         if (count($summary) > 0) {
             $grandTotalRow = ['GRAND TOTAL', ''];
             foreach (self::CATEGORIES as $cat) {
                 $grandTotalRow[] = $grandTotals[$cat] ?: '—';
             }
             $grandTotalRow[] = $grandTotalAll ?: '—';
-            $rows[] = [$grandTotalRow, 2]; // style 2 for blue header look
+            $rows[] = [$grandTotalRow, 2];
         } else {
             $rows[] = [['No orders found for the selected filters.', ''], 0];
         }
@@ -123,7 +121,6 @@ class SchoolSummaryXlsxExporter
         foreach ($rows as $index => [$values, $styleOverride]) {
             $styledValues = [];
             foreach (array_values($values) as $colIdx => $val) {
-                // If it's a number, use style 3 for right-align, otherwise 0. Or if styleOverride is set, use it.
                 $cellStyle = $styleOverride ?: (is_numeric($val) ? 3 : 0);
                 if ($styleOverride === 3 && !is_numeric($val) && $colIdx > 1 && $val !== '—') $cellStyle = 3;
                 $styledValues[] = [$val, $cellStyle];

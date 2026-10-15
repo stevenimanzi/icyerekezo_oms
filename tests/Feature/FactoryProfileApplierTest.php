@@ -60,7 +60,6 @@ class FactoryProfileApplierTest extends TestCase
         foreach (['pc', 'kg', 'L', 'm', 'g', 'mL'] as $symbol) {
             $this->assertContains($symbol, $symbols);
         }
-        // kg/g and L/mL. The tonne/kg conversion needs a tonne unit, which dairy does not add.
         $this->assertSame(2, DB::table('unit_conversions')->where('factory_id', $factory->id)->count());
         $this->assertTrue(DB::table('item_categories')->where(['factory_id' => $factory->id, 'code' => 'RAWMILK'])->exists());
     }

@@ -8,8 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Additional industries a factory operates beyond its primary industry_type
-        // (for example a dairy that also makes other foods). Null means "primary only".
         Schema::table('factories', function (Blueprint $table) {
             $table->json('industry_profiles')->nullable()->after('industry_type');
         });

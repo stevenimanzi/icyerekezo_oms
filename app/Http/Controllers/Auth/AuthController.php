@@ -61,7 +61,6 @@ class AuthController extends Controller
             PermissionCatalog::seed();
             RoleTemplateCatalog::createFor($factory);
 
-            // Schools can re-register a contact without duplicating the school record itself.
             $school = School::firstOrCreate(
                 ['factory_id' => $factory->id, 'name' => $data['school_name'], 'district' => $data['district'], 'sector' => $data['sector']],
                 ['contact_name' => $data['name'], 'phone' => $data['phone'], 'email' => Str::lower($data['email'])]
@@ -133,8 +132,6 @@ class AuthController extends Controller
             $user->roles()->attach($role->id, ['factory_id' => $factory->id]);
             RoleTemplateCatalog::createFor($factory);
             Warehouse::create(['factory_id' => $factory->id, 'name' => 'Main Warehouse', 'code' => 'MAIN', 'type' => 'general']);
-            // Units, item categories, departments and the industry work flow are set up here,
-            // so a new factory is ready to use without any manual configuration.
             app(FactoryProfileApplier::class)->apply($factory);
 
             return [$user, $factory];
@@ -185,7 +182,6 @@ class AuthController extends Controller
             $this->issueOtp($user);
         }
 
-        // Same response whether or not a matching unverified account exists, to avoid leaking registration state.
         return response()->json(['message' => 'If that account is awaiting verification, a new code has been sent.']);
     }
 
@@ -197,7 +193,6 @@ class AuthController extends Controller
         $user = User::where('email', $loginField)
             ->orWhere('username', $loginField)
             ->first();
-        // Always run a hash comparison so response time does not reveal whether the account exists.
         $passwordOk = Hash::check($credentials['password'], $user?->password ?? '$2y$12$mbYr.q3T92SaLRVbsmQRe.Dy0wvXXDY8d./E1GMS.EKsbEzhiJMCa');
         if (! $user || ! $user->is_active || ! $passwordOk) {
             return response()->json(['message' => 'The provided credentials are incorrect.'], 422);
@@ -298,7 +293,6 @@ class AuthController extends Controller
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        // Always send the same response to prevent email enumeration.
         Password::sendResetLink(
             ['email' => Str::lower(trim($request->input('email')))]
         );
@@ -341,11 +335,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'Your password has been reset. You can now sign in.']);
     }
 
-    /**
-     * Finishes a registration request: with OTP verification enabled, this issues a code
-     * and holds off on signing the user in until it's confirmed via verifyOtp(); otherwise
-     * it preserves the previous behaviour of signing the user in immediately.
-     */
     private function completeRegistration(Request $request, User $user, string $message): JsonResponse
     {
         Auth::login($user);
@@ -372,11 +361,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * A registration that was never confirmed with its OTP shouldn't permanently occupy
-     * its email address. If an unverified account owns this email, discard it (and any
-     * factory it created as owner) so a fresh registration attempt can proceed cleanly.
-     */
     private function reclaimUnverifiedEmail(string $email): void
     {
         if (! config('features.otp_verification') || ! $email) {

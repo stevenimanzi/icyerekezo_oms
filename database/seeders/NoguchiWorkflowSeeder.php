@@ -27,7 +27,6 @@ class NoguchiWorkflowSeeder extends Seeder
             'is_default' => true,
         ]);
 
-        // Unset old default workflows for this factory
         WorkflowTemplate::where('factory_id', $factory->id)->where('id', '!=', $template->id)->update(['is_default' => false]);
 
         $stages = [

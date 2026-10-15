@@ -5,13 +5,8 @@ namespace App\Support\Exports;
 use ZipArchive;
 use App\Support\Reports\NoguchiDailyRegister;
 
-/**
- * Excel export of the Noguchi daily report. It uses the same register data and layout as the report page:
- * DAILY REPORT bar, coloured section bars, INPUT/OUTPUT headings, one block of merged rows per date.
- */
 class NoguchiDailyReportXlsxExporter
 {
-    // cell style ids (see styles())
     private const S_SUBTITLE = 1;
     private const S_HEADER = 7;
     private const S_CENTER = 8;
@@ -89,7 +84,6 @@ class NoguchiDailyReportXlsxExporter
         return false;
     }
 
-    /** Column numbers (1-based): the date column, then for each section a spacer and its groups. */
     private function layout(array $sections): array
     {
         $map = [];
@@ -114,7 +108,6 @@ class NoguchiDailyReportXlsxExporter
 
     private function headings(array $sections, array $map, int $total, string $department = ''): void
     {
-        // rows: 2 section bars, 3 INPUT/OUTPUT, 4 sub headings, 5 leaf headings
         $this->merge(2, 1, 2, 1, 'SECTIONS', self::S_HEADER);
         $this->merge(3, 1, 5, 1, 'DATE', self::S_HEADER);
         foreach ($sections as $key) {
@@ -172,7 +165,6 @@ class NoguchiDailyReportXlsxExporter
             }
         }
 
-        // a blank row separates the days, as in the factory sheet
         $blank = $row + $height;
         $this->put($blank, 1, '', self::S_CENTER);
         foreach ($sections as $key) {
@@ -201,7 +193,6 @@ class NoguchiDailyReportXlsxExporter
         $this->cells[$row][$column] = [$value, $style];
     }
 
-    /** Merge a block, write its value in the top-left cell and give every covered cell the same border/fill. */
     private function merge(int $row1, int $col1, int $row2, int $col2, $value, int $style): void
     {
         for ($r = $row1; $r <= $row2; $r++) {
@@ -263,16 +254,16 @@ class NoguchiDailyReportXlsxExporter
             .'<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'.$border.'</borders>'
             .'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
             .'<cellXfs count="16">'
-            .'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'                       // 0 default
-            .$xf(1, 0, 'horizontal="left" vertical="center"')                                        // 1 subtitle
-            .$xf(2, 2, $center).$xf(3, 3, $center).$xf(2, 4, $center).$xf(2, 5, $center).$xf(2, 6, $center) // 2-6 section bars
-            .$xf(4, 0, $center.' wrapText="1"')                                                      // 7 headings
-            .$xf(0, 0, $center)                                                                      // 8 centered text
-            .$xf(0, 0, 'horizontal="left" vertical="center"')                                        // 9 left text
-            .$xf(0, 0, 'horizontal="right" vertical="center"', 3).$xf(0, 0, 'horizontal="right" vertical="center"', 4)   // 10-11 numbers right
-            .$xf(0, 0, $center, 3).$xf(0, 0, $center, 4)                                             // 12-13 numbers centered
-            .$xf(0, 0, $center)                                                                      // 14 spacer
-            .$xf(1, 0, $center)                                                                      // 15 message
+            .'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+            .$xf(1, 0, 'horizontal="left" vertical="center"')
+            .$xf(2, 2, $center).$xf(3, 3, $center).$xf(2, 4, $center).$xf(2, 5, $center).$xf(2, 6, $center)
+            .$xf(4, 0, $center.' wrapText="1"')
+            .$xf(0, 0, $center)
+            .$xf(0, 0, 'horizontal="left" vertical="center"')
+            .$xf(0, 0, 'horizontal="right" vertical="center"', 3).$xf(0, 0, 'horizontal="right" vertical="center"', 4)
+            .$xf(0, 0, $center, 3).$xf(0, 0, $center, 4)
+            .$xf(0, 0, $center)
+            .$xf(1, 0, $center)
             .'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
     }
 }

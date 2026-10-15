@@ -55,10 +55,6 @@ class InventoryLedger
         }, 5);
     }
 
-    /**
-     * Fires a low-stock notification only on the crossing (was at/above the reorder
-     * point, now below it) so repeated withdrawals while already-low don't spam alerts.
-     */
     private function maybeAlertLowStock(Item $item, float $before, float $after): void
     {
         $threshold = (float) ($item->reorder_level ?? $item->minimum_stock ?? 0);
@@ -73,23 +69,11 @@ class InventoryLedger
         );
     }
 
-    /**
-     * Looks up the batch a movement references, if any. Doesn't validate anything —
-     * see guardBatchMovement for the rules that must hold once it's resolved.
-     */
     private function resolveBatch(array $data): ?Batch
     {
         return isset($data['batch_id']) ? Batch::findOrFail($data['batch_id']) : null;
     }
 
-    /**
-     * The rules a batch-tracked movement must satisfy: the item requires a batch when
-     * it's marked batch_tracked, the batch must belong to that item (except at the
-     * packed transition, where a batch's item identity legitimately changes from
-     * work-in-progress fabric to the finished product chosen at packing time — see
-     * applyStageTransition), it can't be expired stock leaving the building, and a
-     * packed batch can't leave until it has passed quality control.
-     */
     private function guardBatchMovement(array $data, Item $item, ?Batch $batch): void
     {
         if ($item->batch_tracked && ! $batch) {
@@ -107,12 +91,6 @@ class InventoryLedger
         }
     }
 
-    /**
-     * Advances a batch's production_stage when a stage's finished output is posted.
-     * Reaching 'packed' additionally opens a quality-control review (qc_status) and
-     * rebinds the batch to the finished-goods item chosen at packing time, since up
-     * to that point it was only tracked under the work-in-progress fabric's item.
-     */
     private function applyStageTransition(array $data, Item $item, ?Batch $batch): void
     {
         if (! $batch || ! isset($data['production_stage']) || $data['type'] !== 'production_output') {
@@ -139,7 +117,6 @@ class InventoryLedger
                 default => throw ValidationException::withMessages(['type' => 'Cannot reverse this transaction type.']),
             };
 
-            // Reverse original transaction
             $this->post([
                 'item_id' => $original->item_id,
                 'warehouse_id' => $original->warehouse_id,
@@ -152,7 +129,6 @@ class InventoryLedger
                 'reverses_transaction_id' => $original->id,
             ]);
 
-            // Post corrected transaction
             return $this->post([
                 'item_id' => $original->item_id,
                 'warehouse_id' => $original->warehouse_id,

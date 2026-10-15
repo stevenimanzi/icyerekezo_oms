@@ -31,7 +31,6 @@ class SendSubscriptionRemindersCommand extends Command
                 $owner->notify(new SubscriptionExpiringSoon($subscription));
             }
 
-            // Always send an additional explicit copy to info@noguchi.rw as requested
             Notification::route('mail', 'info@noguchi.rw')->notify(new SubscriptionExpiringSoon($subscription));
 
             $subscription->update(['expiry_reminder_sent_at' => now()]);

@@ -6,10 +6,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
-/**
- * Uploaded business documents (invoices, payment proofs, agreements) live on the
- * private disk and are only reachable through short-lived signed links.
- */
 final class PrivateFile
 {
     public const DIRECTORIES = ['agreement', 'invoices', 'payment-proofs'];
@@ -36,7 +32,6 @@ final class PrivateFile
         return URL::temporarySignedRoute('files.show', now()->addMinutes(30), ['path' => $path], absolute: false);
     }
 
-    /** Disk holding the file, or null. Legacy uploads may still sit on the public disk. */
     public static function diskFor(string $path): ?string
     {
         if (! self::isAllowed($path)) {

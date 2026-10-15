@@ -15,7 +15,6 @@ class NotificationController extends Controller
         $notifications = $user->notifications()->latest()->limit(30)->get();
         $unreadCount = $user->unreadNotifications()->count();
 
-        // 1. Dynamic Notification: Incoming Orders (for factory users)
         if ($user->current_factory_id) {
             $pendingOrders = \App\Models\SalesDocument::where('factory_id', $user->current_factory_id)
                 ->where('document_type', 'customer_order')
@@ -38,7 +37,6 @@ class NotificationController extends Controller
                 $unreadCount++;
             }
 
-            // 2. Dynamic Notification: Open Support Tickets (for factory users)
             $openTickets = \App\Models\SupportTicket::where('factory_id', $user->current_factory_id)
                 ->whereNotIn('status', ['resolved', 'closed'])
                 ->count();
@@ -60,7 +58,6 @@ class NotificationController extends Controller
             }
         }
 
-        // 3. Dynamic Notification: Open Support Tickets (for platform admins)
         if ($user->is_platform_admin) {
             $openTickets = \App\Models\SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count();
             

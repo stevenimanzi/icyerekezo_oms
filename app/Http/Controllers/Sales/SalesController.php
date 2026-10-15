@@ -132,11 +132,6 @@ class SalesController extends Controller
         return response()->json(['message' => 'School garment order received.', 'document' => $order->load('lines')], 201);
     }
 
-    /**
-     * Packing records how much of a line is physically packed and ready for logistics.
-     * It never touches delivered quantity, stock, or the order's status — packing is
-     * preparation, not fulfilment.
-     */
     public function packSchoolOrderLine(Request $request, SalesDocumentLine $line): JsonResponse
     {
         $this->ensureNoguchi($request);
@@ -149,10 +144,6 @@ class SalesController extends Controller
         return response()->json(['message' => 'Packed quantity updated.', 'line' => $line->fresh()]);
     }
 
-    /**
-     * Delivery can never exceed what packing has actually prepared — logistics delivers
-     * packed items, it does not decide what gets packed.
-     */
     public function deliverSchoolOrderLine(Request $request, SalesDocumentLine $line, InventoryLedger $ledger): JsonResponse
     {
         $this->ensureNoguchi($request);
@@ -186,10 +177,6 @@ class SalesController extends Controller
         return response()->json(['message' => 'Garment quantities updated.', 'line' => $line->fresh(), 'document_status' => $document->status]);
     }
 
-    /**
-     * Delivers everything packing has prepared for this order in one action — each line's
-     * delivered quantity is raised to its packed quantity, nothing more.
-     */
     public function deliverSchoolOrder(Request $request, SalesDocument $document, InventoryLedger $ledger): JsonResponse
     {
         $this->ensureNoguchi($request);
@@ -228,11 +215,6 @@ class SalesController extends Controller
         return response()->json(['message' => 'Order delivered.', 'document' => $document->load('lines')]);
     }
 
-    /**
-     * Decrements real warehouse stock for the garment just marked delivered, taken from
-     * whichever single warehouse holds enough of it. Never blocks delivery bookkeeping —
-     * if no warehouse alone has enough (e.g. production never fed this item), it's skipped.
-     */
     private function releaseDeliveredStock(InventoryLedger $ledger, int $factoryId, SalesDocumentLine $line, SalesDocument $document, int $quantity): void
     {
         $warehouse = Warehouse::withoutGlobalScopes()
@@ -251,7 +233,6 @@ class SalesController extends Controller
                 'quantity' => $quantity, 'reason' => "School order {$document->document_number} delivered — {$line->garment_category}",
             ]);
         } catch (\Throwable) {
-            // Delivery bookkeeping must never fail because a stock movement couldn't be posted.
         }
     }
 

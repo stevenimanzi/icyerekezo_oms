@@ -17,7 +17,6 @@ class FactoryFlowController extends Controller
         $factory = $request->user()->currentFactory;
         $resolved = IndustryProfileCatalog::resolve($factory->profileKeys());
 
-        // `departments` keeps the shape the setup page already reads, using the primary profile's flow.
         $primary = array_key_first($resolved['profiles']);
         $departments = collect($resolved['profiles'][$primary]['departments'])->map(fn (string $name, int $index) => [
             'name' => $name,

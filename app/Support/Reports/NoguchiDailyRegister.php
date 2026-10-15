@@ -4,14 +4,8 @@ namespace App\Support\Reports;
 
 use Carbon\Carbon;
 
-/**
- * The Noguchi daily register (warehouse, cutting, production, finishing, stock) built from the report data.
- * This mirrors the on-screen sheet (resources/js/pages/shared/NoguchiDailySheet.tsx) so the Excel export
- * shows exactly what the page shows.
- */
 final class NoguchiDailyRegister
 {
-    /** Entry groups: cell kinds, widths in px and the columns that merge vertically when equal. */
     public const GROUPS = [
         0 => ['kinds' => ['center', 'cnum'], 'widths' => [80, 64], 'merge' => []],
         1 => ['kinds' => ['cnum', 'cnum'], 'widths' => [136, 62], 'merge' => []],
@@ -25,7 +19,6 @@ final class NoguchiDailyRegister
         9 => ['kinds' => ['center', 'center', 'size', 'num'], 'widths' => [80, 60, 48, 47], 'merge' => [0, 1]],
     ];
 
-    /** Sections in sheet order. row5/row6 heads are [label, colSpan, rowSpan]; row7 labels fill the columns left open by row 6. */
     public const SECTIONS = [
         'wh' => ['title' => 'WAREHOUSE', 'fill' => '2E75B5', 'dark' => false, 'groups' => [0, 1, 2, 3],
             'row5' => [['INPUT', 4, 1], ['OUTPUT', 4, 1]],
@@ -53,7 +46,6 @@ final class NoguchiDailyRegister
     private const DEPARTMENT_WAREHOUSE = '/cutting|sewing|finishing|packing/i';
     private const CUT_OUTPUT = '/(\d[\d,.]*)\s*x\s*(.+?)(?:\s*\/\s*(.+?))?\s*\(([^)]+)\)\s*produced/i';
 
-    /** Which register sections belong to the chosen department (all of them when none is chosen). */
     public static function sectionsFor(?string $department): array
     {
         $value = strtolower(trim((string) $department));
@@ -66,7 +58,6 @@ final class NoguchiDailyRegister
         return [];
     }
 
-    /** One entry per date, each with the ten entry groups (lists of raw cell values). */
     public static function days(array $data, string $department = ''): array
     {
         $timezone = $data['factory']['timezone'] ?? config('app.timezone');
@@ -150,10 +141,6 @@ final class NoguchiDailyRegister
         return $days;
     }
 
-    /**
-     * For one group over $height rows: per column and line, the number of rows a merged block starting there covers
-     * (0 = covered by the block above). Equal consecutive colours/styles merge and the last block stretches to the bottom.
-     */
     public static function spans(array $rows, int $columns, array $mergeColumns, int $height): array
     {
         $result = array_fill(0, $columns, array_fill(0, $height, 0));
@@ -205,7 +192,6 @@ final class NoguchiDailyRegister
         return preg_replace('/^[-–—|\/\s]+|[-–—|\/\s]+$/u', '', $part) ?? $part;
     }
 
-    /** "Short - - M" -> style Short, size M; "Skirt - Navy Blue - XS" -> all three. */
     private static function parseProduct(string $name, string $fallbackColor = ''): array
     {
         $parts = array_values(array_filter(array_map([self::class, 'clean'], preg_split('/\s+[-–—|\/]\s+/u', $name) ?: []), fn ($p) => $p !== ''));

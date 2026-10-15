@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\Notification;
 
 class FactoryNotifier
 {
-    /**
-     * Notify every active user in the factory who holds the given permission (or is the factory owner).
-     */
     public static function notify(int $factoryId, string $permission, string $title, string $body, ?string $url = null, string $category = 'general', ?int $excludeUserId = null): void
     {
         $users = User::where('is_platform_admin', false)

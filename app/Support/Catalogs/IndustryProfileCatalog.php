@@ -2,18 +2,6 @@
 
 namespace App\Support\Catalogs;
 
-/**
- * Code-defined industry profiles. A factory picks its industry at registration and the
- * matching profile is applied automatically (see FactoryProfileApplier) — nobody has to
- * configure departments, work steps, units or tracking rules by hand.
- *
- * A profile can extend others (dairy builds on food safety), and a factory can run more
- * than one profile (milk plus other foods), in which case their setup is combined.
- *
- * `features` are capability flags other modules can check via Factory::hasFeature(). A flag
- * only declares that the industry needs the capability; the capability itself ships with
- * its module, so a flag listed here is not proof the screen already exists.
- */
 final class IndustryProfileCatalog
 {
     public const GENERIC = 'general_manufacturing';
@@ -25,7 +13,6 @@ final class IndustryProfileCatalog
         ['Metre', 'm', 'length', 3],
     ];
 
-    /** [from symbol, to symbol, multiplier]: 1 from = multiplier x to. */
     private const CONVERSIONS = [
         ['kg', 'g', 1000],
         ['t', 'kg', 1000],
@@ -90,7 +77,6 @@ final class IndustryProfileCatalog
             'steel_metals' => ['label' => 'Steel and metal products', 'departments' => ['Raw Materials', 'Cutting', 'Fabrication', 'Welding', 'Finishing', 'Quality Control', 'Finished Goods', 'Logistics']],
             'furniture_wood' => ['label' => 'Furniture and wood products', 'departments' => ['Raw Materials', 'Cutting', 'Assembly', 'Finishing', 'Quality Control', 'Packaging', 'Finished Goods']],
 
-            // Selectable today, but no industry-specific setup beyond the general flow yet.
             'agriculture_animal_feed' => ['label' => 'Agriculture and animal feed', 'extends' => [self::GENERIC]],
             'construction_materials' => ['label' => 'Construction materials, cement and bricks', 'extends' => [self::GENERIC]],
             'paper_packaging_printing' => ['label' => 'Paper, packaging and printing', 'extends' => [self::GENERIC]],
@@ -101,16 +87,11 @@ final class IndustryProfileCatalog
         ];
     }
 
-    /** Profile keys a factory may choose (internal base profiles excluded). */
     public static function keys(): array
     {
         return array_keys(array_filter(self::definitions(), fn (array $definition) => empty($definition['internal'])));
     }
 
-    /**
-     * The profile list for a factory: its primary industry first (or general manufacturing
-     * when it is unknown or free text), then any valid additional industries, de-duplicated.
-     */
     public static function normalize(?string $primary, array $additional = []): array
     {
         $selectable = self::keys();
@@ -122,13 +103,6 @@ final class IndustryProfileCatalog
         ]));
     }
 
-    /**
-     * Everything the given profiles contribute, merged. Departments are de-duplicated by
-     * name across profiles, but each profile keeps its own ordered work flow because a
-     * milk line and a biscuit line do not share one linear sequence of steps.
-     *
-     * @return array{profiles: array<string, array{label: string, departments: array<int, string>}>, departments: array<int, string>, units: array, categories: array, item_defaults: array<string, bool>, features: array<int, string>}
-     */
     public static function resolve(array $profileKeys): array
     {
         $profiles = $units = $categories = $itemDefaults = $features = $allDepartments = [];
@@ -174,7 +148,6 @@ final class IndustryProfileCatalog
         return self::BASE_UNITS;
     }
 
-    /** The kind of workstation a department's main station should be. */
     public static function stationType(string $departmentName): string
     {
         $value = strtolower($departmentName);
@@ -197,7 +170,6 @@ final class IndustryProfileCatalog
         return self::CONVERSIONS;
     }
 
-    /** Departments from this profile's own definition win; units, categories and features accumulate. */
     private static function mergeWithParents(string $key): array
     {
         $definition = self::definitions()[$key] ?? [];

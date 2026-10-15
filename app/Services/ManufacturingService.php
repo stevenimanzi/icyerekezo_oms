@@ -40,9 +40,6 @@ class ManufacturingService
                 throw ValidationException::withMessages(['workflow_template_id' => 'The workflow must contain at least one stage.']);
             }
 
-            // Draw the recipe's raw materials out of stock now, so the warehouse balance reflects
-            // what's actually committed to this order. Optional components only draw what's on
-            // hand — a shortage of an optional component never blocks approval (see the check above).
             $ledger = new InventoryLedger();
             foreach ($requirements as $requirement) {
                 $quantity = $requirement['is_optional']

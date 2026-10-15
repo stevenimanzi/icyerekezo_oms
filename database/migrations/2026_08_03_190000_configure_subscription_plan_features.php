@@ -18,6 +18,5 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Feature selections are intentionally preserved if this migration is rolled back.
     }
 };

@@ -7,11 +7,6 @@ use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
 {
-    /**
-     * The project .env points at a real MySQL database. RefreshDatabase wipes whatever
-     * connection is configured, so refuse to boot unless it is in-memory SQLite. This runs
-     * when the application is created, which is before any trait refreshes the database.
-     */
     public function createApplication()
     {
         $app = parent::createApplication();
