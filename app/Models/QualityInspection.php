@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
         'production_order_id',
         'stage_execution_id',
         'batch_id',
+        'lot_id',
+        'stage',
         'item_id',
         'inspection_type',
         'sample_size',

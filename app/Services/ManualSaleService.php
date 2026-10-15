@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class ManualSaleService
 {
-    public function __construct(private readonly InventoryLedger $ledger) {}
+    public function __construct(private readonly InventoryLedger $ledger, private readonly StockIssuer $issuer) {}
 
     public function record(array $data, User $user): SalesDocument
     {
@@ -147,83 +147,15 @@ class ManualSaleService
 
     private function takeOutOfStock(SalesDocument $document, Item $item, int $quantity, ?int $warehouseId, int $lineIndex): void
     {
-        $warehouse = $warehouseId ? Warehouse::findOrFail($warehouseId) : $this->warehouseWithMostStock($item);
-
-        if (! $warehouse) {
-            throw ValidationException::withMessages(["lines.{$lineIndex}.quantity" => "{$item->name} is not in stock in any warehouse."]);
-        }
-
-        $remaining = $quantity;
-
-        try {
-            foreach ($this->stockSources($item, $warehouse, $quantity) as [$batchId, $take]) {
-                $this->ledger->post([
-                    'item_id' => $item->id,
-                    'warehouse_id' => $warehouse->id,
-                    'batch_id' => $batchId,
-                    'type' => 'dispatch',
-                    'quantity' => $take,
-                    'reason' => "Sale {$document->document_number}",
-                    'reference_type' => $document->getMorphClass(),
-                    'reference_id' => $document->id,
-                ]);
-                $remaining -= $take;
-            }
-        } catch (ValidationException $exception) {
-            $message = collect($exception->errors())->flatten()->first();
-
-            throw ValidationException::withMessages(["lines.{$lineIndex}.quantity" => "{$item->name}: {$message}"]);
-        }
-
-        if ($remaining > 0) {
-            throw ValidationException::withMessages(["lines.{$lineIndex}.quantity" => "{$item->name}: not enough stock."]);
-        }
-    }
-
-    private function stockSources(Item $item, Warehouse $warehouse, int $quantity): array
-    {
-        if (! $item->batch_tracked) {
-            return [[null, $quantity]];
-        }
-
-        $batches = DB::table('stock_balances')
-            ->join('batches', 'batches.id', '=', 'stock_balances.batch_id')
-            ->where('stock_balances.item_id', $item->id)
-            ->where('stock_balances.warehouse_id', $warehouse->id)
-            ->where(fn ($query) => $query->whereNull('batches.expires_at')->orWhere('batches.expires_at', '>=', today()))
-            ->selectRaw('batches.id as batch_id, (stock_balances.quantity_on_hand - stock_balances.quantity_reserved - stock_balances.quantity_quarantined) as available')
-            ->orderByRaw('batches.expires_at IS NULL, batches.expires_at')
-            ->get();
-
-        $sources = [];
-        $needed = $quantity;
-
-        foreach ($batches as $batch) {
-            $take = (int) min($needed, floor((float) $batch->available));
-            if ($take > 0) {
-                $sources[] = [(int) $batch->batch_id, $take];
-                $needed -= $take;
-            }
-            if ($needed <= 0) {
-                break;
-            }
-        }
-
-        return $needed > 0 ? [[null, $quantity]] : $sources;
-    }
-
-    private function warehouseWithMostStock(Item $item): ?Warehouse
-    {
-        $id = DB::table('stock_balances')
-            ->join('warehouses', 'warehouses.id', '=', 'stock_balances.warehouse_id')
-            ->where('stock_balances.item_id', $item->id)
-            ->where('warehouses.factory_id', $item->factory_id)
-            ->where('warehouses.is_active', true)
-            ->groupBy('warehouses.id')
-            ->orderByRaw('SUM(stock_balances.quantity_on_hand - stock_balances.quantity_reserved - stock_balances.quantity_quarantined) DESC')
-            ->value('warehouses.id');
-
-        return $id ? Warehouse::find($id) : Warehouse::where('is_active', true)->orderBy('id')->first();
+        $this->issuer->issue(
+            $item,
+            $quantity,
+            $warehouseId ? Warehouse::findOrFail($warehouseId) : null,
+            'dispatch',
+            "Sale {$document->document_number}",
+            $document,
+            "lines.{$lineIndex}.quantity",
+        );
     }
 
     private function returnStock(SalesDocument $document): void
