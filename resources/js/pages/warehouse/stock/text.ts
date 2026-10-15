@@ -91,6 +91,7 @@ const en = {
         reason: 'Why?',
         reasons: {
             used: 'Used or given to a team',
+            cutting: 'In cutting',
             sample: 'Sample',
             damaged: 'Damaged',
             lost: 'Lost or missing',
@@ -98,6 +99,10 @@ const en = {
         } as Record<string, string>,
         note: 'Details',
         noteHint: 'Say what happened. This is kept in the record.',
+        otherReasonLabel: 'Reason details *',
+        otherPlaceholder: 'Write the reason why this item is being taken out...',
+        otherNoteHint: 'Please write the reason (required when choosing Other).',
+        noteMinLength: 'Write at least 3 characters.',
         save: 'Take out of stock',
     },
 
@@ -274,6 +279,7 @@ const fr: typeof en = {
         reason: 'Pourquoi ?',
         reasons: {
             used: 'Utilisé ou remis à une équipe',
+            cutting: 'En coupe',
             sample: 'Échantillon',
             damaged: 'Abîmé',
             lost: 'Perdu ou manquant',
@@ -281,6 +287,10 @@ const fr: typeof en = {
         },
         note: 'Détails',
         noteHint: 'Dites ce qui s’est passé. Cela reste dans le dossier.',
+        otherReasonLabel: 'Précisez la raison *',
+        otherPlaceholder: 'Écrivez la raison de cette sortie de stock...',
+        otherNoteHint: 'Veuillez préciser la raison (obligatoire pour Autre).',
+        noteMinLength: 'Écrivez au moins 3 caractères.',
         save: 'Sortir du stock',
     },
 
