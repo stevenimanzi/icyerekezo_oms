@@ -30,13 +30,16 @@ const FEATURE_FOR_PAGE: Record<string, string> = {
     finance: 'sales',
     'finance-reports': 'reports',
     'cutting-workspace': 'production',
-    'fabric-request': 'inventory',
+    'fabric-request': 'production',
     'cut-fabrics': 'production',
     'damaged-fabrics': 'inventory',
     'cutting-report': 'production',
     'sewing-workspace': 'production',
     'finishing-workspace': 'production',
     'packing-workspace': 'production',
+    'sewing-materials': 'production',
+    'finishing-materials': 'production',
+    'packing-materials': 'production',
 };
 
 export function createAccess(user: AuthUser) {

@@ -94,8 +94,11 @@ const FLOW_STAGE_PAGES: Record<string, { stage: StageKey; tab: FlowTab }> = {
     'fabric-request': { stage: 'cutting', tab: 'materials' },
     'cutting-report': { stage: 'cutting', tab: 'report' },
     'sewing-workspace': { stage: 'sewing', tab: 'work' },
+    'sewing-materials': { stage: 'sewing', tab: 'materials' },
     'finishing-workspace': { stage: 'finishing', tab: 'work' },
+    'finishing-materials': { stage: 'finishing', tab: 'materials' },
     'packing-workspace': { stage: 'packing', tab: 'work' },
+    'packing-materials': { stage: 'packing', tab: 'materials' },
 };
 
 const LOGISTICS_TABS: Record<string, string> = {

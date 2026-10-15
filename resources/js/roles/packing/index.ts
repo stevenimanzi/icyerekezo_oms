@@ -1,12 +1,19 @@
 import { ChartColumn, LayoutDashboard, PackageCheck } from 'lucide-react';
 import type { RoleModule } from '../types';
+import { requestMaterialsNav } from '../production-flow-nav';
 
 export const packingRole: RoleModule = {
     id: 'packing',
     matches: ({ flags }) => flags.isPackagingUser,
-    nav: ({ labels, text }) => [
-        ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['packing-workspace', PackageCheck, text('Packing', 'Emballage'), 'production.view'],
-        ['reports', ChartColumn, labels.reports, 'reports.view'],
+    nav: (context) => [
+        ['dashboard', LayoutDashboard, context.labels.dashboard, '*'],
+        [
+            'packing-workspace',
+            PackageCheck,
+            context.text('Packing', 'Emballage'),
+            'production.view',
+        ],
+        ...requestMaterialsNav('packing', context),
+        ['reports', ChartColumn, context.labels.reports, 'reports.view'],
     ],
 };

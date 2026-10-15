@@ -1,12 +1,14 @@
 import { ChartColumn, LayoutDashboard, Sparkles } from 'lucide-react';
 import type { RoleModule } from '../types';
+import { requestMaterialsNav } from '../production-flow-nav';
 
 export const finishingRole: RoleModule = {
     id: 'finishing',
     matches: ({ flags }) => flags.isFinishingUser,
-    nav: ({ labels, text }) => [
-        ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['finishing-workspace', Sparkles, text('Finishing', 'Finition'), 'production.view'],
-        ['reports', ChartColumn, labels.reports, 'reports.view'],
+    nav: (context) => [
+        ['dashboard', LayoutDashboard, context.labels.dashboard, '*'],
+        ['finishing-workspace', Sparkles, context.text('Finishing', 'Finition'), 'production.view'],
+        ...requestMaterialsNav('finishing', context),
+        ['reports', ChartColumn, context.labels.reports, 'reports.view'],
     ],
 };

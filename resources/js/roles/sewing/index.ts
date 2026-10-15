@@ -1,12 +1,14 @@
 import { ChartColumn, LayoutDashboard, Shirt } from 'lucide-react';
 import type { RoleModule } from '../types';
+import { requestMaterialsNav } from '../production-flow-nav';
 
 export const sewingRole: RoleModule = {
     id: 'sewing',
     matches: ({ flags }) => flags.isSewingUser,
-    nav: ({ labels, text }) => [
-        ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['sewing-workspace', Shirt, text('Sewing', 'Couture'), 'production.view'],
-        ['reports', ChartColumn, labels.reports, 'reports.view'],
+    nav: (context) => [
+        ['dashboard', LayoutDashboard, context.labels.dashboard, '*'],
+        ['sewing-workspace', Shirt, context.text('Sewing', 'Couture'), 'production.view'],
+        ...requestMaterialsNav('sewing', context),
+        ['reports', ChartColumn, context.labels.reports, 'reports.view'],
     ],
 };
