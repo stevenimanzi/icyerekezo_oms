@@ -32,6 +32,11 @@ use Illuminate\Database\Eloquent\Model;
         'invoice_original_name',
         'invoice_uploaded_at',
         'invoice_uploaded_by',
+        'customer_phone',
+        'discount_amount',
+        'notes',
+        'source',
+        'cancel_reason',
     ]),
 ]
 class SalesDocument extends Model
@@ -47,6 +52,7 @@ class SalesDocument extends Model
             'due_date' => 'date',
             'total_amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'invoice_uploaded_at' => 'datetime',
         ];
     }
@@ -59,6 +65,16 @@ class SalesDocument extends Model
     public function lines()
     {
         return $this->hasMany(SalesDocumentLine::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(SalesPayment::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function school()

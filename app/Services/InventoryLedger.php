@@ -96,6 +96,8 @@ class InventoryLedger
                 'balance_after' => $newOnHand,
                 'reason' => $data['reason'] ?? null,
                 'reverses_transaction_id' => $data['reverses_transaction_id'] ?? null,
+                'reference_type' => $data['reference_type'] ?? null,
+                'reference_id' => $data['reference_id'] ?? null,
                 'performed_by' => auth()->id(),
                 'occurred_at' => $data['occurred_at'] ?? now(),
             ]);

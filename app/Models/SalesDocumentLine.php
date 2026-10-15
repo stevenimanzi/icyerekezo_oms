@@ -21,11 +21,18 @@ use Illuminate\Database\Eloquent\Model;
         'quantity_delivered',
         'quantity_rejected',
         'rejection_reason',
+        'unit_price',
+        'line_total',
     ]),
 ]
 class SalesDocumentLine extends Model
 {
     use BelongsToFactory;
+
+    protected function casts(): array
+    {
+        return ['unit_price' => 'decimal:2', 'line_total' => 'decimal:2'];
+    }
 
     public function document()
     {
