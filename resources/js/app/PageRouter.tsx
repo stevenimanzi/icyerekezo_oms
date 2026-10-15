@@ -45,6 +45,7 @@ const QualityControlPage = lazy(() => import('../pages/quality/QualityControlPag
 const ReportsPage = lazy(() => import('../pages/shared/ClearReportsPage'));
 const SafetyOverviewPage = lazy(() => import('../pages/safety/SafetyOverviewPage'));
 const SalesOverviewPage = lazy(() => import('../pages/sales/SalesOverviewPage'));
+const ManualSalesPage = lazy(() => import('../pages/sales/manual/ManualSalesPage'));
 const SchoolPortalPage = lazy(() => import('../roles/school/SchoolPortalPage'));
 const SewingWorkspacePage = lazy(
     () => import('../pages/production/textile/sewing/SewingWorkspacePage'),
@@ -196,7 +197,11 @@ function CurrentPage({
         case 'procurement':
             return <ProcurementOverviewPage />;
         case 'sales':
-            return <SalesOverviewPage />;
+            return flags.isNoguchiFactory ? (
+                <SalesOverviewPage />
+            ) : (
+                <ManualSalesPage user={user} locale={locale} />
+            );
         case 'finance':
             return <FinanceOverviewPage />;
         case 'finance-reports':

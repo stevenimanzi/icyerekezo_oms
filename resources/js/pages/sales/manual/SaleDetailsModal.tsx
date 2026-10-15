@@ -16,7 +16,15 @@ type Props = {
     onChanged: (message: string) => void;
 };
 
-export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClose, onChanged }: Props) {
+export function SaleDetailsModal({
+    sale,
+    methods,
+    canRecord,
+    text,
+    format,
+    onClose,
+    onChanged,
+}: Props) {
     const t = text.details;
     const cancelled = sale.status === 'cancelled';
     const total = Number(sale.total_amount);
@@ -51,7 +59,12 @@ export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClo
             onClose={onClose}
             footer={
                 <>
-                    <button className="secondary-btn" onClick={() => window.open(`/api/sales/manual/${sale.id}/receipt`, '_blank')}>
+                    <button
+                        className="secondary-btn"
+                        onClick={() =>
+                            window.open(`/api/sales/manual/${sale.id}/receipt`, '_blank')
+                        }
+                    >
                         {text.form.printReceipt}
                     </button>
                     <button className="primary-btn" onClick={onClose}>
@@ -61,7 +74,9 @@ export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClo
             }
         >
             {error && <div className="ms-error">{error}</div>}
-            {cancelled && sale.cancel_reason && <div className="ms-error">{t.cancelledBecause(sale.cancel_reason)}</div>}
+            {cancelled && sale.cancel_reason && (
+                <div className="ms-error">{t.cancelledBecause(sale.cancel_reason)}</div>
+            )}
 
             <div className="ms-facts">
                 <div>
@@ -102,7 +117,10 @@ export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClo
                 </p>
             )}
 
-            <div className="ms-table-wrap" style={{ border: '1px solid var(--line)', borderRadius: 12 }}>
+            <div
+                className="ms-table-wrap"
+                style={{ border: '1px solid var(--line)', borderRadius: 12 }}
+            >
                 <table className="ms-table" style={{ minWidth: 520 }}>
                     <thead>
                         <tr>
@@ -163,7 +181,8 @@ export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClo
                         {sale.payments.map((payment) => (
                             <li key={payment.id}>
                                 <span>
-                                    {format.date(payment.paid_on)} · {text.methods[payment.method] ?? payment.method}
+                                    {format.date(payment.paid_on)} ·{' '}
+                                    {text.methods[payment.method] ?? payment.method}
                                     {payment.reference ? ` · ${payment.reference}` : ''}
                                 </span>
                                 <b>{format.money(Number(payment.amount))}</b>
@@ -181,11 +200,20 @@ export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClo
                     <div className="ms-grid three">
                         <label className="ms-field">
                             {t.paymentAmount}
-                            <input type="number" min={0} step="any" value={amount} onChange={(event) => setAmount(event.target.value)} />
+                            <input
+                                type="number"
+                                min={0}
+                                step="any"
+                                value={amount}
+                                onChange={(event) => setAmount(event.target.value)}
+                            />
                         </label>
                         <label className="ms-field">
                             {text.form.method}
-                            <select value={method} onChange={(event) => setMethod(event.target.value)}>
+                            <select
+                                value={method}
+                                onChange={(event) => setMethod(event.target.value)}
+                            >
                                 {methods.map((entry) => (
                                     <option key={entry} value={entry}>
                                         {text.methods[entry] ?? entry}
@@ -195,11 +223,17 @@ export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClo
                         </label>
                         <label className="ms-field">
                             {text.form.reference}
-                            <input value={reference} onChange={(event) => setReference(event.target.value)} />
+                            <input
+                                value={reference}
+                                onChange={(event) => setReference(event.target.value)}
+                            />
                         </label>
                     </div>
                     <div className="ms-quick">
-                        <button className="secondary-btn" onClick={() => setAmount(String(balance))}>
+                        <button
+                            className="secondary-btn"
+                            onClick={() => setAmount(String(balance))}
+                        >
                             {text.form.payFull}
                         </button>
                         <button
@@ -208,7 +242,11 @@ export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClo
                             onClick={() =>
                                 call(
                                     `/api/sales/manual/${sale.id}/payments`,
-                                    { amount: Number(amount), method, reference: reference.trim() || null },
+                                    {
+                                        amount: Number(amount),
+                                        method,
+                                        reference: reference.trim() || null,
+                                    },
                                     t.paymentSaved,
                                 )
                             }
@@ -233,16 +271,28 @@ export function SaleDetailsModal({ sale, methods, canRecord, text, format, onClo
                             <span className="ms-help">{t.cancelHint}</span>
                             <label className="ms-field">
                                 {t.reason}
-                                <input value={reason} onChange={(event) => setReason(event.target.value)} />
+                                <input
+                                    value={reason}
+                                    onChange={(event) => setReason(event.target.value)}
+                                />
                             </label>
                             <div className="ms-quick">
-                                <button className="secondary-btn" onClick={() => setCancelling(false)}>
+                                <button
+                                    className="secondary-btn"
+                                    onClick={() => setCancelling(false)}
+                                >
                                     {t.keep}
                                 </button>
                                 <button
                                     className="primary-btn"
                                     disabled={busy || reason.trim().length < 3}
-                                    onClick={() => call(`/api/sales/manual/${sale.id}/cancel`, { reason: reason.trim() }, t.cancelled)}
+                                    onClick={() =>
+                                        call(
+                                            `/api/sales/manual/${sale.id}/cancel`,
+                                            { reason: reason.trim() },
+                                            t.cancelled,
+                                        )
+                                    }
                                 >
                                     {t.confirmCancel}
                                 </button>

@@ -34,9 +34,13 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
 
-    const items = useMemo(() => new Map(options.items.map((item) => [String(item.id), item])), [options.items]);
+    const items = useMemo(
+        () => new Map(options.items.map((item) => [String(item.id), item])),
+        [options.items],
+    );
 
-    const lineAmount = (line: Line) => Math.max(0, Number(line.quantity) || 0) * Math.max(0, Number(line.unit_price) || 0);
+    const lineAmount = (line: Line) =>
+        Math.max(0, Number(line.quantity) || 0) * Math.max(0, Number(line.unit_price) || 0);
     const subtotal = lines.reduce((sum, line) => sum + lineAmount(line), 0);
     const discountValue = Math.min(Math.max(0, Number(discount) || 0), subtotal);
     const total = Math.max(0, subtotal - discountValue);
@@ -45,7 +49,9 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
     const ready = lines.some((line) => line.item_id && Number(line.quantity) > 0);
 
     const changeLine = (key: number, changes: Partial<Line>) =>
-        setLines((current) => current.map((line) => (line.key === key ? { ...line, ...changes } : line)));
+        setLines((current) =>
+            current.map((line) => (line.key === key ? { ...line, ...changes } : line)),
+        );
 
     const chooseProduct = (key: number, itemId: string) => {
         const item = items.get(itemId);
@@ -55,7 +61,9 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
 
     const chooseCustomer = (value: string) => {
         setCustomer(value);
-        const known = options.customers.find((entry) => entry.name.toLowerCase() === value.toLowerCase());
+        const known = options.customers.find(
+            (entry) => entry.name.toLowerCase() === value.toLowerCase(),
+        );
         if (known?.phone && !phone) setPhone(known.phone);
     };
 
@@ -108,7 +116,11 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                     <button className="secondary-btn" onClick={onClose} disabled={busy}>
                         {t.cancel}
                     </button>
-                    <button className="primary-btn" onClick={submit} disabled={busy || !options.items.length}>
+                    <button
+                        className="primary-btn"
+                        onClick={submit}
+                        disabled={busy || !options.items.length}
+                    >
                         {busy ? t.saving : t.save}
                     </button>
                 </>
@@ -138,7 +150,11 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                         </label>
                         <label className="ms-field">
                             {t.phone}
-                            <input value={phone} inputMode="tel" onChange={(event) => setPhone(event.target.value)} />
+                            <input
+                                value={phone}
+                                inputMode="tel"
+                                onChange={(event) => setPhone(event.target.value)}
+                            />
                         </label>
                         <label className="ms-field">
                             {t.date}
@@ -166,19 +182,33 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                             return (
                                 <div className="ms-line" key={line.key}>
                                     <label className="ms-field">
-                                        <select value={line.item_id} onChange={(event) => chooseProduct(line.key, event.target.value)}>
+                                        <select
+                                            value={line.item_id}
+                                            onChange={(event) =>
+                                                chooseProduct(line.key, event.target.value)
+                                            }
+                                        >
                                             <option value="">{t.chooseProduct}</option>
                                             {options.items.map((option) => (
                                                 <option key={option.id} value={option.id}>
-                                                    {option.name} ({format.number(Number(option.on_hand))} {t.inStock})
+                                                    {option.name} (
+                                                    {format.number(Number(option.on_hand))}{' '}
+                                                    {t.inStock})
                                                 </option>
                                             ))}
                                         </select>
-                                        {item && Number(line.quantity) > Number(item.on_hand) && deductStock && item.type !== 'service' && (
-                                            <span className="ms-help" style={{ color: 'var(--ms-bad)' }}>
-                                                {format.number(Number(item.on_hand))} {t.inStock}
-                                            </span>
-                                        )}
+                                        {item &&
+                                            Number(line.quantity) > Number(item.on_hand) &&
+                                            deductStock &&
+                                            item.type !== 'service' && (
+                                                <span
+                                                    className="ms-help"
+                                                    style={{ color: 'var(--ms-bad)' }}
+                                                >
+                                                    {format.number(Number(item.on_hand))}{' '}
+                                                    {t.inStock}
+                                                </span>
+                                            )}
                                     </label>
                                     <label className="ms-field">
                                         <input
@@ -187,7 +217,11 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                             step={1}
                                             inputMode="numeric"
                                             value={line.quantity}
-                                            onChange={(event) => changeLine(line.key, { quantity: event.target.value })}
+                                            onChange={(event) =>
+                                                changeLine(line.key, {
+                                                    quantity: event.target.value,
+                                                })
+                                            }
                                         />
                                     </label>
                                     <label className="ms-field">
@@ -197,7 +231,11 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                             step="any"
                                             inputMode="decimal"
                                             value={line.unit_price}
-                                            onChange={(event) => changeLine(line.key, { unit_price: event.target.value })}
+                                            onChange={(event) =>
+                                                changeLine(line.key, {
+                                                    unit_price: event.target.value,
+                                                })
+                                            }
                                         />
                                     </label>
                                     <div className="amount">{format.money(lineAmount(line))}</div>
@@ -207,7 +245,11 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                         aria-label={t.remove}
                                         title={t.remove}
                                         disabled={lines.length === 1}
-                                        onClick={() => setLines((current) => current.filter((entry) => entry.key !== line.key))}
+                                        onClick={() =>
+                                            setLines((current) =>
+                                                current.filter((entry) => entry.key !== line.key),
+                                            )
+                                        }
                                     >
                                         ×
                                     </button>
@@ -218,7 +260,12 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                             <button
                                 type="button"
                                 className="secondary-btn"
-                                onClick={() => setLines((current) => [...current, emptyLine(Math.max(...current.map((l) => l.key)) + 1)])}
+                                onClick={() =>
+                                    setLines((current) => [
+                                        ...current,
+                                        emptyLine(Math.max(...current.map((l) => l.key)) + 1),
+                                    ])
+                                }
                             >
                                 + {t.addProduct}
                             </button>
@@ -230,17 +277,37 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                             <h3>{t.payment}</h3>
                             <label className="ms-field">
                                 {t.discount}
-                                <input type="number" min={0} step="any" value={discount} onChange={(event) => setDiscount(event.target.value)} />
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step="any"
+                                    value={discount}
+                                    onChange={(event) => setDiscount(event.target.value)}
+                                />
                             </label>
                             <label className="ms-field">
                                 {t.paidNow}
-                                <input type="number" min={0} step="any" value={paid} onChange={(event) => setPaid(event.target.value)} />
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step="any"
+                                    value={paid}
+                                    onChange={(event) => setPaid(event.target.value)}
+                                />
                             </label>
                             <div className="ms-quick">
-                                <button type="button" className="secondary-btn" onClick={() => setPaid(String(total))}>
+                                <button
+                                    type="button"
+                                    className="secondary-btn"
+                                    onClick={() => setPaid(String(total))}
+                                >
                                     {t.payFull}
                                 </button>
-                                <button type="button" className="secondary-btn" onClick={() => setPaid('')}>
+                                <button
+                                    type="button"
+                                    className="secondary-btn"
+                                    onClick={() => setPaid('')}
+                                >
                                     {t.payLater}
                                 </button>
                             </div>
@@ -248,7 +315,10 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                 <>
                                     <label className="ms-field">
                                         {t.method}
-                                        <select value={method} onChange={(event) => setMethod(event.target.value)}>
+                                        <select
+                                            value={method}
+                                            onChange={(event) => setMethod(event.target.value)}
+                                        >
                                             {options.payment_methods.map((entry) => (
                                                 <option key={entry} value={entry}>
                                                     {text.methods[entry] ?? entry}
@@ -258,14 +328,23 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                     </label>
                                     <label className="ms-field">
                                         {t.reference}
-                                        <input value={reference} placeholder={t.reference_hint} onChange={(event) => setReference(event.target.value)} />
+                                        <input
+                                            value={reference}
+                                            placeholder={t.reference_hint}
+                                            onChange={(event) => setReference(event.target.value)}
+                                        />
                                     </label>
                                 </>
                             )}
                             {balance > 0 && (
                                 <label className="ms-field">
                                     {t.dueDate}
-                                    <input type="date" value={dueDate} min={date} onChange={(event) => setDueDate(event.target.value)} />
+                                    <input
+                                        type="date"
+                                        value={dueDate}
+                                        min={date}
+                                        onChange={(event) => setDueDate(event.target.value)}
+                                    />
                                 </label>
                             )}
                         </section>
@@ -298,7 +377,11 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                 )}
                             </div>
                             <label className="ms-check">
-                                <input type="checkbox" checked={deductStock} onChange={(event) => setDeductStock(event.target.checked)} />
+                                <input
+                                    type="checkbox"
+                                    checked={deductStock}
+                                    onChange={(event) => setDeductStock(event.target.checked)}
+                                />
                                 <span>
                                     {t.takeFromStock}
                                     <span className="ms-help" style={{ display: 'block' }}>
@@ -309,7 +392,10 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                             {deductStock && options.warehouses.length > 1 && (
                                 <label className="ms-field">
                                     {t.warehouse}
-                                    <select value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)}>
+                                    <select
+                                        value={warehouseId}
+                                        onChange={(event) => setWarehouseId(event.target.value)}
+                                    >
                                         <option value="">{t.automatic}</option>
                                         {options.warehouses.map((warehouse) => (
                                             <option key={warehouse.id} value={warehouse.id}>
@@ -321,7 +407,11 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                             )}
                             <label className="ms-field">
                                 {t.notes}
-                                <textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} />
+                                <textarea
+                                    rows={2}
+                                    value={notes}
+                                    onChange={(event) => setNotes(event.target.value)}
+                                />
                             </label>
                         </section>
                     </div>

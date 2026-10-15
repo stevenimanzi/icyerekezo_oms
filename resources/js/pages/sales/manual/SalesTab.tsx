@@ -17,11 +17,21 @@ type Props = {
 
 const PAYMENT_FILTERS = ['', 'unpaid', 'partially_paid', 'paid', 'cancelled'] as const;
 
-export function SalesTab({ data, filters, searchInput, text, format, onSearch, onFilters, onOpen }: Props) {
+export function SalesTab({
+    data,
+    filters,
+    searchInput,
+    text,
+    format,
+    onSearch,
+    onFilters,
+    onOpen,
+}: Props) {
     const { sales } = data;
     const filtered = Boolean(filters.search || filters.payment || filters.from || filters.to);
 
-    const openReceipt = (sale: Sale) => window.open(`/api/sales/manual/${sale.id}/receipt`, '_blank');
+    const openReceipt = (sale: Sale) =>
+        window.open(`/api/sales/manual/${sale.id}/receipt`, '_blank');
 
     return (
         <article className="panel">
@@ -95,36 +105,53 @@ export function SalesTab({ data, filters, searchInput, text, format, onSearch, o
                     <tbody>
                         {sales.data.length ? (
                             sales.data.map((sale) => {
-                                const balance = Number(sale.total_amount) - Number(sale.paid_amount);
+                                const balance =
+                                    Number(sale.total_amount) - Number(sale.paid_amount);
                                 const cancelled = sale.status === 'cancelled';
 
                                 return (
-                                    <tr key={sale.id} className="clickable" onClick={() => onOpen(sale)}>
+                                    <tr
+                                        key={sale.id}
+                                        className="clickable"
+                                        onClick={() => onOpen(sale)}
+                                    >
                                         <td>
                                             <b>{sale.document_number}</b>
                                         </td>
                                         <td>{format.date(sale.document_date)}</td>
                                         <td>
                                             {sale.customer_name}
-                                            {sale.customer_phone && <small>{sale.customer_phone}</small>}
+                                            {sale.customer_phone && (
+                                                <small>{sale.customer_phone}</small>
+                                            )}
                                         </td>
                                         <td className="num">{sale.item_count}</td>
                                         <td className="num">
                                             <b>{format.money(Number(sale.total_amount))}</b>
                                         </td>
-                                        <td className="num">{format.money(Number(sale.paid_amount))}</td>
                                         <td className="num">
-                                            {cancelled || balance <= 0 ? '—' : format.money(balance)}
+                                            {format.money(Number(sale.paid_amount))}
+                                        </td>
+                                        <td className="num">
+                                            {cancelled || balance <= 0
+                                                ? '—'
+                                                : format.money(balance)}
                                         </td>
                                         <td>
                                             <StatusChip sale={sale} text={text} />
                                         </td>
                                         <td onClick={(event) => event.stopPropagation()}>
                                             <div className="ms-row-actions">
-                                                <button className="ms-link" onClick={() => onOpen(sale)}>
+                                                <button
+                                                    className="ms-link"
+                                                    onClick={() => onOpen(sale)}
+                                                >
                                                     {text.table.view}
                                                 </button>
-                                                <button className="ms-link" onClick={() => openReceipt(sale)}>
+                                                <button
+                                                    className="ms-link"
+                                                    onClick={() => openReceipt(sale)}
+                                                >
                                                     {text.table.receiptPdf}
                                                 </button>
                                             </div>

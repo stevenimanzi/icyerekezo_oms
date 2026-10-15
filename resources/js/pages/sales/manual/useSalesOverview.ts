@@ -5,7 +5,13 @@ import type { SalesOverview } from './types';
 
 const REFRESH_EVERY_MS = 30000;
 
-export type SalesFilters = { search: string; payment: string; from: string; to: string; page: number };
+export type SalesFilters = {
+    search: string;
+    payment: string;
+    from: string;
+    to: string;
+    page: number;
+};
 
 export function useSalesOverview(filters: SalesFilters) {
     const [data, setData] = useState<SalesOverview | null>(null);

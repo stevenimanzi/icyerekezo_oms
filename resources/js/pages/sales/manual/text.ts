@@ -2,12 +2,18 @@ import type { Locale } from '../../../core/types';
 
 const en = {
     title: 'Sales & Marketing',
-    subtitle: 'Write down every sale, follow who still owes you, and see how the business is doing.',
+    subtitle:
+        'Write down every sale, follow who still owes you, and see how the business is doing.',
     newSale: 'New sale',
     refresh: 'Refresh',
     tabs: { sales: 'Sales', reports: 'Reports' },
 
-    kpi: { today: 'Sold today', todayCount: (n: number) => `${n} ${n === 1 ? 'sale' : 'sales'}`, owed: 'Customers still owe', owedHint: 'Unpaid balance on all sales' },
+    kpi: {
+        today: 'Sold today',
+        todayCount: (n: number) => `${n} ${n === 1 ? 'sale' : 'sales'}`,
+        owed: 'Customers still owe',
+        owedHint: 'Unpaid balance on all sales',
+    },
 
     filters: {
         search: 'Search receipt, customer or phone…',
@@ -35,13 +41,25 @@ const en = {
         receiptPdf: 'Receipt',
         empty: 'No sales yet. Press “New sale” when a customer buys something.',
         emptyFiltered: 'No sales match your search.',
-        page: (page: number, last: number, total: number) => `Page ${page} of ${last} · ${total} sales`,
+        page: (page: number, last: number, total: number) =>
+            `Page ${page} of ${last} · ${total} sales`,
         previous: 'Previous',
         next: 'Next',
     },
 
-    status: { paid: 'Paid', partially_paid: 'Part paid', unpaid: 'Not paid', cancelled: 'Cancelled' },
-    methods: { cash: 'Cash', mobile_money: 'Mobile money', bank_transfer: 'Bank transfer', cheque: 'Cheque', card: 'Card' } as Record<string, string>,
+    status: {
+        paid: 'Paid',
+        partially_paid: 'Part paid',
+        unpaid: 'Not paid',
+        cancelled: 'Cancelled',
+    },
+    methods: {
+        cash: 'Cash',
+        mobile_money: 'Mobile money',
+        bank_transfer: 'Bank transfer',
+        cheque: 'Cheque',
+        card: 'Card',
+    } as Record<string, string>,
 
     form: {
         title: 'New sale',
@@ -59,7 +77,8 @@ const en = {
         amount: 'Amount',
         addProduct: 'Add another product',
         remove: 'Remove',
-        noProducts: 'You have no finished products yet. Add them under Products first, then come back to record a sale.',
+        noProducts:
+            'You have no finished products yet. Add them under Products first, then come back to record a sale.',
         discount: 'Discount (optional)',
         subtotal: 'Subtotal',
         total: 'Total to pay',
@@ -105,7 +124,8 @@ const en = {
         paymentAmount: 'Amount received',
         saveAndPay: 'Save payment',
         cancelSale: 'Cancel this sale',
-        cancelHint: 'The products go back into stock. Anything the customer paid is recorded as refunded.',
+        cancelHint:
+            'The products go back into stock. Anything the customer paid is recorded as refunded.',
         reason: 'Why is it cancelled?',
         confirmCancel: 'Yes, cancel the sale',
         keep: 'Keep the sale',
@@ -116,7 +136,14 @@ const en = {
     },
 
     reports: {
-        periods: { today: 'Today', week: 'Last 7 days', month: 'Last 30 days', thisMonth: 'This month', thisYear: 'This year', custom: 'Choose dates' },
+        periods: {
+            today: 'Today',
+            week: 'Last 7 days',
+            month: 'Last 30 days',
+            thisMonth: 'This month',
+            thisYear: 'This year',
+            custom: 'Choose dates',
+        },
         loading: 'Loading the report…',
         compared: 'vs the period before',
         noEarlier: 'Nothing earlier to compare',
@@ -151,7 +178,8 @@ const en = {
         customer: 'Customer',
         soldOn: 'Sold on',
         dueOn: 'Due',
-        late: (days: number) => (days > 0 ? `${days} ${days === 1 ? 'day' : 'days'} late` : 'On time'),
+        late: (days: number) =>
+            days > 0 ? `${days} ${days === 1 ? 'day' : 'days'} late` : 'On time',
         balance: 'Balance',
         none: 'Nothing to show for this period.',
         from: 'From',
@@ -163,12 +191,18 @@ const en = {
 
 const fr: typeof en = {
     title: 'Ventes et marketing',
-    subtitle: 'Notez chaque vente, suivez qui vous doit de l’argent et voyez comment va l’activité.',
+    subtitle:
+        'Notez chaque vente, suivez qui vous doit de l’argent et voyez comment va l’activité.',
     newSale: 'Nouvelle vente',
     refresh: 'Actualiser',
     tabs: { sales: 'Ventes', reports: 'Rapports' },
 
-    kpi: { today: 'Vendu aujourd’hui', todayCount: (n) => `${n} ${n === 1 ? 'vente' : 'ventes'}`, owed: 'Les clients doivent encore', owedHint: 'Solde impayé sur toutes les ventes' },
+    kpi: {
+        today: 'Vendu aujourd’hui',
+        todayCount: (n) => `${n} ${n === 1 ? 'vente' : 'ventes'}`,
+        owed: 'Les clients doivent encore',
+        owedHint: 'Solde impayé sur toutes les ventes',
+    },
 
     filters: {
         search: 'Rechercher reçu, client ou téléphone…',
@@ -201,8 +235,19 @@ const fr: typeof en = {
         next: 'Suivant',
     },
 
-    status: { paid: 'Payée', partially_paid: 'Partiellement payée', unpaid: 'Non payée', cancelled: 'Annulée' },
-    methods: { cash: 'Espèces', mobile_money: 'Mobile money', bank_transfer: 'Virement bancaire', cheque: 'Chèque', card: 'Carte' },
+    status: {
+        paid: 'Payée',
+        partially_paid: 'Partiellement payée',
+        unpaid: 'Non payée',
+        cancelled: 'Annulée',
+    },
+    methods: {
+        cash: 'Espèces',
+        mobile_money: 'Mobile money',
+        bank_transfer: 'Virement bancaire',
+        cheque: 'Chèque',
+        card: 'Carte',
+    },
 
     form: {
         title: 'Nouvelle vente',
@@ -220,7 +265,8 @@ const fr: typeof en = {
         amount: 'Montant',
         addProduct: 'Ajouter un autre produit',
         remove: 'Retirer',
-        noProducts: 'Vous n’avez pas encore de produits finis. Ajoutez-les d’abord dans Produits, puis revenez enregistrer une vente.',
+        noProducts:
+            'Vous n’avez pas encore de produits finis. Ajoutez-les d’abord dans Produits, puis revenez enregistrer une vente.',
         discount: 'Remise (facultatif)',
         subtotal: 'Sous-total',
         total: 'Total à payer',
@@ -266,7 +312,8 @@ const fr: typeof en = {
         paymentAmount: 'Montant reçu',
         saveAndPay: 'Enregistrer le paiement',
         cancelSale: 'Annuler cette vente',
-        cancelHint: 'Les produits retournent en stock. Tout ce que le client a payé est enregistré comme remboursé.',
+        cancelHint:
+            'Les produits retournent en stock. Tout ce que le client a payé est enregistré comme remboursé.',
         reason: 'Pourquoi l’annuler ?',
         confirmCancel: 'Oui, annuler la vente',
         keep: 'Garder la vente',
@@ -277,7 +324,14 @@ const fr: typeof en = {
     },
 
     reports: {
-        periods: { today: 'Aujourd’hui', week: '7 derniers jours', month: '30 derniers jours', thisMonth: 'Ce mois-ci', thisYear: 'Cette année', custom: 'Choisir les dates' },
+        periods: {
+            today: 'Aujourd’hui',
+            week: '7 derniers jours',
+            month: '30 derniers jours',
+            thisMonth: 'Ce mois-ci',
+            thisYear: 'Cette année',
+            custom: 'Choisir les dates',
+        },
         loading: 'Chargement du rapport…',
         compared: 'par rapport à la période précédente',
         noEarlier: 'Rien avant pour comparer',
