@@ -28,7 +28,6 @@ function queryString(filters: Record<string, string | number>) {
     return new URLSearchParams(entries).toString();
 }
 
-/** Loads one admin page's data and holds the state every admin screen shares. */
 export function useAdminData(page: string) {
     const info = adminPages[page] || adminPages[FALLBACK_PAGE];
     const [data, setData] = useState<any>(null);

@@ -115,11 +115,6 @@ final class OwnerOverviewReport
             ->all();
     }
 
-    /**
-     * One query for all months: each month is a conditional SUM, so the database is asked once instead of twelve times.
-     *
-     * @return array<int, float>
-     */
     private function monthlySums($query, string $dateColumn, string $valueExpression, Collection $months, bool $dateOnly): array
     {
         $format = fn ($date) => $dateOnly ? $date->toDateString() : $date->toDateTimeString();

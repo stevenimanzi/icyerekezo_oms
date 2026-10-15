@@ -140,7 +140,7 @@ export function SalesReports({ text, format }: Props) {
                 <div className="panel ms-empty">{t.loading}</div>
             ) : (
                 <>
-                    <div className="ms-kpis">
+                    <div className="ms-kpis six">
                         <article className="panel ms-kpi">
                             <small>{t.kpi.revenue}</small>
                             <strong>{format.moneyShort(data.summary.revenue.current)}</strong>

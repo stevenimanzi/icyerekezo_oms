@@ -20,7 +20,11 @@ export function makeFormat(locale: Locale, currency: string) {
         hours: (minutes: number) =>
             minutes >= 60 ? `${plain.format(minutes / 60)} h` : `${whole.format(minutes)} min`,
         date: (value: string | null) =>
-            value ? new Date(value.slice(0, 10) + 'T12:00:00').toLocaleDateString(tag, { dateStyle: 'medium' }) : '—',
+            value
+                ? new Date(value.slice(0, 10) + 'T12:00:00').toLocaleDateString(tag, {
+                      dateStyle: 'medium',
+                  })
+                : '—',
         dateTime: (iso: string | null) =>
             iso
                 ? new Date(iso).toLocaleString(tag, { dateStyle: 'medium', timeStyle: 'short' })

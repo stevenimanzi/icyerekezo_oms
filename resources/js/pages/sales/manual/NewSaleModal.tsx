@@ -350,7 +350,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                         </section>
 
                         <section className="ms-section">
-                            <h3>{t.subtotal}</h3>
+                            <h3>{t.summary}</h3>
                             <div className="ms-totals">
                                 <div>
                                     <span>{t.subtotal}</span>
@@ -358,7 +358,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                 </div>
                                 {discountValue > 0 && (
                                     <div>
-                                        <span>{t.discount}</span>
+                                        <span>{t.discountShort}</span>
                                         <span>− {format.money(discountValue)}</span>
                                     </div>
                                 )}

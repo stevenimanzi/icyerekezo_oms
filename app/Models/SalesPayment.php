@@ -15,7 +15,7 @@ class SalesPayment extends Model
 
     protected function casts(): array
     {
-        return ['amount' => 'decimal:2', 'paid_on' => 'date'];
+        return ['amount' => 'decimal:2', 'paid_on' => 'date:Y-m-d'];
     }
 
     public function document()

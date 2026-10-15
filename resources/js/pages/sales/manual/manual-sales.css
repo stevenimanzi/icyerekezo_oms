@@ -104,6 +104,10 @@
     color: var(--ms-bad);
 }
 
+.ms-kpis.six {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .ms-tabs {
     display: inline-flex;
     gap: 4px;
@@ -140,6 +144,7 @@
 
 .ms-toolbar label,
 .ms-field {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -594,17 +599,21 @@
 }
 
 @media (max-width: 900px) {
+    .ms-kpis.six {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .ms-report-grid {
         grid-template-columns: 1fr;
     }
 
     .ms-grid,
     .ms-grid.three {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .ms-line {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
     .ms-line > :first-child {
@@ -614,4 +623,26 @@
     .ms-line-head {
         display: none;
     }
+}
+
+@media (max-width: 560px) {
+    .ms-kpis.six {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ms input,
+.ms select,
+.ms textarea,
+.ms-overlay input,
+.ms-overlay select,
+.ms-overlay textarea {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.ms input[type='checkbox'],
+.ms-overlay input[type='checkbox'] {
+    width: 18px;
 }

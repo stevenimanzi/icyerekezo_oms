@@ -48,8 +48,8 @@ class SalesDocument extends Model
     protected function casts(): array
     {
         return [
-            'document_date' => 'date',
-            'due_date' => 'date',
+            'document_date' => 'date:Y-m-d',
+            'due_date' => 'date:Y-m-d',
             'total_amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',

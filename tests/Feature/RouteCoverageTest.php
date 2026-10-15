@@ -29,7 +29,6 @@ class RouteCoverageTest extends TestCase
         'api/auth/school-registration-options',
     ];
 
-    /** @return Collection<int, Route> */
     private function apiRoutes(): Collection
     {
         return collect(app('router')->getRoutes()->getRoutes())->filter(fn (Route $route) => str_starts_with($route->uri(), 'api/'));

@@ -80,6 +80,8 @@ const en = {
         noProducts:
             'You have no finished products yet. Add them under Products first, then come back to record a sale.',
         discount: 'Discount (optional)',
+        discountShort: 'Discount',
+        summary: 'Summary',
         subtotal: 'Subtotal',
         total: 'Total to pay',
         payment: 'Payment',
@@ -268,6 +270,8 @@ const fr: typeof en = {
         noProducts:
             'Vous n’avez pas encore de produits finis. Ajoutez-les d’abord dans Produits, puis revenez enregistrer une vente.',
         discount: 'Remise (facultatif)',
+        discountShort: 'Remise',
+        summary: 'Résumé',
         subtotal: 'Sous-total',
         total: 'Total à payer',
         payment: 'Paiement',

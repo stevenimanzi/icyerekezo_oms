@@ -102,6 +102,7 @@ class ManualSalesTest extends TestCase
         $this->assertEquals(10000, $sale['paid_amount']);
         $this->assertSame('partially_paid', $sale['payment_status']);
         $this->assertSame('delivered', $sale['status']);
+        $this->assertSame(today()->toDateString(), $sale['document_date'], 'The sale date is a plain date, not shifted by the timezone.');
         $this->assertEquals(46, $this->onHand());
     }
 

@@ -3,7 +3,6 @@
 namespace App\Support\Reports;
 
 use App\Models\SalesPayment;
-use App\Models\SchoolPaymentSubmission;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +57,7 @@ final class SalesReport
         return DB::table('sales_documents as d')
             ->where('d.factory_id', $this->factoryId)
             ->where('d.document_type', 'customer_order')
+            ->where('d.source', 'manual')
             ->whereNotIn('d.status', self::IGNORED_STATUSES);
     }
 
@@ -97,19 +97,11 @@ final class SalesReport
 
     private function collectedBetween(CarbonInterface $from, CarbonInterface $to): float
     {
-        $manual = (float) SalesPayment::withoutGlobalScopes()
+        return (float) SalesPayment::withoutGlobalScopes()
             ->where('factory_id', $this->factoryId)
             ->where('paid_on', '>=', $from->toDateString())
             ->where('paid_on', '<', $to->copy()->addDay()->toDateString())
             ->sum('amount');
-
-        $schools = (float) SchoolPaymentSubmission::withoutGlobalScopes()
-            ->where('factory_id', $this->factoryId)
-            ->where('status', 'approved')
-            ->whereBetween('reviewed_at', [$from, $to])
-            ->sum('amount');
-
-        return $manual + $schools;
     }
 
     private function outstanding(): float

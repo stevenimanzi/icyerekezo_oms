@@ -12,9 +12,6 @@ use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Records sales made by hand: a customer comes, buys, and the factory writes it down.
- */
 class ManualSaleService
 {
     public function __construct(private readonly InventoryLedger $ledger) {}
@@ -183,7 +180,6 @@ class ManualSaleService
         }
     }
 
-    /** @return array<int, array{0: ?int, 1: int}> batch id and quantity pairs, oldest expiry first for batch-tracked items */
     private function stockSources(Item $item, Warehouse $warehouse, int $quantity): array
     {
         if (! $item->batch_tracked) {
