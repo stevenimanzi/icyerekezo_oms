@@ -5,7 +5,6 @@ import { type AuthUser, type Locale } from '../core/types';
 import { Logo } from '../app/Logo';
 import { AuthInput } from './AuthInput';
 
-// Keys match the backend IndustryProfileCatalog. "Other" is free text and has no profile of its own.
 export const INDUSTRY_OPTIONS: [key: string, en: string, fr: string][] = [
     ["general_manufacturing", "General manufacturing", "Fabrication generale"],
     ["clothing_textiles", "Clothing and textiles", "Vetements et textiles"],
@@ -189,8 +188,6 @@ export function AuthScreen({ onAuthenticated, onMaintenance }: { onAuthenticated
         }
     };
 
-    // Copy varies along two independent axes: interface language, and whether this is
-    // the school portal's own sign-in (different fields/wording) or the factory one.
     const words = locale === "en"
         ? {
             ...(schoolAuth

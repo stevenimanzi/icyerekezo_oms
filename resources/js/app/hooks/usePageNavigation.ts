@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import type { AuthUser } from '../../core/types';
 import { pageFromLocation, pathForPage } from '../routing';
 
-/** Keeps the open page in step with the address bar and the back button, and keeps people on pages they may open. */
 export function usePageNavigation(user: AuthUser, allowedPages: string[]) {
     const [activePage, setActivePage] = useState(() => pageFromLocation(user));
     const skipHistory = useRef(true);

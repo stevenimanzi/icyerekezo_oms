@@ -144,9 +144,6 @@ export default function CuttingWorkspacePage({ user, locale, initialTab = 'reque
     const pendingRequests = cuttingTransactions.filter(tx => tx.type === 'reserve');
     const damageRecords = cuttingTransactions.filter(tx => ['waste', 'adjustment_out'].includes(tx.type));
 
-    // Parses the style/color/size/qty produced back out of a cut record's reason
-    // text for the printable report — the fabric's own color is guessed from its
-    // name since the input side doesn't track color as a separate field.
     const cutReportRows = cutOutputTransactions.map((tx: any) => {
         const details = String(tx.reason || '').replace('[Cut Output] ', '');
         const output = details.match(/\|\s*([\d,.]+)x\s+(.+?)(?:\s+\/\s+(.+?))?\s+\(([^)]+)\)\s+produced/i);

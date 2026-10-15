@@ -108,8 +108,6 @@ export default function FinishingWorkspacePage({ user, locale, initialTab = 'req
         tx.type === 'receipt' && String(tx.reason || '').includes('SewnID:')
     );
 
-    // Rebuilds "what's on the finishing floor, ready to finish" from the accepted-receipt
-    // and issue/waste transactions tagged with a shared SewnID.
     const finishingVirtualStock = new Map<string, { id: string; item_id: number; name: string; available_qty: number }>();
     acceptedSewnPieces.forEach((tx: any) => {
         const match = String(tx.reason).match(/SewnID:\s*([^\s|]+)/i);

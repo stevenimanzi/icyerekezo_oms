@@ -141,9 +141,6 @@ export default function PackingWorkspacePage({ user, locale, initialTab = 'reque
         tx.type === 'receipt' && String(tx.reason || '').includes('FinishedID:')
     );
 
-    // Rebuilds "what's on the packing floor, ready to pack" from the accepted-receipt
-    // and issue/waste transactions tagged with a shared FinishedID, since the backend
-    // doesn't expose a per-warehouse breakdown of finished_pieces here.
     const packingVirtualStock = new Map<string, { id: string; item_id: number; name: string; available_qty: number }>();
     acceptedFinishedPieces.forEach((tx: any) => {
         const match = String(tx.reason).match(/FinishedID:\s*([^\s|]+)/i);

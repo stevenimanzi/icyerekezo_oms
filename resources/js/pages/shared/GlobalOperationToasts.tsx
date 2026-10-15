@@ -6,8 +6,6 @@ type ToastKind = 'success' | 'error' | 'warning' | 'info';
 type ToastItem = { id: number; kind: ToastKind; title: string; message: string };
 
 const mutationMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-// Login/logout already give their own feedback (inline form error, or an immediate
-// redirect) — a generic "Completed" toast on top of that is just noise.
 const silentPaths = new Set(['/api/auth/login', '/api/auth/logout']);
 
 function firstMessage(payload: any): string {
@@ -36,9 +34,6 @@ function successMessage(method: string, payload: any): string {
     return 'Your changes were saved successfully.';
 }
 
-// Mounted once near the app root. Rather than have every page wire up its own
-// success/error toasts, this patches window.fetch globally so any POST/PUT/PATCH/DELETE
-// to /api/* automatically surfaces a toast — pages just need to fetch normally.
 export default function GlobalOperationToasts() {
     const [items, setItems] = useState<ToastItem[]>([]);
     const nextId = useRef(1);

@@ -5,12 +5,6 @@ export type Locale = 'en' | 'fr';
 
 const csrfToken = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
-/**
- * Shared fetch wrapper for the Cutting/Sewing/Finishing/Packing workspace pages:
- * attaches the CSRF header, parses JSON, and turns a non-2xx response (or a
- * non-JSON one, e.g. a session-expired HTML redirect) into a thrown Error with
- * a message the calling page's catch block can show directly.
- */
 export async function productionApi<T = any>(url: string, options: RequestInit = {}): Promise<T> {
     const response = await fetch(url, {
         ...options,
@@ -27,10 +21,6 @@ export async function productionApi<T = any>(url: string, options: RequestInit =
     return payload;
 }
 
-/**
- * The "insufficient stock" alert every workspace page shows when a submitted
- * quantity exceeds what's actually available on the floor.
- */
 export function StockPopupModal({ message, onClose, locale }: { message: string; onClose: () => void; locale: Locale }) {
     if (!message) return null;
     return (
@@ -53,10 +43,6 @@ export function StockPopupModal({ message, onClose, locale }: { message: string;
 
 export type EditRecordForm = { id: string; quantity: string; reason: string };
 
-/**
- * The quantity-correction modal every workspace page offers on its own recent
- * records (posts to /api/inventory/transactions/{id}/correct).
- */
 export function EditRecordModal({ form, onChange, onCancel, onSave, busy, locale }: {
     form: EditRecordForm;
     onChange: (form: EditRecordForm) => void;

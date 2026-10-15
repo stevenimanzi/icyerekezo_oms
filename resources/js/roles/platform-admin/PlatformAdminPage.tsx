@@ -596,7 +596,6 @@ function SubscriptionPanel({ data, open, close, busy, submitPlan, updatePlan, as
 
     return (
         <>
-            {/* Modal Popup for Create / Edit / Assign */}
             {(open || editingId) && (
                 <div
                     style={{

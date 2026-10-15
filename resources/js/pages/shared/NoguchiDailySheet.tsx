@@ -1,11 +1,5 @@
 import React from "react";
 
-/**
- * The Noguchi daily register: one block of rows per date, with the sections
- * Warehouse -> Cutting -> Production -> Finishing -> Warehouse stock side by side.
- * Every entry sits on its own row and the date cell spans the block, as in the
- * factory's Excel daily report.
- */
 
 type Row = string[];
 
@@ -21,7 +15,6 @@ const localDate = (value: string) => {
 
 const clean = (part: string) => part.replace(/^[-–—|/\s]+|[-–—|/\s]+$/g, "");
 
-/** "Short - - M" -> style Short, size M. "Skirt - Navy Blue - XS" -> all three. */
 const parseProduct = (name: any, fallbackColor = "") => {
   const parts = String(name || "")
     .split(/\s+[-–—|/]\s+/)
@@ -52,7 +45,6 @@ const stageArea = (name: string) => {
 const departmentTag = /^\s*\[(cut|cutting|sewing|finishing|packing)/i;
 const departmentWarehouse = /cutting|sewing|finishing|packing/i;
 
-/** "Buttons - Black" -> "Buttons Black" (accessories keep their whole name, as in "thread sky blue"). */
 const accessoryName = (itemName: any) => String(itemName || "").replace(/\s+[-–—]\s+/g, " ").trim();
 
 const colorOf = (itemName: any) => {
@@ -60,10 +52,8 @@ const colorOf = (itemName: any) => {
   return parsed.color || String(itemName || "");
 };
 
-// "240x Trousers / Green (XL) produced" or "400x Short (M) produced" -> quantity, style, [colour], size
 const CUT_OUTPUT = /(\d[\d,.]*)\s*x\s*(.+?)(?:\s*\/\s*(.+?))?\s*\(([^)]+)\)\s*produced/i;
 
-/** Entries that were cancelled by a reversal, and the reversal entries themselves, never belong in the register. */
 function withoutReversals(rows: any[]) {
   const cancelled = new Set<number>();
   rows.forEach((row) => {
@@ -74,9 +64,6 @@ function withoutReversals(rows: any[]) {
   return rows.filter((row) => !cancelled.has(Number(row.id)) && !row.reverses_transaction_id && !/^REVERSAL of transaction/i.test(String(row.reason || "")));
 }
 
-/**
- * @param department  the department chosen in the filter (name), used to keep only that department's own warehouse entries
- */
 export function buildDays(data: any, department = "") {
   const inventory: any[] = withoutReversals(data.inventory || []);
   const production: any[] = data.production || [];
@@ -174,25 +161,24 @@ type SectionSpec = {
   key: SectionKey;
   title: string;
   fill: string;
-  size: number; // heading font size (pt), as in the Excel sheet
-  groups: number[]; // indexes into GROUP_COLUMNS
+  size: number;
+  groups: number[];
   row5: Head[];
   row6: Head[];
   row7: string[];
 };
 
-// Columns of each entry group: alignment, width (px, from the Excel column widths) and which columns merge vertically.
 const GROUP_COLUMNS: { kind: ("center" | "cnum" | "size" | "num")[]; widths: number[]; merge: number[] }[] = [
-  { kind: ["center", "cnum"], widths: [80, 64], merge: [] }, // warehouse in: fabric (COLOR, METER)
-  { kind: ["cnum", "cnum"], widths: [136, 62], merge: [] }, // warehouse in: accessories (COLOR, QTY)
-  { kind: ["center", "cnum"], widths: [73, 59], merge: [] }, // warehouse out: fabric
-  { kind: ["cnum", "cnum"], widths: [82, 55], merge: [] }, // warehouse out: accessories
-  { kind: ["center", "center", "center", "size", "num"], widths: [80, 67, 64, 46, 53], merge: [0, 2] }, // cutting
-  { kind: ["center", "center", "size", "num"], widths: [77, 60, 54, 50], merge: [0, 1] }, // production in
-  { kind: ["center", "center", "size", "num"], widths: [85, 60, 54, 56], merge: [0, 1] }, // production out
-  { kind: ["center", "center", "size", "num"], widths: [76, 60, 46, 64], merge: [0, 1] }, // finishing in
-  { kind: ["center", "center", "size", "num"], widths: [59, 60, 46, 47], merge: [0, 1] }, // finishing out
-  { kind: ["center", "center", "size", "num"], widths: [80, 60, 48, 47], merge: [0, 1] }, // warehouse stock
+  { kind: ["center", "cnum"], widths: [80, 64], merge: [] },
+  { kind: ["cnum", "cnum"], widths: [136, 62], merge: [] },
+  { kind: ["center", "cnum"], widths: [73, 59], merge: [] },
+  { kind: ["cnum", "cnum"], widths: [82, 55], merge: [] },
+  { kind: ["center", "center", "center", "size", "num"], widths: [80, 67, 64, 46, 53], merge: [0, 2] },
+  { kind: ["center", "center", "size", "num"], widths: [77, 60, 54, 50], merge: [0, 1] },
+  { kind: ["center", "center", "size", "num"], widths: [85, 60, 54, 56], merge: [0, 1] },
+  { kind: ["center", "center", "size", "num"], widths: [76, 60, 46, 64], merge: [0, 1] },
+  { kind: ["center", "center", "size", "num"], widths: [59, 60, 46, 47], merge: [0, 1] },
+  { kind: ["center", "center", "size", "num"], widths: [80, 60, 48, 47], merge: [0, 1] },
 ];
 
 const SECTIONS: SectionSpec[] = [
@@ -229,7 +215,6 @@ const SECTIONS: SectionSpec[] = [
 ];
 export const ALL_SECTIONS: SectionKey[] = ["wh", "cut", "prod", "fin", "stock"];
 
-/** Which register sections belong to the chosen department (empty = whole factory). */
 export function sectionsForDepartment(name: string | undefined): SectionKey[] {
   const value = String(name || "").trim().toLowerCase();
   if (!value) return ALL_SECTIONS;
@@ -241,17 +226,11 @@ export function sectionsForDepartment(name: string | undefined): SectionKey[] {
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-/** Excel's d-mmm-yy, e.g. 21-Jul-25. */
 const sheetDate = (iso: string) => {
   const [year, month, day] = iso.split("-").map(Number);
   return `${day}-${MONTHS[month - 1]}-${String(year).slice(-2)}`;
 };
 
-/**
- * For one group of entries over `height` rows, work out which cells start a vertically merged block and how
- * many rows it covers. Equal consecutive colours / styles merge like the Excel sheet, and the last block
- * stretches to the bottom of the day so every column lines up.
- */
 function spans(rows: Row[], columns: number, mergeColumns: number[], height: number): number[][] {
   const result: number[][] = Array.from({ length: columns }, () => Array(height).fill(0));
   for (let column = 0; column < columns; column++) {
@@ -302,24 +281,18 @@ export default function NoguchiDailySheet({
   department?: string;
 }) {
   const visible = SECTIONS.filter((section) => sections.includes(section.key));
-  // The register's Production columns hold sewing work and its Finishing columns hold packing work, so name the
-  // section after the department that was chosen.
   const titleOf = (section: SectionSpec) => {
     if (section.key === "prod" && /sew/i.test(department || "")) return "SEWING";
     if (section.key === "fin" && /packag|packing/i.test(department || "")) return "PACKAGING";
     return section.title;
   };
-  // Only dates that have something in the chosen sections.
   const withData = allDays.filter((day) => visible.some((section) => section.groups.some((group) => day.groups[group].length)));
   const isEmpty = !withData.length;
-  // With nothing to show, still print the sheet (headings and one blank block) so the format is always visible.
   const days = isEmpty ? [{ date: "", groups: Array.from({ length: GROUP_COLUMNS.length }, () => [] as Row[]) }] : withData;
 
   const sectionWidth = (section: SectionSpec) => section.groups.reduce((n, g) => n + GROUP_COLUMNS[g].kind.length, 0);
-  // date column + (spacer + section) for each visible section
   const totalColumns = 1 + visible.reduce((n, section) => n + 1 + sectionWidth(section), 0);
 
-  // A department that has no part in the register: just the report title and a message, no invented sections.
   if (!visible.length) {
     return (
       <div className="noguchi-sheet-wrap">
@@ -431,7 +404,6 @@ const sumColumn = (days: ReturnType<typeof buildDays>, group: number, column: nu
     0,
   );
 
-/** Totals that match exactly what the sheet shows. */
 export function summarize(days: ReturnType<typeof buildDays>, sections: SectionKey[]) {
   const tiles: [string, number][] = [];
   if (sections.includes("wh")) tiles.push(["Received (fabric m)", sumColumn(days, 0, 1)], ["Issued (fabric m)", sumColumn(days, 2, 1)]);

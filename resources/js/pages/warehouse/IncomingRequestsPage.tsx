@@ -66,7 +66,6 @@ export default function IncomingRequestsPage() {
     };
 
     const doApprove = async (tx: any) => {
-        // Find target warehouse based on request type
         let toWarehouseId = 1;
         if (tx.reason && String(tx.reason).includes("[Cutting Request]")) {
             toWarehouseId = tools.warehouses?.find((w:any) => w.code === 'CUT' || /cutting/i.test(w.name))?.id || 1;
@@ -113,9 +112,6 @@ export default function IncomingRequestsPage() {
         }
     };
 
-    // There's no dedicated "request" record — a request is just a `reserve` transaction,
-    // and approving/rejecting it later posts a matching `release_reservation` whose reason
-    // references the original transaction's id. Status is inferred by pairing the two.
     const pendingRequests = useMemo(() => {
         const reserves = transactions.filter((entry: any) => entry.type === 'reserve');
         const releases = transactions.filter((entry: any) => entry.type === 'release_reservation');

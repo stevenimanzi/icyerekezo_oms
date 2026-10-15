@@ -1,7 +1,6 @@
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Edit3, Plus, RefreshCw, X } from "lucide-react";
 
-// lucide-react in this project doesn't export these names; reuse Plus as a stand-in icon.
 const PackagePlus = Plus;
 const ArrowDownToLine = Plus;
 const Boxes = Plus;
@@ -378,7 +377,6 @@ export default function ProcurementOverviewPage() {
         </div>
       )}
       {success && <div className="admin-alert success">{success}</div>}
-      {/* Inline catalogue-edit strip: disabled until the item-edit UX is redesigned, kept for a quick re-enable. */}
       {false && canManage && tools.items.length > 0 && (
         <div className="warehouse-edit-strip">
           <Edit3 />

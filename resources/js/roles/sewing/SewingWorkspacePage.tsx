@@ -122,8 +122,6 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
         return (!from || date >= from) && (!to || date <= to);
     });
 
-    // Builds the printable sewing report: one row per cut lot (CutID), summing
-    // received/sewn/wasted quantities within the selected date range.
     const reportRowsMap = new Map<string, any>();
     reportTransactions.forEach((tx: any) => {
         const match = String(tx.reason).match(/CutID:\s*([^\s|]+)/i);
@@ -149,8 +147,6 @@ export default function SewingWorkspacePage({ user, locale, initialTab = 'reques
 
     const acceptedCutPieces = sewingTransactions.filter((tx: any) => tx.type === 'receipt' && String(tx.reason || '').includes('CutID:'));
 
-    // Rebuilds "what's on the sewing floor, ready to sew" from the accepted-receipt
-    // and issue/waste transactions tagged with a shared CutID.
     const sewingVirtualStock = new Map<string, { id: string; item_id: number; name: string; available_qty: number }>();
     acceptedCutPieces.forEach((tx: any) => {
         const match = String(tx.reason).match(/CutID:\s*([^\s|]+)/i);

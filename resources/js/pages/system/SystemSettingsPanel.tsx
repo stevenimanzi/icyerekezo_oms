@@ -13,8 +13,6 @@ export default function SystemSettingsPanel({ settings, editing, submit, busy, u
     const [values, setValues] = useState<any>({});
     const update = (key: string, value: any) => setValues((current: any) => ({ ...current, [key]: value }));
 
-    // Re-seeds the local draft whenever the server's settings change (e.g. after a
-    // save), so "editing" always starts from the latest saved values.
     useEffect(() => setValues({
         system_name: settings.system_name || 'ICYEREKEZO OMS',
         system_tagline: settings.system_tagline || 'Factory operations made clear.',

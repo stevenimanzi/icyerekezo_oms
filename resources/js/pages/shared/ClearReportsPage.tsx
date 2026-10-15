@@ -603,7 +603,6 @@ const splitItem = (name: any) => {
   let color = parts[1] || "—";
   let size = parts[2] || "—";
 
-  // Two-part names like "Short - M" mean the second part is a size, not a color.
   if (parts.length === 2 && (color.length <= 4 || !isNaN(Number(color)))) {
     size = color;
     color = "—";
@@ -989,7 +988,6 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
   const reportLastPage = Math.max(1, Math.ceil(reportOrders.length / reportPageSize));
   const visibleReportOrders = reportOrders.slice((reportPage - 1) * reportPageSize, reportPage * reportPageSize);
 
-  // A department that is not part of the register (e.g. from an old link) falls back to all departments.
   useEffect(() => {
     const isValidDept = registerDepartments.some(
       (dept) => String(dept.id) === String(filters.department_id)
@@ -1018,7 +1016,6 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
     const load = async (silent = false) => {
       if (!silent) setLoading(true);
       try {
-        // Only include non-empty filters in the URL.
         const activeFilters: Record<string, any> = Object.fromEntries(
           Object.entries(filters).filter(([_, value]) => value !== "" && value !== null && value !== undefined),
         );
@@ -1026,7 +1023,6 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
           activeFilters.scope = forcedScope;
         }
         const params = new URLSearchParams(activeFilters as any);
-        // Do not put scope in the URL query to avoid cluttering, but do put the other filters.
         const urlParams = new URLSearchParams(activeFilters as any);
         if (forcedScope) urlParams.delete("scope");
         window.history.replaceState(null, "", `?${urlParams.toString()}`);
@@ -1049,7 +1045,6 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
             setFilters((current) => ({ ...current, period: "all" }));
           }
 
-          // Apply the server's suggested default period only once, and only if the user didn't pick one.
           if (!defaultPeriodApplied.current) {
             defaultPeriodApplied.current = true;
             const suggested = result.standard?.default_period;

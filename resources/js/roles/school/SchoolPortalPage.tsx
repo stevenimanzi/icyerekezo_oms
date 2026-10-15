@@ -14,10 +14,6 @@ const cash = (x: any) => `RWF ${n(x)}`;
 const status = (x: string) => ({ pending: 'Pending', accepted: 'Accepted', partial: 'Partially delivered', delivered: 'Delivered', rejected: 'Rejected' } as any)[x] || x;
 const blank = { class_level: 'Nursery 1', garment_category: 'Uniform', gender: 'Boy', size: 'XXXS', color: '', quantity_ordered: 1 };
 
-// Uniforms need a top and a bottom color; every other garment is a single piece
-// with one color. Both are stored in the same `color` string column, joined with
-// " / " for uniforms so the rest of the app (review, history, invoices) can keep
-// treating color as plain text.
 const UNIFORM_COLOR_SEPARATOR = ' / ';
 const splitUniformColor = (value: string) => {
     const idx = (value || '').indexOf(UNIFORM_COLOR_SEPARATOR);
@@ -169,9 +165,6 @@ function History({ data, setSelected }: any) {
     );
 }
 
-// A school order is built one class at a time (a grid of category × gender × size
-// quantities per class), then reviewed as a flat line list before submission — this
-// keeps the form manageable for schools ordering dozens of garment/size combinations.
 function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
     const sizesFor = (classLevel: string) => /^P[1-6]$/.test(classLevel) ? ['S', 'M', 'L', 'XL'] : /^S[1-6]$/.test(classLevel) ? ['S', 'M', 'L', 'XL', 'XXL'] : ['XXS', 'XS', 'S'];
     const baseCategories = [['Uniform', 'Daily Uniforms'], ['Sport Uniform', 'Sport Wear'], ['Sweater', 'Sweaters']];

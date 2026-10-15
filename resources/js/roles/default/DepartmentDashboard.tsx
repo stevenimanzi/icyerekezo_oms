@@ -37,8 +37,6 @@ export default function DepartmentDashboard({user,locale,onNavigate}:any){
      : isQualityManager ? (fr ? `Bonjour ${user.name}. Voici les inspections en attente et les derniers résultats de contrôle.` : `Hello ${user.name}. Here are the pending inspections and latest quality results.`)
      : (fr ? `Bonjour ${user.name}. Voici les travaux importants et les résultats actuels.` : `Hello ${user.name}. Here is the work that needs attention and the latest production results.`);
 
- // These roles get their own dedicated panels below (metrics/charts/quick-actions);
- // everyone else falls through to the generic production quick-actions + team-work view.
  const hasDedicatedPanels = logistics || isNoguchiSewing || isFinishingManager || isPackingManager || isQualityManager;
 
  return (
