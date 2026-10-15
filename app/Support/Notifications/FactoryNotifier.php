@@ -42,4 +42,33 @@ class FactoryNotifier
             Notification::send($users, new AppNotification($title, $body, $url, $category));
         }
     }
+
+    public static function notifyRoles(
+        int $factoryId,
+        array $roleSlugs,
+        string $title,
+        string $body,
+        ?string $url = null,
+        string $category = 'general',
+        ?int $excludeUserId = null,
+    ): void {
+        $users = User::where('is_platform_admin', false)
+            ->where('is_active', true)
+            ->whereHas('roles', fn ($query) => $query->where('role_user.factory_id', $factoryId)->whereIn('roles.slug', $roleSlugs))
+            ->when($excludeUserId, fn ($query) => $query->where('id', '!=', $excludeUserId))
+            ->get();
+
+        if ($users->isNotEmpty()) {
+            Notification::send($users, new AppNotification($title, $body, $url, $category));
+        }
+    }
+
+    public static function notifyUser(int $userId, string $title, string $body, ?string $url = null, string $category = 'general'): void
+    {
+        $user = User::find($userId);
+
+        if ($user) {
+            Notification::send($user, new AppNotification($title, $body, $url, $category));
+        }
+    }
 }
