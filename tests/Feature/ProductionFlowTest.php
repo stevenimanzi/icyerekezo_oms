@@ -322,6 +322,32 @@ class ProductionFlowTest extends TestCase
         $this->assertSame(4, $balances['rejected']);
     }
 
+    public function test_a_team_can_filter_its_own_material_requests_and_see_every_status(): void
+    {
+        $approved = $this->as('cutting-operator')->postJson('/api/flow/requests', ['stage' => 'cutting', 'item_id' => $this->fabric->id, 'quantity' => 10, 'reason' => 'Polo order'])->json('request.id');
+        $declined = $this->as('cutting-operator')->postJson('/api/flow/requests', ['stage' => 'cutting', 'item_id' => $this->fabric->id, 'quantity' => 20, 'reason' => 'Skirt order'])->json('request.id');
+        $this->as('cutting-operator')->postJson('/api/flow/requests', ['stage' => 'cutting', 'item_id' => $this->fabric->id, 'quantity' => 30, 'reason' => 'Shirt order'])->assertCreated();
+        $this->as('sewing-operator')->postJson('/api/flow/requests', ['stage' => 'sewing', 'item_id' => $this->fabric->id, 'quantity' => 5, 'reason' => 'Thread for polos'])->assertCreated();
+
+        $this->as('warehouse-keeper')->postJson("/api/flow/requests/{$approved}/decision", ['decision' => 'approve'])->assertOk();
+        $this->as('warehouse-keeper')->postJson("/api/flow/requests/{$declined}/decision", ['decision' => 'reject', 'note' => 'Out of budget'])->assertOk();
+
+        $all = $this->as('cutting-operator')->getJson('/api/flow/requests?stage=cutting&status=all')->assertOk()->json();
+        $this->assertCount(3, $all['requests'], 'Only this stage requests, not sewing.');
+        $this->assertSame(['pending' => 1, 'approved' => 1, 'rejected' => 1, 'cancelled' => 0, 'all' => 3], $all['counts']);
+        $this->assertTrue($all['capabilities']['request']);
+        $this->assertNotEmpty($all['options'], 'The catalogue items the team may ask for are returned for the drop-down.');
+
+        $rejected = $this->as('cutting-operator')->getJson('/api/flow/requests?stage=cutting&status=rejected')->json('requests');
+        $this->assertSame(['Out of budget'], array_column($rejected, 'decision_note'));
+
+        $found = $this->as('cutting-operator')->getJson('/api/flow/requests?stage=cutting&status=all&q=Shirt')->json('requests');
+        $this->assertSame(['Shirt order'], array_column($found, 'reason'));
+
+        $tomorrow = now()->addDay()->toDateString();
+        $this->assertCount(0, $this->as('cutting-operator')->getJson("/api/flow/requests?stage=cutting&status=all&from={$tomorrow}")->json('requests'));
+    }
+
     public function test_the_final_check_alert_counts_only_packed_pieces_not_ones_still_to_pack(): void
     {
         $this->approvedFabric();

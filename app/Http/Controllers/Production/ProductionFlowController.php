@@ -59,9 +59,15 @@ class ProductionFlowController extends Controller
 
     public function requests(Request $request, FlowQueries $queries): JsonResponse
     {
-        $data = $request->validate(['status' => ['nullable', Rule::in(['pending', 'approved', 'rejected', 'cancelled', 'all'])]]);
+        $data = $request->validate([
+            'status' => ['nullable', Rule::in(['pending', 'approved', 'rejected', 'cancelled', 'all'])],
+            'stage' => ['nullable', Rule::in(ProductionFlowCatalog::keys())],
+            'q' => ['nullable', 'string', 'max:80'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
 
-        return response()->json($queries->requests($request->user(), $data['status'] ?? 'pending'));
+        return response()->json($queries->requests($request->user(), $data['status'] ?? 'pending', collect($data)->only(['stage', 'q', 'from', 'to'])->all()));
     }
 
     public function storeRequest(Request $request, MaterialRequestService $service): JsonResponse

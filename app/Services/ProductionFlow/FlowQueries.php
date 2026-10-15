@@ -193,12 +193,26 @@ class FlowQueries
         ];
     }
 
-    public function requests(User $user, string $status): array
+    public function requests(User $user, string $status, array $filters = []): array
     {
         $access = FlowAccess::for($user);
+        $stage = $filters['stage'] ?? null;
+        $like = ! empty($filters['q']) ? '%' . addcslashes($filters['q'], '\\%_') . '%' : null;
+
         $requests = MaterialRequest::with(['item.unit:id,symbol', 'requester:id,name', 'decider:id,name', 'warehouse:id,name'])
+            ->when($stage, fn ($query) => $query->where('stage', $stage))
             ->when($status !== 'all', fn ($query) => $query->where('status', $status))
-            ->latest('id')->limit(100)->get();
+            ->when(! empty($filters['from']), fn ($query) => $query->where('created_at', '>=', Carbon::parse($filters['from'])->startOfDay()))
+            ->when(! empty($filters['to']), fn ($query) => $query->where('created_at', '<=', Carbon::parse($filters['to'])->endOfDay()))
+            ->when($like, fn ($query) => $query->where(fn ($match) => $match
+                ->where('request_number', 'like', $like)
+                ->orWhere('reason', 'like', $like)
+                ->orWhereHas('item', fn ($item) => $item->where('name', 'like', $like))))
+            ->latest('id')->limit(200)->get();
+
+        $counts = MaterialRequest::query()
+            ->when($stage, fn ($query) => $query->where('stage', $stage))
+            ->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
 
         $available = StockBalance::whereIn('item_id', $requests->pluck('item_id'))
             ->selectRaw('item_id, warehouse_id, SUM(quantity_on_hand - quantity_reserved - quantity_quarantined) as available')
@@ -207,7 +221,15 @@ class FlowQueries
         $warehouses = Warehouse::where('is_active', true)->get(['id', 'name'])->keyBy('id');
 
         return [
-            'capabilities' => ['approve' => $access->canApproveRequests()],
+            'capabilities' => ['approve' => $access->canApproveRequests(), 'request' => $stage !== null && $access->canWork($stage)],
+            'counts' => [
+                'pending' => (int) ($counts['pending'] ?? 0),
+                'approved' => (int) ($counts['approved'] ?? 0),
+                'rejected' => (int) ($counts['rejected'] ?? 0),
+                'cancelled' => (int) ($counts['cancelled'] ?? 0),
+                'all' => (int) $counts->sum(),
+            ],
+            'options' => $stage ? $this->options($stage)['requestable'] : [],
             'requests' => $requests->map(fn (MaterialRequest $request) => $this->requestRow($request) + [
                 'stock' => $available->get($request->item_id, collect())->map(fn ($row) => [
                     'warehouse_id' => (int) $row->warehouse_id,
