@@ -27,7 +27,7 @@ import { salesRole } from './sales';
 import { schoolNavGroups, schoolRole } from './school';
 import { sewingRole } from './sewing';
 import type { NavGroup, NavItem, RoleContext, RoleModule } from './types';
-import { warehouseNavGroups, warehouseRole } from './warehouse';
+import { warehouseRole } from './warehouse';
 
 export const ROLES: RoleModule[] = [
     systemAdminRole,
@@ -80,7 +80,6 @@ export function navGroupsFor(context: RoleContext): Record<string, NavGroup> {
     const { flags } = context;
 
     if (flags.isSchoolUser) return schoolNavGroups(context);
-    if (flags.isWarehouseUser) return warehouseNavGroups(context);
     if (flags.isLogisticsUser && !flags.isNoguchiFactory) return logisticsNavGroups(context);
     if (flags.isFactoryAdmin || flags.isFactoryOwner) return executiveNavGroups(context);
 

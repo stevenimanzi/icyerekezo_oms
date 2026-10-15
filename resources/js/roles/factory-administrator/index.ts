@@ -49,7 +49,7 @@ export const executiveNavGroups = ({ text }: RoleContext): Record<string, NavGro
         children: ['production', 'quality', 'machines'],
     },
     commercial: {
-        label: text('Commercial', 'Commercial'),
+        label: text('Selling', 'Vente'),
         icon: PackageOpen,
         children: ['sales', 'logistics'],
     },

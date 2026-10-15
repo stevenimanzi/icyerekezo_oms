@@ -7,12 +7,7 @@ export const hrOfficerRole: RoleModule = {
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['team', Users, text('Employees', 'Employés'), 'users.view'],
-        [
-            'hr',
-            Activity,
-            text('Attendance & leave', 'Présence et congés'),
-            'hr.view',
-        ],
+        ['hr', Activity, text('Attendance & leave', 'Présence et congés'), 'hr.view'],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };

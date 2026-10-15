@@ -13,25 +13,10 @@ export const internalAuditorRole: RoleModule = {
     matches: ({ flags }) => flags.isInternalAuditor,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        [
-            'inventory',
-            Warehouse,
-            text('Stock', 'Stock'),
-            'inventory.view',
-        ],
-        [
-            'production',
-            Gauge,
-            text('Production', 'Production'),
-            'production.view',
-        ],
+        ['inventory', Warehouse, text('Stock', 'Stock'), 'inventory.view'],
+        ['production', Gauge, text('Production', 'Production'), 'production.view'],
         ['quality', ClipboardCheck, text('Quality', 'Qualité'), 'quality.view'],
-        [
-            'procurement',
-            ShoppingCart,
-            text('Purchases', 'Achats'),
-            'procurement.view',
-        ],
+        ['procurement', ShoppingCart, text('Purchases', 'Achats'), 'procurement.view'],
         ['reports', FileText, text('Reports', 'Rapports'), 'reports.view'],
     ],
 };

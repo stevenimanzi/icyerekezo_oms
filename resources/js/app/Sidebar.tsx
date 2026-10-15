@@ -164,7 +164,7 @@ export function Sidebar(props: Props) {
                 {!user.is_platform_admin && (
                     <>
                         <p className="nav-label">
-                            {props.isOwner ? 'ASSISTANCE' : labels.management}
+                            {props.isOwner ? text('Help', 'Aide') : labels.management}
                         </p>
                         {props.showSettings && (
                             <button

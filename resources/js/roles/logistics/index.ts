@@ -17,25 +17,10 @@ export const logisticsRole: RoleModule = {
         const shipping: NavItem[] = flags.isNoguchiFactory
             ? []
             : [
-                  [
-                      'inventory',
-                      Warehouse,
-                      text('Stock', 'Stock'),
-                      'inventory.view',
-                  ],
+                  ['inventory', Warehouse, text('Stock', 'Stock'), 'inventory.view'],
                   ['logistics', Truck, text('Shipments', 'Expéditions'), 'logistics.view'],
-                  [
-                      'dispatch',
-                      Activity,
-                      text('Dispatch', 'Départs'),
-                      'logistics.dispatch',
-                  ],
-                  [
-                      'vehicles',
-                      Truck,
-                      text('Vehicles', 'Véhicules'),
-                      'logistics.view',
-                  ],
+                  ['dispatch', Activity, text('Dispatch', 'Départs'), 'logistics.dispatch'],
+                  ['vehicles', Truck, text('Vehicles', 'Véhicules'), 'logistics.view'],
               ];
 
         return [

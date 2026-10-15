@@ -6,12 +6,7 @@ export const factoryManagerRole: RoleModule = {
     matches: ({ flags }) => flags.isFactoryManager,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        [
-            'production',
-            Gauge,
-            text('Production setup', 'Réglage production'),
-            'production.view',
-        ],
+        ['production', Gauge, text('Production setup', 'Réglage production'), 'production.view'],
         ['team', Users, labels.people, 'users.view'],
         ['machines', Wrench, labels.machines, 'maintenance.view'],
         [

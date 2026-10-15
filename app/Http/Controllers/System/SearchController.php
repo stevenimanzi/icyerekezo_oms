@@ -26,7 +26,7 @@ class SearchController extends Controller
             $modules = [
                 [
                     'type' => 'Page',
-                    'title' => 'Platform overview',
+                    'title' => 'Dashboard',
                     'subtitle' => 'Dashboard and live system activity',
                     'page' => 'platform-dashboard',
                 ],
@@ -38,7 +38,7 @@ class SearchController extends Controller
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'All users',
+                    'title' => 'Users',
                     'subtitle' => 'Accounts, roles and passwords',
                     'page' => 'platform-users',
                 ],
@@ -62,19 +62,19 @@ class SearchController extends Controller
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Support centre',
+                    'title' => 'Support',
                     'subtitle' => 'User questions and conversations',
                     'page' => 'support-center',
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Database backups',
+                    'title' => 'Backups',
                     'subtitle' => 'Backup history and recovery files',
                     'page' => 'backups',
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'System settings',
+                    'title' => 'Settings',
                     'subtitle' => 'Branding, logo, defaults and maintenance',
                     'page' => 'system-settings',
                 ],
@@ -121,14 +121,14 @@ class SearchController extends Controller
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Procurement',
+                    'title' => 'Purchases',
                     'subtitle' => 'Purchasing and suppliers',
                     'page' => 'procurement',
                 ],
-                ['type' => 'Page', 'title' => 'Inventory', 'subtitle' => 'Warehouses and stock', 'page' => 'inventory'],
+                ['type' => 'Page', 'title' => 'Stock', 'subtitle' => 'Warehouses and stock', 'page' => 'inventory'],
                 [
                     'type' => 'Page',
-                    'title' => 'Products and BOM',
+                    'title' => 'Products',
                     'subtitle' => 'Products, materials and recipes',
                     'page' => 'products',
                 ],
@@ -140,25 +140,25 @@ class SearchController extends Controller
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Quality control',
+                    'title' => 'Quality',
                     'subtitle' => 'Inspections and defects',
                     'page' => 'quality',
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Sales and orders',
+                    'title' => 'Sales',
                     'subtitle' => 'Customers, sales and invoices',
                     'page' => 'sales',
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Logistics',
+                    'title' => 'Deliveries',
                     'subtitle' => 'Shipments and deliveries',
                     'page' => 'logistics',
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Team and shifts',
+                    'title' => 'People',
                     'subtitle' => 'Users, roles and assignments',
                     'page' => 'team',
                 ],
@@ -170,7 +170,7 @@ class SearchController extends Controller
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Help and support',
+                    'title' => 'Help',
                     'subtitle' => 'Ask the system administrator',
                     'page' => 'support',
                 ],

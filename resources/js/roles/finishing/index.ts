@@ -6,12 +6,7 @@ export const finishingRole: RoleModule = {
     matches: ({ flags }) => flags.isNoguchiFactory && flags.isFinishingUser,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        [
-            'finishing-workspace',
-            Gauge,
-            text('Finishing', 'Finition'),
-            'production.view',
-        ],
+        ['finishing-workspace', Gauge, text('Finishing', 'Finition'), 'production.view'],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };

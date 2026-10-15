@@ -6,12 +6,7 @@ export const productionSupervisorRole: RoleModule = {
     matches: ({ flags }) => flags.isProductionSupervisor,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        [
-            'production',
-            Gauge,
-            text('Production', 'Production'),
-            'production.view',
-        ],
+        ['production', Gauge, text('Production', 'Production'), 'production.view'],
         ['quality', ClipboardCheck, labels.control, 'quality.view'],
         ['machines', Wrench, labels.machines, 'maintenance.view'],
         ['reports', FileText, labels.reports, 'reports.view'],

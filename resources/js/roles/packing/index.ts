@@ -6,12 +6,7 @@ export const packingRole: RoleModule = {
     matches: ({ flags }) => flags.isNoguchiFactory && flags.isPackagingUser,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        [
-            'packing-workspace',
-            Gauge,
-            text('Packing', 'Emballage'),
-            'production.view',
-        ],
+        ['packing-workspace', Gauge, text('Packing', 'Emballage'), 'production.view'],
         ['reports', FileText, labels.reports, 'reports.view'],
     ],
 };
