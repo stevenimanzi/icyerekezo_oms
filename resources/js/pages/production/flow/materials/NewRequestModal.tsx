@@ -4,13 +4,12 @@ import { postJson } from '../../../../core/liveData';
 import type { Locale } from '../../../../core/types';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
-import type { OptionItem, PieceLot, StageKey } from '../types';
+import type { OptionItem, StageKey } from '../types';
 
 type Props = {
     stage: StageKey;
     previous: StageKey | null;
     options: OptionItem[];
-    lots: PieceLot[];
     locale: Locale;
     text: FlowText;
     onClose: () => void;
@@ -24,7 +23,6 @@ export function NewRequestModal({
     stage,
     previous,
     options,
-    lots,
     locale,
     text,
     onClose,
@@ -33,7 +31,6 @@ export function NewRequestModal({
     const t = text.materials;
     const [kind, setKind] = useState<Kind>(previous ? 'stage' : 'warehouse');
     const [itemId, setItemId] = useState('');
-    const [lotId, setLotId] = useState('');
     const [quantity, setQuantity] = useState('');
     const [reason, setReason] = useState('');
     const [error, setError] = useState('');
@@ -55,7 +52,6 @@ export function NewRequestModal({
                 stage,
                 source: kind,
                 item_id: pieces ? null : Number(itemId),
-                lot_id: pieces && lotId ? Number(lotId) : null,
                 quantity: amount,
                 reason: reason.trim(),
             });
@@ -97,19 +93,7 @@ export function NewRequestModal({
 
             <span className="ui-help">{pieces ? t.piecesHint(from) : t.requestHint}</span>
 
-            {pieces ? (
-                <label className="ui-field">
-                    {t.lot}
-                    <select value={lotId} onChange={(event) => setLotId(event.target.value)}>
-                        <option value="">{t.anyLot}</option>
-                        {lots.map((lot) => (
-                            <option key={lot.id} value={lot.id}>
-                                {t.lotOption(lot.lot_number, lot.product ?? '', lot.ready)}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-            ) : (
+            {!pieces && (
                 <label className="ui-field">
                     {t.requestItem}
                     <select value={itemId} onChange={(event) => setItemId(event.target.value)}>

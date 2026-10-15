@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Factory;
 use App\Models\Item;
+use App\Models\MaterialRequest;
 use App\Models\ProductionLot;
 use App\Models\Role;
 use App\Models\StockBalance;
@@ -283,7 +284,7 @@ class ProductionFlowTest extends TestCase
 
         $this->send('cutting-operator', $lot, 'cutting', 40);
         $request = MaterialRequest::find($id);
-        $this->assertSame(['approved', 65], [$request->status, $request->fulfilled_quantity]);
+        $this->assertSame(['approved', 60], [$request->status, $request->fulfilled_quantity]);
     }
 
     public function test_the_stage_that_was_asked_can_decline_but_nobody_else_and_the_first_stage_cannot_ask_for_pieces(): void

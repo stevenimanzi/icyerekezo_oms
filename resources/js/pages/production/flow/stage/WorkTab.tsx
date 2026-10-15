@@ -7,7 +7,7 @@ import type { LotRow, StageKey, StageOverview, TransferRow } from '../types';
 
 export type WorkModal =
     | { kind: 'receive'; transfer: TransferRow }
-    | { kind: 'record'; lot: LotRow }
+    | { kind: 'record'; lot?: LotRow }
     | { kind: 'send'; lot: LotRow; to: StageKey }
     | { kind: 'cut'; lot?: LotRow }
     | { kind: 'loss' };

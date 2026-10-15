@@ -12,6 +12,7 @@ import { ReceiveModal } from './stage/ReceiveModal';
 import { RecordWorkModal } from './stage/RecordWorkModal';
 import { ReportTab } from './stage/ReportTab';
 import { SendModal } from './stage/SendModal';
+import { stageLabel } from './stages';
 import { WorkTab, type WorkModal } from './stage/WorkTab';
 import { buildKpis } from './stage/kpis';
 import { flowText } from './text';
@@ -65,6 +66,17 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                         <RefreshCw size={15} />
                         {text.refresh}
                     </button>
+                    {canWork && stage !== 'cutting' && (
+                        <button
+                            className="primary-btn"
+                            onClick={() => setModal({ kind: 'record' })}
+                        >
+                            +{' '}
+                            {stage === 'packing'
+                                ? text.work.recordPacking
+                                : text.work.recordStage(stageLabel(stage, locale))}
+                        </button>
+                    )}
                     {canWork && stage === 'cutting' && (
                         <>
                             <button
@@ -154,6 +166,7 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                     {modal?.kind === 'record' && (
                         <RecordWorkModal
                             lot={modal.lot}
+                            lots={data.lots.filter((row) => row.wip > 0 && !row.held)}
                             stage={data.stage}
                             locale={locale}
                             text={text}
