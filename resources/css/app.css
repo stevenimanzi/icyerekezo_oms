@@ -119,11 +119,7 @@ svg.lucide {
     flex: 1;
     overflow-y: auto;
     padding: 18px 14px;
-    scrollbar-width: none;
     -ms-overflow-style: none;
-}
-.sidebar nav::-webkit-scrollbar {
-    display: none;
 }
 .nav-label {
     margin: 16px 12px 8px;
@@ -8342,8 +8338,6 @@ td,
 }
 .noguchi-daily-scroll {
     overflow: auto;
-    scrollbar-color: #6f91c8 #fff;
-    scrollbar-width: thin;
 }
 .noguchi-daily-document table {
     width: 100%;
@@ -8868,77 +8862,14 @@ td,
 .school-garment-matrix,
 .school-payment-modal,
 .school-order-modal .admin-table-wrap {
-    scrollbar-width: thin;
-    scrollbar-color: #7295e8 transparent;
 }
 .school-class-strip {
     padding-bottom: 7px;
-    scrollbar-color: #4f7dea #e6edfa;
-}
-.school-portal::-webkit-scrollbar,
-.school-garment-matrix::-webkit-scrollbar,
-.school-payment-modal::-webkit-scrollbar,
-.school-order-modal .admin-table-wrap::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
-}
-.school-class-strip::-webkit-scrollbar {
-    height: 9px;
-}
-.school-portal::-webkit-scrollbar-track,
-.school-garment-matrix::-webkit-scrollbar-track,
-.school-payment-modal::-webkit-scrollbar-track,
-.school-order-modal .admin-table-wrap::-webkit-scrollbar-track,
-.school-class-strip::-webkit-scrollbar-track {
-    margin: 3px;
-    border-radius: 999px;
-    background: #e8eef9;
-}
-.school-portal::-webkit-scrollbar-thumb,
-.school-garment-matrix::-webkit-scrollbar-thumb,
-.school-payment-modal::-webkit-scrollbar-thumb,
-.school-order-modal .admin-table-wrap::-webkit-scrollbar-thumb,
-.school-class-strip::-webkit-scrollbar-thumb {
-    min-width: 52px;
-    min-height: 52px;
-    border: 2px solid #e8eef9;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #7fa2ef, #3d71e8);
-}
-.school-portal::-webkit-scrollbar-thumb:hover,
-.school-garment-matrix::-webkit-scrollbar-thumb:hover,
-.school-payment-modal::-webkit-scrollbar-thumb:hover,
-.school-order-modal .admin-table-wrap::-webkit-scrollbar-thumb:hover,
-.school-class-strip::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(90deg, #5482eb, #245bd9);
-}
-.school-portal::-webkit-scrollbar-button,
-.school-garment-matrix::-webkit-scrollbar-button,
-.school-payment-modal::-webkit-scrollbar-button,
-.school-order-modal .admin-table-wrap::-webkit-scrollbar-button,
-.school-class-strip::-webkit-scrollbar-button {
-    display: none;
-    width: 0;
-    height: 0;
 }
 [data-theme='dark'] .school-portal,
 [data-theme='dark'] .school-class-strip,
 [data-theme='dark'] .school-garment-matrix,
 [data-theme='dark'] .school-payment-modal {
-    scrollbar-color: #4e75ce #111a2d;
-}
-[data-theme='dark'] .school-portal::-webkit-scrollbar-track,
-[data-theme='dark'] .school-class-strip::-webkit-scrollbar-track,
-[data-theme='dark'] .school-garment-matrix::-webkit-scrollbar-track,
-[data-theme='dark'] .school-payment-modal::-webkit-scrollbar-track {
-    background: #111a2d;
-}
-[data-theme='dark'] .school-portal::-webkit-scrollbar-thumb,
-[data-theme='dark'] .school-class-strip::-webkit-scrollbar-thumb,
-[data-theme='dark'] .school-garment-matrix::-webkit-scrollbar-thumb,
-[data-theme='dark'] .school-payment-modal::-webkit-scrollbar-thumb {
-    border-color: #111a2d;
-    background: linear-gradient(90deg, #4268bd, #6289e6);
 }
 .school-order-line {
     display: grid;
@@ -10094,7 +10025,6 @@ small,
     overflow: auto;
     background: #fff;
     overscroll-behavior: contain;
-    scrollbar-width: auto;
 }
 .noguchi-sheet {
     width: max-content;
@@ -10296,4 +10226,175 @@ small,
 .school-payment-title > i {
     background: transparent !important;
     box-shadow: none !important;
+}
+
+/* ---------- Scrollbars: one thin blue style everywhere ---------- */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2563eb transparent;
+}
+@supports selector(::-webkit-scrollbar) {
+    * {
+        scrollbar-width: auto;
+        scrollbar-color: auto;
+    }
+    *::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    *::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    *::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: #2563eb;
+    }
+    *::-webkit-scrollbar-thumb:hover {
+        background: #1d4ed8;
+    }
+    *::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+}
+
+/* ---------- Report documents on screen: cards and soft tables (printing keeps its own rules) ---------- */
+@media screen {
+    .report-document.report-document {
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    }
+    .report-document.report-document > header {
+        align-items: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--line);
+    }
+    .report-document.report-document h1 {
+        font-size: 24px;
+        letter-spacing: -0.02em;
+    }
+    .report-document.report-document header p {
+        color: var(--muted);
+        font-size: 13px;
+    }
+    .report-document.report-document header b {
+        color: var(--brand);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+    }
+    .report-document.report-document header span {
+        color: var(--muted);
+        font-size: 13px;
+    }
+    .report-document.report-document .report-meta {
+        gap: 10px;
+        justify-content: flex-start;
+        padding: 16px 0 4px;
+        color: var(--muted);
+    }
+    .report-document.report-document .report-meta span {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--soft);
+        font-size: 12px;
+    }
+    .report-document.report-document .report-summary {
+        gap: 14px;
+        margin: 18px 0 8px;
+        padding-top: 0;
+        border-top: 0;
+    }
+    .report-document.report-document .report-summary div {
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--soft);
+    }
+    .report-document.report-document .report-summary span {
+        margin-bottom: 6px;
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: none;
+        white-space: nowrap;
+    }
+    .report-document.report-document .report-summary b {
+        color: var(--text);
+        font-size: 22px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    .report-document.report-document .report-section {
+        margin-top: 26px;
+    }
+    .report-document.report-document .report-section h2 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 12px;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+    .report-document.report-document .report-section h2::before {
+        content: '';
+        width: 4px;
+        height: 16px;
+        border-radius: 2px;
+        background: var(--brand);
+    }
+    .report-document.report-document .report-section > table {
+        border: 1px solid var(--line);
+        border-collapse: separate;
+        border-radius: 12px;
+        border-spacing: 0;
+        overflow: hidden;
+    }
+    .report-document.report-document .report-section th {
+        padding: 12px 16px;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        background: var(--soft);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+    }
+    .report-document.report-document .report-section td {
+        padding: 12px 16px;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        color: var(--text);
+        font-size: 13px;
+    }
+    .report-document.report-document .report-section tbody tr:nth-child(even) td {
+        background: color-mix(in srgb, var(--brand) 3%, transparent);
+    }
+    .report-document.report-document .report-section tbody tr:hover td {
+        background: color-mix(in srgb, var(--brand) 7%, transparent);
+    }
+    .report-document.report-document .report-section tbody tr:last-child td {
+        border-bottom: 0;
+    }
+    .report-document.report-document .report-section td[colspan] {
+        padding: 26px 16px;
+        color: var(--muted);
+        text-align: center;
+    }
+    .report-document.report-document footer {
+        margin-top: 26px;
+        color: var(--muted);
+    }
+    .report-document.report-document .report-section td:nth-child(-n + 2) {
+        white-space: nowrap;
+    }
+    .logistics-status-report .report-section table {
+        font-size: 12px;
+    }
 }
