@@ -1,11 +1,13 @@
-import DepartmentDashboard from './default/DepartmentDashboard';
-import ExecutiveDashboard from './factory-administrator/ExecutiveDashboard';
-import FinancialManagerHome from './financial-manager/Home';
+import { lazy } from 'react';
 import type { RoleFlags } from './flags';
-import HrOfficerHome from './hr-officer/Home';
-import OwnerDashboard from './owner/OwnerDashboard';
-import SafetyOfficerHome from './safety-officer/Home';
 import type { HomeComponent } from './types';
+
+const DepartmentDashboard = lazy(() => import('./default/DepartmentDashboard'));
+const ExecutiveDashboard = lazy(() => import('./factory-administrator/ExecutiveDashboard'));
+const FinancialManagerHome = lazy(() => import('./financial-manager/Home'));
+const HrOfficerHome = lazy(() => import('./hr-officer/Home'));
+const OwnerDashboard = lazy(() => import('./owner/OwnerDashboard'));
+const SafetyOfficerHome = lazy(() => import('./safety-officer/Home'));
 
 export function homeFor(flags: RoleFlags): HomeComponent {
     if (flags.isFactoryOwner) return OwnerDashboard;

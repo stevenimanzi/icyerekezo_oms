@@ -1,19 +1,45 @@
-import { useEffect, useState } from 'react';
-import { AuthScreen } from '../auth/AuthScreen';
-import { ForgotPasswordPage } from '../auth/ForgotPasswordPage';
-import { ResetPasswordPage } from '../auth/ResetPasswordPage';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { api } from '../core/api';
 import type { AuthUser } from '../core/types';
-import { AppShell } from './AppShell';
 import { Logo } from './Logo';
 import { MaintenanceScreen } from './MaintenanceScreen';
+
+const AuthScreen = lazy(() =>
+    import('../auth/AuthScreen').then((module) => ({ default: module.AuthScreen })),
+);
+const ForgotPasswordPage = lazy(() =>
+    import('../auth/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage })),
+);
+const ResetPasswordPage = lazy(() =>
+    import('../auth/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })),
+);
+const AppShell = lazy(() => import('./AppShell').then((module) => ({ default: module.AppShell })));
+
+function BootScreen() {
+    return (
+        <div className="boot-screen">
+            <Logo />
+        </div>
+    );
+}
 
 export function App() {
     const path = window.location.pathname;
 
-    if (path === '/forgot-password') return <ForgotPasswordPage />;
-    if (path.startsWith('/reset-password/')) return <ResetPasswordPage />;
+    return (
+        <Suspense fallback={<BootScreen />}>
+            {path === '/forgot-password' ? (
+                <ForgotPasswordPage />
+            ) : path.startsWith('/reset-password/') ? (
+                <ResetPasswordPage />
+            ) : (
+                <Session />
+            )}
+        </Suspense>
+    );
+}
 
+function Session() {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [maintenance, setMaintenance] = useState('');
@@ -28,12 +54,7 @@ export function App() {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading)
-        return (
-            <div className="boot-screen">
-                <Logo />
-            </div>
-        );
+    if (loading) return <BootScreen />;
     if (maintenance)
         return (
             <MaintenanceScreen
@@ -56,5 +77,6 @@ export function App() {
             window.location.replace('/');
         }
     };
+
     return <AppShell user={user} onLogout={logout} onMaintenance={setMaintenance} />;
 }

@@ -1,38 +1,65 @@
+import { lazy, Suspense } from 'react';
 import type { AuthUser, Locale } from '../core/types';
-import AgreementWorkspacePage from '../pages/logistics/AgreementWorkspacePage';
-import LogisticsOverviewPage from '../pages/logistics/LogisticsOverviewPage';
-import FactorySettingsPage from '../pages/factory/FactorySettingsPage';
-import FinanceOverviewPage from '../pages/finance/FinanceOverviewPage';
-import FinancialReportsPage from '../pages/finance/FinancialReportsPage';
-import HrOverviewPage from '../pages/hr/HrOverviewPage';
-import ProcurementOverviewPage from '../pages/procurement/ProcurementOverviewPage';
-import { ProductionFlowPage, TeamManagementPage } from '../pages/production/FactoryManagerModules';
-import MachinesPage from '../pages/production/MachinesPage';
-import ProductionOperations from '../pages/production/ProductionOperations';
-import QualityControlPage from '../pages/quality/QualityControlPage';
-import SafetyOverviewPage from '../pages/safety/SafetyOverviewPage';
-import SalesOverviewPage from '../pages/sales/SalesOverviewPage';
-import ReportsPage from '../pages/shared/ClearReportsPage';
-import { NotificationsPage } from '../pages/shared/NotificationsPage';
-import ProductCatalogPage from '../pages/shared/ProductCatalogPage';
-import ProfileSettingsPage from '../pages/shared/ProfileSettingsPage';
-import { UserSupportChat } from '../pages/shared/UserSupportChat';
-import IncomingRequestsPage from '../pages/warehouse/IncomingRequestsPage';
-import InventoryManagementPage from '../pages/warehouse/InventoryManagementPage';
-import CuttingWorkspacePage from '../pages/production/textile/cutting/CuttingWorkspacePage';
-import FinishingWorkspacePage from '../pages/production/textile/finishing/FinishingWorkspacePage';
 import type { RoleFlags } from '../roles/flags';
 import { homeFor } from '../roles/home';
-import OwnerActivityPage from '../roles/owner/OwnerActivityPage';
-import PackingWorkspacePage from '../pages/production/textile/packing/PackingWorkspacePage';
-import SystemAdminPage from '../roles/system-admin/SystemAdminPage';
 import { SCHOOL_PAGES } from '../roles/school';
-import SchoolPortalPage from '../roles/school/SchoolPortalPage';
-import SewingWorkspacePage from '../pages/production/textile/sewing/SewingWorkspacePage';
 import type { NotificationsState } from './hooks/useNotifications';
 import type { Access } from './navigation';
 import { PageBoundary } from './PageBoundary';
 import { pageKeyFromPath } from './routing';
+
+const AgreementWorkspacePage = lazy(() => import('../pages/logistics/AgreementWorkspacePage'));
+const CuttingWorkspacePage = lazy(
+    () => import('../pages/production/textile/cutting/CuttingWorkspacePage'),
+);
+const FactorySettingsPage = lazy(() => import('../pages/factory/FactorySettingsPage'));
+const FinanceOverviewPage = lazy(() => import('../pages/finance/FinanceOverviewPage'));
+const FinancialReportsPage = lazy(() => import('../pages/finance/FinancialReportsPage'));
+const FinishingWorkspacePage = lazy(
+    () => import('../pages/production/textile/finishing/FinishingWorkspacePage'),
+);
+const HrOverviewPage = lazy(() => import('../pages/hr/HrOverviewPage'));
+const IncomingRequestsPage = lazy(() => import('../pages/warehouse/IncomingRequestsPage'));
+const InventoryManagementPage = lazy(() => import('../pages/warehouse/InventoryManagementPage'));
+const LogisticsOverviewPage = lazy(() => import('../pages/logistics/LogisticsOverviewPage'));
+const MachinesPage = lazy(() => import('../pages/production/MachinesPage'));
+const NotificationsPage = lazy(() =>
+    import('../pages/shared/NotificationsPage').then((module) => ({
+        default: module.NotificationsPage,
+    })),
+);
+const OwnerActivityPage = lazy(() => import('../roles/owner/OwnerActivityPage'));
+const PackingWorkspacePage = lazy(
+    () => import('../pages/production/textile/packing/PackingWorkspacePage'),
+);
+const ProcurementOverviewPage = lazy(() => import('../pages/procurement/ProcurementOverviewPage'));
+const ProductCatalogPage = lazy(() => import('../pages/shared/ProductCatalogPage'));
+const ProductionFlowPage = lazy(() =>
+    import('../pages/production/FactoryManagerModules').then((module) => ({
+        default: module.ProductionFlowPage,
+    })),
+);
+const ProductionOperations = lazy(() => import('../pages/production/ProductionOperations'));
+const ProfileSettingsPage = lazy(() => import('../pages/shared/ProfileSettingsPage'));
+const QualityControlPage = lazy(() => import('../pages/quality/QualityControlPage'));
+const ReportsPage = lazy(() => import('../pages/shared/ClearReportsPage'));
+const SafetyOverviewPage = lazy(() => import('../pages/safety/SafetyOverviewPage'));
+const SalesOverviewPage = lazy(() => import('../pages/sales/SalesOverviewPage'));
+const SchoolPortalPage = lazy(() => import('../roles/school/SchoolPortalPage'));
+const SewingWorkspacePage = lazy(
+    () => import('../pages/production/textile/sewing/SewingWorkspacePage'),
+);
+const SystemAdminPage = lazy(() => import('../roles/system-admin/SystemAdminPage'));
+const TeamManagementPage = lazy(() =>
+    import('../pages/production/FactoryManagerModules').then((module) => ({
+        default: module.TeamManagementPage,
+    })),
+);
+const UserSupportChat = lazy(() =>
+    import('../pages/shared/UserSupportChat').then((module) => ({
+        default: module.UserSupportChat,
+    })),
+);
 
 type Props = {
     user: AuthUser;
@@ -70,7 +97,9 @@ export function PageRouter(props: Props) {
 
     return (
         <PageBoundary resetKey={resetKey}>
-            <CurrentPage {...props} />
+            <Suspense fallback={<PageLoading />}>
+                <CurrentPage {...props} />
+            </Suspense>
         </PageBoundary>
     );
 }
@@ -242,6 +271,14 @@ function PageNotFound({
             <button className="secondary-btn" onClick={() => onNavigate('dashboard')}>
                 {locale === 'en' ? 'Go to the dashboard' : 'Aller au tableau de bord'}
             </button>
+        </div>
+    );
+}
+
+function PageLoading() {
+    return (
+        <div className="panel page-recovery page-reconnecting" role="status">
+            <p>Loading…</p>
         </div>
     );
 }

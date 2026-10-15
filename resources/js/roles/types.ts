@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, LazyExoticComponent } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { Labels } from '../core/labels';
 import type { AuthUser, Locale } from '../core/types';
@@ -29,4 +29,5 @@ export type HomeProps = {
     pages: string[];
 };
 
-export type HomeComponent = ComponentType<HomeProps>;
+export type HomeComponent =
+    ComponentType<HomeProps> | LazyExoticComponent<ComponentType<HomeProps>>;
