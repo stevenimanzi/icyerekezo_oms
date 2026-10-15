@@ -1,0 +1,69 @@
+.ui-chain {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-chain-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-step {
+    padding: 8px 16px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ui-step.active {
+    border-color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand);
+    font-weight: 800;
+}
+
+.ui-arrow {
+    color: var(--muted);
+}
+
+.ui-chip.ok,
+.ui-chip.approved,
+.ui-chip.received {
+    background: var(--ui-good-bg);
+    color: var(--ui-good);
+}
+
+.ui-chip.warn,
+.ui-chip.pending,
+.ui-chip.sent {
+    background: var(--ui-warn-bg);
+    color: var(--ui-warn);
+}
+
+.ui-chip.bad,
+.ui-chip.rejected {
+    background: var(--ui-bad-bg);
+    color: var(--ui-bad);
+}
+
+.ui-chip.grey {
+    background: var(--ui-grey-bg);
+    color: var(--ui-grey);
+}
+
+.ui-struck {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+@media (max-width: 720px) {
+    .ui-arrow {
+        display: none;
+    }
+}
