@@ -216,8 +216,16 @@ class StockMovementTest extends TestCase
 
         $this->actingAs($this->keeper)->postJson('/api/stock/issues', ['item_id' => $item->id, 'quantity' => 11, 'reason_type' => 'used'])->assertUnprocessable();
         $this->actingAs($this->keeper)->postJson('/api/stock/issues', ['item_id' => $item->id, 'quantity' => 1, 'reason_type' => 'lost'])->assertUnprocessable()->assertJsonValidationErrors('note');
+        $this->actingAs($this->keeper)->postJson('/api/stock/issues', ['item_id' => $item->id, 'quantity' => 1, 'reason_type' => 'other'])->assertUnprocessable()->assertJsonValidationErrors('note');
+        $this->actingAs($this->keeper)->postJson('/api/stock/issues', ['item_id' => $item->id, 'quantity' => 2, 'reason_type' => 'cutting'])->assertCreated();
+        $this->actingAs($this->keeper)->postJson('/api/stock/issues', ['item_id' => $item->id, 'quantity' => 1, 'reason_type' => 'other', 'note' => 'Donated to community event'])->assertCreated();
 
-        $this->assertSame(10.0, $this->onHand($item));
+        $this->assertSame(7.0, $this->onHand($item));
+
+        $res = $this->actingAs($this->keeper)->getJson('/api/stock/movements?direction=out')->assertOk();
+        $reasons = $res->json('reasons');
+        $this->assertContains('cutting', $reasons);
+        $this->assertSame('other', end($reasons));
     }
 
     public function test_the_lists_show_only_this_factorys_movements_in_the_right_direction(): void

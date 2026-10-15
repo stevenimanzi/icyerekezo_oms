@@ -24,10 +24,11 @@ class StockMovementController extends Controller
 {
     private const ISSUE_REASONS = [
         'used' => 'issue',
+        'cutting' => 'issue',
         'sample' => 'issue',
-        'other' => 'issue',
         'damaged' => 'waste',
         'lost' => 'waste',
+        'other' => 'issue',
     ];
 
     public function analytics(Request $request, StockAnalytics $analytics): JsonResponse
@@ -203,7 +204,7 @@ class StockMovementController extends Controller
             'warehouse_id' => ['nullable', 'integer', Rule::in($scope->warehouseIds()->all())],
             'quantity' => ['required', 'numeric', 'gt:0', 'max:100000000'],
             'reason_type' => ['required', Rule::in(array_keys(self::ISSUE_REASONS))],
-            'note' => ['nullable', 'string', 'max:500', Rule::requiredIf(fn () => $request->input('reason_type') !== 'used')],
+            'note' => ['nullable', 'string', 'max:500', Rule::requiredIf(fn () => in_array($request->input('reason_type'), ['other', 'damaged', 'lost']))],
         ]);
         $item = Item::where('is_active', true)->where('type', '!=', 'service')->findOrFail($data['item_id']);
         $warehouse = isset($data['warehouse_id']) ? Warehouse::find($data['warehouse_id']) : null;
