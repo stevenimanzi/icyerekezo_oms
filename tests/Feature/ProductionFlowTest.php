@@ -347,6 +347,94 @@ class ProductionFlowTest extends TestCase
         $this->assertNull(collect($options['materials'])->firstWhere('item_id', $this->fabric->id)['color']);
     }
 
+    public function test_the_factory_report_covers_every_department_and_each_role_sees_only_its_own(): void
+    {
+        $this->approvedFabric(80);
+        $lot = $this->cutLot(100);
+
+        $this->receive('sewing-operator', $this->send('cutting-operator', $lot, 'cutting', 100), 100);
+        $this->work('sewing-operator', $lot, 'sewing', 92, 8)->assertCreated();
+        $this->receive('finishing-manager', $this->send('sewing-operator', $lot, 'sewing', 92), 92);
+        $this->work('finishing-manager', $lot, 'finishing', 90, 2)->assertCreated();
+        $this->receive('packaging-operator', $this->send('finishing-manager', $lot, 'finishing', 90), 90);
+        $this->work('packaging-operator', $lot, 'packing', 90)->assertCreated();
+        $this->as('quality-officer')->postJson('/api/flow/inspections', [
+            'lot_id' => $lot, 'stage' => 'packing', 'inspected_quantity' => 90, 'passed_quantity' => 86, 'rejected_quantity' => 4, 'defect_details' => 'Loose buttons',
+        ])->assertCreated();
+
+        $report = $this->as('production-manager')->getJson('/api/flow/factory-report?period=day')->assertOk()->json();
+
+        $this->assertSame(['cutting', 'sewing', 'finishing', 'packing', 'warehouse', 'quality', 'sales'], $report['shown']);
+        $this->assertSame(100, $report['cutting']['good']);
+        $this->assertSame(3, $report['cutting']['damaged']);
+        $this->assertEquals(30, $report['cutting']['fabric'][0]['used']);
+        $this->assertEquals(2, $report['cutting']['fabric'][0]['waste']);
+        $this->assertSame(1, $report['cutting']['requests']['approved']);
+        $this->assertSame(100, $report['sewing']['received']);
+        $this->assertSame(92, $report['sewing']['good']);
+        $this->assertSame(8, $report['sewing']['damaged']);
+        $this->assertSame(92, $report['sewing']['sent']);
+        $this->assertSame(90, $report['finishing']['good']);
+        $this->assertSame(90, $report['packing']['good']);
+        $this->assertSame(90, $report['packing']['daily'][0]['good']);
+        $this->assertSame(0, $report['packing']['daily'][0]['damaged']);
+        $this->assertSame($lot, ProductionLot::where('lot_number', $report['cutting']['lots'][0]['lot_number'])->value('id'));
+        $this->assertSame(1, $report['quality']['checks']);
+        $this->assertSame(4, $report['quality']['rejected']);
+        $this->assertEquals(95.6, $report['quality']['pass_rate']);
+        $this->assertEquals(80 * 2000, $report['warehouse']['stock_out']['value'], 'The approved fabric left the warehouse at its cost.');
+        $this->assertSame(1, $report['warehouse']['requests']['approved']);
+        $this->assertSame(100, $report['summary']['pieces_cut']);
+        $this->assertSame(90, $report['summary']['pieces_packed']);
+        $this->assertSame(13, $report['summary']['damaged']);
+
+        $cutting = $this->as('cutting-operator')->getJson('/api/flow/factory-report?department=quality')->assertOk()->json();
+        $this->assertSame(['cutting'], $cutting['shown'], 'A cutting operator only reads the cutting report, whatever is asked for.');
+        $this->assertArrayNotHasKey('warehouse', $cutting);
+
+        $keeper = $this->as('warehouse-keeper')->getJson('/api/flow/factory-report')->assertOk()->json();
+        $this->assertSame(['warehouse'], $keeper['shown']);
+
+        $only = $this->as('production-manager')->getJson('/api/flow/factory-report?department=sewing')->json();
+        $this->assertSame(['sewing'], $only['shown']);
+        $this->assertSame(['cutting', 'sewing', 'finishing', 'packing', 'warehouse', 'quality', 'sales'], $only['available']);
+    }
+
+    public function test_the_daily_register_lists_each_day_by_colour_style_and_size_and_downloads_as_excel(): void
+    {
+        $this->approvedFabric(80);
+        $lot = $this->cutLot(100);
+
+        $this->receive('sewing-operator', $this->send('cutting-operator', $lot, 'cutting', 100), 100);
+        $this->work('sewing-operator', $lot, 'sewing', 92, 8)->assertCreated();
+        $this->receive('finishing-manager', $this->send('sewing-operator', $lot, 'sewing', 92), 92);
+        $this->work('finishing-manager', $lot, 'finishing', 90, 2)->assertCreated();
+        $this->receive('packaging-operator', $this->send('finishing-manager', $lot, 'finishing', 90), 90);
+        $this->work('packaging-operator', $lot, 'packing', 90)->assertCreated();
+
+        $register = $this->as('production-manager')->getJson('/api/flow/factory-report?period=day')->assertOk()->json('register');
+        $this->assertSame(['wh', 'cut', 'prod', 'fin', 'stock'], $register['sections']);
+        $this->assertCount(1, $register['days']);
+
+        $groups = $register['days'][0]['groups'];
+        $this->assertSame(today()->toDateString(), $register['days'][0]['date']);
+        $this->assertEquals([['Blue', 80]], $groups[2], 'The fabric that left the warehouse, by colour.');
+        $this->assertEquals([['Blue', 30, 'Polo shirt', 'M', 100]], $groups[4], 'Cutting: colour, metres used, style, size, pieces.');
+        $this->assertEquals([['Blue', 'Polo shirt', 'M', 100]], $groups[5]);
+        $this->assertEquals([['Blue', 'Polo shirt', 'M', 92]], $groups[6]);
+        $this->assertEquals([['Blue', 'Polo shirt', 'M', 92]], $groups[7]);
+        $this->assertEquals([['Blue', 'Polo shirt', 'M', 90]], $groups[8]);
+        $this->assertEquals([['Blue', 'Polo shirt', 'M', 90]], $groups[9]);
+
+        $keeper = $this->as('warehouse-keeper')->getJson('/api/flow/factory-report?period=day')->json('register');
+        $this->assertSame(['wh'], $keeper['sections']);
+        $this->assertSame([], $keeper['days'][0]['groups'][4]);
+
+        $download = $this->as('production-manager')->get('/api/flow/factory-report.xlsx?period=day');
+        $download->assertOk()->assertDownload();
+        $this->assertStringStartsWith('PK', file_get_contents($download->baseResponse->getFile()->getPathname()));
+    }
+
     public function test_lots_can_be_filtered_by_colour_size_product_and_fabric(): void
     {
         $this->approvedFabric(80);

@@ -1,0 +1,167 @@
+.rp-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--line);
+}
+
+.rp-head h2,
+.rp-head p {
+    margin: 0;
+}
+
+.rp-head small {
+    color: var(--muted);
+}
+
+.rp-section {
+    display: grid;
+    gap: 14px;
+}
+
+.rp-section > h2 {
+    margin: 10px 0 0;
+    padding-left: 10px;
+    border-left: 4px solid var(--brand);
+    font-size: 18px;
+}
+
+.rp-section h3 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.rp-line {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+@media print {
+    .rp {
+        gap: 10px;
+    }
+
+    .rp-section {
+        break-inside: avoid-page;
+    }
+
+    .rp .panel {
+        box-shadow: none;
+    }
+}
+
+.rg {
+    display: grid;
+    gap: 16px;
+}
+
+.rg-day > header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.rg-blocks {
+    display: flex;
+    gap: 14px;
+    padding: 14px;
+    overflow-x: auto;
+}
+
+.rg-block {
+    flex: none;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.rg-block > h3 {
+    margin: 0;
+    padding: 8px 12px;
+    background: var(--rg);
+    color: #fff;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.rg-groups {
+    display: flex;
+}
+
+.rg-group {
+    min-width: 160px;
+    border-left: 1px solid var(--line);
+}
+
+.rg-group:first-child {
+    border-left: 0;
+}
+
+.rg-group > h4 {
+    margin: 0;
+    padding: 6px 10px;
+    background: color-mix(in srgb, var(--rg) 14%, transparent);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.rg-group table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.rg-group th,
+.rg-group td {
+    padding: 5px 10px;
+    border-top: 1px solid var(--line);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.rg-group th {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.rg-group .num {
+    text-align: right;
+}
+
+.rg-group tfoot td {
+    background: color-mix(in srgb, var(--rg) 8%, transparent);
+    font-weight: 800;
+}
+
+.rg-empty {
+    color: var(--muted);
+    text-align: center;
+}
+
+@media print {
+    .rg-blocks {
+        flex-wrap: wrap;
+        overflow: visible;
+    }
+
+    .rg-day {
+        break-inside: avoid;
+    }
+}
+
+.rp,
+.rg,
+.rg-day {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.rg-group table {
+    min-width: 0;
+}

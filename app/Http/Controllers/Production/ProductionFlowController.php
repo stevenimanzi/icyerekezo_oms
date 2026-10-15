@@ -7,15 +7,18 @@ use App\Models\MaterialRequest;
 use App\Models\ProductionEntry;
 use App\Models\ProductionLot;
 use App\Models\ProductionTransfer;
+use App\Services\ProductionFlow\FactoryReport;
 use App\Services\ProductionFlow\FlowAccess;
 use App\Services\ProductionFlow\FlowQueries;
 use App\Services\ProductionFlow\MaterialRequestService;
 use App\Services\ProductionFlow\ProductionFlowService;
 use App\Support\Catalogs\ProductionFlowCatalog;
+use App\Support\Exports\NoguchiDailyReportXlsxExporter;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductionFlowController extends Controller
 {
@@ -48,6 +51,58 @@ class ProductionFlowController extends Controller
     public function lot(ProductionLot $lot, FlowQueries $queries): JsonResponse
     {
         return response()->json($queries->lot($lot));
+    }
+
+    public function factoryReport(Request $request, FactoryReport $report): JsonResponse
+    {
+        $data = $request->validate([
+            'period' => ['nullable', Rule::in(['day', 'week', 'month', 'year', 'custom'])],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'department' => ['nullable', Rule::in(['cutting', 'sewing', 'finishing', 'packing', 'warehouse', 'quality', 'sales'])],
+        ]);
+
+        [$from, $to] = $this->reportRange($data);
+
+        return response()->json($report->build($request->user(), $from, $to, $data['department'] ?? null));
+    }
+
+    public function factoryReportExcel(Request $request, FactoryReport $report): BinaryFileResponse
+    {
+        $data = $request->validate([
+            'period' => ['nullable', Rule::in(['day', 'week', 'month', 'year', 'custom'])],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'department' => ['nullable', Rule::in(['cutting', 'sewing', 'finishing', 'packing', 'warehouse', 'quality', 'sales'])],
+        ]);
+        [$from, $to] = $this->reportRange($data);
+        $result = $report->build($request->user(), $from, $to, $data['department'] ?? null);
+
+        $path = tempnam(sys_get_temp_dir(), 'factory-register-') . '.xlsx';
+        NoguchiDailyReportXlsxExporter::createRegister(
+            $result['register']['days'],
+            $result['register']['sections'],
+            ' ' . strtoupper($request->user()->currentFactory->name) . ' - DAILY REPORT   |   ' . $result['period']['from'] . ' to ' . $result['period']['to'],
+            $path,
+            ['prod' => 'SEWING', 'fin' => 'FINISHING', 'stock' => 'PACKED INTO STOCK'],
+        );
+
+        return response()
+            ->download($path, 'factory-daily-report-' . now()->format('Y-m-d-His') . '.xlsx', [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])
+            ->deleteFileAfterSend(true);
+    }
+
+    private function reportRange(array $data): array
+    {
+        return match ($data['period'] ?? 'week') {
+            'day' => [today(), today()],
+            'month' => [today()->startOfMonth(), today()],
+            'year' => [today()->startOfYear(), today()],
+            'custom' => [Carbon::parse($data['from'] ?? today()), Carbon::parse($data['to'] ?? $data['from'] ?? today())],
+            default => [today()->subDays(6), today()],
+        };
     }
 
     public function report(Request $request, FlowQueries $queries): JsonResponse

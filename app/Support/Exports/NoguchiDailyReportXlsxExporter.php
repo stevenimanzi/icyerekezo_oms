@@ -33,6 +33,8 @@ class NoguchiDailyReportXlsxExporter
 
     private array $merges = [];
 
+    private array $titles = [];
+
     public static function create(array $data, string $path): void
     {
         (new self)->build($data, $path);
@@ -56,6 +58,20 @@ class NoguchiDailyReportXlsxExporter
             : $from . ' to ' . $data['report']['to'];
         $subtitle = ' DAILY REPORT' . ($department !== '' ? ' – ' . $department : '') . '   |   ' . $period;
 
+        $this->render($sections, $days, $subtitle, $department, $path);
+    }
+
+    /** Draws a register built from a factory's own production flow, with the stage titles it uses. */
+    public static function createRegister(array $days, array $sections, string $subtitle, string $path, array $titles = []): void
+    {
+        $exporter = new self;
+        $exporter->titles = $titles;
+        $days = array_values(array_filter($days, fn ($day) => $exporter->hasData($day, $sections)));
+        $exporter->render($sections, $days, $subtitle, '', $path);
+    }
+
+    private function render(array $sections, array $days, string $subtitle, string $department, string $path): void
+    {
         $widths = [96];
         $this->cells = [];
         $this->merges = [];
@@ -150,7 +166,7 @@ class NoguchiDailyReportXlsxExporter
             $spec = NoguchiDailyRegister::SECTIONS[$key];
             $c = $map[$key];
             $this->merge(2, $c['gap'], 5, $c['gap'], '', self::S_GAP);
-            $title = match (true) {
+            $title = $this->titles[$key] ?? match (true) {
                 $key === 'prod' && (bool) preg_match('/sew/i', $department) => 'SEWING',
                 $key === 'fin' && (bool) preg_match('/packag|packing/i', $department) => 'PACKAGING',
                 default => $spec['title'],

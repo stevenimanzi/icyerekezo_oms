@@ -21,6 +21,8 @@ Route::controller(ProductionFlowController::class)
     ->group(function () {
         Route::get('/overview', 'overview')->middleware('permission:production.view');
         Route::get('/monitor', 'monitor')->middleware('permission:production.view|quality.view');
+        Route::get('/factory-report', 'factoryReport')->middleware('permission:reports.view');
+        Route::get('/factory-report.xlsx', 'factoryReportExcel')->middleware('permission:reports.view');
         Route::get('/report', 'report')->middleware('permission:production.view|quality.view');
         Route::get('/lots/{lot}', 'lot')->middleware('permission:production.view|quality.view');
 

@@ -59,6 +59,7 @@ const SewingWorkspacePage = lazy(
 const MaterialRequestsPage = lazy(
     () => import('../pages/production/flow/materials/MaterialRequestsPage'),
 );
+const FactoryReportPage = lazy(() => import('../pages/reports/FactoryReportPage'));
 const StageWorkspace = lazy(() => import('../pages/production/flow/StageWorkspace'));
 const SystemAdminPage = lazy(() => import('../roles/system-admin/SystemAdminPage'));
 const TeamManagementPage = lazy(() =>
@@ -192,6 +193,8 @@ function CurrentPage({
                 />
             );
         }
+        if (activePage === 'reports' && !flags.isLogisticsUser)
+            return <FactoryReportPage user={user} locale={locale} />;
         const materialStage = FLOW_MATERIAL_PAGES[activePage];
 
         if (materialStage) {

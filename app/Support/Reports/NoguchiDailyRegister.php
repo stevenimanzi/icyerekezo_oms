@@ -375,7 +375,7 @@ final class NoguchiDailyRegister
         return $known === false ? 99 : $known;
     }
 
-    private static function arrange(array $rows, int $color, int $style, int $size): array
+    public static function arrange(array $rows, int $color, int $style, int $size): array
     {
         usort(
             $rows,
