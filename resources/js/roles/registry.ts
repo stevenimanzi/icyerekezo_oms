@@ -15,7 +15,7 @@ import { machineOperatorRole } from './machine-operator';
 import { maintenanceTechnicianRole } from './maintenance-technician';
 import { ownerRole } from './owner';
 import { packingRole } from './packing';
-import { platformAdminRole } from './platform-admin';
+import { systemAdminRole } from './system-admin';
 import { procurementRole } from './procurement';
 import { productionManagerRole } from './production-manager';
 import { productionPlannerRole } from './production-planner';
@@ -30,7 +30,7 @@ import type { NavGroup, NavItem, RoleContext, RoleModule } from './types';
 import { warehouseNavGroups, warehouseRole } from './warehouse';
 
 export const ROLES: RoleModule[] = [
-    platformAdminRole,
+    systemAdminRole,
     ownerRole,
     factoryAdministratorRole,
     factoryManagerRole,

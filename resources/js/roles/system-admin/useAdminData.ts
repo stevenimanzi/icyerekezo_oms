@@ -4,8 +4,20 @@ import { adminPages, FALLBACK_PAGE } from './pageInfo';
 
 const SUCCESS_MESSAGE_MS = 5000;
 
-export type AuditFilters = { search: string; event: string; factory_id: string; from: string; to: string };
-export type UserFilters = { tab: string; search: string; active: string; role: string; page: number };
+export type AuditFilters = {
+    search: string;
+    event: string;
+    factory_id: string;
+    from: string;
+    to: string;
+};
+export type UserFilters = {
+    tab: string;
+    search: string;
+    active: string;
+    role: string;
+    page: number;
+};
 
 function queryString(filters: Record<string, string | number>) {
     const entries = Object.entries(filters)
@@ -88,7 +100,12 @@ export function useAdminData(page: string) {
         return () => window.clearInterval(timer);
     }, [page]);
 
-    const run = async (url: string, method: string, body?: any, message = 'Saved successfully.') => {
+    const run = async (
+        url: string,
+        method: string,
+        body?: any,
+        message = 'Saved successfully.',
+    ) => {
         setBusy(true);
         setError('');
         setSuccess('');

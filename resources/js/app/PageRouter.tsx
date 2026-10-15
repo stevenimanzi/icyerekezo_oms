@@ -25,7 +25,7 @@ import type { RoleFlags } from '../roles/flags';
 import { homeFor } from '../roles/home';
 import OwnerActivityPage from '../roles/owner/OwnerActivityPage';
 import PackingWorkspacePage from '../pages/production/textile/packing/PackingWorkspacePage';
-import PlatformAdminPage from '../roles/platform-admin/PlatformAdminPage';
+import SystemAdminPage from '../roles/system-admin/SystemAdminPage';
 import { SCHOOL_PAGES } from '../roles/school';
 import SchoolPortalPage from '../roles/school/SchoolPortalPage';
 import SewingWorkspacePage from '../pages/production/textile/sewing/SewingWorkspacePage';
@@ -121,7 +121,7 @@ function CurrentPage({
         );
     }
 
-    if (user.is_platform_admin) return <PlatformAdminPage page={activePage} locale={locale} />;
+    if (user.is_platform_admin) return <SystemAdminPage page={activePage} locale={locale} />;
 
     if (activePage === 'support') return <UserSupportChat user={user} locale={locale} />;
 

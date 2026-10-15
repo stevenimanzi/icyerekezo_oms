@@ -44,7 +44,10 @@ export default function SystemAdminPage({ page }: { page: string; locale: Locale
                         Refresh
                     </button>
                     {info.canCreate && (
-                        <button className="primary-btn" onClick={() => ctx.setShowForm(!ctx.showForm)}>
+                        <button
+                            className="primary-btn"
+                            onClick={() => ctx.setShowForm(!ctx.showForm)}
+                        >
                             <Plus size={16} />
                             {page === 'backups' ? 'Create backup' : 'Create new'}
                         </button>
@@ -61,7 +64,9 @@ export default function SystemAdminPage({ page }: { page: string; locale: Locale
 
             <Screen ctx={ctx} />
 
-            {ctx.busy && !ctx.data && <div className="admin-loading">Loading platform controls…</div>}
+            {ctx.busy && !ctx.data && (
+                <div className="admin-loading">Loading platform controls…</div>
+            )}
         </section>
     );
 }

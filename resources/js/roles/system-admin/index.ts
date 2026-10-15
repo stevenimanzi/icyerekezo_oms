@@ -12,8 +12,8 @@ import {
 } from 'lucide-react';
 import type { RoleModule } from '../types';
 
-export const platformAdminRole: RoleModule = {
-    id: 'platform-admin',
+export const systemAdminRole: RoleModule = {
+    id: 'system-admin',
     matches: ({ user }) => user.is_platform_admin,
     nav: ({ text }) => [
         ['platform-dashboard', LayoutDashboard, text('Platform overview', 'Vue plateforme'), '*'],
