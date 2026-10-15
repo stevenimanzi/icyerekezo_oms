@@ -1,4 +1,4 @@
-import { FileText, Gauge, LayoutDashboard } from 'lucide-react';
+import { ChartColumn, LayoutDashboard, PackageCheck } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const packingRole: RoleModule = {
@@ -6,7 +6,7 @@ export const packingRole: RoleModule = {
     matches: ({ flags }) => flags.isNoguchiFactory && flags.isPackagingUser,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['packing-workspace', Gauge, text('Packing', 'Emballage'), 'production.view'],
-        ['reports', FileText, labels.reports, 'reports.view'],
+        ['packing-workspace', PackageCheck, text('Packing', 'Emballage'), 'production.view'],
+        ['reports', ChartColumn, labels.reports, 'reports.view'],
     ],
 };

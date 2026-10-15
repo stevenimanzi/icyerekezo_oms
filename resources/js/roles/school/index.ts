@@ -1,13 +1,13 @@
 import {
-    Building2,
-    CreditCard,
+    CirclePlus,
+    ClipboardList,
     FileSignature,
-    FileText,
+    History,
     LayoutDashboard,
-    Plus,
-    RefreshCw,
-    RotateCcw,
+    School,
     ShoppingCart,
+    Undo2,
+    Wallet,
 } from 'lucide-react';
 import type { NavGroup, RoleContext, RoleModule } from '../types';
 
@@ -27,13 +27,13 @@ export const schoolRole: RoleModule = {
     matches: ({ flags }) => flags.isSchoolUser,
     nav: ({ labels }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['new-order', Plus, labels.placeNewOrder, '*'],
-        ['order-history', FileText, labels.orderHistory, '*'],
-        ['financials', CreditCard, labels.financialRecords, '*'],
-        ['return-items', RotateCcw, labels.returnItems, '*'],
-        ['returns-history', RefreshCw, labels.returnsHistory, '*'],
+        ['new-order', CirclePlus, labels.placeNewOrder, '*'],
+        ['order-history', ClipboardList, labels.orderHistory, '*'],
+        ['financials', Wallet, labels.financialRecords, '*'],
+        ['return-items', Undo2, labels.returnItems, '*'],
+        ['returns-history', History, labels.returnsHistory, '*'],
         ['agreement', FileSignature, labels.agreement, '*'],
-        ['school-profile', Building2, labels.schoolProfile, '*'],
+        ['school-profile', School, labels.schoolProfile, '*'],
     ],
 };
 
@@ -45,7 +45,7 @@ export const schoolNavGroups = ({ text }: RoleContext): Record<string, NavGroup>
     },
     returns: {
         label: text('Returns', 'Retours'),
-        icon: RotateCcw,
+        icon: Undo2,
         children: ['return-items', 'returns-history'],
     },
 });

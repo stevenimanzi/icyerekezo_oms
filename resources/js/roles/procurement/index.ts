@@ -1,4 +1,4 @@
-import { Boxes, FileText, LayoutDashboard, ShoppingCart, Warehouse } from 'lucide-react';
+import { ChartColumn, LayoutDashboard, Package, ShoppingCart, Warehouse } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const procurementRole: RoleModule = {
@@ -8,7 +8,7 @@ export const procurementRole: RoleModule = {
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['procurement', ShoppingCart, labels.procurement, 'procurement.view'],
         ['inventory', Warehouse, text('Stock', 'Stock'), 'inventory.view'],
-        ['products', Boxes, labels.products, 'products.view'],
-        ['reports', FileText, labels.reports, 'reports.view'],
+        ['products', Package, labels.products, 'products.view'],
+        ['reports', ChartColumn, labels.reports, 'reports.view'],
     ],
 };

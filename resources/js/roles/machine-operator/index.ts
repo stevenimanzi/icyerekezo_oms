@@ -1,4 +1,4 @@
-import { ClipboardCheck, Gauge, LayoutDashboard, Wrench } from 'lucide-react';
+import { BadgeCheck, Cog, Factory, LayoutDashboard } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const machineOperatorRole: RoleModule = {
@@ -6,8 +6,8 @@ export const machineOperatorRole: RoleModule = {
     matches: ({ flags }) => flags.isMachineOperator,
     nav: ({ labels }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['production', Gauge, labels.planning, 'production.view'],
-        ['quality', ClipboardCheck, labels.control, 'quality.view'],
-        ['machines', Wrench, labels.machines, 'maintenance.view'],
+        ['production', Factory, labels.planning, 'production.view'],
+        ['quality', BadgeCheck, labels.control, 'quality.view'],
+        ['machines', Cog, labels.machines, 'maintenance.view'],
     ],
 };

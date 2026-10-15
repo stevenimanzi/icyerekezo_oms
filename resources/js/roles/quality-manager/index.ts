@@ -1,4 +1,4 @@
-import { ClipboardCheck, FileText, LayoutDashboard } from 'lucide-react';
+import { BadgeCheck, ChartColumn, LayoutDashboard } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const qualityManagerRole: RoleModule = {
@@ -6,7 +6,7 @@ export const qualityManagerRole: RoleModule = {
     matches: ({ flags }) => flags.isQualityManager,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['quality', ClipboardCheck, text('Quality', 'Qualité'), 'quality.view'],
-        ['reports', FileText, labels.reports, 'reports.view'],
+        ['quality', BadgeCheck, text('Quality', 'Qualité'), 'quality.view'],
+        ['reports', ChartColumn, labels.reports, 'reports.view'],
     ],
 };

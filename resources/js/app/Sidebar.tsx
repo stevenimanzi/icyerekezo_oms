@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, HelpCircle, LogOut, Settings, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, LifeBuoy, LogOut, Settings, X } from 'lucide-react';
 import type { Labels } from '../core/labels';
 import type { AuthUser, Locale } from '../core/types';
 import type { NavEntry } from './navigation';
@@ -180,7 +180,7 @@ export function Sidebar(props: Props) {
                                 className={`nav-item ${activePage === 'support' ? 'active' : ''}`}
                                 onClick={() => go('support')}
                             >
-                                <HelpCircle size={18} />
+                                <LifeBuoy size={18} />
                                 <span>{labels.support}</span>
                             </button>
                         )}

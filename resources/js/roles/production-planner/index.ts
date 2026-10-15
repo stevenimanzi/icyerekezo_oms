@@ -1,4 +1,4 @@
-import { Boxes, FileText, Gauge, LayoutDashboard, Warehouse } from 'lucide-react';
+import { ChartColumn, Factory, LayoutDashboard, Package, Warehouse } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const productionPlannerRole: RoleModule = {
@@ -6,9 +6,9 @@ export const productionPlannerRole: RoleModule = {
     matches: ({ flags }) => flags.isProductionPlanner,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['production', Gauge, text('Planning', 'Planification'), 'production.view'],
-        ['products', Boxes, labels.products, 'products.view'],
+        ['production', Factory, text('Planning', 'Planification'), 'production.view'],
+        ['products', Package, labels.products, 'products.view'],
         ['inventory', Warehouse, text('Materials', 'Matières'), 'inventory.view'],
-        ['reports', FileText, labels.reports, 'reports.view'],
+        ['reports', ChartColumn, labels.reports, 'reports.view'],
     ],
 };

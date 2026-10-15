@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, Scissors } from 'lucide-react';
+import { ChartColumn, LayoutDashboard, Scissors } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const cuttingRole: RoleModule = {
@@ -7,6 +7,6 @@ export const cuttingRole: RoleModule = {
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['cutting-workspace', Scissors, text('Cutting', 'Coupe'), 'production.view'],
-        ['cutting-report', FileText, text('Report', 'Rapport'), 'production.view'],
+        ['cutting-report', ChartColumn, text('Report', 'Rapport'), 'production.view'],
     ],
 };

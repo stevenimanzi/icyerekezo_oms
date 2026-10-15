@@ -1,4 +1,4 @@
-import { FileText, Gauge, LayoutDashboard } from 'lucide-react';
+import { ChartColumn, LayoutDashboard, Sparkles } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const finishingRole: RoleModule = {
@@ -6,7 +6,7 @@ export const finishingRole: RoleModule = {
     matches: ({ flags }) => flags.isNoguchiFactory && flags.isFinishingUser,
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['finishing-workspace', Gauge, text('Finishing', 'Finition'), 'production.view'],
-        ['reports', FileText, labels.reports, 'reports.view'],
+        ['finishing-workspace', Sparkles, text('Finishing', 'Finition'), 'production.view'],
+        ['reports', ChartColumn, labels.reports, 'reports.view'],
     ],
 };

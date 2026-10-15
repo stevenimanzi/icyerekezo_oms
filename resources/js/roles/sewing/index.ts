@@ -1,4 +1,4 @@
-import { FileText, Gauge, LayoutDashboard } from 'lucide-react';
+import { ChartColumn, LayoutDashboard, Shirt } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const sewingRole: RoleModule = {
@@ -6,7 +6,7 @@ export const sewingRole: RoleModule = {
     matches: ({ user, flags }) => flags.isNoguchiFactory && user.workspace === 'sewing',
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
-        ['sewing-workspace', Gauge, text('Sewing', 'Couture'), 'production.view'],
-        ['reports', FileText, labels.reports, 'reports.view'],
+        ['sewing-workspace', Shirt, text('Sewing', 'Couture'), 'production.view'],
+        ['reports', ChartColumn, labels.reports, 'reports.view'],
     ],
 };

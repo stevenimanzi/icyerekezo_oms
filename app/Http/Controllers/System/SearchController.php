@@ -146,7 +146,7 @@ class SearchController extends Controller
                 ],
                 [
                     'type' => 'Page',
-                    'title' => 'Sales',
+                    'title' => 'Sales & Marketing',
                     'subtitle' => 'Customers, sales and invoices',
                     'page' => 'sales',
                 ],

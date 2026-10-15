@@ -1,7 +1,7 @@
 import {
-    ClipboardCheck,
-    FileText,
-    Gauge,
+    BadgeCheck,
+    ChartColumn,
+    Factory,
     LayoutDashboard,
     ShoppingCart,
     Warehouse,
@@ -14,9 +14,9 @@ export const internalAuditorRole: RoleModule = {
     nav: ({ labels, text }) => [
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['inventory', Warehouse, text('Stock', 'Stock'), 'inventory.view'],
-        ['production', Gauge, text('Production', 'Production'), 'production.view'],
-        ['quality', ClipboardCheck, text('Quality', 'Qualité'), 'quality.view'],
+        ['production', Factory, text('Production', 'Production'), 'production.view'],
+        ['quality', BadgeCheck, text('Quality', 'Qualité'), 'quality.view'],
         ['procurement', ShoppingCart, text('Purchases', 'Achats'), 'procurement.view'],
-        ['reports', FileText, text('Reports', 'Rapports'), 'reports.view'],
+        ['reports', ChartColumn, text('Reports', 'Rapports'), 'reports.view'],
     ],
 };

@@ -10228,10 +10228,18 @@ small,
     box-shadow: none !important;
 }
 
-/* ---------- Scrollbars: one thin blue style everywhere ---------- */
+/* ---------- Scrollbars: one slim, soft style everywhere (change the two colours below to retune) ---------- */
+:root {
+    --scroll-thumb: #cbd5e1;
+    --scroll-thumb-hover: #94a3b8;
+}
+[data-theme='dark'] {
+    --scroll-thumb: #3b4a63;
+    --scroll-thumb-hover: #5d7094;
+}
 * {
     scrollbar-width: thin;
-    scrollbar-color: #2563eb transparent;
+    scrollbar-color: var(--scroll-thumb) transparent;
 }
 @supports selector(::-webkit-scrollbar) {
     * {
@@ -10239,18 +10247,21 @@ small,
         scrollbar-color: auto;
     }
     *::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 10px;
+        height: 10px;
     }
     *::-webkit-scrollbar-track {
         background: transparent;
     }
     *::-webkit-scrollbar-thumb {
+        border: 3px solid transparent;
         border-radius: 999px;
-        background: #2563eb;
+        background: var(--scroll-thumb);
+        background-clip: padding-box;
     }
     *::-webkit-scrollbar-thumb:hover {
-        background: #1d4ed8;
+        background: var(--scroll-thumb-hover);
+        background-clip: padding-box;
     }
     *::-webkit-scrollbar-corner {
         background: transparent;

@@ -1,10 +1,11 @@
 import {
-    Activity,
+    Car,
+    ChartColumn,
+    CheckCheck,
+    ClipboardList,
     FileSignature,
-    FileText,
     LayoutDashboard,
-    PackageCheck,
-    PackageOpen,
+    Route,
     Truck,
     Warehouse,
 } from 'lucide-react';
@@ -19,22 +20,22 @@ export const logisticsRole: RoleModule = {
             : [
                   ['inventory', Warehouse, text('Stock', 'Stock'), 'inventory.view'],
                   ['logistics', Truck, text('Shipments', 'Expéditions'), 'logistics.view'],
-                  ['dispatch', Activity, text('Dispatch', 'Départs'), 'logistics.dispatch'],
-                  ['vehicles', Truck, text('Vehicles', 'Véhicules'), 'logistics.view'],
+                  ['dispatch', Route, text('Dispatch', 'Départs'), 'logistics.dispatch'],
+                  ['vehicles', Car, text('Vehicles', 'Véhicules'), 'logistics.view'],
               ];
 
         return [
             ['dashboard', LayoutDashboard, text('Dashboard', 'Tableau de bord'), '*'],
-            ['sales', PackageOpen, text('Orders', 'Commandes'), 'sales.view'],
+            ['sales', ClipboardList, text('Orders', 'Commandes'), 'sales.view'],
             ...shipping,
             [
                 'delivery-confirmation',
-                PackageCheck,
+                CheckCheck,
                 text('Confirm delivery', 'Confirmer la livraison'),
                 'logistics.deliver',
             ],
             ['agreement', FileSignature, text('Agreement', 'Accord'), 'logistics.view'],
-            ['reports', FileText, labels.reports, 'reports.view'],
+            ['reports', ChartColumn, labels.reports, 'reports.view'],
         ];
     },
 };

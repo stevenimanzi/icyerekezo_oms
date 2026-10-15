@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, Warehouse, Wrench } from 'lucide-react';
+import { ChartColumn, LayoutDashboard, Warehouse, Wrench } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const maintenanceTechnicianRole: RoleModule = {
@@ -8,6 +8,6 @@ export const maintenanceTechnicianRole: RoleModule = {
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['machines', Wrench, text('Repairs', 'Réparations'), 'maintenance.view'],
         ['inventory', Warehouse, text('Spare parts', 'Pièces de rechange'), 'inventory.view'],
-        ['reports', FileText, labels.reports, 'reports.view'],
+        ['reports', ChartColumn, labels.reports, 'reports.view'],
     ],
 };
