@@ -580,8 +580,8 @@ class DepartmentDashboardController extends Controller
 
             $finishingProgress = [
                 'weekly' => collect(range(6, 0))
-                    ->map(function ($daysAgo) use ($finishingOutputQuery) {
-                        $date = $specificDate->subDays($daysAgo);
+                    ->map(function ($daysAgo) use ($finishingOutputQuery, $specificDate) {
+                        $date = $specificDate->copy()->subDays($daysAgo);
 
                         return [
                             'period' => $date->format('D'),
@@ -594,8 +594,8 @@ class DepartmentDashboardController extends Controller
                     })
                     ->values(),
                 'monthly' => collect(range(29, 0))
-                    ->map(function ($daysAgo) use ($finishingOutputQuery) {
-                        $date = $specificDate->subDays($daysAgo);
+                    ->map(function ($daysAgo) use ($finishingOutputQuery, $specificDate) {
+                        $date = $specificDate->copy()->subDays($daysAgo);
 
                         return [
                             'period' => $date->format('d M'),
@@ -658,8 +658,8 @@ class DepartmentDashboardController extends Controller
 
             $packingProgress = [
                 'weekly' => collect(range(6, 0))
-                    ->map(function ($daysAgo) use ($packingOutputQuery) {
-                        $date = $specificDate->subDays($daysAgo);
+                    ->map(function ($daysAgo) use ($packingOutputQuery, $specificDate) {
+                        $date = $specificDate->copy()->subDays($daysAgo);
 
                         return [
                             'period' => $date->format('D'),
@@ -672,8 +672,8 @@ class DepartmentDashboardController extends Controller
                     })
                     ->values(),
                 'monthly' => collect(range(29, 0))
-                    ->map(function ($daysAgo) use ($packingOutputQuery) {
-                        $date = $specificDate->subDays($daysAgo);
+                    ->map(function ($daysAgo) use ($packingOutputQuery, $specificDate) {
+                        $date = $specificDate->copy()->subDays($daysAgo);
 
                         return [
                             'period' => $date->format('d M'),
@@ -740,8 +740,8 @@ class DepartmentDashboardController extends Controller
 
             $qualityProgress = [
                 'weekly' => collect(range(6, 0))
-                    ->map(function ($daysAgo) use ($inspectionsQuery) {
-                        $date = $specificDate->subDays($daysAgo);
+                    ->map(function ($daysAgo) use ($inspectionsQuery, $specificDate) {
+                        $date = $specificDate->copy()->subDays($daysAgo);
 
                         return [
                             'period' => $date->format('D'),
@@ -758,8 +758,8 @@ class DepartmentDashboardController extends Controller
                     })
                     ->values(),
                 'monthly' => collect(range(29, 0))
-                    ->map(function ($daysAgo) use ($inspectionsQuery) {
-                        $date = $specificDate->subDays($daysAgo);
+                    ->map(function ($daysAgo) use ($inspectionsQuery, $specificDate) {
+                        $date = $specificDate->copy()->subDays($daysAgo);
 
                         return [
                             'period' => $date->format('d M'),
