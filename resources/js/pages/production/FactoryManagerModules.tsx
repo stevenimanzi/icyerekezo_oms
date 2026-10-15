@@ -1579,7 +1579,6 @@ export function ReportsPage({
                         {loading ? 'Updating...' : 'Refresh now'}
                     </button>
                     <div className="live-report-status">
-                        <i></i>
                         <span>
                             Live data
                             {lastUpdated ? ' · Updated ' + lastUpdated.toLocaleTimeString() : ''}

@@ -112,7 +112,6 @@ export function UserSupportChat({ user, locale }: { user: AuthUser; locale: Loca
                 </div>
                 <div className="support-actions">
                     <span className="support-live">
-                        <i></i>
                         {lastUpdated
                             ? (locale === 'en' ? 'Updated ' : 'Actualisé ') +
                               lastUpdated.toLocaleTimeString()
@@ -144,7 +143,6 @@ export function UserSupportChat({ user, locale }: { user: AuthUser; locale: Loca
                                     {locale === 'en' ? 'ICYEREKEZO Support' : 'Support ICYEREKEZO'}
                                 </h3>
                                 <p>
-                                    <i></i>
                                     {locale === 'en'
                                         ? 'System administrator online'
                                         : 'Administrateur système en ligne'}

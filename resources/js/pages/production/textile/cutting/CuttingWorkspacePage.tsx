@@ -511,7 +511,6 @@ export default function CuttingWorkspacePage({
                 </div>
                 <div className="support-actions">
                     <span className="support-live">
-                        <i></i>
                         {updated ? `${t.updated} ${updated.toLocaleTimeString()}` : t.connecting}
                     </span>
                     <button className="secondary-btn" disabled={loading} onClick={() => load()}>

@@ -2934,13 +2934,6 @@ td,
     align-items: center;
     gap: 6px;
 }
-.support-admin-name p i {
-    display: block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #22c55e;
-}
 .user-support-room .chat-messages {
     min-height: 0;
     background-color: #eef3f8;
@@ -3011,12 +3004,6 @@ td,
     font-size: 13px;
     font-weight: 700;
     white-space: nowrap;
-}
-.support-live i {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--muted);
 }
 .user-support-room {
     height: clamp(570px, calc(100dvh - 285px), 790px);
@@ -3320,13 +3307,6 @@ td,
     color: #158f60;
     font-size: 12px;
     font-weight: 700;
-}
-.department-live i {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 0 5px #22c55e18;
 }
 .department-metrics {
     display: grid;
@@ -5509,12 +5489,6 @@ td,
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
-}
-.support-live i {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--muted);
 }
 .chat-welcome p {
     color: var(--muted);

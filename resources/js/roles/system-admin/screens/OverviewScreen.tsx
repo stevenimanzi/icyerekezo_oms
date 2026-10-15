@@ -54,7 +54,6 @@ export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
                         </p>
                     </div>
                     <div className="growth-live">
-                        <i></i>
                         <span>Current data</span>
                     </div>
                 </header>

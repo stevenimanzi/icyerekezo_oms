@@ -57,17 +57,6 @@
     font-size: 11px;
 }
 
-.ow-status i {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--ow-good);
-}
-
-.ow-status i.busy {
-    opacity: 0.4;
-}
-
 .ow-empty-page,
 .ow-empty {
     padding: 36px 20px;
@@ -120,10 +109,6 @@
     flex: none;
     border-radius: 50%;
     background: var(--muted);
-}
-
-.ow-dot.good {
-    background: var(--ow-good);
 }
 
 .ow-dot.info {

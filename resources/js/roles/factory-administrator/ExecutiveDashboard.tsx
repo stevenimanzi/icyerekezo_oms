@@ -138,7 +138,6 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
             {error && <div className="admin-alert error">{error}</div>}
 
             <div className="live-report-status">
-                <i></i>
                 <span>
                     {updatedAt
                         ? (locale === 'fr' ? 'Données actualisées à ' : 'Data updated at ') +

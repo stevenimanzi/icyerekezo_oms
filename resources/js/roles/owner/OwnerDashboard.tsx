@@ -59,7 +59,6 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
             {error && <div className="admin-alert error">{error}</div>}
 
             <p className="ow-status">
-                <i className={loading ? 'busy' : ''}></i>
                 {updatedAt
                     ? `${text.updatedAt} ${updatedAt.toLocaleTimeString()}`
                     : text.connecting}

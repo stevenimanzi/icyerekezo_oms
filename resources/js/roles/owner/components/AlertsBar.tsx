@@ -14,7 +14,6 @@ export function AlertsBar({ alerts, openablePages, text, onNavigate }: Props) {
     if (!alerts.length) {
         return (
             <section className="panel ow-alerts clear" role="status">
-                <span className="ow-dot good" />
                 <p>{text.allClear}</p>
             </section>
         );
