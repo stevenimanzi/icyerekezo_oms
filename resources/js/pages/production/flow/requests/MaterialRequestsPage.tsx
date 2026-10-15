@@ -213,7 +213,7 @@ export default function MaterialRequestsPage({ locale }: Props) {
                             ) : (
                                 <tr>
                                     <td colSpan={7} className="empty">
-                                        {words.empty}
+                                        {data ? words.empty : text.loading}
                                     </td>
                                 </tr>
                             )}

@@ -67,3 +67,7 @@
         display: none;
     }
 }
+
+.ui-row-actions .ui-link {
+    white-space: nowrap;
+}
