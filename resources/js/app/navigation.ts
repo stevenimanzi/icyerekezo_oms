@@ -3,6 +3,7 @@ import type { AuthUser } from '../core/types';
 import { navFor } from '../roles/registry';
 import type { NavGroup, NavItem, RoleContext } from '../roles/types';
 
+/** Which subscription feature a page belongs to. Pages that are not listed use their own name. */
 const FEATURE_FOR_PAGE: Record<string, string> = {
     dashboard: 'dashboard',
     activity: 'dashboard',
@@ -50,6 +51,7 @@ export function createAccess(user: AuthUser) {
 
 export type Access = ReturnType<typeof createAccess>;
 
+/** The sidebar entries this person may open: right permission and included in the factory's plan. */
 export function visibleNav(context: RoleContext, access: Access): NavItem[] {
     const { user, flags } = context;
 
@@ -64,6 +66,7 @@ export type NavEntry =
     | { type: 'item'; key: string; item: NavItem }
     | { type: 'group'; key: string; label: string; icon: LucideIcon; items: NavItem[] };
 
+/** Folds the flat list into expandable groups, keeping each group where its first child was. */
 export function groupNav(nav: NavItem[], groups: Record<string, NavGroup>): NavEntry[] {
     const assigned = new Set<string>();
     const built: Extract<NavEntry, { type: 'group' }>[] = [];

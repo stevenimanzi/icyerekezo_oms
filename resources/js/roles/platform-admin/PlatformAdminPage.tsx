@@ -1,123 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import {
-    Activity,
-    Building2,
-    CheckCircle2,
-    CreditCard,
-    Database,
-    Megaphone,
-    MessageSquare,
-    Plus,
-    RefreshCw,
-    Save,
-    Settings,
-    ShieldCheck,
-    Users,
-    Pencil,
-    Trash2,
-    Eye,
-    X,
-    Clock,
-    TrendingUp,
-} from 'lucide-react';
-import {
-    CartesianGrid,
-    Line,
-    LineChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
+import { Activity, Building2, CheckCircle2, CreditCard, Database, Megaphone, MessageSquare, Plus, RefreshCw, Save, Settings, ShieldCheck, Users, Pencil, Trash2, Eye, X, Clock, TrendingUp } from 'lucide-react';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import SystemSettingsPanel from '../../pages/system/SystemSettingsPanel';
 
 type Locale = 'en' | 'fr';
-const csrf = () =>
-    document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 async function request(url: string, options: RequestInit = {}) {
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            Accept: 'application/json',
-            ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-            'X-CSRF-TOKEN': csrf(),
-            ...(options.headers || {}),
-        },
-    });
+    const response = await fetch(url, { ...options, headers: { Accept: 'application/json', ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), 'X-CSRF-TOKEN': csrf(), ...(options.headers || {}) } });
     const text = await response.text();
     let payload: any = {};
     try {
         payload = text ? JSON.parse(text) : {};
     } catch {
-        throw new Error(
-            'The server returned a web page instead of data. Please refresh and sign in again.',
-        );
+        throw new Error('The server returned a web page instead of data. Please refresh and sign in again.');
     }
-    if (!response.ok)
-        throw new Error(
-            payload.message ||
-                Object.values(payload.errors || {})
-                    .flat()
-                    .join(' ') ||
-                'Could not save this. Please check your entries and try again.',
-        );
+    if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'Could not save this. Please check your entries and try again.');
     return payload;
 }
 
 const pageInfo: Record<string, [React.ElementType, string, string]> = {
-    'platform-dashboard': [
-        Activity,
-        'Platform overview',
-        'Live control of factories, users, subscriptions, support and system services.',
-    ],
+    'platform-dashboard': [Activity, 'Platform overview', 'Live control of factories, users, subscriptions, support and system services.'],
     factories: [Building2, 'Factories', 'Register, approve, activate and suspend every factory.'],
-    'platform-users': [
-        Users,
-        'All users',
-        'Control account status and trusted platform administrators.',
-    ],
-    subscriptions: [
-        CreditCard,
-        'Subscriptions',
-        'Create plans, assign billing periods and monitor expiry.',
-    ],
+    'platform-users': [Users, 'All users', 'Control account status and trusted platform administrators.'],
+    subscriptions: [CreditCard, 'Subscriptions', 'Create plans, assign billing periods and monitor expiry.'],
     announcements: [Megaphone, 'Announcements', 'Broadcast important messages to platform users.'],
-    'support-center': [
-        MessageSquare,
-        'Support centre',
-        'Receive problems, reply and track resolution.',
-    ],
+    'support-center': [MessageSquare, 'Support centre', 'Receive problems, reply and track resolution.'],
     backups: [Database, 'Database backups', 'Create and monitor secure recovery points.'],
-    'audit-logs': [
-        ShieldCheck,
-        'Audit logs',
-        'Every recorded action across every factory, searchable and filterable.',
-    ],
-    'system-settings': [
-        Settings,
-        'System settings',
-        'Manage branding, registration and maintenance mode.',
-    ],
+    'audit-logs': [ShieldCheck, 'Audit logs', 'Every recorded action across every factory, searchable and filterable.'],
+    'system-settings': [Settings, 'System settings', 'Manage branding, registration and maintenance mode.'],
 };
 const industries = [
-    ['general_manufacturing', 'General manufacturing'],
-    ['clothing_textiles', 'Clothing and textiles'],
-    ['food_processing', 'Food processing'],
-    ['beverages', 'Beverages and drinks'],
-    ['dairy', 'Milk and dairy products'],
-    ['pharmaceuticals_medicines', 'Medicines and pharmaceuticals'],
-    ['plastics_rubber', 'Plastics and rubber materials'],
-    ['steel_metals', 'Steel and metal products'],
-    ['grain_flour_milling', 'Maize, grain and flour milling'],
-    ['agriculture_animal_feed', 'Agriculture and animal feed'],
-    ['construction_materials', 'Construction materials, cement and bricks'],
-    ['furniture_wood', 'Furniture and wood products'],
-    ['paper_packaging_printing', 'Paper, packaging and printing'],
-    ['chemicals_cosmetics_soap', 'Chemicals, cosmetics and soap'],
-    ['electronics_electrical', 'Electronics and electrical products'],
-    ['automotive_machinery', 'Automotive parts and machinery'],
-    ['recycling_waste', 'Recycling and waste processing'],
-    ['other', 'Other factory industry'],
+    ['general_manufacturing', 'General manufacturing'], ['clothing_textiles', 'Clothing and textiles'], ['food_processing', 'Food processing'], ['beverages', 'Beverages and drinks'],
+    ['dairy', 'Milk and dairy products'], ['pharmaceuticals_medicines', 'Medicines and pharmaceuticals'], ['plastics_rubber', 'Plastics and rubber materials'], ['steel_metals', 'Steel and metal products'],
+    ['grain_flour_milling', 'Maize, grain and flour milling'], ['agriculture_animal_feed', 'Agriculture and animal feed'], ['construction_materials', 'Construction materials, cement and bricks'],
+    ['furniture_wood', 'Furniture and wood products'], ['paper_packaging_printing', 'Paper, packaging and printing'], ['chemicals_cosmetics_soap', 'Chemicals, cosmetics and soap'],
+    ['electronics_electrical', 'Electronics and electrical products'], ['automotive_machinery', 'Automotive parts and machinery'], ['recycling_waste', 'Recycling and waste processing'], ['other', 'Other factory industry'],
 ];
 
 export default function PlatformAdminPage({ page, locale }: { page: string; locale: Locale }) {
@@ -131,40 +48,16 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
     const [viewFactory, setViewFactory] = useState<any>(null);
     const [subscriptionFactory, setSubscriptionFactory] = useState<any>(null);
     const [subPlans, setSubPlans] = useState([]);
-    useEffect(() => {
-        if (subscriptionFactory && subPlans.length === 0) {
-            request('/api/platform/subscriptions').then((res) => setSubPlans(res.plans || []));
-        }
-    }, [subscriptionFactory]);
+    useEffect(() => { if (subscriptionFactory && subPlans.length === 0) { request('/api/platform/subscriptions').then(res => setSubPlans(res.plans || [])); } }, [subscriptionFactory]);
     const [form, setForm] = useState<Record<string, any>>({});
-    const [auditFilters, setAuditFilters] = useState({
-        search: '',
-        event: '',
-        factory_id: '',
-        from: '',
-        to: '',
-    });
-    const [usersFilters, setUsersFilters] = useState({
-        tab: 'all',
-        search: '',
-        active: '',
-        role: '',
-        page: 1,
-    });
+    const [auditFilters, setAuditFilters] = useState({ search: '', event: '', factory_id: '', from: '', to: '' });
+    const [usersFilters, setUsersFilters] = useState({ tab: 'all', search: '', active: '', role: '', page: 1 });
     const [Icon, title, description] = pageInfo[page] || pageInfo['platform-dashboard'];
-    const endpoint = (
-        {
-            'platform-dashboard': '/api/platform/overview',
-            factories: '/api/platform/factories',
-            'platform-users': '/api/platform/users',
-            subscriptions: '/api/platform/subscriptions',
-            announcements: '/api/platform/announcements',
-            'support-center': '/api/platform/tickets',
-            backups: '/api/platform/backups',
-            'audit-logs': '/api/platform/audit-logs',
-            'system-settings': '/api/platform/settings',
-        } as Record<string, string>
-    )[page];
+    const endpoint = ({
+        'platform-dashboard': '/api/platform/overview', factories: '/api/platform/factories', 'platform-users': '/api/platform/users',
+        subscriptions: '/api/platform/subscriptions', announcements: '/api/platform/announcements', 'support-center': '/api/platform/tickets',
+        backups: '/api/platform/backups', 'audit-logs': '/api/platform/audit-logs', 'system-settings': '/api/platform/settings',
+    } as Record<string, string>)[page];
 
     const load = async () => {
         setBusy(true);
@@ -174,59 +67,36 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
             if (page === 'audit-logs') {
                 url = `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(auditFilters).filter(([, v]) => v)))}`;
             } else if (page === 'platform-users') {
-                url = `${endpoint}?${new URLSearchParams(
-                    Object.fromEntries(
-                        Object.entries(usersFilters)
-                            .filter(([, v]) => v)
-                            .map(([k, v]) => [k, String(v)]),
-                    ),
-                )}`;
+                url = `${endpoint}?${new URLSearchParams(Object.fromEntries(Object.entries(usersFilters).filter(([, v]) => v).map(([k, v]) => [k, String(v)])))}`;
             }
             setData(await request(url));
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Unable to load.');
-        } finally {
-            setBusy(false);
-        }
+        } finally { setBusy(false); }
     };
-    useEffect(() => {
-        setShowForm(false);
-        setForm({});
+    useEffect(() => { 
+        setShowForm(false); 
+        setForm({}); 
         setSuccess('');
         setError('');
-        load();
+        load(); 
     }, [page]);
-
+    
     useEffect(() => {
         if (!success) return;
         const timer = window.setTimeout(() => setSuccess(''), 5000);
         return () => window.clearTimeout(timer);
     }, [success]);
-
-    useEffect(() => {
-        if (page === 'audit-logs') load();
-    }, [auditFilters]);
-    useEffect(() => {
-        if (page === 'platform-users') load();
-    }, [usersFilters]);
+    
+    useEffect(() => { if (page === 'audit-logs') load(); }, [auditFilters]);
+    useEffect(() => { if (page === 'platform-users') load(); }, [usersFilters]);
     useEffect(() => {
         if (!['support-center', 'platform-dashboard', 'backups'].includes(page)) return;
-        const timer = window.setInterval(
-            () =>
-                request(endpoint)
-                    .then(setData)
-                    .catch(() => {}),
-            5000,
-        );
+        const timer = window.setInterval(() => request(endpoint).then(setData).catch(() => {}), 5000);
         return () => window.clearInterval(timer);
     }, [page, endpoint]);
 
-    const run = async (
-        url: string,
-        method: string,
-        body?: any,
-        message = 'Saved successfully.',
-    ) => {
+    const run = async (url: string, method: string, body?: any, message = 'Saved successfully.') => {
         setBusy(true);
         setError('');
         setSuccess('');
@@ -255,247 +125,61 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
             setBusy(false);
         }
     };
-    const records =
-        page === 'platform-users'
-            ? data?.users?.data || []
-            : page === 'audit-logs'
-              ? data?.logs?.data || []
-              : data?.data || [];
+    const records = page === 'platform-users' ? (data?.users?.data || []) : page === 'audit-logs' ? (data?.logs?.data || []) : (data?.data || []);
 
     return (
         <section className="platform-page">
             <div className="platform-heading">
-                <div>
-                    <span className="platform-kicker">SYSTEM ADMINISTRATION</span>
-                    <h1>{title}</h1>
-                    <p>{description}</p>
-                </div>
+                <div><span className="platform-kicker">SYSTEM ADMINISTRATION</span><h1>{title}</h1><p>{description}</p></div>
                 <div className="platform-heading-actions">
-                    <button className="secondary-btn" onClick={load} disabled={busy}>
-                        <RefreshCw size={15} />
-                        Refresh
-                    </button>
-                    {![
-                        'platform-dashboard',
-                        'support-center',
-                        'system-settings',
-                        'audit-logs',
-                    ].includes(page) && (
-                        <button className="primary-btn" onClick={() => setShowForm(!showForm)}>
-                            <Plus size={16} />
-                            {page === 'backups' ? 'Create backup' : 'Create new'}
-                        </button>
+                    <button className="secondary-btn" onClick={load} disabled={busy}><RefreshCw size={15} />Refresh</button>
+                    {!['platform-dashboard', 'support-center', 'system-settings', 'audit-logs'].includes(page) && (
+                        <button className="primary-btn" onClick={() => setShowForm(!showForm)}><Plus size={16} />{page === 'backups' ? 'Create backup' : 'Create new'}</button>
                     )}
                 </div>
             </div>
             {error && <div className="admin-alert error">{error}</div>}
-            {success && (
-                <div className="admin-alert success">
-                    <CheckCircle2 size={16} />
-                    {success}
-                </div>
-            )}
+            {success && <div className="admin-alert success"><CheckCircle2 size={16} />{success}</div>}
 
             {page === 'platform-dashboard' && <Dashboard data={data} />}
 
             {page === 'factories' && (
                 <>
-                    <FactoryForm
-                        open={showForm}
-                        form={form}
-                        setForm={setForm}
-                        submit={(values: any) =>
-                            run(
-                                '/api/platform/factories',
-                                'POST',
-                                values,
-                                'Factory registered and awaiting approval.',
-                            )
-                        }
-                    />
+                    <FactoryForm open={showForm} form={form} setForm={setForm} submit={(values: any) => run('/api/platform/factories', 'POST', values, 'Factory registered and awaiting approval.')} />
                     <AdminTable
                         headers={['Factory', 'Industry', 'Users', 'Status', 'Action']}
                         rows={records.map((item: any) => [
-                            <b>{item.name}</b>,
-                            item.industry_type || '—',
-                            item.users_count,
-                            <Status value={item.status} />,
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    gap: 6,
-                                    alignItems: 'center',
-                                    width: '100%',
-                                }}
-                            >
-                                <select
-                                    value={item.status}
-                                    onChange={(event) =>
-                                        run(
-                                            `/api/platform/factories/${item.id}`,
-                                            'PATCH',
-                                            { status: event.target.value },
-                                            'Factory status updated.',
-                                        )
-                                    }
-                                >
-                                    <option value="pending">Pending</option>
-                                    <option value="active">Active</option>
-                                    <option value="suspended">Suspended</option>
-                                    <option value="rejected">Rejected</option>
+                            <b>{item.name}</b>, item.industry_type || '—', item.users_count, <Status value={item.status} />,
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%' }}>
+                                <select value={item.status} onChange={event => run(`/api/platform/factories/${item.id}`, 'PATCH', { status: event.target.value }, 'Factory status updated.')}>
+                                    <option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option>
                                 </select>
                                 <div style={{ flex: 1 }}></div>
-                                <button
-                                    type="button"
-                                    className="table-action"
-                                    title="Change subscription"
-                                    onClick={() => setSubscriptionFactory(item)}
-                                >
-                                    <CreditCard size={16} />
-                                </button>
-                                <button
-                                    type="button"
-                                    className="table-action"
-                                    title="View details"
-                                    onClick={() => setViewFactory(item)}
-                                >
-                                    <Eye size={16} />
-                                </button>
-                                <button
-                                    type="button"
-                                    className="table-action"
-                                    title="Delete factory"
-                                    onClick={() => {
-                                        if (
-                                            window.confirm(
-                                                'Are you sure you want to completely delete this factory?',
-                                            )
-                                        )
-                                            run(
-                                                `/api/platform/factories/${item.id}`,
-                                                'DELETE',
-                                                undefined,
-                                                'Factory deleted.',
-                                            );
-                                    }}
-                                >
-                                    <Trash2 size={16} color="red" />
-                                </button>
-                            </div>,
+                                <button type="button" className="table-action" title="Change subscription" onClick={() => setSubscriptionFactory(item)}><CreditCard size={16} /></button>
+                                <button type="button" className="table-action" title="View details" onClick={() => setViewFactory(item)}><Eye size={16} /></button>
+                                <button type="button" className="table-action" title="Delete factory" onClick={() => { if(window.confirm('Are you sure you want to completely delete this factory?')) run(`/api/platform/factories/${item.id}`, 'DELETE', undefined, 'Factory deleted.') }}><Trash2 size={16} color="red" /></button>
+                            </div>
                         ])}
                     />
                     {subscriptionFactory && (
-                        <div
-                            style={{
-                                position: 'fixed',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                background: 'rgba(0,0,0,0.5)',
-                                zIndex: 100,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                            onClick={() => setSubscriptionFactory(null)}
-                        >
-                            <form
-                                className="panel admin-form"
-                                style={{
-                                    width: '100%',
-                                    maxWidth: 500,
-                                    padding: 24,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 16,
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    run(
-                                        `/api/platform/factories/${subscriptionFactory.id}/subscriptions`,
-                                        'POST',
-                                        {
-                                            subscription_plan_id: e.currentTarget.plan_id.value,
-                                            starts_at: e.currentTarget.starts_at.value,
-                                            ends_at: e.currentTarget.ends_at.value,
-                                            status: 'active',
-                                        },
-                                        'Subscription extended',
-                                    ).then(() => setSubscriptionFactory(null));
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                    }}
-                                >
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setSubscriptionFactory(null)}>
+                            <form className="panel admin-form" style={{ width: '100%', maxWidth: 500, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }} onClick={e => e.stopPropagation()} onSubmit={e => { e.preventDefault(); run(`/api/platform/factories/${subscriptionFactory.id}/subscriptions`, 'POST', { subscription_plan_id: e.currentTarget.plan_id.value, starts_at: e.currentTarget.starts_at.value, ends_at: e.currentTarget.ends_at.value, status: 'active' }, 'Subscription extended').then(() => setSubscriptionFactory(null)); }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <h2 style={{ margin: 0 }}>Extend Subscription</h2>
-                                    <button
-                                        type="button"
-                                        className="secondary-btn"
-                                        onClick={() => setSubscriptionFactory(null)}
-                                    >
-                                        Close
-                                    </button>
+                                    <button type="button" className="secondary-btn" onClick={() => setSubscriptionFactory(null)}>Close</button>
                                 </div>
                                 <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
-                                    <label>
-                                        Plan
-                                        <select
-                                            name="plan_id"
-                                            defaultValue={
-                                                subscriptionFactory.subscriptions?.[0]
-                                                    ?.subscription_plan_id || ''
-                                            }
-                                            required
-                                        >
+                                    <label>Plan
+                                        <select name="plan_id" defaultValue={subscriptionFactory.subscriptions?.[0]?.subscription_plan_id || ''} required>
                                             <option value="">Select plan</option>
-                                            {subPlans.map((p: any) => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.name}
-                                                </option>
-                                            ))}
+                                            {subPlans.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
                                     </label>
-                                    <label>
-                                        Start Date
-                                        <input
-                                            type="date"
-                                            name="starts_at"
-                                            defaultValue={
-                                                subscriptionFactory.subscriptions?.[0]?.starts_at
-                                                    ? new Date(
-                                                          subscriptionFactory.subscriptions[0]
-                                                              .starts_at,
-                                                      )
-                                                          .toISOString()
-                                                          .slice(0, 10)
-                                                    : new Date().toISOString().slice(0, 10)
-                                            }
-                                            required
-                                        />
+                                    <label>Start Date
+                                        <input type="date" name="starts_at" defaultValue={subscriptionFactory.subscriptions?.[0]?.starts_at ? new Date(subscriptionFactory.subscriptions[0].starts_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)} required />
                                     </label>
-                                    <label>
-                                        End Date
-                                        <input
-                                            type="date"
-                                            name="ends_at"
-                                            defaultValue={
-                                                subscriptionFactory.subscriptions?.[0]?.ends_at
-                                                    ? new Date(
-                                                          subscriptionFactory.subscriptions[0]
-                                                              .ends_at,
-                                                      )
-                                                          .toISOString()
-                                                          .slice(0, 10)
-                                                    : ''
-                                            }
-                                            required
-                                        />
+                                    <label>End Date
+                                        <input type="date" name="ends_at" defaultValue={subscriptionFactory.subscriptions?.[0]?.ends_at ? new Date(subscriptionFactory.subscriptions[0].ends_at).toISOString().slice(0, 10) : ''} required />
                                     </label>
                                 </div>
                                 <button className="primary-btn">Save Changes</button>
@@ -503,110 +187,22 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                         </div>
                     )}
                     {viewFactory && (
-                        <div
-                            style={{
-                                position: 'fixed',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                background: 'rgba(0,0,0,0.5)',
-                                zIndex: 100,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                            onClick={() => setViewFactory(null)}
-                        >
-                            <div
-                                className="panel"
-                                style={{
-                                    width: '100%',
-                                    maxWidth: 500,
-                                    padding: 24,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 16,
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                    }}
-                                >
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setViewFactory(null)}>
+                            <div className="panel" style={{ width: '100%', maxWidth: 500, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }} onClick={e => e.stopPropagation()}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <h2 style={{ margin: 0 }}>Factory Details</h2>
-                                    <button
-                                        type="button"
-                                        className="secondary-btn"
-                                        onClick={() => setViewFactory(null)}
-                                    >
-                                        Close
-                                    </button>
+                                    <button type="button" className="secondary-btn" onClick={() => setViewFactory(null)}>Close</button>
                                 </div>
-                                <div
-                                    style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr',
-                                        gap: 12,
-                                    }}
-                                >
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Name
-                                        </small>
-                                        <b>{viewFactory.name}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Industry
-                                        </small>
-                                        <b>{viewFactory.industry_type || '-'}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Email
-                                        </small>
-                                        <b>{viewFactory.email || '-'}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Phone
-                                        </small>
-                                        <b>{viewFactory.phone || '-'}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Currency
-                                        </small>
-                                        <b>{viewFactory.currency_code || '-'}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Timezone
-                                        </small>
-                                        <b>{viewFactory.timezone || '-'}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Users Count
-                                        </small>
-                                        <b>{viewFactory.users_count || 0}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Status
-                                        </small>
-                                        <b>{viewFactory.status || '-'}</b>
-                                    </div>
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Created at
-                                        </small>
-                                        <b>{new Date(viewFactory.created_at).toLocaleString()}</b>
-                                    </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Name</small><b>{viewFactory.name}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Industry</small><b>{viewFactory.industry_type || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Email</small><b>{viewFactory.email || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Phone</small><b>{viewFactory.phone || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Currency</small><b>{viewFactory.currency_code || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Timezone</small><b>{viewFactory.timezone || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Users Count</small><b>{viewFactory.users_count || 0}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Status</small><b>{viewFactory.status || '-'}</b></div>
+                                    <div style={{ gridColumn: '1 / -1' }}><small style={{ color: 'var(--muted)', display: 'block' }}>Created at</small><b>{new Date(viewFactory.created_at).toLocaleString()}</b></div>
                                 </div>
                             </div>
                         </div>
@@ -616,90 +212,29 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
 
             {page === 'platform-users' && (
                 <>
-                    <div
-                        className="admin-form"
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr auto',
-                            gap: 10,
-                            padding: 16,
-                            marginBottom: 14,
-                        }}
-                    >
+                    <div className="admin-form" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, padding: 16, marginBottom: 14 }}>
                         <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
                             {['all', 'factories', 'schools'].map((tab) => (
                                 <button
                                     key={tab}
                                     type="button"
-                                    onClick={() =>
-                                        setUsersFilters({ ...usersFilters, tab, page: 1 })
-                                    }
+                                    onClick={() => setUsersFilters({ ...usersFilters, tab, page: 1 })}
                                     className={`table-action ${usersFilters.tab === tab ? 'active' : ''}`}
-                                    style={
-                                        usersFilters.tab === tab
-                                            ? {
-                                                  background: '#2563eb',
-                                                  color: '#ffffff',
-                                                  borderColor: '#2563eb',
-                                                  fontWeight: 'bold',
-                                              }
-                                            : {}
-                                    }
+                                    style={usersFilters.tab === tab ? { background: '#2563eb', color: '#ffffff', borderColor: '#2563eb', fontWeight: 'bold' } : {}}
                                 >
-                                    {tab === 'all'
-                                        ? 'All users'
-                                        : tab === 'factories'
-                                          ? 'Factory users'
-                                          : 'School users'}
+                                    {tab === 'all' ? 'All users' : tab === 'factories' ? 'Factory users' : 'School users'}
                                 </button>
                             ))}
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
-                            <input
-                                placeholder="Search users by name or email"
-                                value={usersFilters.search}
-                                onChange={(e) =>
-                                    setUsersFilters({
-                                        ...usersFilters,
-                                        search: e.target.value,
-                                        page: 1,
-                                    })
-                                }
-                                style={{
-                                    padding: 9,
-                                    border: '1px solid var(--line)',
-                                    borderRadius: 7,
-                                    background: 'var(--panel)',
-                                    color: 'var(--text)',
-                                }}
-                            />
-                            <select
-                                value={usersFilters.role}
-                                onChange={(e) =>
-                                    setUsersFilters({
-                                        ...usersFilters,
-                                        role: e.target.value,
-                                        page: 1,
-                                    })
-                                }
-                            >
+                            <input placeholder="Search users by name or email" value={usersFilters.search} onChange={(e) => setUsersFilters({ ...usersFilters, search: e.target.value, page: 1 })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 7, background: 'var(--panel)', color: 'var(--text)' }} />
+                            <select value={usersFilters.role} onChange={(e) => setUsersFilters({ ...usersFilters, role: e.target.value, page: 1 })}>
                                 <option value="">Any position / role</option>
                                 {data?.roles?.map((r: any) => (
-                                    <option key={r.slug} value={r.slug}>
-                                        {r.name}
-                                    </option>
+                                    <option key={r.slug} value={r.slug}>{r.name}</option>
                                 ))}
                             </select>
-                            <select
-                                value={usersFilters.active}
-                                onChange={(e) =>
-                                    setUsersFilters({
-                                        ...usersFilters,
-                                        active: e.target.value,
-                                        page: 1,
-                                    })
-                                }
-                            >
+                            <select value={usersFilters.active} onChange={(e) => setUsersFilters({ ...usersFilters, active: e.target.value, page: 1 })}>
                                 <option value="">Any status</option>
                                 <option value="1">Active only</option>
                                 <option value="0">Suspended only</option>
@@ -708,266 +243,57 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                     </div>
 
                     {viewUser && (
-                        <div
-                            style={{
-                                position: 'fixed',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                background: 'rgba(0,0,0,0.5)',
-                                zIndex: 100,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                            onClick={() => setViewUser(null)}
-                        >
-                            <div
-                                className="panel"
-                                style={{
-                                    width: '100%',
-                                    maxWidth: 500,
-                                    padding: 24,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 16,
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                    }}
-                                >
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setViewUser(null)}>
+                            <div className="panel" style={{ width: '100%', maxWidth: 500, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }} onClick={e => e.stopPropagation()}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <h2 style={{ margin: 0 }}>User Details</h2>
-                                    <button
-                                        type="button"
-                                        className="secondary-btn"
-                                        onClick={() => setViewUser(null)}
-                                    >
-                                        Close
-                                    </button>
+                                    <button type="button" className="secondary-btn" onClick={() => setViewUser(null)}>Close</button>
                                 </div>
-                                <div
-                                    style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr',
-                                        gap: 12,
-                                    }}
-                                >
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Name
-                                        </small>
-                                        <b>{viewUser.name}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Email
-                                        </small>
-                                        <b>{viewUser.email || '-'}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Username
-                                        </small>
-                                        <b>{viewUser.username || '-'}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Phone
-                                        </small>
-                                        <b>{viewUser.phone || '-'}</b>
-                                    </div>
-                                    <div>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Role / Position
-                                        </small>
-                                        <b>
-                                            {viewUser.roles && viewUser.roles.length > 0
-                                                ? viewUser.roles.map((r: any) => r.name).join(', ')
-                                                : 'No role'}
-                                        </b>
-                                    </div>
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Assignment
-                                        </small>
-                                        <b>
-                                            {viewUser.school
-                                                ? `School: ${viewUser.school.name} (Factory: ${viewUser.school.factory?.name || 'Unknown'})`
-                                                : viewUser.factories
-                                                      ?.map((f: any) => f.name)
-                                                      .join(', ') || 'Not assigned'}
-                                        </b>
-                                    </div>
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <small style={{ color: 'var(--muted)', display: 'block' }}>
-                                            Created at
-                                        </small>
-                                        <b>{new Date(viewUser.created_at).toLocaleString()}</b>
-                                    </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div style={{ gridColumn: '1 / -1' }}><small style={{ color: 'var(--muted)', display: 'block' }}>Name</small><b>{viewUser.name}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Email</small><b>{viewUser.email || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Username</small><b>{viewUser.username || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Phone</small><b>{viewUser.phone || '-'}</b></div>
+                                    <div><small style={{ color: 'var(--muted)', display: 'block' }}>Role / Position</small><b>{viewUser.roles && viewUser.roles.length > 0 ? viewUser.roles.map((r: any) => r.name).join(', ') : 'No role'}</b></div>
+                                    <div style={{ gridColumn: '1 / -1' }}><small style={{ color: 'var(--muted)', display: 'block' }}>Assignment</small><b>{viewUser.school ? `School: ${viewUser.school.name} (Factory: ${viewUser.school.factory?.name || 'Unknown'})` : (viewUser.factories?.map((f: any) => f.name).join(', ') || 'Not assigned')}</b></div>
+                                    <div style={{ gridColumn: '1 / -1' }}><small style={{ color: 'var(--muted)', display: 'block' }}>Created at</small><b>{new Date(viewUser.created_at).toLocaleString()}</b></div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <UserForm
-                        open={showForm || !!editUser}
-                        factories={data?.factories || []}
+                    <UserForm 
+                        open={showForm || !!editUser} 
+                        factories={data?.factories || []} 
                         roles={data?.roles || []}
                         editUser={editUser}
-                        cancel={() => {
-                            setShowForm(false);
-                            setEditUser(null);
-                        }}
-                        submit={(values: any) =>
-                            editUser
-                                ? run(
-                                      `/api/platform/users/${editUser.id}`,
-                                      'PATCH',
-                                      values,
-                                      'User updated successfully.',
-                                  ).then(() => setEditUser(null))
-                                : run(
-                                      '/api/platform/users',
-                                      'POST',
-                                      values,
-                                      'Factory user created successfully.',
-                                  ).then(() => setShowForm(false))
-                        }
+                        cancel={() => { setShowForm(false); setEditUser(null); }}
+                        submit={(values: any) => editUser 
+                            ? run(`/api/platform/users/${editUser.id}`, 'PATCH', values, 'User updated successfully.').then(() => setEditUser(null))
+                            : run('/api/platform/users', 'POST', values, 'Factory user created successfully.').then(() => setShowForm(false))
+                        } 
                     />
                     <AdminTable
-                        headers={[
-                            'User',
-                            'Email',
-                            'Role / Position',
-                            'Assignment',
-                            'Active',
-                            'Actions',
-                        ]}
+                        headers={['User', 'Email', 'Role / Position', 'Assignment', 'Active', 'Actions']}
                         rows={records.map((item: any) => [
-                            <b>{item.name}</b>,
-                            item.email,
-                            item.roles && item.roles.length > 0 ? (
-                                item.roles.map((r: any) => r.name).join(', ')
-                            ) : (
-                                <span style={{ color: 'var(--muted)' }}>No role</span>
-                            ),
-                            item.school ? (
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span>School: {item.school.name}</span>
-                                    <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-                                        Factory: {item.school.factory?.name || 'Unknown'}
-                                    </span>
-                                </div>
-                            ) : (
-                                item.factories?.map((f: any) => f.name).join(', ') || 'Not assigned'
-                            ),
-                            <Toggle
-                                checked={item.is_active}
-                                onChange={(value) =>
-                                    run(`/api/platform/users/${item.id}`, 'PATCH', {
-                                        is_active: value,
-                                    })
-                                }
-                            />,
+                            <b>{item.name}</b>, item.email, 
+                            item.roles && item.roles.length > 0 ? item.roles.map((r: any) => r.name).join(', ') : <span style={{color: 'var(--muted)'}}>No role</span>,
+                            item.school ? <div style={{ display: 'flex', flexDirection: 'column' }}><span>School: {item.school.name}</span><span style={{ fontSize: 11, color: 'var(--muted)' }}>Factory: {item.school.factory?.name || 'Unknown'}</span></div> : (item.factories?.map((f: any) => f.name).join(', ') || 'Not assigned'),
+                            <Toggle checked={item.is_active} onChange={value => run(`/api/platform/users/${item.id}`, 'PATCH', { is_active: value })} />,
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                <button
-                                    className="table-action"
-                                    style={{
-                                        border: 'none',
-                                        background: 'transparent',
-                                        padding: 4,
-                                    }}
-                                    title="View details"
-                                    onClick={() => setViewUser(item)}
-                                >
-                                    <Eye size={16} />
-                                </button>
-                                <button
-                                    className="table-action"
-                                    title="Edit User"
-                                    onClick={() => setEditUser(item)}
-                                >
-                                    <Pencil size={16} />
-                                </button>
-                                <button
-                                    className="table-action"
-                                    style={{
-                                        border: 'none',
-                                        background: 'transparent',
-                                        padding: 4,
-                                    }}
-                                    title="Delete user"
-                                    onClick={() => {
-                                        if (
-                                            window.confirm(
-                                                `Are you sure you want to completely delete ${item.email}? This action cannot be undone.`,
-                                            )
-                                        )
-                                            run(
-                                                `/api/platform/users/${item.id}`,
-                                                'DELETE',
-                                                null,
-                                                'User deleted successfully.',
-                                            );
-                                    }}
-                                >
-                                    <Trash2 size={16} color="red" />
-                                </button>
-                            </div>,
+                                <button className="table-action" style={{ border: 'none', background: 'transparent', padding: 4 }} title="View details" onClick={() => setViewUser(item)}><Eye size={16} /></button>
+                                <button className="table-action" title="Edit User" onClick={() => setEditUser(item)}><Pencil size={16} /></button>
+                                <button className="table-action" style={{ border: 'none', background: 'transparent', padding: 4 }} title="Delete user" onClick={() => { if (window.confirm(`Are you sure you want to completely delete ${item.email}? This action cannot be undone.`)) run(`/api/platform/users/${item.id}`, 'DELETE', null, 'User deleted successfully.'); }}><Trash2 size={16} color="red" /></button>
+                            </div>
                         ])}
                     />
-
+                    
                     {data?.users && (
-                        <div
-                            style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginTop: 14,
-                            }}
-                        >
-                            <span style={{ fontSize: 13, color: 'var(--muted)' }}>
-                                Showing page {data.users.current_page || 1} of{' '}
-                                {data.users.last_page || 1} ({data.users.total || 0} total)
-                            </span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+                            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Showing page {data.users.current_page || 1} of {data.users.last_page || 1} ({data.users.total || 0} total)</span>
                             <div style={{ display: 'flex', gap: 8 }}>
-                                <button
-                                    type="button"
-                                    className="secondary-btn"
-                                    disabled={
-                                        !data.users.current_page || data.users.current_page === 1
-                                    }
-                                    onClick={() =>
-                                        setUsersFilters({
-                                            ...usersFilters,
-                                            page: (data.users.current_page || 1) - 1,
-                                        })
-                                    }
-                                >
-                                    Previous
-                                </button>
-                                <button
-                                    type="button"
-                                    className="secondary-btn"
-                                    disabled={
-                                        !data.users.last_page ||
-                                        data.users.current_page === data.users.last_page
-                                    }
-                                    onClick={() =>
-                                        setUsersFilters({
-                                            ...usersFilters,
-                                            page: (data.users.current_page || 1) + 1,
-                                        })
-                                    }
-                                >
-                                    Next
-                                </button>
+                                <button type="button" className="secondary-btn" disabled={!data.users.current_page || data.users.current_page === 1} onClick={() => setUsersFilters({ ...usersFilters, page: (data.users.current_page || 1) - 1 })}>Previous</button>
+                                <button type="button" className="secondary-btn" disabled={!data.users.last_page || data.users.current_page === data.users.last_page} onClick={() => setUsersFilters({ ...usersFilters, page: (data.users.current_page || 1) + 1 })}>Next</button>
                             </div>
                         </div>
                     )}
@@ -976,42 +302,11 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
 
             {page === 'subscriptions' && (
                 <SubscriptionPanel
-                    data={data}
-                    open={showForm}
-                    close={() => setShowForm(false)}
-                    busy={busy}
-                    submitPlan={(values: any) =>
-                        run(
-                            '/api/platform/plans',
-                            'POST',
-                            values,
-                            'Subscription plan created.',
-                        ).then(() => setShowForm(false))
-                    }
-                    updatePlan={(id: number, values: any) =>
-                        run(
-                            `/api/platform/plans/${id}`,
-                            'PUT',
-                            values,
-                            'Subscription plan updated.',
-                        ).then(() => setShowForm(false))
-                    }
-                    assign={(values: any) =>
-                        run(
-                            `/api/platform/factories/${values.factory_id}/subscriptions`,
-                            'POST',
-                            values,
-                            'Subscription assigned and factory activated.',
-                        ).then(() => setShowForm(false))
-                    }
-                    changeSubscription={(id: number, values: any) =>
-                        run(
-                            `/api/platform/subscriptions/${id}`,
-                            'PATCH',
-                            values,
-                            'Factory subscription changed.',
-                        )
-                    }
+                    data={data} open={showForm} close={() => setShowForm(false)} busy={busy}
+                    submitPlan={(values: any) => run('/api/platform/plans', 'POST', values, 'Subscription plan created.').then(() => setShowForm(false))}
+                    updatePlan={(id: number, values: any) => run(`/api/platform/plans/${id}`, 'PUT', values, 'Subscription plan updated.').then(() => setShowForm(false))}
+                    assign={(values: any) => run(`/api/platform/factories/${values.factory_id}/subscriptions`, 'POST', values, 'Subscription assigned and factory activated.').then(() => setShowForm(false))}
+                    changeSubscription={(id: number, values: any) => run(`/api/platform/subscriptions/${id}`, 'PATCH', values, 'Factory subscription changed.')}
                 />
             )}
 
@@ -1019,82 +314,27 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
                 <>
                     <SimpleForm
                         open={showForm}
-                        fields={[
-                            ['title', 'Title'],
-                            ['message', 'Message', 'textarea'],
-                            [
-                                'severity',
-                                'Severity',
-                                'select',
-                                ['info', 'success', 'warning', 'critical'],
-                            ],
-                            [
-                                'audience',
-                                'Audience',
-                                'select',
-                                ['all', 'factory_owners', 'factory_users'],
-                            ],
-                        ]}
-                        form={form}
-                        setForm={setForm}
-                        submit={(values: any) =>
-                            run(
-                                '/api/platform/announcements',
-                                'POST',
-                                values,
-                                'Announcement published to users.',
-                            )
-                        }
+                        fields={[['title', 'Title'], ['message', 'Message', 'textarea'], ['severity', 'Severity', 'select', ['info', 'success', 'warning', 'critical']], ['audience', 'Audience', 'select', ['all', 'factory_owners', 'factory_users']]]}
+                        form={form} setForm={setForm}
+                        submit={(values: any) => run('/api/platform/announcements', 'POST', values, 'Announcement published to users.')}
                     />
                     <AdminTable
                         headers={['Title', 'Message', 'Severity', 'Audience', 'Published']}
-                        rows={records.map((item: any) => [
-                            <b>{item.title}</b>,
-                            item.message,
-                            <Status value={item.severity} />,
-                            item.audience,
-                            new Date(item.published_at).toLocaleString(),
-                        ])}
+                        rows={records.map((item: any) => [<b>{item.title}</b>, item.message, <Status value={item.severity} />, item.audience, new Date(item.published_at).toLocaleString()])}
                     />
                 </>
             )}
 
-            {page === 'support-center' && (
-                <SupportPanel
-                    records={records}
-                    busy={busy}
-                    reply={(id: number, message: string, status: string) =>
-                        run(
-                            `/api/platform/tickets/${id}/reply`,
-                            'POST',
-                            { message, status },
-                            'Reply sent.',
-                        )
-                    }
-                />
-            )}
+            {page === 'support-center' && <SupportPanel records={records} busy={busy} reply={(id: number, message: string, status: string) => run(`/api/platform/tickets/${id}/reply`, 'POST', { message, status }, 'Reply sent.')} />}
 
             {page === 'backups' && (
                 <>
-                    <BackupAction
-                        open={showForm}
-                        busy={busy}
-                        submit={() =>
-                            run(
-                                '/api/platform/backups',
-                                'POST',
-                                undefined,
-                                'Backup queued securely.',
-                            )
-                        }
-                    />
+                    <BackupAction open={showForm} busy={busy} submit={() => run('/api/platform/backups', 'POST', undefined, 'Backup queued securely.')} />
                     <AdminTable
                         headers={['Requested', 'Status', 'Size', 'File', 'Completed']}
                         rows={records.map((item: any) => [
-                            new Date(item.created_at).toLocaleString(),
-                            <Status value={item.status} />,
-                            item.size_bytes ? `${(item.size_bytes / 1048576).toFixed(2)} MB` : '—',
-                            item.path || '—',
+                            new Date(item.created_at).toLocaleString(), <Status value={item.status} />,
+                            item.size_bytes ? `${(item.size_bytes / 1048576).toFixed(2)} MB` : '—', item.path || '—',
                             item.completed_at ? new Date(item.completed_at).toLocaleString() : '—',
                         ])}
                     />
@@ -1103,79 +343,24 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
 
             {page === 'audit-logs' && (
                 <>
-                    <div
-                        className="admin-form"
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-                            gap: 10,
-                            padding: 16,
-                            marginBottom: 14,
-                        }}
-                    >
-                        <input
-                            placeholder="Search description or event"
-                            value={auditFilters.search}
-                            onChange={(e) =>
-                                setAuditFilters({ ...auditFilters, search: e.target.value })
-                            }
-                            style={{
-                                padding: 9,
-                                border: '1px solid var(--line)',
-                                borderRadius: 7,
-                                background: 'var(--panel)',
-                                color: 'var(--text)',
-                            }}
-                        />
-                        <select
-                            value={auditFilters.event}
-                            onChange={(e) =>
-                                setAuditFilters({ ...auditFilters, event: e.target.value })
-                            }
-                        >
+                    <div className="admin-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10, padding: 16, marginBottom: 14 }}>
+                        <input placeholder="Search description or event" value={auditFilters.search} onChange={(e) => setAuditFilters({ ...auditFilters, search: e.target.value })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 7, background: 'var(--panel)', color: 'var(--text)' }} />
+                        <select value={auditFilters.event} onChange={(e) => setAuditFilters({ ...auditFilters, event: e.target.value })}>
                             <option value="">All events</option>
-                            {(data?.events || []).map((event: string) => (
-                                <option key={event} value={event}>
-                                    {event}
-                                </option>
-                            ))}
+                            {(data?.events || []).map((event: string) => <option key={event} value={event}>{event}</option>)}
                         </select>
-                        <select
-                            value={auditFilters.factory_id}
-                            onChange={(e) =>
-                                setAuditFilters({ ...auditFilters, factory_id: e.target.value })
-                            }
-                        >
+                        <select value={auditFilters.factory_id} onChange={(e) => setAuditFilters({ ...auditFilters, factory_id: e.target.value })}>
                             <option value="">All factories</option>
-                            {(data?.factories || []).map((factory: any) => (
-                                <option key={factory.id} value={factory.id}>
-                                    {factory.name}
-                                </option>
-                            ))}
+                            {(data?.factories || []).map((factory: any) => <option key={factory.id} value={factory.id}>{factory.name}</option>)}
                         </select>
-                        <input
-                            type="date"
-                            value={auditFilters.from}
-                            onChange={(e) =>
-                                setAuditFilters({ ...auditFilters, from: e.target.value })
-                            }
-                        />
-                        <input
-                            type="date"
-                            value={auditFilters.to}
-                            onChange={(e) =>
-                                setAuditFilters({ ...auditFilters, to: e.target.value })
-                            }
-                        />
+                        <input type="date" value={auditFilters.from} onChange={(e) => setAuditFilters({ ...auditFilters, from: e.target.value })} />
+                        <input type="date" value={auditFilters.to} onChange={(e) => setAuditFilters({ ...auditFilters, to: e.target.value })} />
                     </div>
                     <AdminTable
                         headers={['When', 'Event', 'Description', 'User', 'Factory']}
                         rows={records.map((item: any) => [
-                            new Date(item.created_at).toLocaleString(),
-                            item.event,
-                            item.description || '—',
-                            item.user?.name || 'System',
-                            item.factory?.name || '—',
+                            new Date(item.created_at).toLocaleString(), item.event, item.description || '—',
+                            item.user?.name || 'System', item.factory?.name || '—',
                         ])}
                     />
                 </>
@@ -1183,19 +368,8 @@ export default function PlatformAdminPage({ page, locale }: { page: string; loca
 
             {page === 'system-settings' && (
                 <SystemSettingsPanel
-                    settings={data || {}}
-                    editing={true}
-                    busy={busy}
-                    uploadLogo={uploadLogo}
-                    submit={async (values: any) => {
-                        await run(
-                            '/api/platform/settings',
-                            'PUT',
-                            values,
-                            'System configuration updated.',
-                        );
-                        window.setTimeout(() => window.location.reload(), 500);
-                    }}
+                    settings={data || {}} editing={true} busy={busy} uploadLogo={uploadLogo}
+                    submit={async (values: any) => { await run('/api/platform/settings', 'PUT', values, 'System configuration updated.'); window.setTimeout(() => window.location.reload(), 500); }}
                 />
             )}
 
@@ -1208,147 +382,49 @@ function Dashboard({ data }: { data: any }) {
     const s = data?.statistics || {};
     const growth = data?.growth || [];
     const cards: [string, string | number, React.ElementType][] = [
-        ['Factories', s.factories || 0, Building2],
-        [
-            'Total revenue',
-            s.revenue ? 'RWF ' + Number(s.revenue).toLocaleString() : 'RWF 0',
-            CreditCard,
-        ],
-        ['Platform users', s.users || 0, Users],
-        ['Open support tickets', s.open_tickets || 0, MessageSquare],
+        ['Factories', s.factories || 0, Building2], ['Total revenue', s.revenue ? 'RWF ' + Number(s.revenue).toLocaleString() : 'RWF 0', CreditCard],
+        ['Platform users', s.users || 0, Users], ['Open support tickets', s.open_tickets || 0, MessageSquare],
     ];
 
     return (
         <>
             <div className="admin-metrics">
                 {cards.map(([label, value, CardIcon]) => (
-                    <article key={label}>
-                        <span>
-                            <CardIcon size={20} />
-                        </span>
-                        <div>
-                            <small>{label}</small>
-                            <strong>{value}</strong>
-                        </div>
-                    </article>
+                    <article key={label}><span><CardIcon size={20} /></span><div><small>{label}</small><strong>{value}</strong></div></article>
                 ))}
             </div>
             <article className="panel platform-growth">
                 <header>
-                    <div>
-                        <span className="platform-kicker">12-MONTH TREND</span>
-                        <h2>Platform growth</h2>
-                        <p>
-                            Cumulative factories, users and subscriptions from live platform
-                            records.
-                        </p>
-                    </div>
-                    <div className="growth-live">
-                        <i></i>
-                        <span>Current data</span>
-                    </div>
+                    <div><span className="platform-kicker">12-MONTH TREND</span><h2>Platform growth</h2><p>Cumulative factories, users and subscriptions from live platform records.</p></div>
+                    <div className="growth-live"><i></i><span>Current data</span></div>
                 </header>
                 <div className="platform-growth-chart">
                     {growth.length ? (
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                                data={growth}
-                                margin={{ top: 14, right: 18, left: -12, bottom: 4 }}
-                            >
-                                <CartesianGrid
-                                    vertical={false}
-                                    stroke="var(--line)"
-                                    strokeOpacity={0.75}
-                                />
-                                <XAxis
-                                    dataKey="label"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    dy={8}
-                                    tick={{ fill: 'var(--muted)', fontSize: 11, fontWeight: 600 }}
-                                />
-                                <YAxis
-                                    allowDecimals={false}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tick={{ fill: 'var(--muted)', fontSize: 11 }}
-                                />
-                                <Tooltip
-                                    cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }}
-                                    contentStyle={{
-                                        background: 'var(--panel)',
-                                        border: '1px solid var(--line)',
-                                        borderRadius: 10,
-                                        boxShadow: '0 12px 30px rgba(15,23,42,.12)',
-                                    }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="factories"
-                                    name="Factories"
-                                    stroke="#1597e5"
-                                    strokeWidth={3}
-                                    dot={{ r: 2, fill: '#1597e5', strokeWidth: 0 }}
-                                    activeDot={{ r: 5 }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="users"
-                                    name="Users"
-                                    stroke="#8b5cf6"
-                                    strokeWidth={3}
-                                    dot={{ r: 2, fill: '#8b5cf6', strokeWidth: 0 }}
-                                    activeDot={{ r: 5 }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="subscriptions"
-                                    name="Subscriptions"
-                                    stroke="#19b8ca"
-                                    strokeWidth={3}
-                                    dot={{ r: 2, fill: '#19b8ca', strokeWidth: 0 }}
-                                    activeDot={{ r: 5 }}
-                                />
+                            <LineChart data={growth} margin={{ top: 14, right: 18, left: -12, bottom: 4 }}>
+                                <CartesianGrid vertical={false} stroke="var(--line)" strokeOpacity={.75} />
+                                <XAxis dataKey="label" tickLine={false} axisLine={false} dy={8} tick={{ fill: 'var(--muted)', fontSize: 11, fontWeight: 600 }} />
+                                <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} />
+                                <Tooltip cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 10, boxShadow: '0 12px 30px rgba(15,23,42,.12)' }} />
+                                <Line type="monotone" dataKey="factories" name="Factories" stroke="#1597e5" strokeWidth={3} dot={{ r: 2, fill: '#1597e5', strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                                <Line type="monotone" dataKey="users" name="Users" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 2, fill: '#8b5cf6', strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                                <Line type="monotone" dataKey="subscriptions" name="Subscriptions" stroke="#19b8ca" strokeWidth={3} dot={{ r: 2, fill: '#19b8ca', strokeWidth: 0 }} activeDot={{ r: 5 }} />
                             </LineChart>
                         </ResponsiveContainer>
-                    ) : (
-                        <div className="executive-empty">Waiting for growth data…</div>
-                    )}
+                    ) : <div className="executive-empty">Waiting for growth data…</div>}
                 </div>
-                <div className="growth-legend">
-                    <span className="factories">Factories</span>
-                    <span className="users">Users</span>
-                    <span className="subscriptions">Subscriptions</span>
-                </div>
+                <div className="growth-legend"><span className="factories">Factories</span><span className="users">Users</span><span className="subscriptions">Subscriptions</span></div>
             </article>
             <div className="admin-split">
                 <article className="panel">
                     <h2>Recent factories</h2>
-                    <AdminTable
-                        headers={['Factory', 'Users', 'Status']}
-                        rows={(data?.factories || []).map((f: any) => [
-                            f.name,
-                            f.users_count,
-                            <Status value={f.status} />,
-                        ])}
-                    />
+                    <AdminTable headers={['Factory', 'Users', 'Status']} rows={(data?.factories || []).map((f: any) => [f.name, f.users_count, <Status value={f.status} />])} />
                 </article>
                 <article className="panel">
                     <h2>Real system activity</h2>
                     <div className="activity-feed">
                         {(data?.activities || []).map((a: any) => (
-                            <div key={a.id}>
-                                <span>
-                                    <Activity size={14} />
-                                </span>
-                                <div>
-                                    <b>{a.description}</b>
-                                    <small>
-                                        {a.user?.name || 'System'} ·{' '}
-                                        {new Date(a.created_at).toLocaleString()}
-                                    </small>
-                                </div>
-                            </div>
+                            <div key={a.id}><span><Activity size={14} /></span><div><b>{a.description}</b><small>{a.user?.name || 'System'} · {new Date(a.created_at).toLocaleString()}</small></div></div>
                         ))}
                     </div>
                 </article>
@@ -1361,82 +437,31 @@ function FactoryForm({ open, form, setForm, submit }: any) {
     if (!open) return null;
     const update = (key: string, value: string) => setForm({ ...form, [key]: value });
     const credentialFields: [string, string, string][] = [
-        ['owner_name', 'Owner name', 'text'],
-        ['owner_email', 'Owner email', 'email'],
-        ['owner_password', 'Owner temporary password', 'password'],
-        ['manager_name', 'Factory manager name', 'text'],
-        ['manager_email', 'Factory manager email', 'email'],
-        ['manager_password', 'Manager temporary password', 'password'],
+        ['owner_name', 'Owner name', 'text'], ['owner_email', 'Owner email', 'email'], ['owner_password', 'Owner temporary password', 'password'],
+        ['manager_name', 'Factory manager name', 'text'], ['manager_email', 'Factory manager email', 'email'], ['manager_password', 'Manager temporary password', 'password'],
     ];
     return (
-        <form
-            className="admin-form panel"
-            onSubmit={(e) => {
-                e.preventDefault();
-                submit({
-                    ...form,
-                    industry_type:
-                        form.industry_type === 'other' ? form.industry_other : form.industry_type,
-                });
-            }}
-        >
+        <form className="admin-form panel" onSubmit={e => { e.preventDefault(); submit({ ...form, industry_type: form.industry_type === 'other' ? form.industry_other : form.industry_type }); }}>
             <h2>Register factory, owner and manager</h2>
             <div className="form-grid">
-                <label>
-                    Factory name
-                    <input
-                        required
-                        value={form.factory_name || ''}
-                        onChange={(e) => update('factory_name', e.target.value)}
-                    />
-                </label>
+                <label>Factory name<input required value={form.factory_name || ''} onChange={e => update('factory_name', e.target.value)} /></label>
                 <label>
                     Industry type
-                    <select
-                        required
-                        value={form.industry_type || ''}
-                        onChange={(e) => update('industry_type', e.target.value)}
-                    >
+                    <select required value={form.industry_type || ''} onChange={e => update('industry_type', e.target.value)}>
                         <option value="">Choose factory industry</option>
-                        {industries.map(([value, label]) => (
-                            <option key={value} value={value}>
-                                {label}
-                            </option>
-                        ))}
+                        {industries.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                 </label>
-                {form.industry_type === 'other' && (
-                    <label>
-                        Custom industry name
-                        <input
-                            required
-                            value={form.industry_other || ''}
-                            onChange={(e) => update('industry_other', e.target.value)}
-                        />
-                    </label>
-                )}
-                {credentialFields.map(([key, label, type]) => (
-                    <label key={key}>
-                        {label}
-                        <input
-                            required
-                            type={type}
-                            value={form[key] || ''}
-                            onChange={(e) => update(key, e.target.value)}
-                        />
-                    </label>
-                ))}
+                {form.industry_type === 'other' && <label>Custom industry name<input required value={form.industry_other || ''} onChange={e => update('industry_other', e.target.value)} /></label>}
+                {credentialFields.map(([key, label, type]) => <label key={key}>{label}<input required type={type} value={form[key] || ''} onChange={e => update(key, e.target.value)} /></label>)}
             </div>
-            <button className="primary-btn">
-                <Save size={16} />
-                Register factory
-            </button>
+            <button className="primary-btn"><Save size={16} />Register factory</button>
         </form>
     );
 }
 function UserForm({ open, factories, roles, submit, editUser, cancel }: any) {
     const [values, setValues] = useState<any>({});
-
+    
     useEffect(() => {
         if (open && editUser) {
             const factory = editUser.factories?.[0] || editUser.school;
@@ -1456,165 +481,51 @@ function UserForm({ open, factories, roles, submit, editUser, cancel }: any) {
     if (!open) return null;
 
     const userFields: [string, string, string, boolean][] = [
-        ['name', 'Full name', 'text', true],
-        ['email', 'Email address', 'email', true],
-        ...(!editUser
-            ? ([
-                  ['employee_number', 'Employee number', 'text', true],
-                  ['job_title', 'Job title', 'text', false],
-              ] as any)
-            : []),
-        [
-            'password',
-            editUser ? 'New Password (leave blank to keep current)' : 'Temporary password',
-            'password',
-            !editUser,
-        ],
+        ['name', 'Full name', 'text', true], 
+        ['email', 'Email address', 'email', true], 
+        ...(!editUser ? [['employee_number', 'Employee number', 'text', true], ['job_title', 'Job title', 'text', false]] as any : []),
+        ['password', editUser ? 'New Password (leave blank to keep current)' : 'Temporary password', 'password', !editUser],
     ];
 
     return (
-        <form
-            className="admin-form panel"
-            onSubmit={(e) => {
-                e.preventDefault();
-                submit(values);
-            }}
-        >
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 20,
-                }}
-            >
+        <form className="admin-form panel" onSubmit={e => { e.preventDefault(); submit(values); }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <h2 style={{ margin: 0 }}>{editUser ? 'Edit user' : 'Create factory user'}</h2>
-                <button type="button" className="secondary-btn" onClick={cancel}>
-                    Cancel
-                </button>
+                <button type="button" className="secondary-btn" onClick={cancel}>Cancel</button>
             </div>
             <div className="form-grid">
                 <label>
                     Factory / Assignment
-                    <select
-                        required={!editUser}
-                        disabled={!!editUser}
-                        value={values.factory_id || ''}
-                        onChange={(e) =>
-                            setValues({
-                                ...values,
-                                factory_id: e.target.value,
-                                role_slug: '',
-                                role_id: '',
-                            })
-                        }
-                    >
-                        <option value="">
-                            {editUser && values.factory_id ? 'Assigned' : 'Select factory'}
-                        </option>
-                        {factories.map((f: any) => (
-                            <option key={f.id} value={f.id}>
-                                {f.name}
-                            </option>
-                        ))}
+                    <select required={!editUser} disabled={!!editUser} value={values.factory_id || ''} onChange={e => setValues({ ...values, factory_id: e.target.value, role_slug: '', role_id: '' })}>
+                        <option value="">{editUser && values.factory_id ? 'Assigned' : 'Select factory'}</option>
+                        {factories.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
                     </select>
                 </label>
                 <label>
                     Role
-                    <select
-                        required={!editUser}
-                        value={values.role_slug || values.role_id || ''}
-                        onChange={(e) =>
-                            setValues({
-                                ...values,
-                                [editUser ? 'role_slug' : 'role_id']: e.target.value,
-                            })
-                        }
-                    >
+                    <select required={!editUser} value={values.role_slug || values.role_id || ''} onChange={e => setValues({ ...values, [editUser ? 'role_slug' : 'role_id']: e.target.value })}>
                         <option value="">Select role</option>
-                        {(editUser ? roles : selected?.roles || []).map((r: any) => (
-                            <option key={r.slug || r.id} value={editUser ? r.slug : r.id}>
-                                {r.name}
-                            </option>
-                        ))}
+                        {(editUser ? roles : (selected?.roles || [])).map((r: any) => <option key={r.slug || r.id} value={editUser ? r.slug : r.id}>{r.name}</option>)}
                     </select>
                 </label>
                 {userFields.map(([key, label, type, req]) => (
                     <label key={key}>
                         {label}
-                        <input
-                            required={req}
-                            type={type as string}
-                            value={values[key] || ''}
-                            onChange={(e) => setValues({ ...values, [key]: e.target.value })}
-                        />
+                        <input required={req} type={type as string} value={values[key] || ''} onChange={e => setValues({ ...values, [key]: e.target.value })} />
                     </label>
                 ))}
             </div>
-            <button className="primary-btn">
-                <Save size={16} /> {editUser ? 'Save changes' : 'Create user account'}
-            </button>
+            <button className="primary-btn"><Save size={16} /> {editUser ? 'Save changes' : 'Create user account'}</button>
         </form>
     );
 }
 
 const planTemplates: any = {
-    starter: {
-        name: 'Starter Plan',
-        code: 'STARTER',
-        monthly_price: 100000,
-        currency_code: 'RWF',
-        features: [
-            'dashboard',
-            'production',
-            'inventory',
-            'products',
-            'team',
-            'reports',
-            'support',
-        ],
-    },
-    professional: {
-        name: 'Professional Plan',
-        code: 'PROFESSIONAL',
-        monthly_price: 200000,
-        currency_code: 'RWF',
-        features: [
-            'dashboard',
-            'production',
-            'inventory',
-            'products',
-            'procurement',
-            'quality',
-            'sales',
-            'team',
-            'reports',
-            'support',
-        ],
-    },
-    enterprise: {
-        name: 'Unlimited Enterprise',
-        code: 'UNLIMITED-ENT',
-        monthly_price: 300000,
-        currency_code: 'RWF',
-        features: [
-            'dashboard',
-            'production',
-            'inventory',
-            'products',
-            'procurement',
-            'quality',
-            'sales',
-            'logistics',
-            'team',
-            'maintenance',
-            'reports',
-            'support',
-        ],
-    },
+    starter: { name: 'Starter Plan', code: 'STARTER', monthly_price: 100000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'team', 'reports', 'support'] },
+    professional: { name: 'Professional Plan', code: 'PROFESSIONAL', monthly_price: 200000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'procurement', 'quality', 'sales', 'team', 'reports', 'support'] },
+    enterprise: { name: 'Unlimited Enterprise', code: 'UNLIMITED-ENT', monthly_price: 300000, currency_code: 'RWF', features: ['dashboard', 'production', 'inventory', 'products', 'procurement', 'quality', 'sales', 'logistics', 'team', 'maintenance', 'reports', 'support'] },
 };
-const localDate = (date: Date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const dateAfter = (value: string, months: number, days = 0) => {
     if (!value) return '';
     const date = new Date(`${value}T12:00:00`);
@@ -1623,32 +534,17 @@ const dateAfter = (value: string, months: number, days = 0) => {
     return localDate(date);
 };
 
-function SubscriptionPanel({
-    data,
-    open,
-    close,
-    busy,
-    submitPlan,
-    updatePlan,
-    assign,
-    changeSubscription,
-}: any) {
+function SubscriptionPanel({ data, open, close, busy, submitPlan, updatePlan, assign, changeSubscription }: any) {
     const today = localDate(new Date());
     const catalog = Object.entries(data?.feature_catalog || {});
     const [modalTab, setModalTab] = useState<'assign' | 'plan'>('assign');
     const [template, setTemplate] = useState('');
     const [plan, setPlan] = useState<any>({ currency_code: 'RWF', features: [] });
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [subscription, setSubscription] = useState<any>({
-        starts_at: today,
-        ends_at: dateAfter(today, 1),
-        grace_ends_at: dateAfter(today, 1, 7),
-    });
+    const [subscription, setSubscription] = useState<any>({ starts_at: today, ends_at: dateAfter(today, 1), grace_ends_at: dateAfter(today, 1, 7) });
     const [changes, setChanges] = useState<Record<number, string>>({});
     const [dateChanges, setDateChanges] = useState<Record<number, string>>({});
-    const selectedPlan = (data?.plans || []).find(
-        (item: any) => String(item.id) === String(subscription.subscription_plan_id),
-    );
+    const selectedPlan = (data?.plans || []).find((item: any) => String(item.id) === String(subscription.subscription_plan_id));
 
     const closeModal = () => {
         setEditingId(null);
@@ -1656,22 +552,11 @@ function SubscriptionPanel({
         if (close) close();
     };
 
-    const updateStart = (starts_at: string) =>
-        setSubscription({
-            ...subscription,
-            starts_at,
-            ends_at: dateAfter(starts_at, 1),
-            grace_ends_at: dateAfter(starts_at, 1, 7),
-        });
-    const updateEnd = (ends_at: string) =>
-        setSubscription({ ...subscription, ends_at, grace_ends_at: dateAfter(ends_at, 0, 7) });
+    const updateStart = (starts_at: string) => setSubscription({ ...subscription, starts_at, ends_at: dateAfter(starts_at, 1), grace_ends_at: dateAfter(starts_at, 1, 7) });
+    const updateEnd = (ends_at: string) => setSubscription({ ...subscription, ends_at, grace_ends_at: dateAfter(ends_at, 0, 7) });
     const chooseTemplate = (value: string) => {
         setTemplate(value);
-        setPlan(
-            value
-                ? { ...planTemplates[value], features: [...planTemplates[value].features] }
-                : { currency_code: 'RWF', features: [] },
-        );
+        setPlan(value ? { ...planTemplates[value], features: [...planTemplates[value].features] } : { currency_code: 'RWF', features: [] });
     };
     const edit = (item: any) => {
         setEditingId(item.id);
@@ -1679,13 +564,7 @@ function SubscriptionPanel({
         setPlan({ ...item, features: item.features || [] });
         setModalTab('plan');
     };
-    const toggleFeature = (key: string) =>
-        setPlan({
-            ...plan,
-            features: (plan.features || []).includes(key)
-                ? plan.features.filter((item: string) => item !== key)
-                : [...(plan.features || []), key],
-        });
+    const toggleFeature = (key: string) => setPlan({ ...plan, features: (plan.features || []).includes(key) ? plan.features.filter((item: string) => item !== key) : [...(plan.features || []), key] });
     const savePlan = async (event: React.FormEvent) => {
         event.preventDefault();
         if (editingId) {
@@ -1700,39 +579,24 @@ function SubscriptionPanel({
         await assign(subscription);
         closeModal();
     };
-    const planFields: [string, string][] = [
-        ['name', 'Plan name'],
-        ['code', 'Plan code'],
-        ['monthly_price', 'Price per month (RWF)'],
-        ['currency_code', 'Currency'],
-    ];
+    const planFields: [string, string][] = [['name', 'Plan name'], ['code', 'Plan code'], ['monthly_price', 'Price per month (RWF)'], ['currency_code', 'Currency']];
 
     const analytics = data?.analytics || {};
     const subsList = data?.subscriptions?.data || [];
-    const activeCount =
-        analytics.active_subscriptions ?? subsList.filter((s: any) => s.status === 'active').length;
-    const mrr =
-        analytics.monthly_recurring_revenue ??
-        subsList
-            .filter((s: any) => s.status === 'active')
-            .reduce((acc: number, s: any) => acc + Number(s.plan?.monthly_price || 0), 0);
+    const activeCount = analytics.active_subscriptions ?? subsList.filter((s: any) => s.status === 'active').length;
+    const mrr = analytics.monthly_recurring_revenue ?? subsList.filter((s: any) => s.status === 'active').reduce((acc: number, s: any) => acc + Number(s.plan?.monthly_price || 0), 0);
     const totalRev = analytics.total_revenue ?? mrr;
-    const expiringSoon =
-        analytics.expiring_soon ??
-        subsList.filter((s: any) => {
-            if (s.status !== 'active' || !s.ends_at) return false;
-            const diff =
-                (new Date(s.ends_at).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
-            return diff >= 0 && diff <= 30;
-        }).length;
-    const graceCount =
-        analytics.grace_period ?? subsList.filter((s: any) => s.status === 'grace_period').length;
-    const subRate =
-        analytics.subscription_rate ??
-        (data?.factories?.length ? Math.round((activeCount / data.factories.length) * 100) : 0);
+    const expiringSoon = analytics.expiring_soon ?? subsList.filter((s: any) => {
+        if (s.status !== 'active' || !s.ends_at) return false;
+        const diff = (new Date(s.ends_at).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+        return diff >= 0 && diff <= 30;
+    }).length;
+    const graceCount = analytics.grace_period ?? subsList.filter((s: any) => s.status === 'grace_period').length;
+    const subRate = analytics.subscription_rate ?? (data?.factories?.length ? Math.round((activeCount / data.factories.length) * 100) : 0);
 
     return (
         <>
+            {/* Modal Popup for Create / Edit / Assign */}
             {(open || editingId) && (
                 <div
                     style={{
@@ -1764,37 +628,15 @@ function SubscriptionPanel({
                             borderRadius: 18,
                             boxShadow: '0 30px 90px rgba(0,0,0,0.4)',
                         }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={e => e.stopPropagation()}
                     >
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                borderBottom: '1px solid var(--line)',
-                                paddingBottom: 12,
-                            }}
-                        >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)', paddingBottom: 12 }}>
                             <div>
                                 <h2 style={{ margin: 0, fontSize: 18 }}>
-                                    {editingId
-                                        ? 'Edit Subscription Plan'
-                                        : modalTab === 'assign'
-                                          ? 'Assign or Renew Factory Subscription'
-                                          : 'Create Subscription Plan'}
+                                    {editingId ? 'Edit Subscription Plan' : (modalTab === 'assign' ? 'Assign or Renew Factory Subscription' : 'Create Subscription Plan')}
                                 </h2>
-                                <p
-                                    style={{
-                                        margin: '4px 0 0',
-                                        color: 'var(--muted)',
-                                        fontSize: 12,
-                                    }}
-                                >
-                                    {editingId
-                                        ? 'Update plan pricing, code and accessible module features.'
-                                        : modalTab === 'assign'
-                                          ? 'Select a factory and assign a billing period.'
-                                          : 'Configure a new subscription pricing tier.'}
+                                <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 12 }}>
+                                    {editingId ? 'Update plan pricing, code and accessible module features.' : (modalTab === 'assign' ? 'Select a factory and assign a billing period.' : 'Configure a new subscription pricing tier.')}
                                 </p>
                             </div>
                             <button
@@ -1809,19 +651,10 @@ function SubscriptionPanel({
                         </div>
 
                         {!editingId && (
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    gap: 8,
-                                    borderBottom: '1px solid var(--line)',
-                                    paddingBottom: 12,
-                                }}
-                            >
+                            <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--line)', paddingBottom: 12 }}>
                                 <button
                                     type="button"
-                                    className={
-                                        modalTab === 'assign' ? 'primary-btn' : 'secondary-btn'
-                                    }
+                                    className={modalTab === 'assign' ? 'primary-btn' : 'secondary-btn'}
                                     style={{ padding: '8px 16px', fontSize: 13 }}
                                     onClick={() => setModalTab('assign')}
                                 >
@@ -1829,9 +662,7 @@ function SubscriptionPanel({
                                 </button>
                                 <button
                                     type="button"
-                                    className={
-                                        modalTab === 'plan' ? 'primary-btn' : 'secondary-btn'
-                                    }
+                                    className={modalTab === 'plan' ? 'primary-btn' : 'secondary-btn'}
                                     style={{ padding: '8px 16px', fontSize: 13 }}
                                     onClick={() => setModalTab('plan')}
                                 >
@@ -1840,111 +671,31 @@ function SubscriptionPanel({
                             </div>
                         )}
 
-                        {!editingId && modalTab === 'assign' ? (
-                            <form
-                                className="admin-form"
-                                style={{ padding: 0 }}
-                                onSubmit={handleAssign}
-                            >
+                        {(!editingId && modalTab === 'assign') ? (
+                            <form className="admin-form" style={{ padding: 0 }} onSubmit={handleAssign}>
                                 <label>
                                     Factory
-                                    <select
-                                        required
-                                        value={subscription.factory_id || ''}
-                                        onChange={(e) =>
-                                            setSubscription({
-                                                ...subscription,
-                                                factory_id: e.target.value,
-                                            })
-                                        }
-                                    >
+                                    <select required value={subscription.factory_id || ''} onChange={e => setSubscription({ ...subscription, factory_id: e.target.value })}>
                                         <option value="">Select factory</option>
-                                        {(data?.factories || []).map((f: any) => (
-                                            <option key={f.id} value={f.id}>
-                                                {f.name}
-                                            </option>
-                                        ))}
+                                        {(data?.factories || []).map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
                                     </select>
                                 </label>
                                 <label>
                                     Subscription type
-                                    <select
-                                        required
-                                        value={subscription.subscription_plan_id || ''}
-                                        onChange={(e) =>
-                                            setSubscription({
-                                                ...subscription,
-                                                subscription_plan_id: e.target.value,
-                                            })
-                                        }
-                                    >
+                                    <select required value={subscription.subscription_plan_id || ''} onChange={e => setSubscription({ ...subscription, subscription_plan_id: e.target.value })}>
                                         <option value="">Select subscription type</option>
-                                        {(data?.plans || []).map((p: any) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.name} — {p.currency_code}{' '}
-                                                {Number(p.monthly_price).toLocaleString()}/month
-                                            </option>
-                                        ))}
+                                        {(data?.plans || []).map((p: any) => <option key={p.id} value={p.id}>{p.name} — {p.currency_code} {Number(p.monthly_price).toLocaleString()}/month</option>)}
                                     </select>
                                 </label>
-                                {selectedPlan && (
-                                    <div className="selected-plan-summary">
-                                        <b>{selectedPlan.name}</b>
-                                        <span>
-                                            {(selectedPlan.features || []).length} features included
-                                        </span>
-                                    </div>
-                                )}
+                                {selectedPlan && <div className="selected-plan-summary"><b>{selectedPlan.name}</b><span>{(selectedPlan.features || []).length} features included</span></div>}
                                 <div className="form-grid">
-                                    <label>
-                                        Subscription starts on
-                                        <input
-                                            required
-                                            type="date"
-                                            value={subscription.starts_at}
-                                            onChange={(e) => updateStart(e.target.value)}
-                                        />
-                                    </label>
-                                    <label>
-                                        Payment is due on
-                                        <input
-                                            required
-                                            type="date"
-                                            value={subscription.ends_at}
-                                            onChange={(e) => updateEnd(e.target.value)}
-                                        />
-                                    </label>
+                                    <label>Subscription starts on<input required type="date" value={subscription.starts_at} onChange={e => updateStart(e.target.value)} /></label>
+                                    <label>Payment is due on<input required type="date" value={subscription.ends_at} onChange={e => updateEnd(e.target.value)} /></label>
                                 </div>
-                                <label>
-                                    Factory access stops on
-                                    <input
-                                        readOnly
-                                        type="date"
-                                        value={subscription.grace_ends_at || ''}
-                                    />
-                                    <small>
-                                        The factory gets 7 extra days to pay after the due date.
-                                    </small>
-                                </label>
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'flex-end',
-                                        gap: 10,
-                                        marginTop: 12,
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        className="secondary-btn"
-                                        onClick={closeModal}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button className="primary-btn" disabled={busy}>
-                                        <CreditCard size={16} />
-                                        Activate subscription
-                                    </button>
+                                <label>Factory access stops on<input readOnly type="date" value={subscription.grace_ends_at || ''} /><small>The factory gets 7 extra days to pay after the due date.</small></label>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>
+                                    <button type="button" className="secondary-btn" onClick={closeModal}>Cancel</button>
+                                    <button className="primary-btn" disabled={busy}><CreditCard size={16} />Activate subscription</button>
                                 </div>
                             </form>
                         ) : (
@@ -1952,90 +703,30 @@ function SubscriptionPanel({
                                 {!editingId && (
                                     <label>
                                         Start from template
-                                        <select
-                                            value={template}
-                                            onChange={(e) => chooseTemplate(e.target.value)}
-                                        >
+                                        <select value={template} onChange={e => chooseTemplate(e.target.value)}>
                                             <option value="">Empty plan</option>
-                                            <option value="starter">
-                                                Starter Plan — RWF 100,000
-                                            </option>
-                                            <option value="professional">
-                                                Professional Plan — RWF 200,000
-                                            </option>
-                                            <option value="enterprise">
-                                                Unlimited Enterprise — RWF 300,000
-                                            </option>
+                                            <option value="starter">Starter Plan — RWF 100,000</option>
+                                            <option value="professional">Professional Plan — RWF 200,000</option>
+                                            <option value="enterprise">Unlimited Enterprise — RWF 300,000</option>
                                         </select>
                                     </label>
                                 )}
                                 <div className="form-grid">
-                                    {planFields.map(([key, label]) => (
-                                        <label key={key}>
-                                            {label}
-                                            <input
-                                                required
-                                                type={key === 'monthly_price' ? 'number' : 'text'}
-                                                value={plan[key] || ''}
-                                                onChange={(e) =>
-                                                    setPlan({ ...plan, [key]: e.target.value })
-                                                }
-                                            />
-                                        </label>
-                                    ))}
+                                    {planFields.map(([key, label]) => <label key={key}>{label}<input required type={key === 'monthly_price' ? 'number' : 'text'} value={plan[key] || ''} onChange={e => setPlan({ ...plan, [key]: e.target.value })} /></label>)}
                                 </div>
                                 <div className="feature-editor">
-                                    <div>
-                                        <h3>Included features</h3>
-                                        <p>
-                                            Select what factories on this subscription type can
-                                            access.
-                                        </p>
-                                    </div>
+                                    <div><h3>Included features</h3><p>Select what factories on this subscription type can access.</p></div>
                                     <div className="feature-options">
                                         {catalog.map(([key, label]: any) => (
-                                            <label
-                                                className={
-                                                    (plan.features || []).includes(key)
-                                                        ? 'selected'
-                                                        : ''
-                                                }
-                                                key={key}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={(plan.features || []).includes(key)}
-                                                    onChange={() => toggleFeature(key)}
-                                                />
-                                                <span>
-                                                    <CheckCircle2 size={16} />
-                                                    {label}
-                                                </span>
+                                            <label className={(plan.features || []).includes(key) ? 'selected' : ''} key={key}>
+                                                <input type="checkbox" checked={(plan.features || []).includes(key)} onChange={() => toggleFeature(key)} /><span><CheckCircle2 size={16} />{label}</span>
                                             </label>
                                         ))}
                                     </div>
                                 </div>
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'flex-end',
-                                        gap: 10,
-                                        marginTop: 12,
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        className="secondary-btn"
-                                        onClick={closeModal}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button className="primary-btn" disabled={busy}>
-                                        <Save size={16} />
-                                        {editingId
-                                            ? 'Save plan changes'
-                                            : 'Create subscription type'}
-                                    </button>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>
+                                    <button type="button" className="secondary-btn" onClick={closeModal}>Cancel</button>
+                                    <button className="primary-btn" disabled={busy}><Save size={16} />{editingId ? 'Save plan changes' : 'Create subscription type'}</button>
                                 </div>
                             </form>
                         )}
@@ -2045,9 +736,7 @@ function SubscriptionPanel({
 
             <div className="admin-metrics">
                 <article>
-                    <span>
-                        <CheckCircle2 size={20} />
-                    </span>
+                    <span><CheckCircle2 size={20} /></span>
                     <div>
                         <small>Active Subscriptions</small>
                         <strong>{activeCount}</strong>
@@ -2055,9 +744,7 @@ function SubscriptionPanel({
                     </div>
                 </article>
                 <article>
-                    <span>
-                        <TrendingUp size={20} />
-                    </span>
+                    <span><TrendingUp size={20} /></span>
                     <div>
                         <small>Monthly Recurring Revenue</small>
                         <strong>RWF {Number(mrr).toLocaleString()}</strong>
@@ -2065,9 +752,7 @@ function SubscriptionPanel({
                     </div>
                 </article>
                 <article>
-                    <span>
-                        <CreditCard size={20} />
-                    </span>
+                    <span><CreditCard size={20} /></span>
                     <div>
                         <small>Total Revenue</small>
                         <strong>RWF {Number(totalRev).toLocaleString()}</strong>
@@ -2075,59 +760,34 @@ function SubscriptionPanel({
                     </div>
                 </article>
                 <article>
-                    <span>
-                        <Clock size={20} />
-                    </span>
+                    <span><Clock size={20} /></span>
                     <div>
                         <small>Expiring & In Grace</small>
                         <strong>{expiringSoon + graceCount}</strong>
-                        <p>
-                            {expiringSoon} next 30 days · {graceCount} in grace
-                        </p>
+                        <p>{expiringSoon} next 30 days · {graceCount} in grace</p>
                     </div>
                 </article>
             </div>
 
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    margin: '4px 0 0',
-                    flexWrap: 'wrap',
-                    gap: 12,
-                }}
-            >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 0', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                     <h2 style={{ margin: 0, fontSize: 16 }}>Factory subscriptions</h2>
-                    <p style={{ margin: '3px 0 0', color: 'var(--muted)', fontSize: 12 }}>
-                        Manage billing periods, assign plans and track active factory status.
-                    </p>
+                    <p style={{ margin: '3px 0 0', color: 'var(--muted)', fontSize: 12 }}>Manage billing periods, assign plans and track active factory status.</p>
                 </div>
                 {(data?.plans || []).length > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <select
-                            style={{
-                                padding: '7px 12px',
-                                border: '1px solid var(--line)',
-                                borderRadius: '8px',
-                                background: 'var(--panel)',
-                                color: 'var(--text)',
-                                fontSize: 13,
-                            }}
+                            style={{ padding: '7px 12px', border: '1px solid var(--line)', borderRadius: '8px', background: 'var(--panel)', color: 'var(--text)', fontSize: 13 }}
                             value=""
-                            onChange={(e) => {
-                                const found = (data?.plans || []).find(
-                                    (p: any) => String(p.id) === e.target.value,
-                                );
+                            onChange={e => {
+                                const found = (data?.plans || []).find((p: any) => String(p.id) === e.target.value);
                                 if (found) edit(found);
                             }}
                         >
                             <option value="">Edit an existing plan...</option>
                             {(data?.plans || []).map((p: any) => (
                                 <option key={p.id} value={p.id}>
-                                    {p.name} ({p.currency_code}{' '}
-                                    {Number(p.monthly_price).toLocaleString()}/mo)
+                                    {p.name} ({p.currency_code} {Number(p.monthly_price).toLocaleString()}/mo)
                                 </option>
                             ))}
                         </select>
@@ -2136,64 +796,14 @@ function SubscriptionPanel({
             </div>
 
             <AdminTable
-                headers={[
-                    'Factory',
-                    'Current type',
-                    'Status',
-                    'Starts',
-                    'Payment due',
-                    'Change subscription type',
-                ]}
+                headers={['Factory', 'Current type', 'Status', 'Starts', 'Payment due', 'Change subscription type']}
                 rows={(data?.subscriptions?.data || []).map((item: any) => [
-                    item.factory?.name,
-                    item.plan?.name,
-                    <Status value={item.status} />,
-                    new Date(item.starts_at).toLocaleDateString(),
-                    <input
-                        type="date"
-                        value={dateChanges[item.id] || item.ends_at.substring(0, 10)}
-                        onChange={(e) =>
-                            setDateChanges({ ...dateChanges, [item.id]: e.target.value })
-                        }
-                        style={{
-                            padding: '6px 8px',
-                            border: '1px solid var(--line)',
-                            borderRadius: '8px',
-                            background: 'var(--panel)',
-                            color: 'var(--text)',
-                        }}
-                    />,
+                    item.factory?.name, item.plan?.name, <Status value={item.status} />, new Date(item.starts_at).toLocaleDateString(), <input type="date" value={dateChanges[item.id] || item.ends_at.substring(0, 10)} onChange={e => setDateChanges({ ...dateChanges, [item.id]: e.target.value })} style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: '8px', background: 'var(--panel)', color: 'var(--text)' }} />,
                     <div className="subscription-change">
-                        <select
-                            value={changes[item.id] || item.subscription_plan_id}
-                            onChange={(e) => setChanges({ ...changes, [item.id]: e.target.value })}
-                        >
-                            {(data?.plans || []).map((plan: any) => (
-                                <option key={plan.id} value={plan.id}>
-                                    {plan.name}
-                                </option>
-                            ))}
+                        <select value={changes[item.id] || item.subscription_plan_id} onChange={e => setChanges({ ...changes, [item.id]: e.target.value })}>
+                            {(data?.plans || []).map((plan: any) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}
                         </select>
-                        <button
-                            className="table-action"
-                            disabled={
-                                busy ||
-                                (String(changes[item.id] || item.subscription_plan_id) ===
-                                    String(item.subscription_plan_id) &&
-                                    String(
-                                        dateChanges[item.id] || item.ends_at.substring(0, 10),
-                                    ) === String(item.ends_at.substring(0, 10)))
-                            }
-                            onClick={() =>
-                                changeSubscription(item.id, {
-                                    subscription_plan_id:
-                                        changes[item.id] || item.subscription_plan_id,
-                                    ends_at: dateChanges[item.id] || item.ends_at.substring(0, 10),
-                                })
-                            }
-                        >
-                            Save
-                        </button>
+                        <button className="table-action" disabled={busy || (String(changes[item.id] || item.subscription_plan_id) === String(item.subscription_plan_id) && String(dateChanges[item.id] || item.ends_at.substring(0, 10)) === String(item.ends_at.substring(0, 10)))} onClick={() => changeSubscription(item.id, { subscription_plan_id: changes[item.id] || item.subscription_plan_id, ends_at: dateChanges[item.id] || item.ends_at.substring(0, 10) })}>Save</button>
                     </div>,
                 ])}
             />
@@ -2204,10 +814,7 @@ function SubscriptionPanel({
 function SupportPanel({ records, reply, busy }: any) {
     const [activeId, setActiveId] = useState<number | null>(null);
     const [message, setMessage] = useState('');
-    useEffect(() => {
-        if (records.length && !records.some((item: any) => item.id === activeId))
-            setActiveId(records[0].id);
-    }, [records, activeId]);
+    useEffect(() => { if (records.length && !records.some((item: any) => item.id === activeId)) setActiveId(records[0].id); }, [records, activeId]);
     const ticket = records.find((item: any) => item.id === activeId);
     const send = () => {
         const text = message.trim();
@@ -2229,75 +836,28 @@ function SupportPanel({ records, reply, busy }: any) {
         <div className="support-room panel">
             <aside className="chat-list">
                 {records.map((item: any) => (
-                    <button
-                        key={item.id}
-                        className={item.id === activeId ? 'active' : ''}
-                        onClick={() => setActiveId(item.id)}
-                    >
+                    <button key={item.id} className={item.id === activeId ? 'active' : ''} onClick={() => setActiveId(item.id)}>
                         <span>{item.user?.name?.slice(0, 2).toUpperCase() || 'US'}</span>
-                        <div>
-                            <b>{item.user?.name || 'System user'}</b>
-                            <small>{item.subject}</small>
-                            <em>
-                                {item.factory?.name || 'Platform'} ·{' '}
-                                {item.status.replaceAll('_', ' ')}
-                            </em>
-                        </div>
+                        <div><b>{item.user?.name || 'System user'}</b><small>{item.subject}</small><em>{item.factory?.name || 'Platform'} · {item.status.replaceAll('_', ' ')}</em></div>
                     </button>
                 ))}
             </aside>
             {ticket && (
                 <section className="chat-window">
                     <header>
-                        <div>
-                            <h3>{ticket.subject}</h3>
-                            <p>
-                                {ticket.user?.name} · {ticket.user?.email} ·{' '}
-                                {ticket.factory?.name || 'Platform'}
-                            </p>
-                        </div>
+                        <div><h3>{ticket.subject}</h3><p>{ticket.user?.name} · {ticket.user?.email} · {ticket.factory?.name || 'Platform'}</p></div>
                         <Status value={ticket.status} />
                     </header>
                     <div className="chat-messages">
                         {ticket.messages?.map((item: any) => (
-                            <div
-                                key={item.id}
-                                className={
-                                    item.user?.is_platform_admin
-                                        ? 'chat-message admin'
-                                        : 'chat-message user'
-                                }
-                            >
-                                <b>
-                                    {item.user?.is_platform_admin
-                                        ? 'System administrator'
-                                        : item.user?.name || 'User'}
-                                </b>
-                                <p>{item.message}</p>
-                                <time>{new Date(item.created_at).toLocaleString()}</time>
+                            <div key={item.id} className={item.user?.is_platform_admin ? 'chat-message admin' : 'chat-message user'}>
+                                <b>{item.user?.is_platform_admin ? 'System administrator' : item.user?.name || 'User'}</b><p>{item.message}</p><time>{new Date(item.created_at).toLocaleString()}</time>
                             </div>
                         ))}
                     </div>
                     <div className="chat-compose">
-                        <textarea
-                            aria-label="Reply message"
-                            placeholder="Write your answer…"
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    send();
-                                }
-                            }}
-                        />
-                        <button
-                            className="primary-btn"
-                            disabled={busy || !message.trim()}
-                            onClick={send}
-                        >
-                            Send
-                        </button>
+                        <textarea aria-label="Reply message" placeholder="Write your answer…" value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
+                        <button className="primary-btn" disabled={busy || !message.trim()} onClick={send}>Send</button>
                     </div>
                 </section>
             )}
@@ -2309,41 +869,22 @@ function BackupAction({ open, busy, submit }: any) {
     return (
         <div className="admin-form panel">
             <h2>Create database backup</h2>
-            <p>
-                This creates a protected, compressed database recovery point now. Credentials are
-                never included in the backup history.
-            </p>
-            <button className="primary-btn" disabled={busy} onClick={submit}>
-                <Database size={16} />
-                Create backup now
-            </button>
+            <p>This creates a protected, compressed database recovery point now. Credentials are never included in the backup history.</p>
+            <button className="primary-btn" disabled={busy} onClick={submit}><Database size={16} />Create backup now</button>
         </div>
     );
 }
 
 function SettingsPanel({ settings, editing, submit, busy }: any) {
     const [values, setValues] = useState<any>({});
-    const update = (key: string, value: any) =>
-        setValues((current: any) => ({ ...current, [key]: value }));
-    useEffect(
-        () =>
-            setValues({
-                system_name: settings.system_name || 'ICYEREKEZO OMS',
-                system_tagline: settings.system_tagline || 'Factory operations made clear.',
-                logo_url: settings.logo_url || '',
-                support_email: settings.support_email || '',
-                support_phone: settings.support_phone || '',
-                default_locale: settings.default_locale || 'en',
-                currency_code: settings.currency_code || 'RWF',
-                timezone: settings.timezone || 'Africa/Kigali',
-                backup_retention_days: Number(settings.backup_retention_days || 30),
-                registration_enabled: settings.registration_enabled !== '0',
-                maintenance_enabled: settings.maintenance_enabled === '1',
-                maintenance_message:
-                    settings.maintenance_message || 'Scheduled maintenance in progress.',
-            }),
-        [settings],
-    );
+    const update = (key: string, value: any) => setValues((current: any) => ({ ...current, [key]: value }));
+    useEffect(() => setValues({
+        system_name: settings.system_name || 'ICYEREKEZO OMS', system_tagline: settings.system_tagline || 'Factory operations made clear.',
+        logo_url: settings.logo_url || '', support_email: settings.support_email || '', support_phone: settings.support_phone || '',
+        default_locale: settings.default_locale || 'en', currency_code: settings.currency_code || 'RWF', timezone: settings.timezone || 'Africa/Kigali',
+        backup_retention_days: Number(settings.backup_retention_days || 30), registration_enabled: settings.registration_enabled !== '0',
+        maintenance_enabled: settings.maintenance_enabled === '1', maintenance_message: settings.maintenance_message || 'Scheduled maintenance in progress.',
+    }), [settings]);
 
     return (
         <div className="settings-live">
@@ -2351,53 +892,16 @@ function SettingsPanel({ settings, editing, submit, busy }: any) {
                 <section>
                     <h2>System identity</h2>
                     <div className="form-grid">
-                        <label>
-                            System name
-                            <input
-                                disabled={!editing}
-                                value={values.system_name || ''}
-                                onChange={(e) => update('system_name', e.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Short description
-                            <input
-                                disabled={!editing}
-                                value={values.system_tagline || ''}
-                                onChange={(e) => update('system_tagline', e.target.value)}
-                            />
-                        </label>
+                        <label>System name<input disabled={!editing} value={values.system_name || ''} onChange={e => update('system_name', e.target.value)} /></label>
+                        <label>Short description<input disabled={!editing} value={values.system_tagline || ''} onChange={e => update('system_tagline', e.target.value)} /></label>
                     </div>
-                    <label>
-                        Logo web address
-                        <input
-                            disabled={!editing}
-                            placeholder="https://…"
-                            value={values.logo_url || ''}
-                            onChange={(e) => update('logo_url', e.target.value)}
-                        />
-                    </label>
+                    <label>Logo web address<input disabled={!editing} placeholder="https://…" value={values.logo_url || ''} onChange={e => update('logo_url', e.target.value)} /></label>
                 </section>
                 <section>
                     <h2>Support contact</h2>
                     <div className="form-grid">
-                        <label>
-                            Support email
-                            <input
-                                disabled={!editing}
-                                type="email"
-                                value={values.support_email || ''}
-                                onChange={(e) => update('support_email', e.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Support phone
-                            <input
-                                disabled={!editing}
-                                value={values.support_phone || ''}
-                                onChange={(e) => update('support_phone', e.target.value)}
-                            />
-                        </label>
+                        <label>Support email<input disabled={!editing} type="email" value={values.support_email || ''} onChange={e => update('support_email', e.target.value)} /></label>
+                        <label>Support phone<input disabled={!editing} value={values.support_phone || ''} onChange={e => update('support_phone', e.target.value)} /></label>
                     </div>
                 </section>
                 <section>
@@ -2405,131 +909,40 @@ function SettingsPanel({ settings, editing, submit, busy }: any) {
                     <div className="form-grid">
                         <label>
                             Default language
-                            <select
-                                disabled={!editing}
-                                value={values.default_locale || 'en'}
-                                onChange={(e) => update('default_locale', e.target.value)}
-                            >
-                                <option value="en">English</option>
-                                <option value="fr">Français</option>
-                            </select>
+                            <select disabled={!editing} value={values.default_locale || 'en'} onChange={e => update('default_locale', e.target.value)}><option value="en">English</option><option value="fr">Français</option></select>
                         </label>
                         <label>
                             Default currency
-                            <select
-                                disabled={!editing}
-                                value={values.currency_code || 'RWF'}
-                                onChange={(e) => update('currency_code', e.target.value)}
-                            >
-                                <option value="RWF">Rwandan franc (RWF)</option>
-                                <option value="USD">US dollar (USD)</option>
-                                <option value="EUR">Euro (EUR)</option>
+                            <select disabled={!editing} value={values.currency_code || 'RWF'} onChange={e => update('currency_code', e.target.value)}>
+                                <option value="RWF">Rwandan franc (RWF)</option><option value="USD">US dollar (USD)</option><option value="EUR">Euro (EUR)</option>
                             </select>
                         </label>
                         <label>
                             Default time zone
-                            <select
-                                disabled={!editing}
-                                value={values.timezone || 'Africa/Kigali'}
-                                onChange={(e) => update('timezone', e.target.value)}
-                            >
-                                <option value="Africa/Kigali">Kigali</option>
-                                <option value="Africa/Johannesburg">Johannesburg</option>
-                                <option value="Africa/Nairobi">Nairobi</option>
-                                <option value="UTC">UTC</option>
+                            <select disabled={!editing} value={values.timezone || 'Africa/Kigali'} onChange={e => update('timezone', e.target.value)}>
+                                <option value="Africa/Kigali">Kigali</option><option value="Africa/Johannesburg">Johannesburg</option><option value="Africa/Nairobi">Nairobi</option><option value="UTC">UTC</option>
                             </select>
                         </label>
-                        <label>
-                            Keep backups for (days)
-                            <input
-                                disabled={!editing}
-                                type="number"
-                                min="1"
-                                max="365"
-                                value={values.backup_retention_days || 30}
-                                onChange={(e) =>
-                                    update('backup_retention_days', Number(e.target.value))
-                                }
-                            />
-                        </label>
+                        <label>Keep backups for (days)<input disabled={!editing} type="number" min="1" max="365" value={values.backup_retention_days || 30} onChange={e => update('backup_retention_days', Number(e.target.value))} /></label>
                     </div>
                 </section>
                 <section>
                     <h2>Access and availability</h2>
-                    <label className="switch-line">
-                        <span>
-                            <b>Allow new factory registration</b>
-                            <small>
-                                When off, the public registration form cannot create accounts.
-                            </small>
-                        </span>
-                        <Toggle
-                            disabled={!editing}
-                            checked={!!values.registration_enabled}
-                            onChange={(v: boolean) => update('registration_enabled', v)}
-                        />
-                    </label>
-                    <label className="switch-line danger">
-                        <span>
-                            <b>Maintenance mode</b>
-                            <small>
-                                Factory users are temporarily blocked; platform administrators keep
-                                access.
-                            </small>
-                        </span>
-                        <Toggle
-                            disabled={!editing}
-                            checked={!!values.maintenance_enabled}
-                            onChange={(v: boolean) => update('maintenance_enabled', v)}
-                        />
-                    </label>
-                    <label>
-                        Message shown during maintenance
-                        <textarea
-                            disabled={!editing}
-                            value={values.maintenance_message || ''}
-                            onChange={(e) => update('maintenance_message', e.target.value)}
-                        />
-                    </label>
+                    <label className="switch-line"><span><b>Allow new factory registration</b><small>When off, the public registration form cannot create accounts.</small></span><Toggle disabled={!editing} checked={!!values.registration_enabled} onChange={(v: boolean) => update('registration_enabled', v)} /></label>
+                    <label className="switch-line danger"><span><b>Maintenance mode</b><small>Factory users are temporarily blocked; platform administrators keep access.</small></span><Toggle disabled={!editing} checked={!!values.maintenance_enabled} onChange={(v: boolean) => update('maintenance_enabled', v)} /></label>
+                    <label>Message shown during maintenance<textarea disabled={!editing} value={values.maintenance_message || ''} onChange={e => update('maintenance_message', e.target.value)} /></label>
                 </section>
-                {editing && (
-                    <button className="primary-btn" disabled={busy} onClick={() => submit(values)}>
-                        <Save size={16} />
-                        Save all settings
-                    </button>
-                )}
+                {editing && <button className="primary-btn" disabled={busy} onClick={() => submit(values)}><Save size={16} />Save all settings</button>}
             </article>
             <aside>
-                <article className="panel settings-summary">
-                    <ShieldCheck size={28} />
-                    <h3>{values.system_name || 'ICYEREKEZO OMS'}</h3>
-                    <p>{values.system_tagline}</p>
-                    <Status
-                        value={values.maintenance_enabled ? 'maintenance enabled' : 'system online'}
-                    />
-                </article>
+                <article className="panel settings-summary"><ShieldCheck size={28} /><h3>{values.system_name || 'ICYEREKEZO OMS'}</h3><p>{values.system_tagline}</p><Status value={values.maintenance_enabled ? 'maintenance enabled' : 'system online'} /></article>
                 <article className="panel settings-facts">
                     <h3>Current configuration</h3>
-                    <div>
-                        <span>Registration</span>
-                        <b>{values.registration_enabled ? 'Open' : 'Closed'}</b>
-                    </div>
-                    <div>
-                        <span>Language</span>
-                        <b>{values.default_locale === 'fr' ? 'French' : 'English'}</b>
-                    </div>
-                    <div>
-                        <span>Currency</span>
-                        <b>{values.currency_code}</b>
-                    </div>
-                    <div>
-                        <span>Time zone</span>
-                        <b>{values.timezone}</b>
-                    </div>
-                    <div>
-                        <span>Backup retention</span>
-                        <b>{values.backup_retention_days} days</b>
-                    </div>
+                    <div><span>Registration</span><b>{values.registration_enabled ? 'Open' : 'Closed'}</b></div>
+                    <div><span>Language</span><b>{values.default_locale === 'fr' ? 'French' : 'English'}</b></div>
+                    <div><span>Currency</span><b>{values.currency_code}</b></div>
+                    <div><span>Time zone</span><b>{values.timezone}</b></div>
+                    <div><span>Backup retention</span><b>{values.backup_retention_days} days</b></div>
                 </article>
             </aside>
         </div>
@@ -2539,55 +952,21 @@ function SettingsPanel({ settings, editing, submit, busy }: any) {
 function SimpleForm({ open, fields, form, setForm, submit }: any) {
     if (!open) return null;
     const values = { ...form };
-    fields.forEach(([key, , type = 'text', options]: any) => {
-        if (type === 'select' && !values[key]) values[key] = options[0];
-    });
+    fields.forEach(([key, , type = 'text', options]: any) => { if (type === 'select' && !values[key]) values[key] = options[0]; });
     return (
-        <form
-            className="admin-form panel"
-            onSubmit={(e) => {
-                e.preventDefault();
-                submit(values);
-            }}
-        >
+        <form className="admin-form panel" onSubmit={e => { e.preventDefault(); submit(values); }}>
             <h2>Enter details</h2>
             <div className="form-grid">
                 {fields.map(([key, label, type = 'text', options]: any) => (
                     <label key={key}>
                         {label}
-                        {type === 'textarea' ? (
-                            <textarea
-                                required
-                                value={form[key] || ''}
-                                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                            />
-                        ) : type === 'select' ? (
-                            <select
-                                required
-                                value={values[key]}
-                                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                            >
-                                {options.map((o: string) => (
-                                    <option key={o} value={o}>
-                                        {o.replaceAll('_', ' ')}
-                                    </option>
-                                ))}
-                            </select>
-                        ) : (
-                            <input
-                                required
-                                type={type}
-                                value={form[key] || ''}
-                                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                            />
-                        )}
+                        {type === 'textarea' ? <textarea required value={form[key] || ''} onChange={e => setForm({ ...form, [key]: e.target.value })} />
+                            : type === 'select' ? <select required value={values[key]} onChange={e => setForm({ ...form, [key]: e.target.value })}>{options.map((o: string) => <option key={o} value={o}>{o.replaceAll('_', ' ')}</option>)}</select>
+                                : <input required type={type} value={form[key] || ''} onChange={e => setForm({ ...form, [key]: e.target.value })} />}
                     </label>
                 ))}
             </div>
-            <button className="primary-btn" type="submit">
-                <Save size={16} />
-                Save
-            </button>
+            <button className="primary-btn" type="submit"><Save size={16} />Save</button>
         </form>
     );
 }
@@ -2595,30 +974,8 @@ function AdminTable({ headers, rows }: { headers: string[]; rows: React.ReactNod
     return (
         <div className="admin-table-wrap">
             <table className="admin-table">
-                <thead>
-                    <tr>
-                        {headers.map((h) => (
-                            <th key={h}>{h}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.length ? (
-                        rows.map((row, i) => (
-                            <tr key={i}>
-                                {row.map((cell, j) => (
-                                    <td key={j}>{cell}</td>
-                                ))}
-                            </tr>
-                        ))
-                    ) : (
-                        <tr>
-                            <td colSpan={headers.length} className="empty-cell">
-                                No records yet.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
+                <thead><tr>{headers.map(h => <th key={h}>{h}</th>)}</tr></thead>
+                <tbody>{rows.length ? rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>) : <tr><td colSpan={headers.length} className="empty-cell">No records yet.</td></tr>}</tbody>
             </table>
         </div>
     );
@@ -2626,23 +983,6 @@ function AdminTable({ headers, rows }: { headers: string[]; rows: React.ReactNod
 function Status({ value }: { value: string }) {
     return <span className={`admin-status ${String(value).replaceAll(' ', '-')}`}>{value}</span>;
 }
-function Toggle({
-    checked,
-    onChange,
-    disabled = false,
-}: {
-    checked: boolean;
-    onChange: (v: boolean) => void;
-    disabled?: boolean;
-}) {
-    return (
-        <button
-            type="button"
-            disabled={disabled}
-            className={`toggle ${checked ? 'on' : ''}`}
-            onClick={() => onChange(!checked)}
-        >
-            <span />
-        </button>
-    );
+function Toggle({ checked, onChange, disabled = false }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+    return <button type="button" disabled={disabled} className={`toggle ${checked ? 'on' : ''}`} onClick={() => onChange(!checked)}><span /></button>;
 }

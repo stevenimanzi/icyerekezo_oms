@@ -1,31 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-    AlertTriangle,
-    Check,
-    Download,
-    Eye,
-    FileUp,
-    Plus,
-    Printer,
-    RefreshCw,
-    Search,
-    SlidersHorizontal,
-    Trash2,
-    Truck,
-    X,
-} from 'lucide-react';
+import { AlertTriangle, Check, Download, Eye, FileUp, Plus, Printer, RefreshCw, Search, SlidersHorizontal, Trash2, Truck, X } from 'lucide-react';
 
 async function api(url: string, options: RequestInit = {}) {
     const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrf,
-            ...(options.headers || {}),
-        },
-    });
+    const response = await fetch(url, { ...options, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, ...(options.headers || {}) } });
     const text = await response.text();
     let data: any;
     try {
@@ -36,55 +14,17 @@ async function api(url: string, options: RequestInit = {}) {
     if (!response.ok) throw new Error(data.message || 'Sales data could not be loaded.');
     return data;
 }
-const labels: Record<string, string> = {
-    customer_order: 'Customer order',
-    quotation: 'Quotation',
-    invoice: 'Invoice',
-    return: 'Return',
-};
-const money = (value: any, currency = 'RWF') =>
-    new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency,
-        maximumFractionDigits: currency === 'RWF' ? 0 : 2,
-    }).format(Number(value || 0));
+const labels: Record<string, string> = { customer_order: 'Customer order', quotation: 'Quotation', invoice: 'Invoice', return: 'Return' };
+const money = (value: any, currency = 'RWF') => new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: currency === 'RWF' ? 0 : 2 }).format(Number(value || 0));
 const date = (value: any) => {
     if (!value) return 'Not set';
     const parsed = new Date(String(value).includes('T') ? value : String(value).replace(' ', 'T'));
     return Number.isNaN(parsed.getTime()) ? 'Not set' : parsed.toLocaleDateString();
 };
-const plainStatus = (value: string) =>
-    (
-        ({
-            pending: 'Pending',
-            accepted: 'Accepted',
-            partial: 'Partial delivery',
-            delivered: 'Delivered',
-            rejected: 'Rejected',
-        }) as Record<string, string>
-    )[value] || String(value || '').replaceAll('_', ' ');
+const plainStatus = (value: string) => ({ pending: 'Pending', accepted: 'Accepted', partial: 'Partial delivery', delivered: 'Delivered', rejected: 'Rejected' } as Record<string, string>)[value] || String(value || '').replaceAll('_', ' ');
 const orderNumber = (value: any) => String(value || '').replace(/^LEGACY-NOGUCHI-/i, '');
-const blankLine = {
-    class_level: '',
-    garment_category: 'Uniform',
-    gender: 'Boy',
-    size: '',
-    color: '',
-    quantity_ordered: 1,
-};
-const blankOrder = {
-    document_number: '',
-    customer_name: '',
-    customer_email: '',
-    school_district: '',
-    school_sector: '',
-    academic_year: String(new Date().getFullYear()),
-    document_date: new Date().toISOString().slice(0, 10),
-    due_date: '',
-    total_amount: '',
-    currency_code: 'RWF',
-    lines: [blankLine],
-};
+const blankLine = { class_level: '', garment_category: 'Uniform', gender: 'Boy', size: '', color: '', quantity_ordered: 1 };
+const blankOrder = { document_number: '', customer_name: '', customer_email: '', school_district: '', school_sector: '', academic_year: String(new Date().getFullYear()), document_date: new Date().toISOString().slice(0, 10), due_date: '', total_amount: '', currency_code: 'RWF', lines: [blankLine] };
 
 export default function SalesOverviewPage() {
     const [data, setData] = useState<any>(null);
@@ -96,13 +36,7 @@ export default function SalesOverviewPage() {
     const [showCreate, setShowCreate] = useState(false);
     const [selected, setSelected] = useState<any>(null);
     const [page, setPage] = useState(1);
-    const [criteria, setCriteria] = useState({
-        search: '',
-        district: '',
-        sector: '',
-        status: '',
-        academic_year: '',
-    });
+    const [criteria, setCriteria] = useState({ search: '', district: '', sector: '', status: '', academic_year: '' });
     const [order, setOrder] = useState<any>(blankOrder);
     const [updated, setUpdated] = useState<Date | null>(null);
     const [confirmDialog, setConfirmDialog] = useState<any>(null);
@@ -121,49 +55,27 @@ export default function SalesOverviewPage() {
             if (!silent) setLoading(false);
         }
     };
-    useEffect(() => {
-        const timer = window.setTimeout(() => load(), criteria.search ? 300 : 0);
-        return () => window.clearTimeout(timer);
-    }, [criteria, page]);
+    useEffect(() => { const timer = window.setTimeout(() => load(), criteria.search ? 300 : 0); return () => window.clearTimeout(timer); }, [criteria, page]);
     useEffect(() => {
         if (!loading && data && previousPage.current !== page) {
             previousPage.current = page;
-            window.requestAnimationFrame(() =>
-                document
-                    .querySelector('.noguchi-school-list')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-            );
+            window.requestAnimationFrame(() => document.querySelector('.noguchi-school-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         }
     }, [data, loading, page]);
 
     const summary = data?.summary || {};
     const special = data?.specialization;
     const cap = data?.capabilities || {};
-    const rows = useMemo(
-        () =>
-            (data?.documents?.data || []).filter(
-                (x: any) => x.document_type === (tab === 'invoice' ? 'customer_order' : tab),
-            ),
-        [data, tab],
-    );
+    const rows = useMemo(() => (data?.documents?.data || []).filter((x: any) => x.document_type === (tab === 'invoice' ? 'customer_order' : tab)), [data, tab]);
     const title = labels[tab] + 's';
 
     const decide = (item: any, decision: 'accept' | 'reject') => {
         if (decision === 'reject') {
             setConfirmDialog({
-                tone: 'danger',
-                title: `Reject order ${orderNumber(item.document_number)}?`,
-                message:
-                    'This will be recorded on the order. Enter a reason so it is clear why it was rejected.',
-                requiresReason: true,
-                confirmLabel: 'Reject order',
-                onConfirm: (reason: string) => {
-                    setConfirmDialog(null);
-                    void run(item.id, `/api/sales/orders/${item.id}/decision`, 'PATCH', {
-                        decision,
-                        reason,
-                    });
-                },
+                tone: 'danger', title: `Reject order ${orderNumber(item.document_number)}?`,
+                message: 'This will be recorded on the order. Enter a reason so it is clear why it was rejected.',
+                requiresReason: true, confirmLabel: 'Reject order',
+                onConfirm: (reason: string) => { setConfirmDialog(null); void run(item.id, `/api/sales/orders/${item.id}/decision`, 'PATCH', { decision, reason }); },
             });
             return;
         }
@@ -171,25 +83,14 @@ export default function SalesOverviewPage() {
             title: `Accept order ${orderNumber(item.document_number)}?`,
             message: 'The order will move forward to fulfilment.',
             confirmLabel: 'Accept order',
-            onConfirm: () => {
-                setConfirmDialog(null);
-                void run(item.id, `/api/sales/orders/${item.id}/decision`, 'PATCH', {
-                    decision,
-                    reason: '',
-                });
-            },
+            onConfirm: () => { setConfirmDialog(null); void run(item.id, `/api/sales/orders/${item.id}/decision`, 'PATCH', { decision, reason: '' }); },
         });
     };
     const remove = (item: any) => {
         setConfirmDialog({
-            tone: 'danger',
-            title: `Delete order ${orderNumber(item.document_number)}?`,
-            message: 'This cannot be undone.',
-            confirmLabel: 'Delete order',
-            onConfirm: () => {
-                setConfirmDialog(null);
-                void run(`delete-${item.id}`, `/api/sales/orders/${item.id}`, 'DELETE', null);
-            },
+            tone: 'danger', title: `Delete order ${orderNumber(item.document_number)}?`,
+            message: 'This cannot be undone.', confirmLabel: 'Delete order',
+            onConfirm: () => { setConfirmDialog(null); void run(`delete-${item.id}`, `/api/sales/orders/${item.id}`, 'DELETE', null); },
         });
     };
     const uploadInvoice = async (item: any, file: File) => {
@@ -198,24 +99,12 @@ export default function SalesOverviewPage() {
         setError('');
         setSuccess('');
         try {
-            const csrf =
-                document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
+            const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
             const form = new FormData();
             form.append('invoice', file);
-            const response = await fetch(`/api/sales/orders/${item.id}/invoice`, {
-                method: 'POST',
-                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
-                body: form,
-            });
+            const response = await fetch(`/api/sales/orders/${item.id}/invoice`, { method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: form });
             const payload = await response.json().catch(() => ({}));
-            if (!response.ok)
-                throw new Error(
-                    payload.message ||
-                        Object.values(payload.errors || {})
-                            .flat()
-                            .join(' ') ||
-                        'The invoice could not be uploaded.',
-                );
+            if (!response.ok) throw new Error(payload.message || Object.values(payload.errors || {}).flat().join(' ') || 'The invoice could not be uploaded.');
             setSuccess(payload.message || 'Invoice uploaded.');
             await load(true);
         } catch (reason: any) {
@@ -236,80 +125,34 @@ export default function SalesOverviewPage() {
         } catch (reason: any) {
             setError(reason.message);
             return false;
-        } finally {
-            setBusy(null);
-        }
+        } finally { setBusy(null); }
     };
     const submitOrder = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (
-            await run('create', '/api/sales/school-orders', 'POST', {
-                ...order,
-                document_number: order.document_number || null,
-                due_date: order.due_date || null,
-                total_amount: order.total_amount || 0,
-            })
-        ) {
+        if (await run('create', '/api/sales/school-orders', 'POST', { ...order, document_number: order.document_number || null, due_date: order.due_date || null, total_amount: order.total_amount || 0 })) {
             setOrder(blankOrder);
             setShowCreate(false);
         }
     };
-    const setLine = (index: number, key: string, value: any) =>
-        setOrder({
-            ...order,
-            lines: order.lines.map((line: any, i: number) =>
-                i === index ? { ...line, [key]: value } : line,
-            ),
-        });
+    const setLine = (index: number, key: string, value: any) => setOrder({ ...order, lines: order.lines.map((line: any, i: number) => i === index ? { ...line, [key]: value } : line) });
 
-    const tabsList: [string, string, number][] = [
-        ['customer_order', 'Customer orders', summary.customer_orders],
-        ['invoice', 'Invoices', summary.invoices],
-        ['return', 'Returns', summary.returns],
-    ];
+    const tabsList: [string, string, number][] = [['customer_order', 'Customer orders', summary.customer_orders], ['invoice', 'Invoices', summary.invoices], ['return', 'Returns', summary.returns]];
 
     return (
         <section className="module-page sales-live-page">
             <div className="module-hero">
                 <div className="module-title">
                     <div>
-                        <div className="eyebrow">
-                            <i />
-                            SALES DATA
-                        </div>
-                        <h1>
-                            {special ? 'NOGUCHI school garment orders' : 'Incoming customer orders'}
-                        </h1>
-                        <p>
-                            {special
-                                ? 'Manage school orders by class, garment, gender, size, color and fulfilment quantity.'
-                                : 'Review customer demand before logistics prepares and dispatches each order.'}
-                        </p>
-                        <small className="sales-updated">
-                            {updated
-                                ? 'Last updated ' +
-                                  updated.toLocaleTimeString([], {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                  })
-                                : 'Connecting...'}
-                        </small>
+                        <div className="eyebrow"><i />SALES DATA</div>
+                        <h1>{special ? 'NOGUCHI school garment orders' : 'Incoming customer orders'}</h1>
+                        <p>{special ? 'Manage school orders by class, garment, gender, size, color and fulfilment quantity.' : 'Review customer demand before logistics prepares and dispatches each order.'}</p>
+                        <small className="sales-updated">{updated ? 'Last updated ' + updated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Connecting...'}</small>
                     </div>
                 </div>
-                <div className="workflow-actions">
-                    <button className="secondary-btn" disabled={loading} onClick={() => load()}>
-                        <RefreshCw size={16} />
-                        Refresh
-                    </button>
-                </div>
+                <div className="workflow-actions"><button className="secondary-btn" disabled={loading} onClick={() => load()}><RefreshCw size={16} />Refresh</button></div>
             </div>
 
-            {error && (
-                <div className="admin-alert error">
-                    <AlertTriangle size={18} />
-                    {error}
-                </div>
-            )}
+            {error && <div className="admin-alert error"><AlertTriangle size={18} />{error}</div>}
             {success && <div className="admin-alert success">{success}</div>}
 
             <div className={`sales-metrics ${special ? 'school-sales-metrics' : ''}`}>
@@ -331,427 +174,132 @@ export default function SalesOverviewPage() {
             </div>
 
             {special && <CategorySummary rows={special.by_category || []} />}
-            {special && (
-                <OrderFilters
-                    criteria={criteria}
-                    setCriteria={(next: any) => {
-                        setCriteria(next);
-                        setPage(1);
-                    }}
-                    options={special.filters || {}}
-                    clear={() => {
-                        setCriteria({
-                            search: '',
-                            district: '',
-                            sector: '',
-                            status: '',
-                            academic_year: '',
-                        });
-                        setPage(1);
-                    }}
-                />
-            )}
+            {special && <OrderFilters criteria={criteria} setCriteria={(next: any) => { setCriteria(next); setPage(1); }} options={special.filters || {}} clear={() => { setCriteria({ search: '', district: '', sector: '', status: '', academic_year: '' }); setPage(1); }} />}
 
             <div className="module-tabs sales-tabs">
                 {tabsList.map(([key, label, count]) => (
-                    <button
-                        key={key}
-                        className={tab === key ? 'active' : ''}
-                        onClick={() => setTab(key)}
-                    >
-                        {label}
-                        <span>{Number(count || 0).toLocaleString()}</span>
-                    </button>
+                    <button key={key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>{label}<span>{Number(count || 0).toLocaleString()}</span></button>
                 ))}
             </div>
 
-            <section
-                className={`panel sales-records ${special && tab === 'customer_order' ? 'noguchi-school-list' : ''}`}
-            >
-                <header>
-                    <div>
-                        <h2>{special && tab === 'customer_order' ? 'School orders' : title}</h2>
-                        <p>
-                            {special
-                                ? `${data?.documents?.total || 0} orders found. Select the eye to see sizes, colors and class details.`
-                                : 'Accept valid incoming orders or reject them with a recorded reason.'}
-                        </p>
-                    </div>
-                </header>
+            <section className={`panel sales-records ${special && tab === 'customer_order' ? 'noguchi-school-list' : ''}`}>
+                <header><div><h2>{special && tab === 'customer_order' ? 'School orders' : title}</h2><p>{special ? `${data?.documents?.total || 0} orders found. Select the eye to see sizes, colors and class details.` : 'Accept valid incoming orders or reject them with a recorded reason.'}</p></div></header>
                 <div className="admin-table-wrap">
                     <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Order number</th>
-                                <th>{special ? 'School' : 'Customer'}</th>
-                                <th>Date</th>
-                                <th>{special ? 'Total items ordered' : 'Items'}</th>
-                                <th>Total value</th>
-                                <th>Status</th>
-                                <th>Due</th>
-                                {tab === 'customer_order' && <th>Actions</th>}
-                                {tab === 'invoice' && <th>Invoice</th>}
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Order number</th><th>{special ? 'School' : 'Customer'}</th><th>Date</th><th>{special ? 'Total items ordered' : 'Items'}</th><th>Total value</th><th>Status</th><th>Due</th>{tab === 'customer_order' && <th>Actions</th>}{tab === 'invoice' && <th>Invoice</th>}</tr></thead>
                         <tbody>
-                            {rows.length ? (
-                                rows.map((item: any) => (
-                                    <tr key={item.id} className={special ? 'school-order-row' : ''}>
+                            {rows.length ? rows.map((item: any) => (
+                                <tr key={item.id} className={special ? 'school-order-row' : ''}>
+                                    <td><b>{item.document_number}</b></td>
+                                    <td><b>{item.school?.name || item.customer_name}</b><small>{[item.school?.district, item.school?.sector, item.academic_year].filter(Boolean).join(' · ')}</small></td>
+                                    <td>{date(item.document_date)}</td>
+                                    <td><b>{Number(item.item_count || 0).toLocaleString()}</b></td>
+                                    <td>{money(item.total_amount, item.currency_code)}</td>
+                                    <td><span className={'admin-status ' + item.status}>{plainStatus(item.status)}</span></td>
+                                    <td>{date(item.due_date)}</td>
+                                    {tab === 'customer_order' && (
                                         <td>
-                                            <b>{item.document_number}</b>
+                                            <div className="workflow-actions school-icon-actions">
+                                                {special && item.lines?.length > 0 && <button className="school-action-icon view" title="See order details" aria-label="See order details" onClick={() => setSelected(item)}><Eye size={18} /></button>}
+                                                {cap.review && ['draft', 'pending', 'submitted'].includes(String(item.status).toLowerCase()) && (
+                                                    <>
+                                                        <button className="school-action-icon accept" title="Accept this order" aria-label="Accept this order" disabled={busy === item.id} onClick={() => decide(item, 'accept')}><Check size={19} /></button>
+                                                        <button className="school-action-icon reject" title="Reject this order" aria-label="Reject this order" disabled={busy === item.id} onClick={() => decide(item, 'reject')}><X size={19} /></button>
+                                                    </>
+                                                )}
+                                                {cap.review && <button className="school-action-icon reject" title="Delete this order" aria-label={`Delete order ${item.document_number}`} disabled={busy === `delete-${item.id}`} onClick={() => remove(item)}><Trash2 size={18} /></button>}
+                                            </div>
                                         </td>
+                                    )}
+                                    {tab === 'invoice' && (
                                         <td>
-                                            <b>{item.school?.name || item.customer_name}</b>
-                                            <small>
-                                                {[
-                                                    item.school?.district,
-                                                    item.school?.sector,
-                                                    item.academic_year,
-                                                ]
-                                                    .filter(Boolean)
-                                                    .join(' · ')}
-                                            </small>
+                                            <div className="workflow-actions" style={{ flexWrap: 'wrap', rowGap: 6 }}>
+                                                {item.invoice_url ? (
+                                                    <>
+                                                        <a className="school-action-icon view" title="View invoice" aria-label={`View invoice for order ${item.document_number}`} href={item.invoice_url} target="_blank" rel="noreferrer"><Eye size={18} /></a>
+                                                        <a className="school-action-icon view" title="Download invoice" aria-label={`Download invoice for order ${item.document_number}`} href={item.invoice_url} download={item.invoice_original_name || true}><Download size={18} /></a>
+                                                    </>
+                                                ) : <span className="muted">Not uploaded</span>}
+                                                {cap.invoice && (
+                                                    <label className="secondary-btn" style={{ cursor: busy === `invoice-${item.id}` ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                        <FileUp size={15} />{busy === `invoice-${item.id}` ? 'Uploading…' : (item.invoice_url ? 'Replace' : 'Upload')}
+                                                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }} disabled={busy === `invoice-${item.id}`} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) void uploadInvoice(item, file); }} />
+                                                    </label>
+                                                )}
+                                            </div>
                                         </td>
-                                        <td>{date(item.document_date)}</td>
-                                        <td>
-                                            <b>{Number(item.item_count || 0).toLocaleString()}</b>
-                                        </td>
-                                        <td>{money(item.total_amount, item.currency_code)}</td>
-                                        <td>
-                                            <span className={'admin-status ' + item.status}>
-                                                {plainStatus(item.status)}
-                                            </span>
-                                        </td>
-                                        <td>{date(item.due_date)}</td>
-                                        {tab === 'customer_order' && (
-                                            <td>
-                                                <div className="workflow-actions school-icon-actions">
-                                                    {special && item.lines?.length > 0 && (
-                                                        <button
-                                                            className="school-action-icon view"
-                                                            title="See order details"
-                                                            aria-label="See order details"
-                                                            onClick={() => setSelected(item)}
-                                                        >
-                                                            <Eye size={18} />
-                                                        </button>
-                                                    )}
-                                                    {cap.review &&
-                                                        ['draft', 'pending', 'submitted'].includes(
-                                                            String(item.status).toLowerCase(),
-                                                        ) && (
-                                                            <>
-                                                                <button
-                                                                    className="school-action-icon accept"
-                                                                    title="Accept this order"
-                                                                    aria-label="Accept this order"
-                                                                    disabled={busy === item.id}
-                                                                    onClick={() =>
-                                                                        decide(item, 'accept')
-                                                                    }
-                                                                >
-                                                                    <Check size={19} />
-                                                                </button>
-                                                                <button
-                                                                    className="school-action-icon reject"
-                                                                    title="Reject this order"
-                                                                    aria-label="Reject this order"
-                                                                    disabled={busy === item.id}
-                                                                    onClick={() =>
-                                                                        decide(item, 'reject')
-                                                                    }
-                                                                >
-                                                                    <X size={19} />
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    {cap.review && (
-                                                        <button
-                                                            className="school-action-icon reject"
-                                                            title="Delete this order"
-                                                            aria-label={`Delete order ${item.document_number}`}
-                                                            disabled={busy === `delete-${item.id}`}
-                                                            onClick={() => remove(item)}
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        )}
-                                        {tab === 'invoice' && (
-                                            <td>
-                                                <div
-                                                    className="workflow-actions"
-                                                    style={{ flexWrap: 'wrap', rowGap: 6 }}
-                                                >
-                                                    {item.invoice_url ? (
-                                                        <>
-                                                            <a
-                                                                className="school-action-icon view"
-                                                                title="View invoice"
-                                                                aria-label={`View invoice for order ${item.document_number}`}
-                                                                href={item.invoice_url}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                            >
-                                                                <Eye size={18} />
-                                                            </a>
-                                                            <a
-                                                                className="school-action-icon view"
-                                                                title="Download invoice"
-                                                                aria-label={`Download invoice for order ${item.document_number}`}
-                                                                href={item.invoice_url}
-                                                                download={
-                                                                    item.invoice_original_name ||
-                                                                    true
-                                                                }
-                                                            >
-                                                                <Download size={18} />
-                                                            </a>
-                                                        </>
-                                                    ) : (
-                                                        <span className="muted">Not uploaded</span>
-                                                    )}
-                                                    {cap.invoice && (
-                                                        <label
-                                                            className="secondary-btn"
-                                                            style={{
-                                                                cursor:
-                                                                    busy === `invoice-${item.id}`
-                                                                        ? 'default'
-                                                                        : 'pointer',
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                gap: 6,
-                                                            }}
-                                                        >
-                                                            <FileUp size={15} />
-                                                            {busy === `invoice-${item.id}`
-                                                                ? 'Uploading…'
-                                                                : item.invoice_url
-                                                                  ? 'Replace'
-                                                                  : 'Upload'}
-                                                            <input
-                                                                type="file"
-                                                                accept=".pdf,.jpg,.jpeg,.png"
-                                                                style={{ display: 'none' }}
-                                                                disabled={
-                                                                    busy === `invoice-${item.id}`
-                                                                }
-                                                                onChange={(e) => {
-                                                                    const file =
-                                                                        e.target.files?.[0];
-                                                                    e.target.value = '';
-                                                                    if (file)
-                                                                        void uploadInvoice(
-                                                                            item,
-                                                                            file,
-                                                                        );
-                                                                }}
-                                                            />
-                                                        </label>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td
-                                        colSpan={
-                                            tab === 'customer_order' || tab === 'invoice' ? 8 : 7
-                                        }
-                                    >
-                                        <div className="sales-empty">
-                                            <b>No orders found</b>
-                                            <span>Try changing or clearing the filters.</span>
-                                        </div>
-                                    </td>
+                                    )}
                                 </tr>
+                            )) : (
+                                <tr><td colSpan={tab === 'customer_order' || tab === 'invoice' ? 8 : 7}><div className="sales-empty"><b>No orders found</b><span>Try changing or clearing the filters.</span></div></td></tr>
                             )}
                         </tbody>
                     </table>
                 </div>
                 {special && data?.documents?.last_page > 1 && (
                     <div className="school-pagination">
-                        <button
-                            className="secondary-btn"
-                            disabled={page <= 1}
-                            onClick={() => setPage(page - 1)}
-                        >
-                            Previous
-                        </button>
-                        <span>
-                            Page {page} of {data.documents.last_page}
-                        </span>
-                        <button
-                            className="secondary-btn"
-                            disabled={page >= data.documents.last_page}
-                            onClick={() => setPage(page + 1)}
-                        >
-                            Next
-                        </button>
+                        <button className="secondary-btn" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
+                        <span>Page {page} of {data.documents.last_page}</span>
+                        <button className="secondary-btn" disabled={page >= data.documents.last_page} onClick={() => setPage(page + 1)}>Next</button>
                     </div>
                 )}
             </section>
 
-            {selected && (
-                <OrderDetailsModal
-                    order={selected}
-                    editable={cap.review && selected.status !== 'rejected'}
-                    busy={busy}
-                    run={run}
-                    close={() => setSelected(null)}
-                />
-            )}
-            {confirmDialog && (
-                <ConfirmDialog config={confirmDialog} onCancel={() => setConfirmDialog(null)} />
-            )}
+            {selected && <OrderDetailsModal order={selected} editable={cap.review && selected.status !== 'rejected'} busy={busy} run={run} close={() => setSelected(null)} />}
+            {confirmDialog && <ConfirmDialog config={confirmDialog} onCancel={() => setConfirmDialog(null)} />}
         </section>
     );
 }
 
+// Groups school orders into the familiar district/sector "quantity sheet" layout used
+// historically on paper, matching garment_category strings against a fixed set of aliases
+// (legacy data used inconsistent naming for the same category).
 const legacyColumns = [
-    ['Uniform', ['uniform']],
-    ['Sweater', ['sweater']],
-    ['Sport uniform', ['sport', 'sport uniform']],
-    ['TVET', ['tvet', 'overall', 'overcoat', 'overall coat']],
-    ['Tourism', ['tourism']],
-    ['Polo', ['polo', 'polo lacoste']],
-    ['T-shirt', ['t-shirt', 't shirt']],
-    ['Rain coat', ['rain coat', 'raincoat']],
-    ['Jumper', ['jumper']],
+    ['Uniform', ['uniform']], ['Sweater', ['sweater']], ['Sport uniform', ['sport', 'sport uniform']], ['TVET', ['tvet', 'overall', 'overcoat', 'overall coat']],
+    ['Tourism', ['tourism']], ['Polo', ['polo', 'polo lacoste']], ['T-shirt', ['t-shirt', 't shirt']], ['Rain coat', ['rain coat', 'raincoat']], ['Jumper', ['jumper']],
 ] as [string, string[]][];
 
 function LegacyOrderMatrix({ rows, open }: any) {
     const groups = useMemo(() => {
         const grouped = new Map<string, any[]>();
         rows.forEach((row: any) => {
-            const key = [
-                row.school?.district || 'District not set',
-                row.school?.sector || 'Sector not set',
-            ].join('|');
+            const key = [row.school?.district || 'District not set', row.school?.sector || 'Sector not set'].join('|');
             grouped.set(key, [...(grouped.get(key) || []), row]);
         });
         return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
     }, [rows]);
-    const categoryTotal = (row: any, names: string[]) =>
-        Number(
-            (row.lines || [])
-                .filter((line: any) =>
-                    names.includes(String(line.garment_category || '').toLowerCase()),
-                )
-                .reduce((sum: number, line: any) => sum + Number(line.quantity_ordered || 0), 0),
-        );
+    const categoryTotal = (row: any, names: string[]) => Number((row.lines || []).filter((line: any) => names.includes(String(line.garment_category || '').toLowerCase())).reduce((sum: number, line: any) => sum + Number(line.quantity_ordered || 0), 0));
 
     return (
         <section className="panel legacy-order-sheet">
-            <header>
-                <div>
-                    <h2>School order quantity sheet</h2>
-                    <p>The familiar district and sector layout, with instant order details.</p>
-                </div>
-                <span className="legacy-live-label">
-                    <i />
-                    Records
-                </span>
-            </header>
+            <header><div><h2>School order quantity sheet</h2><p>The familiar district and sector layout, with instant order details.</p></div><span className="legacy-live-label"><i />Records</span></header>
             <div className="admin-table-wrap">
                 <table className="admin-table legacy-order-table">
-                    <thead>
-                        <tr>
-                            <th>School</th>
-                            {legacyColumns.map(([label]) => (
-                                <th key={label}>{label}</th>
-                            ))}
-                            <th>Total</th>
-                            <th>Given</th>
-                            <th>Remaining</th>
-                            <th>Value</th>
-                            <th>Status</th>
-                            <th>View</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>School</th>{legacyColumns.map(([label]) => <th key={label}>{label}</th>)}<th>Total</th><th>Given</th><th>Remaining</th><th>Value</th><th>Status</th><th>View</th></tr></thead>
                     <tbody>
-                        {groups.length ? (
-                            groups.flatMap(([key, items]) => {
-                                const [district, sector] = key.split('|');
-                                return [
-                                    <tr className="legacy-sector-row" key={key}>
-                                        <td colSpan={16}>
-                                            <b>{district} District</b>
-                                            <span>{sector} Sector</span>
-                                            <em>
-                                                {items.length} school{items.length === 1 ? '' : 's'}
-                                            </em>
-                                        </td>
-                                    </tr>,
-                                    ...items.map((row: any) => {
-                                        const ordered = Number(row.item_count || 0);
-                                        const given = Number(
-                                            (row.lines || []).reduce(
-                                                (sum: number, line: any) =>
-                                                    sum + Number(line.quantity_delivered || 0),
-                                                0,
-                                            ),
-                                        );
-                                        const remaining = Math.max(0, ordered - given);
-                                        return (
-                                            <tr key={row.id}>
-                                                <td className="legacy-school-cell">
-                                                    <b>{row.school?.name || row.customer_name}</b>
-                                                    <small>
-                                                        {row.school?.phone ||
-                                                            orderNumber(row.document_number)}
-                                                    </small>
-                                                </td>
-                                                {legacyColumns.map(([label, names]) => (
-                                                    <td key={label}>
-                                                        {categoryTotal(row, names as string[]) ||
-                                                            '—'}
-                                                    </td>
-                                                ))}
-                                                <td>
-                                                    <b>{ordered.toLocaleString()}</b>
-                                                </td>
-                                                <td>{given.toLocaleString()}</td>
-                                                <td>
-                                                    <b>{remaining.toLocaleString()}</b>
-                                                </td>
-                                                <td>
-                                                    {money(row.total_amount, row.currency_code)}
-                                                </td>
-                                                <td>
-                                                    <span className={'admin-status ' + row.status}>
-                                                        {plainStatus(row.status)}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <button
-                                                        className="school-action-icon view"
-                                                        title="See order details"
-                                                        aria-label={`See ${row.school?.name || row.customer_name} order details`}
-                                                        onClick={() => open(row)}
-                                                    >
-                                                        <Eye size={17} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    }),
-                                ];
-                            })
-                        ) : (
-                            <tr>
-                                <td colSpan={16}>
-                                    No school orders were found for these filters. Try a longer
-                                    period or "All order dates", or clear the status, district and
-                                    sector.
-                                </td>
-                            </tr>
-                        )}
+                        {groups.length ? groups.flatMap(([key, items]) => {
+                            const [district, sector] = key.split('|');
+                            return [
+                                <tr className="legacy-sector-row" key={key}><td colSpan={16}><b>{district} District</b><span>{sector} Sector</span><em>{items.length} school{items.length === 1 ? '' : 's'}</em></td></tr>,
+                                ...items.map((row: any) => {
+                                    const ordered = Number(row.item_count || 0);
+                                    const given = Number((row.lines || []).reduce((sum: number, line: any) => sum + Number(line.quantity_delivered || 0), 0));
+                                    const remaining = Math.max(0, ordered - given);
+                                    return (
+                                        <tr key={row.id}>
+                                            <td className="legacy-school-cell"><b>{row.school?.name || row.customer_name}</b><small>{row.school?.phone || orderNumber(row.document_number)}</small></td>
+                                            {legacyColumns.map(([label, names]) => <td key={label}>{categoryTotal(row, names as string[]) || '—'}</td>)}
+                                            <td><b>{ordered.toLocaleString()}</b></td>
+                                            <td>{given.toLocaleString()}</td>
+                                            <td><b>{remaining.toLocaleString()}</b></td>
+                                            <td>{money(row.total_amount, row.currency_code)}</td>
+                                            <td><span className={'admin-status ' + row.status}>{plainStatus(row.status)}</span></td>
+                                            <td><button className="school-action-icon view" title="See order details" aria-label={`See ${row.school?.name || row.customer_name} order details`} onClick={() => open(row)}><Eye size={17} /></button></td>
+                                        </tr>
+                                    );
+                                }),
+                            ];
+                        }) : <tr><td colSpan={16}>No school orders were found for these filters. Try a longer period or "All order dates", or clear the status, district and sector.</td></tr>}
                     </tbody>
                 </table>
             </div>
@@ -771,47 +319,19 @@ function ConfirmDialog({ config, onCancel }: any) {
         }
     };
     return (
-        <div
-            className="school-modal-backdrop"
-            role="presentation"
-            onMouseDown={(e) => {
-                if (e.target === e.currentTarget) onCancel();
-            }}
-        >
-            <section
-                className="confirm-dialog"
-                role="alertdialog"
-                aria-modal="true"
-                aria-labelledby="confirm-dialog-title"
-            >
+        <div className="school-modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
+            <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
                 <header className={config.tone === 'danger' ? 'danger' : ''}>
                     {config.tone === 'danger' && <AlertTriangle size={20} />}
                     <h2 id="confirm-dialog-title">{config.title}</h2>
                 </header>
                 <p>{config.message}</p>
                 {config.requiresReason && (
-                    <textarea
-                        rows={3}
-                        autoFocus
-                        placeholder={config.placeholder || 'Enter a reason…'}
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        maxLength={1000}
-                    />
+                    <textarea rows={3} autoFocus placeholder={config.placeholder || 'Enter a reason…'} value={reason} onChange={e => setReason(e.target.value)} maxLength={1000} />
                 )}
                 <footer>
-                    <button className="secondary-btn" disabled={submitting} onClick={onCancel}>
-                        Cancel
-                    </button>
-                    <button
-                        className={
-                            config.tone === 'danger'
-                                ? 'primary-btn confirm-dialog-danger-btn'
-                                : 'primary-btn'
-                        }
-                        disabled={submitting || (config.requiresReason && !reason.trim())}
-                        onClick={confirm}
-                    >
+                    <button className="secondary-btn" disabled={submitting} onClick={onCancel}>Cancel</button>
+                    <button className={config.tone === 'danger' ? 'primary-btn confirm-dialog-danger-btn' : 'primary-btn'} disabled={submitting || (config.requiresReason && !reason.trim())} onClick={confirm}>
                         {submitting ? 'Working…' : config.confirmLabel || 'Confirm'}
                     </button>
                 </footer>
@@ -821,102 +341,42 @@ function ConfirmDialog({ config, onCancel }: any) {
 }
 
 const modeCopy: Record<string, string> = {
-    deliver:
-        'Update how many were given to the school. The remaining quantity is calculated automatically.',
+    deliver: 'Update how many were given to the school. The remaining quantity is calculated automatically.',
     pack: 'Record how many of each garment have been packed and are ready for logistics to collect.',
-    confirm:
-        'Review what packing has prepared below, then use Deliver above to ship exactly what has been packed.',
+    confirm: 'Review what packing has prepared below, then use Deliver above to ship exactly what has been packed.',
 };
 
 function OrderDetailsModal({ order, editable, mode = 'deliver', busy, run, close }: any) {
-    const deliverable =
-        mode === 'confirm'
-            ? (order.lines || []).reduce(
-                  (sum: number, line: any) =>
-                      sum +
-                      Math.max(0, Number(line.quantity_packed) - Number(line.quantity_delivered)),
-                  0,
-              )
-            : 0;
+    const deliverable = mode === 'confirm'
+        ? (order.lines || []).reduce((sum: number, line: any) => sum + Math.max(0, Number(line.quantity_packed) - Number(line.quantity_delivered)), 0)
+        : 0;
     const deliverOrder = async () => {
-        const ok = await run(
-            'deliver-order',
-            `/api/sales/school-orders/${order.id}/deliver`,
-            'PATCH',
-            {},
-        );
+        const ok = await run('deliver-order', `/api/sales/school-orders/${order.id}/deliver`, 'PATCH', {});
         if (ok) close();
     };
     return (
-        <div
-            className="school-modal-backdrop"
-            role="presentation"
-            onMouseDown={(e) => {
-                if (e.target === e.currentTarget) close();
-            }}
-        >
-            <section
-                className="school-order-modal"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="school-order-title"
-            >
+        <div className="school-modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+            <section className="school-order-modal" role="dialog" aria-modal="true" aria-labelledby="school-order-title">
                 <header>
                     <div>
                         <small>School order</small>
                         <h2 id="school-order-title">{order.school?.name || order.customer_name}</h2>
-                        <p>
-                            {order.document_number} ·{' '}
-                            {[order.school?.district, order.school?.sector, order.academic_year]
-                                .filter(Boolean)
-                                .join(' · ')}
-                        </p>
+                        <p>{order.document_number} · {[order.school?.district, order.school?.sector, order.academic_year].filter(Boolean).join(' · ')}</p>
                     </div>
                     <div className="workflow-actions">
-                        <a
-                            className="secondary-btn school-print-btn"
-                            href={`/api/sales/orders/${order.id}/pdf`}
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            <Printer size={17} />
-                            Print PDF
-                        </a>
+                        <a className="secondary-btn school-print-btn" href={`/api/sales/orders/${order.id}/pdf`} target="_blank" rel="noreferrer"><Printer size={17} />Print PDF</a>
                         {mode === 'confirm' && editable && (
-                            <button
-                                className="primary-btn"
-                                disabled={busy === 'deliver-order' || deliverable <= 0}
-                                onClick={deliverOrder}
-                            >
-                                <Truck size={17} />
-                                {deliverable <= 0
-                                    ? 'Nothing to deliver'
-                                    : `Deliver ${deliverable.toLocaleString()} item${deliverable === 1 ? '' : 's'}`}
+                            <button className="primary-btn" disabled={busy === 'deliver-order' || deliverable <= 0} onClick={deliverOrder}>
+                                <Truck size={17} />{deliverable <= 0 ? 'Nothing to deliver' : `Deliver ${deliverable.toLocaleString()} item${deliverable === 1 ? '' : 's'}`}
                             </button>
                         )}
-                        <button
-                            className="icon-btn"
-                            aria-label="Close order details"
-                            title="Close"
-                            onClick={close}
-                        >
-                            <X size={20} />
-                        </button>
+                        <button className="icon-btn" aria-label="Close order details" title="Close" onClick={close}><X size={20} /></button>
                     </div>
                 </header>
                 <div className="school-modal-summary">
-                    <div>
-                        <small>Number ordered</small>
-                        <b>{Number(order.item_count || 0).toLocaleString()}</b>
-                    </div>
-                    <div>
-                        <small>Total price</small>
-                        <b>{money(order.total_amount, order.currency_code)}</b>
-                    </div>
-                    <div>
-                        <small>Date received</small>
-                        <b>{date(order.document_date)}</b>
-                    </div>
+                    <div><small>Number ordered</small><b>{Number(order.item_count || 0).toLocaleString()}</b></div>
+                    <div><small>Total price</small><b>{money(order.total_amount, order.currency_code)}</b></div>
+                    <div><small>Date received</small><b>{date(order.document_date)}</b></div>
                     <div>
                         <small>Order status</small>
                         <b
@@ -934,18 +394,8 @@ function OrderDetailsModal({ order, editable, mode = 'deliver', busy, run, close
                 </div>
                 <div className="school-modal-body">
                     <h3>Clothes in this order</h3>
-                    <p>
-                        {editable
-                            ? modeCopy[mode]
-                            : 'Ordered, delivered and remaining quantities for this order.'}
-                    </p>
-                    <GarmentLines
-                        lines={order.lines || []}
-                        editable={editable}
-                        mode={mode}
-                        busy={busy}
-                        run={run}
-                    />
+                    <p>{editable ? modeCopy[mode] : 'Ordered, delivered and remaining quantities for this order.'}</p>
+                    <GarmentLines lines={order.lines || []} editable={editable} mode={mode} busy={busy} run={run} />
                 </div>
             </section>
         </div>
@@ -953,86 +403,38 @@ function OrderDetailsModal({ order, editable, mode = 'deliver', busy, run, close
 }
 
 function OrderFilters({ criteria, setCriteria, options, clear }: any) {
-    const sectors = criteria.district ? options.sectors_by_district?.[criteria.district] || [] : [];
+    const sectors = criteria.district ? (options.sectors_by_district?.[criteria.district] || []) : [];
     return (
         <section className="panel school-filter-panel">
-            <header>
-                <div>
-                    <SlidersHorizontal size={20} />
-                    <span>
-                        <b>Find school orders</b>
-                        <small>Search or choose the details you want to see.</small>
-                    </span>
-                </div>
-                <button className="text-btn" onClick={clear}>
-                    Clear all
-                </button>
-            </header>
+            <header><div><SlidersHorizontal size={20} /><span><b>Find school orders</b><small>Search or choose the details you want to see.</small></span></div><button className="text-btn" onClick={clear}>Clear all</button></header>
             <div className="school-filter-grid">
-                <label className="school-search">
-                    <Search size={18} />
-                    <input
-                        aria-label="Search by school or order number"
-                        placeholder="Search school or order number"
-                        value={criteria.search}
-                        onChange={(e) => setCriteria({ ...criteria, search: e.target.value })}
-                    />
-                </label>
+                <label className="school-search"><Search size={18} /><input aria-label="Search by school or order number" placeholder="Search school or order number" value={criteria.search} onChange={e => setCriteria({ ...criteria, search: e.target.value })} /></label>
                 <label>
                     <span>District</span>
-                    <select
-                        value={criteria.district}
-                        onChange={(e) =>
-                            setCriteria({ ...criteria, district: e.target.value, sector: '' })
-                        }
-                    >
+                    <select value={criteria.district} onChange={e => setCriteria({ ...criteria, district: e.target.value, sector: '' })}>
                         <option value="">All Northern districts</option>
-                        {(options.districts || []).map((x: string) => (
-                            <option key={x}>{x}</option>
-                        ))}
+                        {(options.districts || []).map((x: string) => <option key={x}>{x}</option>)}
                     </select>
                 </label>
                 <label>
                     <span>Sector</span>
-                    <select
-                        disabled={!criteria.district}
-                        value={criteria.sector}
-                        onChange={(e) => setCriteria({ ...criteria, sector: e.target.value })}
-                    >
-                        <option value="">
-                            {criteria.district ? 'All sectors' : 'Choose a district first'}
-                        </option>
-                        {sectors.map((x: string) => (
-                            <option key={x}>{x}</option>
-                        ))}
+                    <select disabled={!criteria.district} value={criteria.sector} onChange={e => setCriteria({ ...criteria, sector: e.target.value })}>
+                        <option value="">{criteria.district ? 'All sectors' : 'Choose a district first'}</option>
+                        {sectors.map((x: string) => <option key={x}>{x}</option>)}
                     </select>
                 </label>
                 <label>
                     <span>Order status</span>
-                    <select
-                        value={criteria.status}
-                        onChange={(e) => setCriteria({ ...criteria, status: e.target.value })}
-                    >
+                    <select value={criteria.status} onChange={e => setCriteria({ ...criteria, status: e.target.value })}>
                         <option value="">All orders</option>
-                        {(options.statuses || []).map((x: string) => (
-                            <option key={x} value={x}>
-                                {plainStatus(x)}
-                            </option>
-                        ))}
+                        {(options.statuses || []).map((x: string) => <option key={x} value={x}>{plainStatus(x)}</option>)}
                     </select>
                 </label>
                 <label>
                     <span>Academic year</span>
-                    <select
-                        value={criteria.academic_year}
-                        onChange={(e) =>
-                            setCriteria({ ...criteria, academic_year: e.target.value })
-                        }
-                    >
+                    <select value={criteria.academic_year} onChange={e => setCriteria({ ...criteria, academic_year: e.target.value })}>
                         <option value="">All years</option>
-                        {(options.academic_years || []).map((x: string) => (
-                            <option key={x}>{x}</option>
-                        ))}
+                        {(options.academic_years || []).map((x: string) => <option key={x}>{x}</option>)}
                     </select>
                 </label>
             </div>
@@ -1045,218 +447,51 @@ function SchoolOrderForm({ order, setOrder, setLine, submit, busy, categories }:
         <form className="panel admin-form quality-form" onSubmit={submit}>
             <h2>Add a school order</h2>
             <div className="form-grid">
-                <label>
-                    Order number
-                    <input
-                        placeholder="Leave empty to create it automatically"
-                        value={order.document_number}
-                        onChange={(e) => setOrder({ ...order, document_number: e.target.value })}
-                    />
-                </label>
-                <label>
-                    School name
-                    <input
-                        required
-                        value={order.customer_name}
-                        onChange={(e) => setOrder({ ...order, customer_name: e.target.value })}
-                    />
-                </label>
-                <label>
-                    School email
-                    <input
-                        type="email"
-                        value={order.customer_email}
-                        onChange={(e) => setOrder({ ...order, customer_email: e.target.value })}
-                    />
-                </label>
-                <label>
-                    District
-                    <input
-                        value={order.school_district}
-                        onChange={(e) => setOrder({ ...order, school_district: e.target.value })}
-                    />
-                </label>
-                <label>
-                    Sector
-                    <input
-                        value={order.school_sector}
-                        onChange={(e) => setOrder({ ...order, school_sector: e.target.value })}
-                    />
-                </label>
-                <label>
-                    Academic year
-                    <input
-                        required
-                        placeholder="For example 2026"
-                        value={order.academic_year}
-                        onChange={(e) => setOrder({ ...order, academic_year: e.target.value })}
-                    />
-                </label>
-                <label>
-                    Date received
-                    <input
-                        required
-                        type="date"
-                        value={order.document_date}
-                        onChange={(e) => setOrder({ ...order, document_date: e.target.value })}
-                    />
-                </label>
-                <label>
-                    Date needed
-                    <input
-                        type="date"
-                        value={order.due_date}
-                        onChange={(e) => setOrder({ ...order, due_date: e.target.value })}
-                    />
-                </label>
-                <label>
-                    Total price
-                    <input
-                        min="0"
-                        type="number"
-                        value={order.total_amount}
-                        onChange={(e) => setOrder({ ...order, total_amount: e.target.value })}
-                    />
-                </label>
+                <label>Order number<input placeholder="Leave empty to create it automatically" value={order.document_number} onChange={e => setOrder({ ...order, document_number: e.target.value })} /></label>
+                <label>School name<input required value={order.customer_name} onChange={e => setOrder({ ...order, customer_name: e.target.value })} /></label>
+                <label>School email<input type="email" value={order.customer_email} onChange={e => setOrder({ ...order, customer_email: e.target.value })} /></label>
+                <label>District<input value={order.school_district} onChange={e => setOrder({ ...order, school_district: e.target.value })} /></label>
+                <label>Sector<input value={order.school_sector} onChange={e => setOrder({ ...order, school_sector: e.target.value })} /></label>
+                <label>Academic year<input required placeholder="For example 2026" value={order.academic_year} onChange={e => setOrder({ ...order, academic_year: e.target.value })} /></label>
+                <label>Date received<input required type="date" value={order.document_date} onChange={e => setOrder({ ...order, document_date: e.target.value })} /></label>
+                <label>Date needed<input type="date" value={order.due_date} onChange={e => setOrder({ ...order, due_date: e.target.value })} /></label>
+                <label>Total price<input min="0" type="number" value={order.total_amount} onChange={e => setOrder({ ...order, total_amount: e.target.value })} /></label>
             </div>
             <h3>Clothes requested</h3>
             {order.lines.map((line: any, index: number) => (
                 <div className="form-grid" key={index}>
-                    <label>
-                        Class
-                        <input
-                            required
-                            placeholder="Nursery 1, P1, S4..."
-                            value={line.class_level}
-                            onChange={(e) => setLine(index, 'class_level', e.target.value)}
-                        />
-                    </label>
+                    <label>Class<input required placeholder="Nursery 1, P1, S4..." value={line.class_level} onChange={e => setLine(index, 'class_level', e.target.value)} /></label>
                     <label>
                         Type of clothing
-                        <select
-                            value={line.garment_category}
-                            onChange={(e) => setLine(index, 'garment_category', e.target.value)}
-                        >
-                            {categories.map((x: string) => (
-                                <option key={x}>{x}</option>
-                            ))}
-                        </select>
+                        <select value={line.garment_category} onChange={e => setLine(index, 'garment_category', e.target.value)}>{categories.map((x: string) => <option key={x}>{x}</option>)}</select>
                     </label>
                     <label>
                         For
-                        <select
-                            value={line.gender}
-                            onChange={(e) => setLine(index, 'gender', e.target.value)}
-                        >
-                            <option>Boy</option>
-                            <option>Girl</option>
-                            <option>Unisex</option>
-                        </select>
+                        <select value={line.gender} onChange={e => setLine(index, 'gender', e.target.value)}><option>Boy</option><option>Girl</option><option>Unisex</option></select>
                     </label>
-                    <label>
-                        Size
-                        <input
-                            value={line.size}
-                            onChange={(e) => setLine(index, 'size', e.target.value)}
-                        />
-                    </label>
-                    <label>
-                        Color
-                        <input
-                            value={line.color}
-                            onChange={(e) => setLine(index, 'color', e.target.value)}
-                        />
-                    </label>
-                    <label>
-                        Number ordered
-                        <input
-                            required
-                            min="1"
-                            type="number"
-                            value={line.quantity_ordered}
-                            onChange={(e) =>
-                                setLine(index, 'quantity_ordered', Number(e.target.value))
-                            }
-                        />
-                    </label>
+                    <label>Size<input value={line.size} onChange={e => setLine(index, 'size', e.target.value)} /></label>
+                    <label>Color<input value={line.color} onChange={e => setLine(index, 'color', e.target.value)} /></label>
+                    <label>Number ordered<input required min="1" type="number" value={line.quantity_ordered} onChange={e => setLine(index, 'quantity_ordered', Number(e.target.value))} /></label>
                 </div>
             ))}
             <div className="workflow-actions">
-                <button
-                    type="button"
-                    className="secondary-btn"
-                    onClick={() =>
-                        setOrder({ ...order, lines: [...order.lines, { ...blankLine }] })
-                    }
-                >
-                    <Plus size={15} />
-                    Add another item
-                </button>
-                <button className="primary-btn" disabled={busy === 'create'}>
-                    {busy === 'create' ? 'Saving...' : 'Save school order'}
-                </button>
+                <button type="button" className="secondary-btn" onClick={() => setOrder({ ...order, lines: [...order.lines, { ...blankLine }] })}><Plus size={15} />Add another item</button>
+                <button className="primary-btn" disabled={busy === 'create'}>{busy === 'create' ? 'Saving...' : 'Save school order'}</button>
             </div>
         </form>
     );
 }
 function GarmentLines({ lines, editable, mode = 'deliver', busy, run }: any) {
-    const headers =
-        mode === 'pack'
-            ? [
-                  'Class',
-                  'Type of clothing',
-                  'For',
-                  'Size',
-                  'Color',
-                  'Quantity',
-                  'Packed',
-                  'Remaining to pack',
-                  ...(editable ? ['Save'] : []),
-              ]
-            : mode === 'confirm'
-              ? [
-                    'Class',
-                    'Type of clothing',
-                    'For',
-                    'Size',
-                    'Color',
-                    'Quantity',
-                    'Packed',
-                    'Delivered',
-                ]
-              : [
-                    'Class',
-                    'Type of clothing',
-                    'For',
-                    'Size',
-                    'Color',
-                    'Quantity',
-                    'Delivered',
-                    'Remains',
-                    ...(editable ? ['Save'] : []),
-                ];
+    const headers = mode === 'pack'
+        ? ['Class', 'Type of clothing', 'For', 'Size', 'Color', 'Quantity', 'Packed', 'Remaining to pack', ...(editable ? ['Save'] : [])]
+        : mode === 'confirm'
+            ? ['Class', 'Type of clothing', 'For', 'Size', 'Color', 'Quantity', 'Packed', 'Delivered']
+            : ['Class', 'Type of clothing', 'For', 'Size', 'Color', 'Quantity', 'Delivered', 'Remains', ...(editable ? ['Save'] : [])];
     return (
         <div className="admin-table-wrap">
             <table className="admin-table">
-                <thead>
-                    <tr>
-                        {headers.map((h) => (
-                            <th key={h}>{h}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {lines.map((line: any) => (
-                        <GarmentLine
-                            key={line.id}
-                            line={line}
-                            editable={editable}
-                            mode={mode}
-                            busy={busy}
-                            run={run}
-                        />
-                    ))}
-                </tbody>
+                <thead><tr>{headers.map(h => <th key={h}>{h}</th>)}</tr></thead>
+                <tbody>{lines.map((line: any) => <GarmentLine key={line.id} line={line} editable={editable} mode={mode} busy={busy} run={run} />)}</tbody>
             </table>
         </div>
     );
@@ -1269,15 +504,11 @@ function GarmentLine({ line, editable, mode = 'deliver', busy, run }: any) {
     const identity = (
         <>
             <td>{line.class_level}</td>
-            <td>
-                <b>{line.garment_category}</b>
-            </td>
+            <td><b>{line.garment_category}</b></td>
             <td>{line.gender || '—'}</td>
             <td>{line.size || '—'}</td>
             <td>{line.color || '—'}</td>
-            <td>
-                <b>{line.quantity_ordered}</b>
-            </td>
+            <td><b>{line.quantity_ordered}</b></td>
         </>
     );
 
@@ -1286,38 +517,9 @@ function GarmentLine({ line, editable, mode = 'deliver', busy, run }: any) {
         return (
             <tr>
                 {identity}
-                <td>
-                    {editable ? (
-                        <input
-                            style={{ width: 75 }}
-                            min="0"
-                            max={line.quantity_ordered}
-                            type="number"
-                            value={packed}
-                            onChange={(e) => setPacked(Number(e.target.value))}
-                        />
-                    ) : (
-                        line.quantity_packed
-                    )}
-                </td>
-                <td>
-                    <strong>{remaining.toLocaleString()}</strong>
-                </td>
-                {editable && (
-                    <td>
-                        <button
-                            className="secondary-btn"
-                            disabled={busy === key}
-                            onClick={() =>
-                                run(key, `/api/sales/school-order-lines/${line.id}/pack`, 'PATCH', {
-                                    quantity_packed: packed,
-                                })
-                            }
-                        >
-                            Save
-                        </button>
-                    </td>
-                )}
+                <td>{editable ? <input style={{ width: 75 }} min="0" max={line.quantity_ordered} type="number" value={packed} onChange={e => setPacked(Number(e.target.value))} /> : line.quantity_packed}</td>
+                <td><strong>{remaining.toLocaleString()}</strong></td>
+                {editable && <td><button className="secondary-btn" disabled={busy === key} onClick={() => run(key, `/api/sales/school-order-lines/${line.id}/pack`, 'PATCH', { quantity_packed: packed })}>Save</button></td>}
             </tr>
         );
     }
@@ -1336,82 +538,28 @@ function GarmentLine({ line, editable, mode = 'deliver', busy, run }: any) {
     return (
         <tr>
             {identity}
-            <td>
-                {editable ? (
-                    <input
-                        style={{ width: 75 }}
-                        min="0"
-                        max={line.quantity_packed}
-                        type="number"
-                        value={delivered}
-                        onChange={(e) => setDelivered(Number(e.target.value))}
-                    />
-                ) : (
-                    line.quantity_delivered
-                )}
-            </td>
-            <td>
-                <strong>{remaining.toLocaleString()}</strong>
-            </td>
-            {editable && (
-                <td>
-                    <button
-                        className="secondary-btn"
-                        disabled={busy === key}
-                        onClick={() =>
-                            run(key, `/api/sales/school-order-lines/${line.id}/deliver`, 'PATCH', {
-                                quantity_delivered: delivered,
-                            })
-                        }
-                    >
-                        Save
-                    </button>
-                </td>
-            )}
+            <td>{editable ? <input style={{ width: 75 }} min="0" max={line.quantity_packed} type="number" value={delivered} onChange={e => setDelivered(Number(e.target.value))} /> : line.quantity_delivered}</td>
+            <td><strong>{remaining.toLocaleString()}</strong></td>
+            {editable && <td><button className="secondary-btn" disabled={busy === key} onClick={() => run(key, `/api/sales/school-order-lines/${line.id}/deliver`, 'PATCH', { quantity_delivered: delivered })}>Save</button></td>}
         </tr>
     );
 }
 function CategorySummary({ rows }: any) {
     return (
         <section className="panel sales-records">
-            <header>
-                <div>
-                    <h2>Garment category progress</h2>
-                    <p>
-                        Ordered, packed, delivered and rejected quantities across all school orders.
-                    </p>
-                </div>
-            </header>
+            <header><div><h2>Garment category progress</h2><p>Ordered, packed, delivered and rejected quantities across all school orders.</p></div></header>
             <div className="admin-table-wrap">
                 <table className="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Ordered</th>
-                            <th>Packed</th>
-                            <th>Delivered</th>
-                            <th>Rejected</th>
-                            <th>Remaining</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Category</th><th>Ordered</th><th>Packed</th><th>Delivered</th><th>Rejected</th><th>Remaining</th></tr></thead>
                     <tbody>
                         {rows.map((x: any) => (
                             <tr key={x.garment_category}>
-                                <td>
-                                    <b>{x.garment_category}</b>
-                                </td>
+                                <td><b>{x.garment_category}</b></td>
                                 <td>{Number(x.ordered).toLocaleString()}</td>
                                 <td>{Number(x.packed).toLocaleString()}</td>
                                 <td>{Number(x.delivered).toLocaleString()}</td>
                                 <td>{Number(x.rejected).toLocaleString()}</td>
-                                <td>
-                                    {Math.max(
-                                        0,
-                                        Number(x.ordered) -
-                                            Number(x.delivered) -
-                                            Number(x.rejected),
-                                    ).toLocaleString()}
-                                </td>
+                                <td>{Math.max(0, Number(x.ordered) - Number(x.delivered) - Number(x.rejected)).toLocaleString()}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -1421,57 +569,28 @@ function CategorySummary({ rows }: any) {
     );
 }
 function Metric({ label, value }: any) {
-    return (
-        <article className="panel">
-            <small>{label}</small>
-            <strong>{Number(value || 0).toLocaleString()}</strong>
-        </article>
-    );
+    return <article className="panel"><small>{label}</small><strong>{Number(value || 0).toLocaleString()}</strong></article>;
 }
 
 function PaginatedLegacyOrderMatrix({ rows, open }: any) {
     const pageSize = 10;
     const [page, setPage] = useState(1);
     const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
-    useEffect(() => setPage((current) => Math.min(current, pageCount)), [pageCount]);
-    const visibleRows = useMemo(
-        () => rows.slice((page - 1) * pageSize, page * pageSize),
-        [rows, page],
-    );
+    useEffect(() => setPage(current => Math.min(current, pageCount)), [pageCount]);
+    const visibleRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page]);
     const changePage = (nextPage: number) => {
         setPage(nextPage);
-        window.requestAnimationFrame(() =>
-            document
-                .querySelector('.legacy-order-sheet')
-                ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-        );
+        window.requestAnimationFrame(() => document.querySelector('.legacy-order-sheet')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     };
 
     return (
         <>
             <LegacyOrderMatrix rows={visibleRows} open={open} />
             {pageCount > 1 && (
-                <nav
-                    className="school-pagination report-pagination"
-                    aria-label="School order report pages"
-                >
-                    <button
-                        className="secondary-btn"
-                        disabled={page === 1}
-                        onClick={() => changePage(page - 1)}
-                    >
-                        Previous
-                    </button>
-                    <span>
-                        Page {page} of {pageCount} · {rows.length} orders
-                    </span>
-                    <button
-                        className="secondary-btn"
-                        disabled={page === pageCount}
-                        onClick={() => changePage(page + 1)}
-                    >
-                        Next
-                    </button>
+                <nav className="school-pagination report-pagination" aria-label="School order report pages">
+                    <button className="secondary-btn" disabled={page === 1} onClick={() => changePage(page - 1)}>Previous</button>
+                    <span>Page {page} of {pageCount} · {rows.length} orders</span>
+                    <button className="secondary-btn" disabled={page === pageCount} onClick={() => changePage(page + 1)}>Next</button>
                 </nav>
             )}
         </>

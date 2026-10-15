@@ -60,9 +60,9 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
         }
     };
 
-s
-,
-.
+    // Noguchi school orders track delivery per garment line (quantity_delivered vs
+    // quantity_ordered) rather than through the generic vehicle/shipment workflow below,
+    // so "Delivery confirmation" pulls real order data from Sales instead of Shipment rows.
     const loadSchoolOrders = async (silent = false) => {
         try {
             const result = await api(`/api/sales/overview?page=${schoolOrdersPage}&status=${schoolOrderStatus}`);
@@ -118,8 +118,8 @@ s
         } finally { setBusy(null); }
     };
 
-f
-.
+    // Each action collects whatever extra detail it needs (assigned vehicle, proof of
+    // delivery, a cancellation confirmation) via simple prompts before posting the status change.
     const action = async (item: any, name: string) => {
         let payload: any = { action: name };
         if (name === 'ready') {

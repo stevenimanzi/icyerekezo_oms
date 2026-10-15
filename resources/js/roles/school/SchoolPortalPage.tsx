@@ -1,204 +1,83 @@
 import React, { useEffect, useState } from 'react';
-import {
-    ArrowLeft,
-    ArrowRight,
-    Building2,
-    CalendarDays,
-    CheckCircle2,
-    CreditCard,
-    Download,
-    Eye,
-    FileSignature,
-    Hash,
-    Mail,
-    MapPin,
-    PackageOpen,
-    Phone,
-    Plus,
-    Printer,
-    RotateCcw,
-    Save,
-    Upload,
-    UserRound,
-    X,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CalendarDays, CheckCircle2, CreditCard, Download, Eye, FileSignature, Hash, Mail, MapPin, PackageOpen, Phone, Plus, Printer, RotateCcw, Save, Upload, UserRound, X } from 'lucide-react';
 
-const csrf = () =>
-    document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
+const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
 async function api(url: string, options: RequestInit = {}) {
     const multipart = options.body instanceof FormData;
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            Accept: 'application/json',
-            'X-CSRF-TOKEN': csrf(),
-            ...(multipart ? {} : { 'Content-Type': 'application/json' }),
-            ...(options.headers || {}),
-        },
-    });
+    const response = await fetch(url, { ...options, headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf(), ...(multipart ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) } });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok)
-        throw new Error(
-            data.message ||
-                Object.values(data.errors || {}).flat()[0] ||
-                'The request could not be completed.',
-        );
+    if (!response.ok) throw new Error(data.message || Object.values(data.errors || {}).flat()[0] || 'The request could not be completed.');
     return data;
 }
 const n = (x: any) => Number(x || 0).toLocaleString();
 const cash = (x: any) => `RWF ${n(x)}`;
-const status = (x: string) =>
-    (
-        ({
-            pending: 'Pending',
-            accepted: 'Accepted',
-            partial: 'Partially delivered',
-            delivered: 'Delivered',
-            rejected: 'Rejected',
-        }) as any
-    )[x] || x;
-const blank = {
-    class_level: 'Nursery 1',
-    garment_category: 'Uniform',
-    gender: 'Boy',
-    size: 'XXXS',
-    color: '',
-    quantity_ordered: 1,
-};
+const status = (x: string) => ({ pending: 'Pending', accepted: 'Accepted', partial: 'Partially delivered', delivered: 'Delivered', rejected: 'Rejected' } as any)[x] || x;
+const blank = { class_level: 'Nursery 1', garment_category: 'Uniform', gender: 'Boy', size: 'XXXS', color: '', quantity_ordered: 1 };
 
+// Uniforms need a top and a bottom color; every other garment is a single piece
+// with one color. Both are stored in the same `color` string column, joined with
+// " / " for uniforms so the rest of the app (review, history, invoices) can keep
+// treating color as plain text.
 const UNIFORM_COLOR_SEPARATOR = ' / ';
 const splitUniformColor = (value: string) => {
     const idx = (value || '').indexOf(UNIFORM_COLOR_SEPARATOR);
-    return idx === -1
-        ? { top: value || '', bottom: '' }
-        : { top: value.slice(0, idx), bottom: value.slice(idx + UNIFORM_COLOR_SEPARATOR.length) };
+    return idx === -1 ? { top: value || '', bottom: '' } : { top: value.slice(0, idx), bottom: value.slice(idx + UNIFORM_COLOR_SEPARATOR.length) };
 };
-const combineUniformColor = (top: string, bottom: string) =>
-    top || bottom ? `${top}${UNIFORM_COLOR_SEPARATOR}${bottom}` : '';
+const combineUniformColor = (top: string, bottom: string) => (top || bottom ? `${top}${UNIFORM_COLOR_SEPARATOR}${bottom}` : '');
 
 export default function SchoolPortalPage({ page, onNavigate, locale }: any) {
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [selected, setSelected] = useState<any>(null);
-    const load = () =>
-        api('/api/school/overview')
-            .then(setData)
-            .catch((e: any) => setError(e.message));
-    useEffect(() => {
-        load();
-    }, []);
+    const load = () => api('/api/school/overview').then(setData).catch((e: any) => setError(e.message));
+    useEffect(() => { load(); }, []);
 
-    if (!data)
-        return (
-            <section className="module-page">
-                <div className="panel school-loading">
-                    {error ||
-                        (locale === 'en'
-                            ? 'Loading your school records…'
-                            : 'Chargement des dossiers de votre école…')}
-                </div>
-            </section>
-        );
+    if (!data) return <section className="module-page"><div className="panel school-loading">{error || (locale === 'en' ? 'Loading your school records…' : 'Chargement des dossiers de votre école…')}</div></section>;
 
-    const props = {
-        data,
-        load,
-        error,
-        setError,
-        message,
-        setMessage,
-        selected,
-        setSelected,
-        onNavigate,
-        locale,
-    };
+    const props = { data, load, error, setError, message, setMessage, selected, setSelected, onNavigate, locale };
     return (
         <section className="module-page school-portal">
             {error && <div className="admin-alert error">{error}</div>}
             {message && <div className="admin-alert success">{message}</div>}
-            {page === 'dashboard' ? (
-                <Dashboard {...props} />
-            ) : page === 'new-order' ? (
-                <NewOrder {...props} />
-            ) : page === 'order-history' ? (
-                <History {...props} />
-            ) : page === 'financials' ? (
-                <Financials {...props} />
-            ) : page === 'return-items' ? (
-                <ReturnItems {...props} />
-            ) : page === 'returns-history' ? (
-                <ReturnsHistory {...props} />
-            ) : page === 'agreement' ? (
-                <Agreement {...props} />
-            ) : (
-                <SchoolProfile {...props} />
-            )}
+            {page === 'dashboard' ? <Dashboard {...props} />
+                : page === 'new-order' ? <NewOrder {...props} />
+                    : page === 'order-history' ? <History {...props} />
+                        : page === 'financials' ? <Financials {...props} />
+                            : page === 'return-items' ? <ReturnItems {...props} />
+                                : page === 'returns-history' ? <ReturnsHistory {...props} />
+                                    : page === 'agreement' ? <Agreement {...props} />
+                                        : <SchoolProfile {...props} />}
             {selected && <OrderModal order={selected} close={() => setSelected(null)} />}
         </section>
     );
 }
 
 function Heading({ title, text, action }: any) {
-    return (
-        <div className="module-hero school-heading">
-            <div>
-                <div className="eyebrow">
-                    <i />
-                    SCHOOL PORTAL
-                </div>
-                <h1>{title}</h1>
-                <p>{text}</p>
-            </div>
-            {action}
-        </div>
-    );
+    return <div className="module-hero school-heading"><div><div className="eyebrow"><i />SCHOOL PORTAL</div><h1>{title}</h1><p>{text}</p></div>{action}</div>;
 }
 
 function Dashboard({ data, onNavigate, setSelected }: any) {
     const stats = {
-        total: Number(data?.stats?.total_items) || 0,
-        delivered: Number(data?.stats?.delivered_items) || 0,
-        rejected: Number(data?.stats?.rejected_items) || 0,
-        pending: Number(data?.stats?.undelivered_items) || 0,
+        total: Number(data?.stats?.total_items) || 0, delivered: Number(data?.stats?.delivered_items) || 0,
+        rejected: Number(data?.stats?.rejected_items) || 0, pending: Number(data?.stats?.undelivered_items) || 0,
     };
-    const recent: any[] = (Array.isArray(data?.orders) ? data.orders : [])
-        .slice(0, 8)
-        .map((order: any, index: number) => {
-            const total = Number(order?.total_amount) || 0;
-            const paid = Number(order?.paid_amount) || 0;
-            return {
-                source: order,
-                key: String(order?.id ?? order?.document_number ?? index),
-                reference: String(order?.document_number || 'Not assigned').replace(
-                    /^LEGACY-NOGUCHI-/,
-                    '',
-                ),
-                date: order?.document_date ? String(order.document_date).slice(0, 10) : 'Not set',
-                items: Number(order?.item_count) || 0,
-                total,
-                financial:
-                    paid >= total && total > 0 ? 'Paid' : paid > 0 ? 'Partially paid' : 'Unpaid',
-                state: String(order?.status || 'pending'),
-            };
-        });
+    const recent: any[] = (Array.isArray(data?.orders) ? data.orders : []).slice(0, 8).map((order: any, index: number) => {
+        const total = Number(order?.total_amount) || 0;
+        const paid = Number(order?.paid_amount) || 0;
+        return {
+            source: order, key: String(order?.id ?? order?.document_number ?? index),
+            reference: String(order?.document_number || 'Not assigned').replace(/^LEGACY-NOGUCHI-/, ''),
+            date: order?.document_date ? String(order.document_date).slice(0, 10) : 'Not set',
+            items: Number(order?.item_count) || 0, total,
+            financial: paid >= total && total > 0 ? 'Paid' : paid > 0 ? 'Partially paid' : 'Unpaid',
+            state: String(order?.status || 'pending'),
+        };
+    });
 
     return (
         <>
-            <Heading
-                title="Dashboard"
-                text="Welcome back, here is your requisition overview."
-                action={
-                    <button
-                        type="button"
-                        className="primary-btn"
-                        onClick={() => onNavigate('new-order')}
-                    >
-                        <Plus size={17} />
-                        New Order
-                    </button>
-                }
-            />
+            <Heading title="Dashboard" text="Welcome back, here is your requisition overview." action={<button type="button" className="primary-btn" onClick={() => onNavigate('new-order')}><Plus size={17} />New Order</button>} />
             <div className="school-kpis">
                 <Kpi label="Total Items" value={stats.total} />
                 <Kpi label="Delivered" value={stats.delivered} />
@@ -206,56 +85,21 @@ function Dashboard({ data, onNavigate, setSelected }: any) {
                 <Kpi label="Pending" value={stats.pending} />
             </div>
             <section className="panel school-table">
-                <header>
-                    <h2>Recent orders</h2>
-                </header>
+                <header><h2>Recent orders</h2></header>
                 <div className="admin-table-wrap">
                     <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Ref #</th>
-                                <th>Date</th>
-                                <th>Summary</th>
-                                <th>Financials</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Ref #</th><th>Date</th><th>Summary</th><th>Financials</th><th>Status</th><th>Action</th></tr></thead>
                         <tbody>
-                            {recent.length ? (
-                                recent.map((order) => (
-                                    <tr key={order.key}>
-                                        <td>
-                                            <b>{order.reference}</b>
-                                        </td>
-                                        <td>{order.date}</td>
-                                        <td>{order.items.toLocaleString()} items</td>
-                                        <td>
-                                            <b>RWF {order.total.toLocaleString()}</b>
-                                            <small>{order.financial}</small>
-                                        </td>
-                                        <td>
-                                            <span className={`admin-status ${order.state}`}>
-                                                {status(order.state)}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button
-                                                type="button"
-                                                className="school-action-icon view"
-                                                aria-label={`View order ${order.reference}`}
-                                                onClick={() => setSelected(order.source)}
-                                            >
-                                                <Eye size={17} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={6}>No orders found. Select New Order to start.</td>
+                            {recent.length ? recent.map(order => (
+                                <tr key={order.key}>
+                                    <td><b>{order.reference}</b></td>
+                                    <td>{order.date}</td>
+                                    <td>{order.items.toLocaleString()} items</td>
+                                    <td><b>RWF {order.total.toLocaleString()}</b><small>{order.financial}</small></td>
+                                    <td><span className={`admin-status ${order.state}`}>{status(order.state)}</span></td>
+                                    <td><button type="button" className="school-action-icon view" aria-label={`View order ${order.reference}`} onClick={() => setSelected(order.source)}><Eye size={17} /></button></td>
                                 </tr>
-                            )}
+                            )) : <tr><td colSpan={6}>No orders found. Select New Order to start.</td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -265,87 +109,33 @@ function Dashboard({ data, onNavigate, setSelected }: any) {
 }
 
 function Kpi({ label, value, tone }: any) {
-    return (
-        <article className={`panel school-kpi ${tone}`}>
-            <small>{label}</small>
-            <b>{n(value)}</b>
-        </article>
-    );
+    return <article className={`panel school-kpi ${tone}`}><small>{label}</small><b>{n(value)}</b></article>;
 }
 
 function Orders({ title, rows, setSelected }: any) {
     const safeRows = Array.isArray(rows) ? rows : [];
     return (
         <section className="panel school-table">
-            <header>
-                <h2>{title}</h2>
-            </header>
+            <header><h2>{title}</h2></header>
             <div className="admin-table-wrap">
                 <table className="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Ref #</th>
-                            <th>Date</th>
-                            <th>Summary</th>
-                            <th>Financials</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Ref #</th><th>Date</th><th>Summary</th><th>Financials</th><th>Status</th><th>Action</th></tr></thead>
                     <tbody>
-                        {safeRows.length ? (
-                            safeRows.map((o: any) => {
-                                const total = Number(o?.total_amount) || 0;
-                                const paid = Number(o?.paid_amount) || 0;
-                                const orderStatus = String(o?.status || 'pending');
-                                return (
-                                    <tr key={o?.id || o?.document_number}>
-                                        <td>
-                                            <b>
-                                                {String(
-                                                    o?.document_number || 'Not assigned',
-                                                ).replace(/^LEGACY-NOGUCHI-/, '')}
-                                            </b>
-                                        </td>
-                                        <td>
-                                            {o?.document_date
-                                                ? String(o.document_date).slice(0, 10)
-                                                : 'Not set'}
-                                        </td>
-                                        <td>{n(o?.item_count)} items</td>
-                                        <td>
-                                            <b>{cash(total)}</b>
-                                            <small>
-                                                {paid >= total && total > 0
-                                                    ? 'Paid'
-                                                    : paid > 0
-                                                      ? 'Partially paid'
-                                                      : 'Unpaid'}
-                                            </small>
-                                        </td>
-                                        <td>
-                                            <span className={'admin-status ' + orderStatus}>
-                                                {status(orderStatus)}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button
-                                                type="button"
-                                                className="school-action-icon view"
-                                                aria-label="View order"
-                                                onClick={() => setSelected(o)}
-                                            >
-                                                <Eye size={17} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        ) : (
-                            <tr>
-                                <td colSpan={6}>No orders found. Select New Order to start.</td>
-                            </tr>
-                        )}
+                        {safeRows.length ? safeRows.map((o: any) => {
+                            const total = Number(o?.total_amount) || 0;
+                            const paid = Number(o?.paid_amount) || 0;
+                            const orderStatus = String(o?.status || 'pending');
+                            return (
+                                <tr key={o?.id || o?.document_number}>
+                                    <td><b>{String(o?.document_number || 'Not assigned').replace(/^LEGACY-NOGUCHI-/, '')}</b></td>
+                                    <td>{o?.document_date ? String(o.document_date).slice(0, 10) : 'Not set'}</td>
+                                    <td>{n(o?.item_count)} items</td>
+                                    <td><b>{cash(total)}</b><small>{paid >= total && total > 0 ? 'Paid' : paid > 0 ? 'Partially paid' : 'Unpaid'}</small></td>
+                                    <td><span className={'admin-status ' + orderStatus}>{status(orderStatus)}</span></td>
+                                    <td><button type="button" className="school-action-icon view" aria-label="View order" onClick={() => setSelected(o)}><Eye size={17} /></button></td>
+                                </tr>
+                            );
+                        }) : <tr><td colSpan={6}>No orders found. Select New Order to start.</td></tr>}
                     </tbody>
                 </table>
             </div>
@@ -357,151 +147,68 @@ function History({ data, setSelected }: any) {
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
     const [state, setState] = useState('');
-    const rows = data.orders.filter(
-        (o: any) =>
-            (!from || o.document_date.slice(0, 10) >= from) &&
-            (!to || o.document_date.slice(0, 10) <= to) &&
-            (!state || o.status === state),
-    );
+    const rows = data.orders.filter((o: any) => (!from || o.document_date.slice(0, 10) >= from) && (!to || o.document_date.slice(0, 10) <= to) && (!state || o.status === state));
 
     return (
         <>
-            <Heading
-                title="Order History"
-                text="Find previous orders and print their complete details."
-            />
+            <Heading title="Order History" text="Find previous orders and print their complete details." />
             <section className="panel school-inline-filters">
-                <label>
-                    Start Date
-                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-                </label>
-                <label>
-                    End Date
-                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-                </label>
+                <label>Start Date<input type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>
+                <label>End Date<input type="date" value={to} onChange={e => setTo(e.target.value)} /></label>
                 <label>
                     Status
-                    <select value={state} onChange={(e) => setState(e.target.value)}>
+                    <select value={state} onChange={e => setState(e.target.value)}>
                         <option value="">All Statuses</option>
-                        {['pending', 'accepted', 'partial', 'delivered', 'rejected'].map((x) => (
-                            <option key={x} value={x}>
-                                {status(x)}
-                            </option>
-                        ))}
+                        {['pending', 'accepted', 'partial', 'delivered', 'rejected'].map(x => <option key={x} value={x}>{status(x)}</option>)}
                     </select>
                 </label>
-                <button
-                    className="secondary-btn"
-                    onClick={() => {
-                        setFrom('');
-                        setTo('');
-                        setState('');
-                    }}
-                >
-                    Reset
-                </button>
+                <button className="secondary-btn" onClick={() => { setFrom(''); setTo(''); setState(''); }}>Reset</button>
             </section>
             <Orders title="Your orders" rows={rows} setSelected={setSelected} />
         </>
     );
 }
 
+// A school order is built one class at a time (a grid of category × gender × size
+// quantities per class), then reviewed as a flat line list before submission — this
+// keeps the form manageable for schools ordering dozens of garment/size combinations.
 function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
-    const sizesFor = (classLevel: string) =>
-        /^P[1-6]$/.test(classLevel)
-            ? ['S', 'M', 'L', 'XL']
-            : /^S[1-6]$/.test(classLevel)
-              ? ['S', 'M', 'L', 'XL', 'XXL']
-              : ['XXS', 'XS', 'S'];
-    const baseCategories = [
-        ['Uniform', 'Daily Uniforms'],
-        ['Sport Uniform', 'Sport Wear'],
-        ['Sweater', 'Sweaters'],
-    ];
+    const sizesFor = (classLevel: string) => /^P[1-6]$/.test(classLevel) ? ['S', 'M', 'L', 'XL'] : /^S[1-6]$/.test(classLevel) ? ['S', 'M', 'L', 'XL', 'XXL'] : ['XXS', 'XS', 'S'];
+    const baseCategories = [['Uniform', 'Daily Uniforms'], ['Sport Uniform', 'Sport Wear'], ['Sweater', 'Sweaters']];
     const genders = ['Boy', 'Girl'];
     const categoriesFor = (classLevel: string) => [
         ...baseCategories,
         ...(/^S[1-6]$/.test(classLevel) ? [['T-shirt', 'T-Shirts']] : []),
-        ...(/^S[4-6]$/.test(classLevel)
-            ? [
-                  ['Overall', 'Overalls'],
-                  ['Overall Coat', 'Overall Coats'],
-              ]
-            : []),
+        ...(/^S[4-6]$/.test(classLevel) ? [['Overall', 'Overalls'], ['Overall Coat', 'Overall Coats']] : []),
     ];
-    const makeLines = (classLevel: string) =>
-        categoriesFor(classLevel).flatMap(([garment_category]) =>
-            genders.flatMap((gender) =>
-                sizesFor(classLevel).map((size) => ({
-                    class_level: classLevel,
-                    garment_category,
-                    gender,
-                    size,
-                    color: '',
-                    quantity_ordered: 0,
-                })),
-            ),
-        );
+    const makeLines = (classLevel: string) => categoriesFor(classLevel).flatMap(([garment_category]) => genders.flatMap(gender => sizesFor(classLevel).map(size => ({ class_level: classLevel, garment_category, gender, size, color: '', quantity_ordered: 0 }))));
 
     const [year, setYear] = useState(data.academic_years[0]);
     const [step, setStep] = useState(0);
-    const [lines, setLines] = useState<any[]>(() =>
-        data.classes.flatMap((x: string) => makeLines(x)),
-    );
+    const [lines, setLines] = useState<any[]>(() => data.classes.flatMap((x: string) => makeLines(x)));
     const [review, setReview] = useState(false);
     const [busy, setBusy] = useState(false);
 
     const cls = data.classes[step];
     const categories = categoriesFor(cls);
-    const current = lines.filter((x) => x.class_level === cls);
+    const current = lines.filter(x => x.class_level === cls);
 
-    const updateQuantity = (category: string, gender: string, size: string, value: number) =>
-        setLines(
-            lines.map((line) =>
-                line.class_level === cls &&
-                line.garment_category === category &&
-                line.gender === gender &&
-                line.size === size
-                    ? { ...line, quantity_ordered: Math.max(0, value) }
-                    : line,
-            ),
-        );
-    const updateColor = (category: string, gender: string, value: string) =>
-        setLines(
-            lines.map((line) =>
-                line.class_level === cls &&
-                line.garment_category === category &&
-                line.gender === gender
-                    ? { ...line, color: value }
-                    : line,
-            ),
-        );
+    const updateQuantity = (category: string, gender: string, size: string, value: number) => setLines(lines.map(line => line.class_level === cls && line.garment_category === category && line.gender === gender && line.size === size ? { ...line, quantity_ordered: Math.max(0, value) } : line));
+    const updateColor = (category: string, gender: string, value: string) => setLines(lines.map(line => line.class_level === cls && line.garment_category === category && line.gender === gender ? { ...line, color: value } : line));
 
-    const validLines = lines.filter((line) => Number(line.quantity_ordered) > 0);
+    const validLines = lines.filter(line => Number(line.quantity_ordered) > 0);
     const total = validLines.reduce((sum, line) => {
-        const level = line.class_level.startsWith('P')
-            ? 'Primary'
-            : line.class_level.startsWith('S')
-              ? 'Secondary'
-              : 'Nursery';
-        return (
-            sum + Number(line.quantity_ordered) * (data.prices[level]?.[line.garment_category] || 0)
-        );
+        const level = line.class_level.startsWith('P') ? 'Primary' : line.class_level.startsWith('S') ? 'Secondary' : 'Nursery';
+        return sum + Number(line.quantity_ordered) * (data.prices[level]?.[line.garment_category] || 0);
     }, 0);
 
-    const classIsFilled = (classLevel: string) =>
-        lines.some((line) => line.class_level === classLevel && Number(line.quantity_ordered) > 0);
-    const goTo = (next: number) => {
-        setError('');
-        setStep(next);
-    };
+    const classIsFilled = (classLevel: string) => lines.some(line => line.class_level === classLevel && Number(line.quantity_ordered) > 0);
+    const goTo = (next: number) => { setError(''); setStep(next); };
     const saveAndNext = () => goTo(step + 1);
     const reviewOrder = () => {
-        const invalid = validLines.find((line) => !line.color?.trim() || !line.size);
+        const invalid = validLines.find(line => !line.color?.trim() || !line.size);
         if (invalid) {
-            setError(
-                `Complete the size and color for ${invalid.class_level} before reviewing the order.`,
-            );
+            setError(`Complete the size and color for ${invalid.class_level} before reviewing the order.`);
             setStep(data.classes.indexOf(invalid.class_level));
             return;
         }
@@ -515,164 +222,56 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
         }
         setBusy(true);
         try {
-            const result = await api('/api/school/orders', {
-                method: 'POST',
-                body: JSON.stringify({ academic_year: year, lines: validLines }),
-            });
+            const result = await api('/api/school/orders', { method: 'POST', body: JSON.stringify({ academic_year: year, lines: validLines }) });
             setMessage(result.message);
             await load();
             onNavigate('dashboard');
         } catch (e: any) {
             setError(e.message);
-        } finally {
-            setBusy(false);
-        }
+        } finally { setBusy(false); }
     };
 
     return (
         <>
-            <Heading
-                title="Place New Order"
-                text="Enter quantities for boys and girls in every required size."
-            />
+            <Heading title="Place New Order" text="Enter quantities for boys and girls in every required size." />
             {!review ? (
                 <section className="panel school-order-builder">
                     <div className="school-class-strip">
                         {data.classes.map((x: string, i: number) => {
                             const filled = classIsFilled(x);
-                            return (
-                                <button
-                                    type="button"
-                                    className={`${i === step ? 'active ' : ''}${filled ? 'filled' : ''}`.trim()}
-                                    onClick={() => goTo(i)}
-                                    key={x}
-                                >
-                                    {x}
-                                    {filled && <CheckCircle2 size={16} />}
-                                </button>
-                            );
+                            return <button type="button" className={`${i === step ? 'active ' : ''}${filled ? 'filled' : ''}`.trim()} onClick={() => goTo(i)} key={x}>{x}{filled && <CheckCircle2 size={16} />}</button>;
                         })}
                     </div>
                     <header>
-                        <div>
-                            <small>
-                                CLASS {step + 1} OF {data.classes.length}
-                            </small>
-                            <h2>{cls}</h2>
-                        </div>
-                        <label>
-                            Academic year
-                            <select value={year} onChange={(e) => setYear(e.target.value)}>
-                                {data.academic_years.map((x: string) => (
-                                    <option key={x}>{x}</option>
-                                ))}
-                            </select>
-                        </label>
+                        <div><small>CLASS {step + 1} OF {data.classes.length}</small><h2>{cls}</h2></div>
+                        <label>Academic year<select value={year} onChange={e => setYear(e.target.value)}>{data.academic_years.map((x: string) => <option key={x}>{x}</option>)}</select></label>
                     </header>
                     <div className="school-garment-matrices">
                         {categories.map(([category, label]) => (
                             <section className="school-garment-matrix" key={category}>
                                 <h3>{label}</h3>
-                                {genders.map((gender) => {
-                                    const group = current.filter(
-                                        (x) =>
-                                            x.garment_category === category && x.gender === gender,
-                                    );
-                                    const { top: topColor, bottom: bottomColor } =
-                                        splitUniformColor(group[0]?.color);
+                                {genders.map(gender => {
+                                    const group = current.filter(x => x.garment_category === category && x.gender === gender);
+                                    const { top: topColor, bottom: bottomColor } = splitUniformColor(group[0]?.color);
                                     return (
-                                        <div
-                                            className="school-size-row"
-                                            key={gender}
-                                            style={
-                                                {
-                                                    '--size-count': sizesFor(cls).length,
-                                                } as React.CSSProperties
-                                            }
-                                        >
+                                        <div className="school-size-row" key={gender} style={{ '--size-count': sizesFor(cls).length } as React.CSSProperties}>
                                             <div className="school-size-person">
                                                 <b>{gender === 'Boy' ? 'Boys' : 'Girls'}</b>
                                                 {category === 'Uniform' ? (
                                                     <div className="school-size-color-stack">
-                                                        <label>
-                                                            <span>Top color</span>
-                                                            <input
-                                                                placeholder="e.g., Blue"
-                                                                value={topColor}
-                                                                onChange={(e) =>
-                                                                    updateColor(
-                                                                        category,
-                                                                        gender,
-                                                                        combineUniformColor(
-                                                                            e.target.value,
-                                                                            bottomColor,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            />
-                                                        </label>
-                                                        <label>
-                                                            <span>Bottom color</span>
-                                                            <input
-                                                                placeholder="e.g., White"
-                                                                value={bottomColor}
-                                                                onChange={(e) =>
-                                                                    updateColor(
-                                                                        category,
-                                                                        gender,
-                                                                        combineUniformColor(
-                                                                            topColor,
-                                                                            e.target.value,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            />
-                                                        </label>
+                                                        <label><span>Top color</span><input placeholder="e.g., Blue" value={topColor} onChange={e => updateColor(category, gender, combineUniformColor(e.target.value, bottomColor))} /></label>
+                                                        <label><span>Bottom color</span><input placeholder="e.g., White" value={bottomColor} onChange={e => updateColor(category, gender, combineUniformColor(topColor, e.target.value))} /></label>
                                                     </div>
                                                 ) : (
-                                                    <label>
-                                                        Color
-                                                        <input
-                                                            placeholder="Main color"
-                                                            value={group[0]?.color || ''}
-                                                            onChange={(e) =>
-                                                                updateColor(
-                                                                    category,
-                                                                    gender,
-                                                                    e.target.value,
-                                                                )
-                                                            }
-                                                        />
-                                                    </label>
+                                                    <label>Color<input placeholder="Main color" value={group[0]?.color || ''} onChange={e => updateColor(category, gender, e.target.value)} /></label>
                                                 )}
                                             </div>
-                                            {sizesFor(cls).map((size) => {
-                                                const line = group.find((x) => x.size === size);
+                                            {sizesFor(cls).map(size => {
+                                                const line = group.find(x => x.size === size);
                                                 return (
-                                                    <label
-                                                        className="school-size-quantity"
-                                                        key={size}
-                                                    >
+                                                    <label className="school-size-quantity" key={size}>
                                                         <span>{size}</span>
-                                                        <input
-                                                            aria-label={`${label} ${gender} ${size}`}
-                                                            placeholder="Qty"
-                                                            type="number"
-                                                            min="0"
-                                                            value={
-                                                                Number(line?.quantity_ordered) > 0
-                                                                    ? line.quantity_ordered
-                                                                    : ''
-                                                            }
-                                                            onChange={(e) =>
-                                                                updateQuantity(
-                                                                    category,
-                                                                    gender,
-                                                                    size,
-                                                                    Number(e.target.value),
-                                                                )
-                                                            }
-                                                        />
+                                                        <input aria-label={`${label} ${gender} ${size}`} placeholder="Qty" type="number" min="0" value={Number(line?.quantity_ordered) > 0 ? line.quantity_ordered : ''} onChange={e => updateQuantity(category, gender, size, Number(e.target.value))} />
                                                     </label>
                                                 );
                                             })}
@@ -683,64 +282,27 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
                         ))}
                     </div>
                     <div className="school-builder-nav">
-                        <button
-                            type="button"
-                            className="secondary-btn"
-                            disabled={step === 0}
-                            onClick={() => goTo(step - 1)}
-                        >
-                            <ArrowLeft size={16} />
-                            Previous
-                        </button>
-                        {step < data.classes.length - 1 ? (
-                            <button type="button" className="primary-btn" onClick={saveAndNext}>
-                                Save & Next Class
-                                <ArrowRight size={16} />
-                            </button>
-                        ) : (
-                            <button type="button" className="primary-btn" onClick={reviewOrder}>
-                                Review Order
-                                <ArrowRight size={16} />
-                            </button>
-                        )}
+                        <button type="button" className="secondary-btn" disabled={step === 0} onClick={() => goTo(step - 1)}><ArrowLeft size={16} />Previous</button>
+                        {step < data.classes.length - 1
+                            ? <button type="button" className="primary-btn" onClick={saveAndNext}>Save & Next Class<ArrowRight size={16} /></button>
+                            : <button type="button" className="primary-btn" onClick={reviewOrder}>Review Order<ArrowRight size={16} /></button>}
                     </div>
                 </section>
             ) : (
                 <section className="panel school-review">
                     <h2>Review Order Details</h2>
-                    <p>
-                        Please check quantities, sizes and colors before submitting. The factory
-                        will review your order.
-                    </p>
+                    <p>Please check quantities, sizes and colors before submitting. The factory will review your order.</p>
                     <div className="admin-table-wrap">
                         <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Class</th>
-                                    <th>Item Details & Colors</th>
-                                    <th>Size</th>
-                                    <th>Qty</th>
-                                    <th>Unit Price</th>
-                                    <th>Subtotal</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Class</th><th>Item Details & Colors</th><th>Size</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
                             <tbody>
                                 {validLines.map((line, i) => {
-                                    const level = line.class_level.startsWith('P')
-                                        ? 'Primary'
-                                        : line.class_level.startsWith('S')
-                                          ? 'Secondary'
-                                          : 'Nursery';
+                                    const level = line.class_level.startsWith('P') ? 'Primary' : line.class_level.startsWith('S') ? 'Secondary' : 'Nursery';
                                     const price = data.prices[level]?.[line.garment_category] || 0;
                                     return (
                                         <tr key={i}>
                                             <td>{line.class_level}</td>
-                                            <td>
-                                                <b>
-                                                    {line.garment_category} · {line.gender}
-                                                </b>
-                                                <small>{line.color}</small>
-                                            </td>
+                                            <td><b>{line.garment_category} · {line.gender}</b><small>{line.color}</small></td>
                                             <td>{line.size}</td>
                                             <td>{n(line.quantity_ordered)}</td>
                                             <td>{cash(price)}</td>
@@ -749,36 +311,12 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
                                     );
                                 })}
                             </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colSpan={5}>
-                                        <b>Total</b>
-                                    </td>
-                                    <td>
-                                        <b>{cash(total)}</b>
-                                    </td>
-                                </tr>
-                            </tfoot>
+                            <tfoot><tr><td colSpan={5}><b>Total</b></td><td><b>{cash(total)}</b></td></tr></tfoot>
                         </table>
                     </div>
                     <div className="school-builder-nav">
-                        <button
-                            type="button"
-                            className="secondary-btn"
-                            onClick={() => setReview(false)}
-                        >
-                            <ArrowLeft size={16} />
-                            Edit Order
-                        </button>
-                        <button
-                            type="button"
-                            className="primary-btn"
-                            disabled={busy}
-                            onClick={submit}
-                        >
-                            <CheckCircle2 size={17} />
-                            {busy ? 'Sending…' : 'Confirm & Submit'}
-                        </button>
+                        <button type="button" className="secondary-btn" onClick={() => setReview(false)}><ArrowLeft size={16} />Edit Order</button>
+                        <button type="button" className="primary-btn" disabled={busy} onClick={submit}><CheckCircle2 size={17} />{busy ? 'Sending…' : 'Confirm & Submit'}</button>
                     </div>
                 </section>
             )}
@@ -794,53 +332,19 @@ function Financials({ data, load, setMessage, setError }: any) {
             <section className="panel school-table">
                 <div className="admin-table-wrap">
                     <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Order Ref</th>
-                                <th>Total Amount</th>
-                                <th>Paid</th>
-                                <th>Balance</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Date</th><th>Order Ref</th><th>Total Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
                         <tbody>
                             {data.orders.map((o: any) => {
-                                const due = Math.max(
-                                    0,
-                                    Number(o.total_amount) - Number(o.paid_amount),
-                                );
+                                const due = Math.max(0, Number(o.total_amount) - Number(o.paid_amount));
                                 return (
                                     <tr key={o.id}>
                                         <td>{o.document_date.slice(0, 10)}</td>
-                                        <td>
-                                            {String(o.document_number).replace(
-                                                /^LEGACY-NOGUCHI-/,
-                                                '',
-                                            )}
-                                        </td>
+                                        <td>{String(o.document_number).replace(/^LEGACY-NOGUCHI-/, '')}</td>
                                         <td>{cash(o.total_amount)}</td>
                                         <td>{cash(o.paid_amount)}</td>
                                         <td>{cash(due)}</td>
-                                        <td>
-                                            {due <= 0
-                                                ? 'Paid'
-                                                : Number(o.paid_amount) > 0
-                                                  ? 'Partial'
-                                                  : 'Unpaid'}
-                                        </td>
-                                        <td>
-                                            {due > 0 && (
-                                                <button
-                                                    className="primary-btn"
-                                                    onClick={() => setPay({ ...o, due })}
-                                                >
-                                                    <Upload size={15} />
-                                                    Submit payment
-                                                </button>
-                                            )}
-                                        </td>
+                                        <td>{due <= 0 ? 'Paid' : Number(o.paid_amount) > 0 ? 'Partial' : 'Unpaid'}</td>
+                                        <td>{due > 0 && <button className="primary-btn" onClick={() => setPay({ ...o, due })}><Upload size={15} />Submit payment</button>}</td>
                                     </tr>
                                 );
                             })}
@@ -848,18 +352,7 @@ function Financials({ data, load, setMessage, setError }: any) {
                     </table>
                 </div>
             </section>
-            {pay && (
-                <PaymentModal
-                    order={pay}
-                    close={() => setPay(null)}
-                    done={async (msg: string) => {
-                        setPay(null);
-                        setMessage(msg);
-                        await load();
-                    }}
-                    fail={setError}
-                />
-            )}
+            {pay && <PaymentModal order={pay} close={() => setPay(null)} done={async (msg: string) => { setPay(null); setMessage(msg); await load(); }} fail={setError} />}
         </>
     );
 }
@@ -888,17 +381,12 @@ function PaymentModal({ order, close, done, fail }: any) {
         form.append('paid_at', paidAt);
         form.append('proof_file', file);
         try {
-            const result = await api(`/api/school/orders/${order.id}/payments`, {
-                method: 'POST',
-                body: form,
-            });
+            const result = await api(`/api/school/orders/${order.id}/payments`, { method: 'POST', body: form });
             done(result.message);
         } catch (err: any) {
             setError(err.message);
             fail(err.message);
-        } finally {
-            setBusy(false);
-        }
+        } finally { setBusy(false); }
     };
     const ref = String(order.document_number).replace(/^LEGACY-NOGUCHI-/, '');
 
@@ -906,116 +394,32 @@ function PaymentModal({ order, close, done, fail }: any) {
         <div className="school-modal-backdrop">
             <form className="school-payment-modal" onSubmit={submit}>
                 <header>
-                    <div className="school-payment-title">
-                        <i>
-                            <CreditCard />
-                        </i>
-                        <span>
-                            <small>PAYMENT VERIFICATION</small>
-                            <h2>Submit Payment Proof</h2>
-                            <p>Order {ref}</p>
-                        </span>
-                    </div>
-                    <button type="button" className="icon-btn" aria-label="Close" onClick={close}>
-                        <X />
-                    </button>
+                    <div className="school-payment-title"><i><CreditCard /></i><span><small>PAYMENT VERIFICATION</small><h2>Submit Payment Proof</h2><p>Order {ref}</p></span></div>
+                    <button type="button" className="icon-btn" aria-label="Close" onClick={close}><X /></button>
                 </header>
                 <div className="school-payment-summary">
-                    <span>
-                        <small>Order total</small>
-                        <b>{cash(order.total_amount)}</b>
-                    </span>
-                    <span>
-                        <small>Already paid</small>
-                        <b>{cash(order.paid_amount)}</b>
-                    </span>
-                    <span className="due">
-                        <small>Outstanding balance</small>
-                        <b>{cash(order.due)}</b>
-                    </span>
+                    <span><small>Order total</small><b>{cash(order.total_amount)}</b></span>
+                    <span><small>Already paid</small><b>{cash(order.paid_amount)}</b></span>
+                    <span className="due"><small>Outstanding balance</small><b>{cash(order.due)}</b></span>
                 </div>
                 {error && <div className="form-error">{error}</div>}
                 <div className="school-payment-fields">
+                    <label><span><CreditCard />Amount Paid (RWF)</span><input required type="number" min="1" max={order.due} step="1" value={amount} onChange={e => setAmount(e.target.value)} /><small>Maximum: {cash(order.due)}</small></label>
                     <label>
-                        <span>
-                            <CreditCard />
-                            Amount Paid (RWF)
-                        </span>
-                        <input
-                            required
-                            type="number"
-                            min="1"
-                            max={order.due}
-                            step="1"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                        />
-                        <small>Maximum: {cash(order.due)}</small>
+                        <span><CreditCard />Payment Method</span>
+                        <select required value={method} onChange={e => setMethod(e.target.value)}><option>Bank Transfer</option><option>MoMo Pay</option><option>Cheque</option><option>Cash Deposit</option></select>
                     </label>
-                    <label>
-                        <span>
-                            <CreditCard />
-                            Payment Method
-                        </span>
-                        <select required value={method} onChange={(e) => setMethod(e.target.value)}>
-                            <option>Bank Transfer</option>
-                            <option>MoMo Pay</option>
-                            <option>Cheque</option>
-                            <option>Cash Deposit</option>
-                        </select>
-                    </label>
-                    <label>
-                        <span>
-                            <Hash />
-                            Transaction / Reference Number
-                        </span>
-                        <input
-                            required
-                            maxLength={120}
-                            placeholder="Enter bank, MoMo or cheque reference"
-                            value={reference}
-                            onChange={(e) => setReference(e.target.value)}
-                        />
-                    </label>
-                    <label>
-                        <span>
-                            <CalendarDays />
-                            Payment Date
-                        </span>
-                        <input
-                            required
-                            type="date"
-                            max={new Date().toISOString().slice(0, 10)}
-                            value={paidAt}
-                            onChange={(e) => setPaidAt(e.target.value)}
-                        />
-                    </label>
+                    <label><span><Hash />Transaction / Reference Number</span><input required maxLength={120} placeholder="Enter bank, MoMo or cheque reference" value={reference} onChange={e => setReference(e.target.value)} /></label>
+                    <label><span><CalendarDays />Payment Date</span><input required type="date" max={new Date().toISOString().slice(0, 10)} value={paidAt} onChange={e => setPaidAt(e.target.value)} /></label>
                 </div>
                 <label className={`school-proof-upload${file ? ' selected' : ''}`}>
                     <Upload />
-                    <span>
-                        <b>{file ? file.name : 'Upload payment slip or screenshot'}</b>
-                        <small>
-                            {file
-                                ? `${(file.size / 1024 / 1024).toFixed(2)} MB · Select another file`
-                                : 'PDF, JPG or PNG · Maximum 5 MB'}
-                        </small>
-                    </span>
-                    <input
-                        required
-                        type="file"
-                        accept="image/jpeg,image/png,.pdf"
-                        onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    />
+                    <span><b>{file ? file.name : 'Upload payment slip or screenshot'}</b><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB · Select another file` : 'PDF, JPG or PNG · Maximum 5 MB'}</small></span>
+                    <input required type="file" accept="image/jpeg,image/png,.pdf" onChange={e => setFile(e.target.files?.[0] || null)} />
                 </label>
                 <footer>
-                    <button type="button" className="secondary-btn" onClick={close}>
-                        Cancel
-                    </button>
-                    <button className="primary-btn" disabled={busy || !file}>
-                        <Upload size={16} />
-                        {busy ? 'Submitting…' : 'Submit for Verification'}
-                    </button>
+                    <button type="button" className="secondary-btn" onClick={close}>Cancel</button>
+                    <button className="primary-btn" disabled={busy || !file}><Upload size={16} />{busy ? 'Submitting…' : 'Submit for Verification'}</button>
                 </footer>
             </form>
         </div>
@@ -1023,15 +427,9 @@ function PaymentModal({ order, close, done, fail }: any) {
 }
 
 function ReturnItems({ data, load, setMessage, setError, onNavigate }: any) {
-    const returned = (lineId: number) =>
-        data.returns
-            .filter((x: any) => Number(x.sales_document_line_id) === Number(lineId))
-            .reduce((sum: number, x: any) => sum + Number(x.quantity), 0);
-    const available = (line: any) =>
-        Math.max(0, Number(line.quantity_delivered) - returned(line.id));
-    const delivered = data.orders.filter((o: any) =>
-        o.lines.some((line: any) => available(line) > 0),
-    );
+    const returned = (lineId: number) => data.returns.filter((x: any) => Number(x.sales_document_line_id) === Number(lineId)).reduce((sum: number, x: any) => sum + Number(x.quantity), 0);
+    const available = (line: any) => Math.max(0, Number(line.quantity_delivered) - returned(line.id));
+    const delivered = data.orders.filter((o: any) => o.lines.some((line: any) => available(line) > 0));
 
     const [orderId, setOrderId] = useState(delivered[0]?.id || '');
     const [items, setItems] = useState<any>({});
@@ -1040,22 +438,8 @@ function ReturnItems({ data, load, setMessage, setError, onNavigate }: any) {
 
     const order = delivered.find((o: any) => o.id === Number(orderId));
     const returnable = order?.lines.filter((line: any) => available(line) > 0) || [];
-    const selected = Object.entries(items)
-        .filter(([, x]: any) => Number(x.quantity) > 0)
-        .map(([line_id, x]: any) => ({
-            line_id: Number(line_id),
-            ...x,
-            line: returnable.find((line: any) => Number(line.id) === Number(line_id)),
-        }));
-    const setItem = (line: any, key: string, value: any) =>
-        setItems({
-            ...items,
-            [line.id]: {
-                quantity: items[line.id]?.quantity || 0,
-                reason: items[line.id]?.reason || 'Too Small',
-                [key]: value,
-            },
-        });
+    const selected = Object.entries(items).filter(([, x]: any) => Number(x.quantity) > 0).map(([line_id, x]: any) => ({ line_id: Number(line_id), ...x, line: returnable.find((line: any) => Number(line.id) === Number(line_id)) }));
+    const setItem = (line: any, key: string, value: any) => setItems({ ...items, [line.id]: { quantity: items[line.id]?.quantity || 0, reason: items[line.id]?.reason || 'Too Small', [key]: value } });
     const prepare = () => {
         if (!selected.length) {
             setError('Enter a return quantity for at least one item.');
@@ -1067,118 +451,44 @@ function ReturnItems({ data, load, setMessage, setError, onNavigate }: any) {
     const submit = async () => {
         setBusy(true);
         try {
-            const result = await api(`/api/school/orders/${orderId}/returns`, {
-                method: 'POST',
-                body: JSON.stringify({ items: selected.map(({ line, ...item }: any) => item) }),
-            });
+            const result = await api(`/api/school/orders/${orderId}/returns`, { method: 'POST', body: JSON.stringify({ items: selected.map(({ line, ...item }: any) => item) }) });
             setMessage(result.message);
             await load();
             onNavigate('returns-history');
         } catch (e: any) {
             setError(e.message);
             setReview(false);
-        } finally {
-            setBusy(false);
-        }
+        } finally { setBusy(false); }
     };
 
     return (
         <>
-            <Heading
-                title="Return Items"
-                text="Choose delivered items, quantities and reasons for return."
-            />
+            <Heading title="Return Items" text="Choose delivered items, quantities and reasons for return." />
             <section className="panel school-return-form">
                 <label>
                     Delivered order
-                    <select
-                        value={orderId}
-                        disabled={!delivered.length}
-                        onChange={(e) => {
-                            setOrderId(e.target.value);
-                            setItems({});
-                            setReview(false);
-                        }}
-                    >
-                        <option value="">
-                            {delivered.length
-                                ? 'Choose an order'
-                                : 'No returnable orders available'}
-                        </option>
-                        {delivered.map((o: any) => (
-                            <option key={o.id} value={o.id}>
-                                {String(o.document_number).replace(/^LEGACY-NOGUCHI-/, '')} ·{' '}
-                                {o.item_count} items
-                            </option>
-                        ))}
+                    <select value={orderId} disabled={!delivered.length} onChange={e => { setOrderId(e.target.value); setItems({}); setReview(false); }}>
+                        <option value="">{delivered.length ? 'Choose an order' : 'No returnable orders available'}</option>
+                        {delivered.map((o: any) => <option key={o.id} value={o.id}>{String(o.document_number).replace(/^LEGACY-NOGUCHI-/, '')} · {o.item_count} items</option>)}
                     </select>
                 </label>
                 {order && !review ? (
                     <div className="admin-table-wrap">
                         <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Class</th>
-                                    <th>Item Details</th>
-                                    <th>Size</th>
-                                    <th>Delivered</th>
-                                    <th>Already returned</th>
-                                    <th>Available</th>
-                                    <th>Return Qty</th>
-                                    <th>Reason</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Class</th><th>Item Details</th><th>Size</th><th>Delivered</th><th>Already returned</th><th>Available</th><th>Return Qty</th><th>Reason</th></tr></thead>
                             <tbody>
                                 {returnable.map((line: any) => (
                                     <tr key={line.id}>
                                         <td>{line.class_level}</td>
-                                        <td>
-                                            <b>
-                                                {line.garment_category} · {line.gender}
-                                            </b>
-                                            <small>{line.color}</small>
-                                        </td>
+                                        <td><b>{line.garment_category} · {line.gender}</b><small>{line.color}</small></td>
                                         <td>{line.size}</td>
                                         <td>{line.quantity_delivered}</td>
                                         <td>{returned(line.id)}</td>
+                                        <td><b>{available(line)}</b></td>
+                                        <td><input aria-label={`Return quantity for ${line.garment_category} ${line.size}`} type="number" min="0" max={available(line)} value={items[line.id]?.quantity || ''} onChange={e => setItem(line, 'quantity', Math.min(available(line), Math.max(0, Number(e.target.value))))} /></td>
                                         <td>
-                                            <b>{available(line)}</b>
-                                        </td>
-                                        <td>
-                                            <input
-                                                aria-label={`Return quantity for ${line.garment_category} ${line.size}`}
-                                                type="number"
-                                                min="0"
-                                                max={available(line)}
-                                                value={items[line.id]?.quantity || ''}
-                                                onChange={(e) =>
-                                                    setItem(
-                                                        line,
-                                                        'quantity',
-                                                        Math.min(
-                                                            available(line),
-                                                            Math.max(0, Number(e.target.value)),
-                                                        ),
-                                                    )
-                                                }
-                                            />
-                                        </td>
-                                        <td>
-                                            <select
-                                                value={items[line.id]?.reason || 'Too Small'}
-                                                onChange={(e) =>
-                                                    setItem(line, 'reason', e.target.value)
-                                                }
-                                            >
-                                                {[
-                                                    'Too Small',
-                                                    'Too Large',
-                                                    'Damaged',
-                                                    'Wrong Item',
-                                                    'Other',
-                                                ].map((reason) => (
-                                                    <option key={reason}>{reason}</option>
-                                                ))}
+                                            <select value={items[line.id]?.reason || 'Too Small'} onChange={e => setItem(line, 'reason', e.target.value)}>
+                                                {['Too Small', 'Too Large', 'Damaged', 'Wrong Item', 'Other'].map(reason => <option key={reason}>{reason}</option>)}
                                             </select>
                                         </td>
                                     </tr>
@@ -1192,82 +502,27 @@ function ReturnItems({ data, load, setMessage, setError, onNavigate }: any) {
                         <p>Confirm these items before sending the request to the factory.</p>
                         <div className="admin-table-wrap">
                             <table className="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th>Class</th>
-                                        <th>For</th>
-                                        <th>Size</th>
-                                        <th>Quantity</th>
-                                        <th>Reason</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr><th>Item</th><th>Class</th><th>For</th><th>Size</th><th>Quantity</th><th>Reason</th></tr></thead>
                                 <tbody>
                                     {selected.map(({ line, quantity, reason }: any) => (
-                                        <tr key={line.id}>
-                                            <td>
-                                                {line.garment_category}
-                                                <small>{line.color}</small>
-                                            </td>
-                                            <td>{line.class_level}</td>
-                                            <td>{line.gender}</td>
-                                            <td>{line.size}</td>
-                                            <td>
-                                                <b>{quantity}</b>
-                                            </td>
-                                            <td>{reason}</td>
-                                        </tr>
+                                        <tr key={line.id}><td>{line.garment_category}<small>{line.color}</small></td><td>{line.class_level}</td><td>{line.gender}</td><td>{line.size}</td><td><b>{quantity}</b></td><td>{reason}</td></tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
                         <div className="school-return-actions">
-                            <button
-                                type="button"
-                                className="secondary-btn"
-                                onClick={() => setReview(false)}
-                            >
-                                <ArrowLeft size={16} />
-                                Edit return
-                            </button>
-                            <button
-                                type="button"
-                                className="primary-btn"
-                                disabled={busy}
-                                onClick={submit}
-                            >
-                                <CheckCircle2 size={16} />
-                                {busy ? 'Submitting…' : 'Confirm & Submit'}
-                            </button>
+                            <button type="button" className="secondary-btn" onClick={() => setReview(false)}><ArrowLeft size={16} />Edit return</button>
+                            <button type="button" className="primary-btn" disabled={busy} onClick={submit}><CheckCircle2 size={16} />{busy ? 'Submitting…' : 'Confirm & Submit'}</button>
                         </div>
                     </div>
                 ) : (
                     <div className="school-return-empty">
                         <h3>No delivered items are available to return</h3>
-                        <p>
-                            Items will appear here after the factory records a delivery to your
-                            school.
-                        </p>
-                        <button
-                            type="button"
-                            className="secondary-btn"
-                            onClick={() => onNavigate('order-history')}
-                        >
-                            View Order History
-                        </button>
+                        <p>Items will appear here after the factory records a delivery to your school.</p>
+                        <button type="button" className="secondary-btn" onClick={() => onNavigate('order-history')}>View Order History</button>
                     </div>
                 )}
-                {order && !review && (
-                    <button
-                        type="button"
-                        className="primary-btn"
-                        disabled={!selected.length}
-                        onClick={prepare}
-                    >
-                        <RotateCcw size={16} />
-                        Review Return Request
-                    </button>
-                )}
+                {order && !review && <button type="button" className="primary-btn" disabled={!selected.length} onClick={prepare}><RotateCcw size={16} />Review Return Request</button>}
             </section>
         </>
     );
@@ -1276,57 +531,22 @@ function ReturnItems({ data, load, setMessage, setError, onNavigate }: any) {
 function ReturnsHistory({ data, onNavigate }: any) {
     return (
         <>
-            <Heading
-                title="Returns History"
-                text="Follow factory review and feedback for every returned item."
-                action={
-                    <button className="secondary-btn" onClick={() => onNavigate('return-items')}>
-                        <RotateCcw size={16} />
-                        Return Items
-                    </button>
-                }
-            />
+            <Heading title="Returns History" text="Follow factory review and feedback for every returned item." action={<button className="secondary-btn" onClick={() => onNavigate('return-items')}><RotateCcw size={16} />Return Items</button>} />
             <section className="panel school-table">
                 <div className="admin-table-wrap">
                     <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Item Details</th>
-                                <th>Qty</th>
-                                <th>Reason</th>
-                                <th>Status</th>
-                                <th>Factory Feedback</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Date</th><th>Item Details</th><th>Qty</th><th>Reason</th><th>Status</th><th>Factory Feedback</th></tr></thead>
                         <tbody>
-                            {data.returns.length ? (
-                                data.returns.map((x: any) => (
-                                    <tr key={x.id}>
-                                        <td>{String(x.created_at).slice(0, 10)}</td>
-                                        <td>
-                                            {x.garment_category} · {x.gender}
-                                            <small>
-                                                {x.class_level} · {x.size} · {x.color}
-                                            </small>
-                                        </td>
-                                        <td>{x.quantity}</td>
-                                        <td>{x.reason}</td>
-                                        <td>
-                                            <span className={'admin-status ' + x.status}>
-                                                {status(x.status)}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {x.factory_feedback || 'Waiting for factory review'}
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={6}>No returns have been submitted.</td>
+                            {data.returns.length ? data.returns.map((x: any) => (
+                                <tr key={x.id}>
+                                    <td>{String(x.created_at).slice(0, 10)}</td>
+                                    <td>{x.garment_category} · {x.gender}<small>{x.class_level} · {x.size} · {x.color}</small></td>
+                                    <td>{x.quantity}</td>
+                                    <td>{x.reason}</td>
+                                    <td><span className={'admin-status ' + x.status}>{status(x.status)}</span></td>
+                                    <td>{x.factory_feedback || 'Waiting for factory review'}</td>
                                 </tr>
-                            )}
+                            )) : <tr><td colSpan={6}>No returns have been submitted.</td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -1342,10 +562,7 @@ function Agreement({ data, load, setMessage, setError }: any) {
     const [busy, setBusy] = useState(false);
 
     const submit = async () => {
-        if (!file) {
-            setError('Choose your signed agreement file to upload.');
-            return;
-        }
+        if (!file) { setError('Choose your signed agreement file to upload.'); return; }
         setBusy(true);
         setError('');
         const form = new FormData();
@@ -1357,121 +574,46 @@ function Agreement({ data, load, setMessage, setError }: any) {
             await load();
         } catch (e: any) {
             setError(e.message);
-        } finally {
-            setBusy(false);
-        }
+        } finally { setBusy(false); }
     };
 
     return (
         <>
-            <Heading
-                title="Agreement"
-                text="Download the factory agreement, sign it, then upload your signed copy."
-            />
+            <Heading title="Agreement" text="Download the factory agreement, sign it, then upload your signed copy." />
             {!agreement ? (
-                <section className="panel school-table">
-                    <div style={{ padding: 30 }}>
-                        No agreement has been uploaded by the factory yet. Check back later.
-                    </div>
-                </section>
+                <section className="panel school-table"><div style={{ padding: 30 }}>No agreement has been uploaded by the factory yet. Check back later.</div></section>
             ) : (
                 <>
                     <section className="panel">
                         <header className="department-panel-head">
-                            <div>
-                                <h2>Current agreement</h2>
-                                <p>Download, print and sign this document.</p>
-                            </div>
+                            <div><h2>Current agreement</h2><p>Download, print and sign this document.</p></div>
                         </header>
                         <div className="school-agreement-file">
                             <FileSignature size={22} />
-                            <div>
-                                <b>{agreement.original_name}</b>
-                                <small>
-                                    Uploaded {new Date(agreement.created_at).toLocaleDateString()}
-                                </small>
-                            </div>
-                            <a
-                                className="secondary-btn"
-                                href={agreement.file_url}
-                                download={agreement.original_name}
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                <Download size={16} />
-                                Download
-                            </a>
+                            <div><b>{agreement.original_name}</b><small>Uploaded {new Date(agreement.created_at).toLocaleDateString()}</small></div>
+                            <a className="secondary-btn" href={agreement.file_url} download={agreement.original_name} target="_blank" rel="noreferrer"><Download size={16} />Download</a>
                         </div>
                     </section>
 
                     <section className="panel">
                         <header className="department-panel-head">
-                            <div>
-                                <h2>Your signed copy</h2>
-                                <p>
-                                    {signature
-                                        ? 'You already submitted a signed copy for this agreement.'
-                                        : 'Upload your signed copy once you have printed and signed it.'}
-                                </p>
-                            </div>
+                            <div><h2>Your signed copy</h2><p>{signature ? 'You already submitted a signed copy for this agreement.' : 'Upload your signed copy once you have printed and signed it.'}</p></div>
                             {signature && <span className="admin-status accepted">Signed</span>}
                         </header>
                         {signature && (
                             <div className="school-agreement-file">
                                 <FileSignature size={22} />
-                                <div>
-                                    <b>{signature.original_name}</b>
-                                    <small>
-                                        Submitted{' '}
-                                        {new Date(signature.submitted_at).toLocaleString()}
-                                    </small>
-                                </div>
-                                <a
-                                    className="secondary-btn"
-                                    href={signature.file_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    <Eye size={16} />
-                                    View
-                                </a>
+                                <div><b>{signature.original_name}</b><small>Submitted {new Date(signature.submitted_at).toLocaleString()}</small></div>
+                                <a className="secondary-btn" href={signature.file_url} target="_blank" rel="noreferrer"><Eye size={16} />View</a>
                             </div>
                         )}
                         <label className={`school-proof-upload${file ? ' selected' : ''}`}>
                             <Upload />
-                            <span>
-                                <b>
-                                    {file
-                                        ? file.name
-                                        : signature
-                                          ? 'Replace with a new signed copy'
-                                          : 'Upload your signed agreement'}
-                                </b>
-                                <small>
-                                    {file
-                                        ? `${(file.size / 1024 / 1024).toFixed(2)} MB · Select another file`
-                                        : 'PDF, JPG or PNG · Maximum 15 MB'}
-                                </small>
-                            </span>
-                            <input
-                                type="file"
-                                accept="image/jpeg,image/png,.pdf"
-                                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                            />
+                            <span><b>{file ? file.name : (signature ? 'Replace with a new signed copy' : 'Upload your signed agreement')}</b><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB · Select another file` : 'PDF, JPG or PNG · Maximum 15 MB'}</small></span>
+                            <input type="file" accept="image/jpeg,image/png,.pdf" onChange={e => setFile(e.target.files?.[0] || null)} />
                         </label>
                         <div className="school-builder-nav">
-                            <button
-                                className="primary-btn"
-                                disabled={busy || !file}
-                                onClick={submit}
-                            >
-                                <Upload size={16} />
-                                {busy
-                                    ? 'Submitting…'
-                                    : signature
-                                      ? 'Submit replacement'
-                                      : 'Submit signed agreement'}
-                            </button>
+                            <button className="primary-btn" disabled={busy || !file} onClick={submit}><Upload size={16} />{busy ? 'Submitting…' : (signature ? 'Submit replacement' : 'Submit signed agreement')}</button>
                         </div>
                     </section>
                 </>
@@ -1489,218 +631,55 @@ function SchoolProfile({ data, load, setMessage, setError, locale }: any) {
         setBusy(true);
         setError('');
         try {
-            const result = await api('/api/school/profile', {
-                method: 'PUT',
-                body: JSON.stringify(form),
-            });
+            const result = await api('/api/school/profile', { method: 'PUT', body: JSON.stringify(form) });
             setMessage(result.message);
             await load();
         } catch (err: any) {
             setError(err.message);
-        } finally {
-            setBusy(false);
-        }
+        } finally { setBusy(false); }
     };
-    const Field = ({ icon, label, children }: any) => (
-        <label className="school-profile-field">
-            <span>
-                {icon}
-                {label}
-            </span>
-            {children}
-        </label>
-    );
+    const Field = ({ icon, label, children }: any) => <label className="school-profile-field"><span>{icon}{label}</span>{children}</label>;
 
     return (
         <>
-            <Heading
-                title={locale === 'en' ? 'School Profile' : "Profil de l'école"}
-                text={
-                    locale === 'en'
-                        ? 'Keep your school identity and contact details correct.'
-                        : "Gardez l'identité et les coordonnées de votre école à jour."
-                }
-            />
+            <Heading title={locale === "en" ? "School Profile" : "Profil de l'école"} text={locale === "en" ? "Keep your school identity and contact details correct." : "Gardez l'identité et les coordonnées de votre école à jour."} />
             <form className="panel school-profile-form modern" onSubmit={submit}>
                 <div className="school-profile-banner">
-                    <div className="school-profile-avatar">
-                        {form.name?.slice(0, 2).toUpperCase()}
-                    </div>
-                    <span>
-                        <small>{locale === 'en' ? 'SCHOOL ACCOUNT' : 'COMPTE SCOLAIRE'}</small>
-                        <b>{form.name || (locale === 'en' ? 'Your school' : 'Votre école')}</b>
-                        <p>
-                            {data.school.email ||
-                                (locale === 'en'
-                                    ? 'No email recorded'
-                                    : 'Aucun e-mail enregistré')}{' '}
-                            ·{' '}
-                            {form.district ||
-                                (locale === 'en' ? 'District not set' : 'District non défini')}
-                        </p>
-                    </span>
-                    <i>
-                        <Building2 />
-                    </i>
+                    <div className="school-profile-avatar">{form.name?.slice(0, 2).toUpperCase()}</div>
+                    <span><small>{locale === "en" ? "SCHOOL ACCOUNT" : "COMPTE SCOLAIRE"}</small><b>{form.name || (locale === "en" ? "Your school" : "Votre école")}</b><p>{data.school.email || (locale === "en" ? "No email recorded" : "Aucun e-mail enregistré")} · {form.district || (locale === "en" ? "District not set" : "District non défini")}</p></span>
+                    <i><Building2 /></i>
                 </div>
                 <div className="school-profile-content">
                     <section>
-                        <header>
-                            <div>
-                                <UserRound />
-                                <span>
-                                    <b>
-                                        {locale === 'en'
-                                            ? 'School information'
-                                            : "Informations sur l'école"}
-                                    </b>
-                                    <small>
-                                        {locale === 'en'
-                                            ? 'Basic identity and contact person'
-                                            : 'Identité de base et personne de contact'}
-                                    </small>
-                                </span>
-                            </div>
-                        </header>
+                        <header><div><UserRound /><span><b>{locale === "en" ? "School information" : "Informations sur l'école"}</b><small>{locale === "en" ? "Basic identity and contact person" : "Identité de base et personne de contact"}</small></span></div></header>
                         <div className="school-profile-grid">
-                            <Field
-                                icon={<Building2 />}
-                                label={locale === 'en' ? 'School Name' : "Nom de l'école"}
-                            >
-                                <input
-                                    required
-                                    placeholder={
-                                        locale === 'en'
-                                            ? 'Enter the school name'
-                                            : "Entrez le nom de l'école"
-                                    }
-                                    value={form.name || ''}
-                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                />
-                            </Field>
-                            <Field
-                                icon={<UserRound />}
-                                label={locale === 'en' ? 'Head Teacher' : 'Directeur(trice)'}
-                            >
-                                <input
-                                    placeholder={
-                                        locale === 'en'
-                                            ? "Enter the head teacher's name"
-                                            : 'Entrez le nom du directeur(trice)'
-                                    }
-                                    value={form.contact_name || ''}
-                                    onChange={(e) =>
-                                        setForm({ ...form, contact_name: e.target.value })
-                                    }
-                                />
-                            </Field>
-                            <Field
-                                icon={<Phone />}
-                                label={locale === 'en' ? 'Phone Number' : 'Numéro de téléphone'}
-                            >
-                                <input
-                                    type="tel"
-                                    placeholder={
-                                        locale === 'en' ? 'e.g. 0780 000 000' : 'ex. 0780 000 000'
-                                    }
-                                    value={form.phone || ''}
-                                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                                />
-                            </Field>
-                            <Field
-                                icon={<Mail />}
-                                label={locale === 'en' ? 'Email Address' : 'Adresse e-mail'}
-                            >
-                                <input
-                                    type="email"
-                                    placeholder="school@example.rw"
-                                    value={form.email || ''}
-                                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                />
-                            </Field>
+                            <Field icon={<Building2 />} label={locale === "en" ? "School Name" : "Nom de l'école"}><input required placeholder={locale === "en" ? "Enter the school name" : "Entrez le nom de l'école"} value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} /></Field>
+                            <Field icon={<UserRound />} label={locale === "en" ? "Head Teacher" : "Directeur(trice)"}><input placeholder={locale === "en" ? "Enter the head teacher's name" : "Entrez le nom du directeur(trice)"} value={form.contact_name || ''} onChange={e => setForm({ ...form, contact_name: e.target.value })} /></Field>
+                            <Field icon={<Phone />} label={locale === "en" ? "Phone Number" : "Numéro de téléphone"}><input type="tel" placeholder={locale === "en" ? "e.g. 0780 000 000" : "ex. 0780 000 000"} value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} /></Field>
+                            <Field icon={<Mail />} label={locale === "en" ? "Email Address" : "Adresse e-mail"}><input type="email" placeholder="school@example.rw" value={form.email || ''} onChange={e => setForm({ ...form, email: e.target.value })} /></Field>
                         </div>
                     </section>
                     <section>
-                        <header>
-                            <div>
-                                <MapPin />
-                                <span>
-                                    <b>
-                                        {locale === 'en'
-                                            ? 'School location'
-                                            : "Emplacement de l'école"}
-                                    </b>
-                                    <small>
-                                        {locale === 'en'
-                                            ? 'Select the district first, then the sector'
-                                            : "Sélectionnez le district d'abord, puis le secteur"}
-                                    </small>
-                                </span>
-                            </div>
-                        </header>
+                        <header><div><MapPin /><span><b>{locale === "en" ? "School location" : "Emplacement de l'école"}</b><small>{locale === "en" ? "Select the district first, then the sector" : "Sélectionnez le district d'abord, puis le secteur"}</small></span></div></header>
                         <div className="school-profile-grid">
-                            <Field
-                                icon={<MapPin />}
-                                label={locale === 'en' ? 'District' : 'District'}
-                            >
-                                <select
-                                    required
-                                    value={form.district || ''}
-                                    onChange={(e) =>
-                                        setForm({ ...form, district: e.target.value, sector: '' })
-                                    }
-                                >
-                                    <option value="">
-                                        {locale === 'en'
-                                            ? 'Choose a district'
-                                            : 'Choisissez un district'}
-                                    </option>
-                                    {Object.keys(data.locations).map((x) => (
-                                        <option key={x}>{x}</option>
-                                    ))}
+                            <Field icon={<MapPin />} label={locale === "en" ? "District" : "District"}>
+                                <select required value={form.district || ''} onChange={e => setForm({ ...form, district: e.target.value, sector: '' })}>
+                                    <option value="">{locale === "en" ? "Choose a district" : "Choisissez un district"}</option>
+                                    {Object.keys(data.locations).map(x => <option key={x}>{x}</option>)}
                                 </select>
                             </Field>
-                            <Field icon={<MapPin />} label={locale === 'en' ? 'Sector' : 'Secteur'}>
-                                <select
-                                    required
-                                    disabled={!form.district}
-                                    value={form.sector || ''}
-                                    onChange={(e) => setForm({ ...form, sector: e.target.value })}
-                                >
-                                    <option value="">
-                                        {form.district
-                                            ? locale === 'en'
-                                                ? 'Choose a sector'
-                                                : 'Choisissez un secteur'
-                                            : locale === 'en'
-                                              ? 'Choose a district first'
-                                              : "Choisissez d'abord un district"}
-                                    </option>
-                                    {sectors.map((x: string) => (
-                                        <option key={x}>{x}</option>
-                                    ))}
+                            <Field icon={<MapPin />} label={locale === "en" ? "Sector" : "Secteur"}>
+                                <select required disabled={!form.district} value={form.sector || ''} onChange={e => setForm({ ...form, sector: e.target.value })}>
+                                    <option value="">{form.district ? (locale === "en" ? "Choose a sector" : "Choisissez un secteur") : (locale === "en" ? "Choose a district first" : "Choisissez d'abord un district")}</option>
+                                    {sectors.map((x: string) => <option key={x}>{x}</option>)}
                                 </select>
                             </Field>
                         </div>
                     </section>
                 </div>
                 <footer>
-                    <p>
-                        <CheckCircle2 />
-                        {locale === 'en'
-                            ? 'Keep these details accurate so orders and deliveries reach the correct school.'
-                            : 'Gardez ces informations exactes pour que les commandes et les livraisons atteignent la bonne école.'}
-                    </p>
-                    <button className="primary-btn" disabled={busy}>
-                        <Save size={17} />
-                        {busy
-                            ? locale === 'en'
-                                ? 'Saving…'
-                                : 'Enregistrement…'
-                            : locale === 'en'
-                              ? 'Save Profile'
-                              : 'Enregistrer le profil'}
-                    </button>
+                    <p><CheckCircle2 />{locale === "en" ? "Keep these details accurate so orders and deliveries reach the correct school." : "Gardez ces informations exactes pour que les commandes et les livraisons atteignent la bonne école."}</p>
+                    <button className="primary-btn" disabled={busy}><Save size={17} />{busy ? (locale === "en" ? 'Saving…' : 'Enregistrement…') : (locale === "en" ? 'Save Profile' : 'Enregistrer le profil')}</button>
                 </footer>
             </form>
         </>
@@ -1712,62 +691,26 @@ function OrderModal({ order, close }: any) {
         <div className="school-modal-backdrop">
             <section className="school-order-modal">
                 <header>
+                    <div><small>ORDER DETAILS</small><h2>{String(order.document_number).replace(/^LEGACY-NOGUCHI-/, '')}</h2><p>{order.academic_year} · {status(order.status)}</p></div>
                     <div>
-                        <small>ORDER DETAILS</small>
-                        <h2>{String(order.document_number).replace(/^LEGACY-NOGUCHI-/, '')}</h2>
-                        <p>
-                            {order.academic_year} · {status(order.status)}
-                        </p>
-                    </div>
-                    <div>
-                        <a
-                            className="secondary-btn"
-                            href={`/api/school/orders/${order.id}/pdf`}
-                            target="_blank"
-                        >
-                            <Printer size={16} />
-                            Print Invoice
-                        </a>
-                        <button className="icon-btn" onClick={close}>
-                            <X />
-                        </button>
+                        <a className="secondary-btn" href={`/api/school/orders/${order.id}/pdf`} target="_blank"><Printer size={16} />Print Invoice</a>
+                        <button className="icon-btn" onClick={close}><X /></button>
                     </div>
                 </header>
                 <div className="admin-table-wrap">
                     <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Item & Color</th>
-                                <th>Class</th>
-                                <th>For</th>
-                                <th>Size</th>
-                                <th>Ordered</th>
-                                <th>Delivered</th>
-                                <th>Rejected</th>
-                                <th>Remaining</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Item & Color</th><th>Class</th><th>For</th><th>Size</th><th>Ordered</th><th>Delivered</th><th>Rejected</th><th>Remaining</th></tr></thead>
                         <tbody>
                             {order.lines.map((l: any) => (
                                 <tr key={l.id}>
-                                    <td>
-                                        {l.garment_category}
-                                        <small>{l.color}</small>
-                                    </td>
+                                    <td>{l.garment_category}<small>{l.color}</small></td>
                                     <td>{l.class_level}</td>
                                     <td>{l.gender}</td>
                                     <td>{l.size}</td>
                                     <td>{l.quantity_ordered}</td>
                                     <td>{l.quantity_delivered}</td>
                                     <td>{l.quantity_rejected}</td>
-                                    <td>
-                                        {Math.max(
-                                            0,
-                                            l.quantity_ordered -
-                                                l.quantity_delivered -
-                                                l.quantity_rejected,
-                                        )}
-                                    </td>
+                                    <td>{Math.max(0, l.quantity_ordered - l.quantity_delivered - l.quantity_rejected)}</td>
                                 </tr>
                             ))}
                         </tbody>

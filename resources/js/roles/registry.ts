@@ -29,6 +29,10 @@ import { sewingRole } from './sewing';
 import type { NavGroup, NavItem, RoleContext, RoleModule } from './types';
 import { warehouseNavGroups, warehouseRole } from './warehouse';
 
+/**
+ * The first role that matches decides the sidebar, so the order matters:
+ * the most specific roles come first and `defaultRole` catches everyone else.
+ */
 export const ROLES: RoleModule[] = [
     platformAdminRole,
     ownerRole,
@@ -76,6 +80,7 @@ export function navFor(context: RoleContext): NavItem[] {
     return resolveRole(context).nav(context);
 }
 
+/** Some roles fold several sidebar items under one expandable heading. */
 export function navGroupsFor(context: RoleContext): Record<string, NavGroup> {
     const { flags } = context;
 
