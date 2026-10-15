@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { Modal } from '../../../../components/Modal';
 import '../../../../components/ui.css';
 import { makeFormat } from '../../../../core/format';
 import { postJson, useLiveData } from '../../../../core/liveData';
 import type { AuthUser, Locale } from '../../../../core/types';
 import '../flow.css';
+import { stageLabel } from '../stages';
 import { flowText } from '../text';
-import type { RequestsOverview, StageKey } from '../types';
+import type { RequestRow, RequestsOverview, StageKey } from '../types';
 import { NewRequestModal } from './NewRequestModal';
 
 type Props = { user: AuthUser; locale: Locale; stage: StageKey };
 type Status = 'all' | 'pending' | 'approved' | 'rejected' | 'cancelled';
+type Direction = 'mine' | 'asked';
 
 const STATUSES: Status[] = ['all', 'pending', 'approved', 'rejected', 'cancelled'];
 const NOTICE_MS = 7000;
@@ -27,6 +30,10 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
     const [creating, setCreating] = useState(false);
+    const [direction, setDirection] = useState<Direction>('mine');
+    const [declining, setDeclining] = useState<RequestRow | null>(null);
+    const [declineNote, setDeclineNote] = useState('');
+    const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
 
@@ -43,7 +50,7 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
         return () => window.clearTimeout(timer);
     }, [notice]);
 
-    const params = new URLSearchParams({ stage, status });
+    const params = new URLSearchParams({ stage, status, direction });
     if (query) params.set('q', query);
     if (from) params.set('from', from);
     if (to) params.set('to', to);
@@ -67,6 +74,27 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
             setError(reason instanceof Error ? reason.message : '');
         }
     };
+
+    const decline = async () => {
+        if (!declining) return;
+        setBusy(true);
+        setError('');
+        try {
+            await postJson(`/api/flow/requests/${declining.id}/answer`, {
+                note: declineNote.trim(),
+            });
+            setNotice(text.materials.status_.rejected);
+            setDeclining(null);
+            setDeclineNote('');
+            reload();
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : '');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const asked = direction === 'asked';
 
     const kpis = counts
         ? [
@@ -112,6 +140,24 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                     </article>
                 ))}
             </div>
+
+            {data?.capabilities.asked_of_us && (
+                <div className="ui-tabs" role="tablist">
+                    {(['mine', 'asked'] as Direction[]).map((key) => (
+                        <button
+                            key={key}
+                            role="tab"
+                            aria-selected={direction === key}
+                            className={direction === key ? 'active' : ''}
+                            onClick={() => setDirection(key)}
+                        >
+                            {key === 'mine' ? copy.tabMine : copy.tabAsked}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {asked && <span className="ui-help">{copy.askedHint}</span>}
 
             <article className="panel">
                 <div className="ui-toolbar">
@@ -173,6 +219,7 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                         <thead>
                             <tr>
                                 <th>{text.materials.number}</th>
+                                <th>{asked ? text.work.from : copy.kind}</th>
                                 <th>{copy.item}</th>
                                 <th className="num">{copy.quantity}</th>
                                 <th>{copy.reason}</th>
@@ -192,9 +239,28 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                                                 {row.requested_by ?? text.none}
                                             </small>
                                         </td>
-                                        <td>{row.item ?? text.none}</td>
+                                        <td>
+                                            {row.kind === 'pieces'
+                                                ? stageLabel(
+                                                      asked ? row.stage : row.from_stage,
+                                                      locale,
+                                                  )
+                                                : copy.kindWarehouse}
+                                        </td>
+                                        <td>
+                                            {row.kind === 'pieces'
+                                                ? copy.piecesOf(stageLabel(row.from_stage, locale))
+                                                : (row.item ?? text.none)}
+                                            {row.lot_number && <small>{row.lot_number}</small>}
+                                        </td>
                                         <td className="num">
-                                            <b>{format.number(row.quantity)}</b> {row.unit ?? ''}
+                                            <b>{format.number(row.quantity)}</b>{' '}
+                                            {row.kind === 'pieces' ? copy.pieces : (row.unit ?? '')}
+                                            {row.kind === 'pieces' && row.fulfilled > 0 && (
+                                                <small>
+                                                    {copy.sentSoFar(row.fulfilled, row.quantity)}
+                                                </small>
+                                            )}
                                         </td>
                                         <td>{row.reason}</td>
                                         <td>
@@ -204,7 +270,13 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                                         </td>
                                         <td>
                                             {row.status === 'pending' ? (
-                                                <small>{copy.waitingAnswer}</small>
+                                                <small>
+                                                    {row.kind === 'pieces'
+                                                        ? copy.waitingFor(
+                                                              stageLabel(row.from_stage, locale),
+                                                          )
+                                                        : copy.waitingAnswer}
+                                                </small>
                                             ) : (
                                                 <>
                                                     {row.decided_by
@@ -215,11 +287,13 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                                                             {format.dateTime(row.decided_at)}
                                                         </small>
                                                     )}
-                                                    {row.status === 'approved' && row.warehouse && (
-                                                        <small>
-                                                            {copy.takenFrom(row.warehouse)}
-                                                        </small>
-                                                    )}
+                                                    {row.status === 'approved' &&
+                                                        row.kind === 'material' &&
+                                                        row.warehouse && (
+                                                            <small>
+                                                                {copy.takenFrom(row.warehouse)}
+                                                            </small>
+                                                        )}
                                                     {row.decision_note && (
                                                         <small>{row.decision_note}</small>
                                                     )}
@@ -227,7 +301,7 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                                             )}
                                         </td>
                                         <td>
-                                            {row.status === 'pending' && row.own && (
+                                            {row.status === 'pending' && row.own && !asked && (
                                                 <button
                                                     className="ui-link"
                                                     onClick={() => cancel(row.id)}
@@ -235,17 +309,32 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                                                     {text.materials.cancel}
                                                 </button>
                                             )}
+                                            {row.status === 'pending' &&
+                                                asked &&
+                                                data?.capabilities.answer && (
+                                                    <button
+                                                        className="ui-link"
+                                                        onClick={() => {
+                                                            setDeclining(row);
+                                                            setDeclineNote('');
+                                                        }}
+                                                    >
+                                                        {copy.decline}
+                                                    </button>
+                                                )}
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={7} className="empty">
+                                    <td colSpan={8} className="empty">
                                         {!data
                                             ? text.loading
                                             : filtered
                                               ? copy.empty
-                                              : copy.emptyFirst}
+                                              : asked
+                                                ? copy.askedEmpty
+                                                : copy.emptyFirst}
                                     </td>
                                 </tr>
                             )}
@@ -257,7 +346,10 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
             {creating && data && (
                 <NewRequestModal
                     stage={stage}
+                    previous={data.capabilities.previous}
                     options={data.options}
+                    lots={data.lots}
+                    locale={locale}
                     text={text}
                     onClose={() => setCreating(false)}
                     onDone={(message) => {
@@ -266,6 +358,45 @@ export default function MaterialRequestsPage({ locale, stage }: Props) {
                         reload();
                     }}
                 />
+            )}
+
+            {declining && (
+                <Modal
+                    title={`${copy.declineTitle}: ${declining.number}`}
+                    narrow
+                    onClose={() => setDeclining(null)}
+                    footer={
+                        <>
+                            <button
+                                className="secondary-btn"
+                                onClick={() => setDeclining(null)}
+                                disabled={busy}
+                            >
+                                {text.cancel}
+                            </button>
+                            <button
+                                className="primary-btn"
+                                onClick={decline}
+                                disabled={busy || declineNote.trim().length < 3}
+                            >
+                                {busy ? text.saving : copy.declineConfirm}
+                            </button>
+                        </>
+                    }
+                >
+                    <p className="ui-help" style={{ margin: 0 }}>
+                        {copy.askedBy(declining.requested_by ?? text.none)} —{' '}
+                        {format.number(declining.quantity)} {copy.pieces}
+                    </p>
+                    <label className="ui-field">
+                        {copy.declineReason}
+                        <input
+                            value={declineNote}
+                            onChange={(event) => setDeclineNote(event.target.value)}
+                            autoFocus
+                        />
+                    </label>
+                </Modal>
             )}
         </section>
     );

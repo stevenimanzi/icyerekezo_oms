@@ -67,7 +67,7 @@ class FlowQueries
             'transfers' => ProductionTransfer::where(fn ($query) => $query->where('from_stage', $stage)->orWhere('to_stage', $stage))
                 ->with(['lot:id,lot_number', 'sender:id,name', 'receiver:id,name'])->latest('id')->limit(self::RECENT)->get()
                 ->map(fn (ProductionTransfer $transfer) => $this->transferRow($transfer) + ['direction' => $transfer->from_stage === $stage ? 'out' : 'in']),
-            'requests' => MaterialRequest::where('stage', $stage)->with(['item.unit:id,symbol', 'requester:id,name', 'decider:id,name'])->latest('id')->limit(self::RECENT)->get()
+            'requests' => MaterialRequest::where(fn ($query) => $query->where('stage', $stage)->orWhere('from_stage', $stage))->with(['item.unit:id,symbol', 'lot:id,lot_number', 'requester:id,name', 'decider:id,name'])->latest('id')->limit(self::RECENT)->get()
                 ->map(fn (MaterialRequest $request) => $this->requestRow($request)),
             'materials' => $this->materials->onHand($stage),
             'options' => $this->options($stage),
@@ -222,8 +222,13 @@ class FlowQueries
         $stage = $filters['stage'] ?? null;
         $like = ! empty($filters['q']) ? '%' . addcslashes($filters['q'], '\\%_') . '%' : null;
 
-        $requests = MaterialRequest::with(['item.unit:id,symbol', 'requester:id,name', 'decider:id,name', 'warehouse:id,name'])
-            ->when($stage, fn ($query) => $query->where('stage', $stage))
+        $asked = $stage !== null && ($filters['direction'] ?? 'mine') === 'asked';
+        $scope = fn ($query) => $stage === null
+            ? $query->whereNull('from_stage')
+            : ($asked ? $query->where('from_stage', $stage) : $query->where('stage', $stage));
+
+        $requests = MaterialRequest::with(['item.unit:id,symbol', 'lot:id,lot_number', 'requester:id,name', 'decider:id,name', 'warehouse:id,name'])
+            ->where($scope)
             ->when($status !== 'all', fn ($query) => $query->where('status', $status))
             ->when(! empty($filters['from']), fn ($query) => $query->where('created_at', '>=', Carbon::parse($filters['from'])->startOfDay()))
             ->when(! empty($filters['to']), fn ($query) => $query->where('created_at', '<=', Carbon::parse($filters['to'])->endOfDay()))
@@ -234,17 +239,23 @@ class FlowQueries
             ->latest('id')->limit(200)->get();
 
         $counts = MaterialRequest::query()
-            ->when($stage, fn ($query) => $query->where('stage', $stage))
+            ->where($scope)
             ->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
 
-        $available = StockBalance::whereIn('item_id', $requests->pluck('item_id'))
+        $available = StockBalance::whereIn('item_id', $requests->pluck('item_id')->filter())
             ->selectRaw('item_id, warehouse_id, SUM(quantity_on_hand - quantity_reserved - quantity_quarantined) as available')
             ->groupBy('item_id', 'warehouse_id')->get()->groupBy('item_id');
 
         $warehouses = Warehouse::where('is_active', true)->get(['id', 'name'])->keyBy('id');
 
         return [
-            'capabilities' => ['approve' => $access->canApproveRequests(), 'request' => $stage !== null && $access->canWork($stage)],
+            'capabilities' => [
+                'approve' => $access->canApproveRequests(),
+                'request' => $stage !== null && $access->canWork($stage),
+                'previous' => $stage ? ProductionFlowCatalog::previous($stage) : null,
+                'answer' => $asked && $access->canWork($stage),
+                'asked_of_us' => $stage !== null && ProductionFlowCatalog::next($stage) !== null,
+            ],
             'counts' => [
                 'pending' => (int) ($counts['pending'] ?? 0),
                 'approved' => (int) ($counts['approved'] ?? 0),
@@ -253,6 +264,7 @@ class FlowQueries
                 'all' => (int) $counts->sum(),
             ],
             'options' => $stage ? $this->options($stage)['requestable'] : [],
+            'lots' => $stage && ! $asked ? $this->lotsReadyBefore($stage) : [],
             'requests' => $requests->map(fn (MaterialRequest $request) => $this->requestRow($request) + [
                 'stock' => $available->get($request->item_id, collect())->map(fn ($row) => [
                     'warehouse_id' => (int) $row->warehouse_id,
@@ -409,6 +421,10 @@ class FlowQueries
             'item_id' => $request->item_id,
             'item' => $request->item?->name,
             'unit' => $request->item?->unit?->symbol,
+            'kind' => $request->isForPieces() ? 'pieces' : 'material',
+            'from_stage' => $request->from_stage,
+            'lot_number' => $request->lot?->lot_number,
+            'fulfilled' => (int) $request->fulfilled_quantity,
             'quantity' => (float) $request->quantity,
             'reason' => $request->reason,
             'status' => $request->status,
@@ -440,6 +456,28 @@ class FlowQueries
         ];
     }
 
+    /** Open lots that have finished pieces waiting at the stage before this one, so a team can ask for a particular lot. */
+    private function lotsReadyBefore(string $stage): array
+    {
+        $previous = ProductionFlowCatalog::previous($stage);
+
+        if ($previous === null) {
+            return [];
+        }
+
+        $lots = ProductionLot::with('product:id,name')->where('status', 'open')->get();
+        $balances = $this->balances->forLots($lots->pluck('id'));
+
+        return $lots->map(fn (ProductionLot $lot) => [
+            'id' => $lot->id,
+            'lot_number' => $lot->lot_number,
+            'product' => $lot->product?->name,
+            'color' => $lot->color,
+            'size' => $lot->size,
+            'ready' => (int) ($balances[$lot->id]['stages'][$previous]['outbox'] ?? 0),
+        ])->filter(fn (array $row) => $row['ready'] > 0)->values()->all();
+    }
+
     private function stageInfo(string $stage): array
     {
         return [
@@ -447,6 +485,7 @@ class FlowQueries
             'label' => ProductionFlowCatalog::STAGES[$stage]['label'],
             'previous' => ProductionFlowCatalog::previous($stage),
             'next' => ProductionFlowCatalog::next($stage),
+            'destinations' => ProductionFlowCatalog::destinations($stage),
         ];
     }
 

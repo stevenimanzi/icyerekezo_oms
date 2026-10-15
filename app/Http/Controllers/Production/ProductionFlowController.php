@@ -81,7 +81,7 @@ class ProductionFlowController extends Controller
         $path = tempnam(sys_get_temp_dir(), 'factory-register-') . '.xlsx';
         NoguchiDailyReportXlsxExporter::createRegister(
             $result['register']['days'],
-            $result['register']['sections'],
+            array_values(array_diff($result['register']['sections'], ['quality', 'sales'])),
             ' ' . strtoupper($request->user()->currentFactory->name) . ' - DAILY REPORT   |   ' . $result['period']['from'] . ' to ' . $result['period']['to'],
             $path,
             ['prod' => 'SEWING', 'fin' => 'FINISHING', 'stock' => 'PACKED INTO STOCK'],
@@ -121,12 +121,13 @@ class ProductionFlowController extends Controller
         $data = $request->validate([
             'status' => ['nullable', Rule::in(['pending', 'approved', 'rejected', 'cancelled', 'all'])],
             'stage' => ['nullable', Rule::in(ProductionFlowCatalog::keys())],
+            'direction' => ['nullable', Rule::in(['mine', 'asked'])],
             'q' => ['nullable', 'string', 'max:80'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
         ]);
 
-        return response()->json($queries->requests($request->user(), $data['status'] ?? 'pending', collect($data)->only(['stage', 'q', 'from', 'to'])->all()));
+        return response()->json($queries->requests($request->user(), $data['status'] ?? 'pending', collect($data)->only(['stage', 'direction', 'q', 'from', 'to'])->all()));
     }
 
     public function storeRequest(Request $request, MaterialRequestService $service): JsonResponse
@@ -134,14 +135,24 @@ class ProductionFlowController extends Controller
         $factoryId = (int) $request->user()->current_factory_id;
         $data = $request->validate([
             'stage' => ['required', Rule::in(ProductionFlowCatalog::keys())],
-            'item_id' => ['required', 'integer', Rule::exists('items', 'id')->where('factory_id', $factoryId)],
-            'quantity' => ['required', 'numeric', 'gt:0', 'max:1000000'],
+            'source' => ['nullable', Rule::in(['warehouse', 'stage'])],
+            'item_id' => ['required_unless:source,stage', 'nullable', 'integer', Rule::exists('items', 'id')->where('factory_id', $factoryId)],
+            'lot_id' => ['nullable', 'integer', Rule::exists('production_lots', 'id')->where('factory_id', $factoryId)],
+            'quantity' => ['required', 'numeric', 'gt:0', 'max:1000000', Rule::when($request->input('source') === 'stage', ['integer'])],
             'reason' => ['required', 'string', 'min:3', 'max:255'],
         ]);
 
         $created = $service->request($request->user(), $data);
+        $to = $created->isForPieces() ? ProductionFlowCatalog::STAGES[$created->from_stage]['label']['en'] : 'the warehouse';
 
-        return response()->json(['message' => "Request {$created->request_number} sent to the warehouse.", 'request' => $created], 201);
+        return response()->json(['message' => "Request {$created->request_number} sent to {$to}.", 'request' => $created], 201);
+    }
+
+    public function answerRequest(Request $request, MaterialRequest $materialRequest, MaterialRequestService $service): JsonResponse
+    {
+        $data = $request->validate(['note' => ['required', 'string', 'min:3', 'max:255']]);
+
+        return response()->json(['message' => 'Request declined.', 'request' => $service->decline($materialRequest, $request->user(), $data['note'])]);
     }
 
     public function decide(Request $request, MaterialRequest $materialRequest, MaterialRequestService $service): JsonResponse
@@ -225,11 +236,12 @@ class ProductionFlowController extends Controller
     {
         $data = $request->validate([
             'from_stage' => ['required', Rule::in(ProductionFlowCatalog::keys())],
+            'to_stage' => ['nullable', Rule::in(ProductionFlowCatalog::keys())],
             'quantity' => ['required', 'integer', 'min:1', 'max:1000000'],
             'note' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $transfer = $service->send($request->user(), $lot, $data['from_stage'], (int) $data['quantity'], $data['note'] ?? null);
+        $transfer = $service->send($request->user(), $lot, $data['from_stage'], (int) $data['quantity'], $data['note'] ?? null, $data['to_stage'] ?? null);
 
         return response()->json(['message' => "Sent {$transfer->quantity_sent} pieces to the next stage. They will count there once received.", 'transfer' => $transfer], 201);
     }

@@ -46,6 +46,21 @@ export type OwnerOverview = {
         on_time_rate: number | null;
         downtime_minutes: number;
     };
+    flow: {
+        stages: {
+            key: string;
+            label: { en: string; fr: string };
+            done: number;
+            damaged: number;
+            here: number;
+        }[];
+        lots_open: number;
+        lots_held: number;
+        requests_waiting: number;
+        deliveries_waiting: number;
+        stuck_deliveries: number;
+        awaiting_final_check: number;
+    } | null;
     stock: {
         value: number;
         low_stock: number;

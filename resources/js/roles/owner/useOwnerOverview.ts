@@ -3,7 +3,7 @@ import { api } from '../../core/api';
 import type { OwnerOverview } from './types';
 import { startPolling } from '../../core/polling';
 
-const REFRESH_EVERY_MS = 30000;
+const REFRESH_EVERY_MS = 15000;
 
 export function useOwnerOverview(days: number) {
     const [data, setData] = useState<OwnerOverview | null>(null);

@@ -6,6 +6,8 @@ use App\Models\AuditLog;
 use App\Models\Item;
 use App\Models\MaterialRequest;
 use App\Models\ProductionEntry;
+use App\Models\ProductionLot;
+use App\Models\ProductionTransfer;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\StockIssuer;
@@ -24,6 +26,11 @@ class MaterialRequestService
     public function request(User $user, array $data): MaterialRequest
     {
         $stage = $data['stage'];
+
+        if (($data['source'] ?? 'warehouse') === 'stage') {
+            return $this->requestPieces($user, $data);
+        }
+
         abort_unless(
             ProductionFlowCatalog::exists($stage) && FlowAccess::for($user)->canWork($stage),
             403,
@@ -55,6 +62,91 @@ class MaterialRequestService
         );
 
         return $request->load('item.unit');
+    }
+
+    /** A stage asks the stage before it for finished pieces. The answer is the delivery that stage sends. */
+    private function requestPieces(User $user, array $data): MaterialRequest
+    {
+        $stage = $data['stage'];
+        $from = ProductionFlowCatalog::previous($stage);
+        abort_unless($from !== null && FlowAccess::for($user)->canWork($stage), 403, 'You cannot ask another stage for pieces.');
+
+        $lot = ! empty($data['lot_id']) ? ProductionLot::findOrFail($data['lot_id']) : null;
+        $quantity = (int) $data['quantity'];
+
+        $request = MaterialRequest::create([
+            'request_number' => $this->nextNumber(),
+            'stage' => $stage,
+            'from_stage' => $from,
+            'lot_id' => $lot?->id,
+            'quantity' => $quantity,
+            'reason' => $data['reason'],
+            'status' => 'pending',
+            'requested_by' => $user->id,
+        ]);
+
+        $label = ProductionFlowCatalog::STAGES[$stage]['label']['en'];
+        AuditLog::record('production.pieces_requested', "{$label} asked for {$quantity} pieces from {$from}", $request);
+
+        FactoryNotifier::notifyRoles(
+            $user->current_factory_id,
+            [...ProductionFlowCatalog::STAGES[$from]['roles'], ...ProductionFlowCatalog::MANAGER_ROLES],
+            'Pieces requested',
+            "{$label} asked for {$quantity} pieces" . ($lot ? " of {$lot->lot_number}" : '') . ": {$data['reason']}",
+            '/production/' . $from . '-workspace',
+            'production',
+            $user->id,
+        );
+
+        return $request->load('lot');
+    }
+
+    /** The stage that was asked says it cannot send the pieces. */
+    public function decline(MaterialRequest $request, User $user, string $note): MaterialRequest
+    {
+        abort_unless($request->isForPieces(), 422, 'Only the warehouse can decline a material request.');
+        abort_unless(FlowAccess::for($user)->canWork($request->from_stage), 403, 'Only the team that was asked can answer this request.');
+        abort_unless($request->status === 'pending', 422, 'This request has already been dealt with.');
+
+        $request->update(['status' => 'rejected', 'decided_by' => $user->id, 'decided_at' => now(), 'decision_note' => $note]);
+        AuditLog::record('production.pieces_declined', "Declined {$request->request_number}: {$note}", $request);
+        $this->tellRequester($request, "Your request {$request->request_number} was declined", $note);
+
+        return $request;
+    }
+
+    /** Counts a delivery towards the oldest waiting requests of the receiving stage, and closes the ones it covers. */
+    public function countDelivery(ProductionTransfer $transfer, User $sender): void
+    {
+        $remaining = (int) $transfer->quantity_sent;
+
+        MaterialRequest::where('status', 'pending')
+            ->where('stage', $transfer->to_stage)
+            ->where('from_stage', $transfer->from_stage)
+            ->where(fn ($query) => $query->whereNull('lot_id')->orWhere('lot_id', $transfer->lot_id))
+            ->oldest('id')
+            ->lockForUpdate()
+            ->get()
+            ->each(function (MaterialRequest $request) use (&$remaining, $sender) {
+                if ($remaining < 1) {
+                    return false;
+                }
+
+                $take = min($remaining, (int) $request->quantity - (int) $request->fulfilled_quantity);
+                $remaining -= $take;
+                $total = (int) $request->fulfilled_quantity + $take;
+                $done = $total >= (int) $request->quantity;
+
+                $request->update($done
+                    ? ['fulfilled_quantity' => $total, 'status' => 'approved', 'decided_by' => $sender->id, 'decided_at' => now(), 'decision_note' => "{$total} pieces sent"]
+                    : ['fulfilled_quantity' => $total]);
+
+                $this->tellRequester(
+                    $request,
+                    $done ? "Your request {$request->request_number} was fulfilled" : "Part of {$request->request_number} is on its way",
+                    "{$total} of {$request->quantity} pieces were sent to you.",
+                );
+            });
     }
 
     public function approve(MaterialRequest $request, User $user, ?int $warehouseId, ?string $note): MaterialRequest
@@ -157,6 +249,7 @@ class MaterialRequestService
 
     private function ensureCanDecide(MaterialRequest $request, User $user): void
     {
+        abort_if($request->isForPieces(), 422, 'This request is answered by the team it was sent to, not by the warehouse.');
         abort_unless(FlowAccess::for($user)->canApproveRequests(), 403, 'Only the warehouse can approve or decline material requests.');
 
         if ((int) $request->requested_by === (int) $user->id) {

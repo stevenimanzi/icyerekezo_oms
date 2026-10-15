@@ -47,6 +47,8 @@ const en = {
             prod: 'Sewing',
             fin: 'Finishing',
             stock: 'Packed into stock',
+            quality: 'Quality control',
+            sales: 'Sales',
         },
         groups: {
             fabricIn: 'Fabric in',
@@ -57,6 +59,8 @@ const en = {
             received: 'Received',
             done: 'Done',
             packed: 'Packed',
+            checks: 'Checks made',
+            sold: 'Sold',
         },
         columns: {
             colour: 'Colour',
@@ -67,6 +71,11 @@ const en = {
             size: 'Size',
             metresUsed: 'Metres used',
             pieces: 'Pieces',
+            stage: 'Stage',
+            checked: 'Checked',
+            passed: 'Passed',
+            rejected: 'Rejected',
+            value: 'Value',
         },
     },
 
@@ -210,6 +219,8 @@ const fr: typeof en = {
             prod: 'Couture',
             fin: 'Finition',
             stock: 'Emballé en stock',
+            quality: 'Contrôle qualité',
+            sales: 'Ventes',
         },
         groups: {
             fabricIn: 'Tissu entré',
@@ -220,6 +231,8 @@ const fr: typeof en = {
             received: 'Reçu',
             done: 'Fait',
             packed: 'Emballé',
+            checks: 'Contrôles effectués',
+            sold: 'Vendu',
         },
         columns: {
             colour: 'Couleur',
@@ -230,6 +243,11 @@ const fr: typeof en = {
             size: 'Taille',
             metresUsed: 'Mètres utilisés',
             pieces: 'Pièces',
+            stage: 'Étape',
+            checked: 'Contrôlées',
+            passed: 'Acceptées',
+            rejected: 'Rejetées',
+            value: 'Valeur',
         },
     },
 

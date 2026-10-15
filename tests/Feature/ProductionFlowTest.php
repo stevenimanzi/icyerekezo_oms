@@ -46,7 +46,7 @@ class ProductionFlowTest extends TestCase
 
     private function makeFactory(string $name, string $slug): Factory
     {
-        $factory = Factory::create(['uuid' => (string) Str::uuid(), 'name' => $name, 'slug' => $slug, 'industry_type' => 'clothing', 'status' => 'active', 'currency_code' => 'RWF']);
+        $factory = Factory::create(['uuid' => (string) Str::uuid(), 'name' => $name, 'slug' => $slug, 'industry_type' => 'clothing_textiles', 'status' => 'active', 'currency_code' => 'RWF']);
         RoleTemplateCatalog::createFor($factory);
 
         return $factory;
@@ -240,6 +240,67 @@ class ProductionFlowTest extends TestCase
         $this->as('sewing-operator')->postJson("/api/flow/lots/{$lot}/send", ['from_stage' => 'sewing', 'quantity' => 41])->assertUnprocessable();
     }
 
+    public function test_sewing_can_send_straight_to_packing_but_other_stages_cannot_skip_ahead(): void
+    {
+        $this->approvedFabric();
+        $lot = $this->cutLot(100);
+        $this->receive('sewing-operator', $this->send('cutting-operator', $lot, 'cutting', 60), 60);
+        $this->work('sewing-operator', $lot, 'sewing', 50)->assertCreated();
+
+        $this->as('cutting-operator')->postJson("/api/flow/lots/{$lot}/send", ['from_stage' => 'cutting', 'to_stage' => 'packing', 'quantity' => 10])->assertUnprocessable();
+
+        $overview = $this->as('sewing-operator')->getJson('/api/flow/overview')->assertOk();
+        $this->assertSame(['finishing', 'packing'], $overview->json('stage.destinations'));
+
+        $transfer = $this->as('sewing-operator')->postJson("/api/flow/lots/{$lot}/send", ['from_stage' => 'sewing', 'to_stage' => 'packing', 'quantity' => 50])
+            ->assertCreated()->json('transfer.id');
+        $this->receive('packaging-operator', $transfer, 50);
+
+        $this->assertSame(0, $this->stages($lot)['sewing']['outbox']);
+        $this->assertSame(50, $this->stages($lot)['packing']['wip']);
+        $this->assertSame(0, $this->stages($lot)['finishing']['wip']);
+    }
+
+    public function test_a_stage_can_ask_the_stage_before_for_pieces_and_the_delivery_closes_the_request(): void
+    {
+        $this->approvedFabric();
+        $lot = $this->cutLot(100);
+
+        $id = $this->as('sewing-operator')->postJson('/api/flow/requests', [
+            'stage' => 'sewing', 'source' => 'stage', 'quantity' => 60, 'reason' => 'School polo order',
+        ])->assertCreated()->json('request.id');
+
+        $this->as('cutting-operator')->getJson('/api/flow/requests?stage=cutting&direction=asked')
+            ->assertOk()->assertJsonPath('counts.pending', 1)->assertJsonPath('requests.0.kind', 'pieces')
+            ->assertJsonPath('capabilities.answer', true);
+        $this->as('sewing-operator')->getJson('/api/flow/requests?stage=sewing')
+            ->assertJsonPath('requests.0.from_stage', 'cutting')->assertJsonPath('capabilities.previous', 'cutting');
+        $this->as('warehouse-keeper')->getJson('/api/flow/requests?status=pending')->assertOk()->assertJsonCount(0, 'requests');
+        $this->as('warehouse-keeper')->postJson("/api/flow/requests/{$id}/decision", ['decision' => 'approve'])->assertUnprocessable();
+
+        $this->send('cutting-operator', $lot, 'cutting', 25);
+        $this->assertSame(['pending', 25], [MaterialRequest::find($id)->status, MaterialRequest::find($id)->fulfilled_quantity]);
+
+        $this->send('cutting-operator', $lot, 'cutting', 40);
+        $request = MaterialRequest::find($id);
+        $this->assertSame(['approved', 65], [$request->status, $request->fulfilled_quantity]);
+    }
+
+    public function test_the_stage_that_was_asked_can_decline_but_nobody_else_and_the_first_stage_cannot_ask_for_pieces(): void
+    {
+        $id = $this->as('sewing-operator')->postJson('/api/flow/requests', [
+            'stage' => 'sewing', 'source' => 'stage', 'quantity' => 10, 'reason' => 'Rush order',
+        ])->assertCreated()->json('request.id');
+
+        $this->as('sewing-operator')->postJson("/api/flow/requests/{$id}/answer", ['note' => 'I do not need it'])->assertForbidden();
+        $this->as('cutting-operator')->postJson("/api/flow/requests/{$id}/answer", ['note' => 'No fabric cut yet'])->assertOk();
+        $this->assertSame('rejected', MaterialRequest::find($id)->status);
+
+        $this->as('cutting-operator')->postJson('/api/flow/requests', [
+            'stage' => 'cutting', 'source' => 'stage', 'quantity' => 10, 'reason' => 'Nothing before cutting',
+        ])->assertForbidden();
+    }
+
     public function test_receiving_fewer_than_were_sent_needs_a_reason_and_is_tracked_as_missing(): void
     {
         $this->approvedFabric();
@@ -411,9 +472,17 @@ class ProductionFlowTest extends TestCase
         $this->work('finishing-manager', $lot, 'finishing', 90, 2)->assertCreated();
         $this->receive('packaging-operator', $this->send('finishing-manager', $lot, 'finishing', 90), 90);
         $this->work('packaging-operator', $lot, 'packing', 90)->assertCreated();
+        $this->as('quality-officer')->postJson('/api/flow/inspections', [
+            'lot_id' => $lot, 'stage' => 'packing', 'inspected_quantity' => 90, 'passed_quantity' => 86, 'rejected_quantity' => 4, 'defect_details' => 'Loose buttons',
+        ])->assertCreated();
+        $admin = $this->makeUser($this->factory, 'admin@test.test', 'factory-administrator');
+        $this->actingAs($admin)->postJson('/api/sales/manual', [
+            'customer_name' => 'Jean Claude', 'sale_date' => today()->toDateString(), 'paid_amount' => 50000, 'payment_method' => 'cash',
+            'lines' => [['item_id' => ProductionLot::find($lot)->product_item_id, 'quantity' => 10, 'unit_price' => 5000]],
+        ])->assertCreated();
 
         $register = $this->as('production-manager')->getJson('/api/flow/factory-report?period=day')->assertOk()->json('register');
-        $this->assertSame(['wh', 'cut', 'prod', 'fin', 'stock'], $register['sections']);
+        $this->assertSame(['wh', 'cut', 'prod', 'fin', 'stock', 'quality', 'sales'], $register['sections']);
         $this->assertCount(1, $register['days']);
 
         $groups = $register['days'][0]['groups'];
@@ -425,6 +494,8 @@ class ProductionFlowTest extends TestCase
         $this->assertEquals([['Blue', 'Polo shirt', 'M', 92]], $groups[7]);
         $this->assertEquals([['Blue', 'Polo shirt', 'M', 90]], $groups[8]);
         $this->assertEquals([['Blue', 'Polo shirt', 'M', 90]], $groups[9]);
+        $this->assertEquals([['Blue', 'Polo shirt', 'M', 'packing', 90, 86, 4]], $register['days'][0]['quality'], 'Quality: colour, style, size, stage, checked, passed, rejected.');
+        $this->assertEquals([['Polo shirt', 10, 50000]], $register['days'][0]['sales'], 'Sales: product, pieces, value.');
 
         $keeper = $this->as('warehouse-keeper')->getJson('/api/flow/factory-report?period=day')->json('register');
         $this->assertSame(['wh'], $keeper['sections']);
@@ -433,6 +504,31 @@ class ProductionFlowTest extends TestCase
         $download = $this->as('production-manager')->get('/api/flow/factory-report.xlsx?period=day');
         $download->assertOk()->assertDownload();
         $this->assertStringStartsWith('PK', file_get_contents($download->baseResponse->getFile()->getPathname()));
+    }
+
+    public function test_the_owner_dashboard_shows_the_live_state_of_the_flow(): void
+    {
+        $this->approvedFabric(80);
+        $lot = $this->cutLot(100);
+        $this->receive('sewing-operator', $this->send('cutting-operator', $lot, 'cutting', 60), 60);
+        $this->as('cutting-operator')->postJson('/api/flow/requests', ['stage' => 'cutting', 'item_id' => $this->fabric->id, 'quantity' => 5, 'reason' => 'More for the next lot'])->assertCreated();
+        $this->as('quality-officer')->postJson("/api/flow/lots/{$lot}/hold", ['reason' => 'Wrong buttons'])->assertOk();
+        $manager = $this->makeUser($this->factory, 'boss@test.test', 'factory-manager');
+
+        $overview = $this->actingAs($manager)->getJson('/api/executive/owner-overview?days=30')->assertOk()->json();
+
+        $stages = collect($overview['flow']['stages'])->keyBy('key');
+        $this->assertSame(100, $stages['cutting']['done']);
+        $this->assertSame(3, $stages['cutting']['damaged']);
+        $this->assertSame(40, $stages['cutting']['here'], 'Forty pieces are still at cutting, ready to send.');
+        $this->assertSame(60, $stages['sewing']['here']);
+        $this->assertSame(1, $overview['flow']['lots_open']);
+        $this->assertSame(1, $overview['flow']['lots_held']);
+        $this->assertSame(1, $overview['flow']['requests_waiting']);
+
+        $alerts = collect($overview['alerts'])->keyBy('key');
+        $this->assertSame(1, $alerts['held_lots']['count']);
+        $this->assertSame(1, $alerts['material_requests']['count']);
     }
 
     public function test_lots_can_be_filtered_by_colour_size_product_and_fabric(): void

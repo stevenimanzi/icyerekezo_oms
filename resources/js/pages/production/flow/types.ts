@@ -5,6 +5,7 @@ export type StageInfo = {
     label: { en: string; fr: string };
     previous: StageKey | null;
     next: StageKey | null;
+    destinations: StageKey[];
 };
 
 export type LotRow = {
@@ -72,9 +73,13 @@ export type RequestRow = {
     id: number;
     number: string;
     stage: StageKey;
-    item_id: number;
+    item_id: number | null;
     item: string | null;
     unit: string | null;
+    kind: 'material' | 'pieces';
+    from_stage: StageKey | null;
+    lot_number: string | null;
+    fulfilled: number;
     quantity: number;
     reason: string;
     status: 'pending' | 'approved' | 'rejected' | 'cancelled';
@@ -307,10 +312,26 @@ export type FlowReport = {
     }[];
 };
 
+export type PieceLot = {
+    id: number;
+    lot_number: string;
+    product: string | null;
+    color: string | null;
+    size: string | null;
+    ready: number;
+};
+
 export type RequestsOverview = {
-    capabilities: { approve: boolean; request: boolean };
+    capabilities: {
+        approve: boolean;
+        request: boolean;
+        previous: StageKey | null;
+        answer: boolean;
+        asked_of_us: boolean;
+    };
     counts: { pending: number; approved: number; rejected: number; cancelled: number; all: number };
     options: OptionItem[];
+    lots: PieceLot[];
     requests: RequestRow[];
     warehouses: { id: number; name: string }[];
 };

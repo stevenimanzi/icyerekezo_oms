@@ -82,11 +82,16 @@ export type SalesBlock = {
     top_products: { name: string; quantity: number; revenue: number }[];
 };
 
-export type RegisterBlock = 'wh' | 'cut' | 'prod' | 'fin' | 'stock';
+export type RegisterBlock = 'wh' | 'cut' | 'prod' | 'fin' | 'stock' | 'quality' | 'sales';
 
 export type RegisterData = {
     sections: RegisterBlock[];
-    days: { date: string; groups: (string | number)[][][] }[];
+    days: {
+        date: string;
+        groups: (string | number)[][][];
+        quality: (string | number)[][];
+        sales: (string | number)[][];
+    }[];
     truncated: boolean;
 };
 

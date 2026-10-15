@@ -83,10 +83,10 @@ class FactoryReport
 
     private function register(User $user, CarbonInterface $start, CarbonInterface $end, array $sections): array
     {
-        $days = (new FactoryRegister(OperationalScope::for($user)->warehouseIds()))->days($start, $end, $sections);
+        $days = (new FactoryRegister(OperationalScope::for($user)->warehouseIds(), (int) $user->current_factory_id))->days($start, $end, $sections);
 
         return [
-            'sections' => array_values(array_filter(['wh', 'cut', 'prod', 'fin', 'stock'], fn (string $block) => in_array($block, array_map(fn (string $section) => FactoryRegister::SECTION_FOR[$section] ?? '', $sections), true))),
+            'sections' => array_values(array_filter(['wh', 'cut', 'prod', 'fin', 'stock', 'quality', 'sales'], fn (string $block) => in_array($block, array_map(fn (string $section) => FactoryRegister::SECTION_FOR[$section] ?? '', $sections), true))),
             'days' => array_slice($days, -self::REGISTER_DAYS),
             'truncated' => count($days) > self::REGISTER_DAYS,
         ];
@@ -171,7 +171,7 @@ class FactoryReport
         $value = fn (Collection $rows) => round($rows->sum(fn ($row) => abs((float) $row->quantity_delta) * (float) $row->unit_cost), 2);
         $in = $moves->filter(fn ($row) => in_array($row->type, StockAnalytics::IN_TYPES, true));
         $out = $moves->filter(fn ($row) => in_array($row->type, StockAnalytics::OUT_TYPES, true));
-        $requests = MaterialRequest::where('created_at', '>=', $start)->where('created_at', '<=', $end)->get();
+        $requests = MaterialRequest::whereNull('from_stage')->where('created_at', '>=', $start)->where('created_at', '<=', $end)->get();
 
         $items = $moves->groupBy('item_id')->map(fn (Collection $rows) => [
             'name' => $rows->first()->item?->name,

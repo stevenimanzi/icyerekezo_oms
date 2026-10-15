@@ -6,12 +6,16 @@ use App\Models\AuditLog;
 use App\Models\Batch;
 use App\Models\EmployeeAttendance;
 use App\Models\EmployeeProfile;
+use App\Models\Factory;
 use App\Models\LeaveRequest;
 use App\Models\Machine;
 use App\Models\MaintenanceRecord;
+use App\Models\MaterialRequest;
 use App\Models\ProductionEntry;
+use App\Models\ProductionLot;
 use App\Models\ProductionOrder;
 use App\Models\ProductionStageExecution;
+use App\Models\ProductionTransfer;
 use App\Models\PurchaseDocument;
 use App\Models\QualityInspection;
 use App\Models\SafetyIncident;
@@ -20,6 +24,8 @@ use App\Models\SalesDocumentLine;
 use App\Models\SalesPayment;
 use App\Models\SchoolPaymentSubmission;
 use App\Models\StockBalance;
+use App\Services\ProductionFlow\FlowBalances;
+use App\Support\Catalogs\ProductionFlowCatalog;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +61,7 @@ final class OwnerOverviewReport
         $people = $this->people();
         $safety = $this->safety();
         $equipment = $this->equipment();
+        $flow = $this->flow();
 
         return [
             'period' => [
@@ -66,13 +73,14 @@ final class OwnerOverviewReport
             'trend' => $this->monthlyTrend(),
             'cash' => $cash,
             'production' => $production,
+            'flow' => $flow,
             'stock' => $stock,
             'customers' => $customers,
             'quality' => $quality,
             'people' => $people,
             'safety' => $safety,
             'equipment' => $equipment,
-            'alerts' => $this->alerts($cash, $production, $stock, $customers, $quality, $safety, $equipment),
+            'alerts' => $this->alerts($cash, $production, $stock, $customers, $quality, $safety, $equipment, $flow),
             'activity' => $this->activity(),
         ];
     }
@@ -222,6 +230,51 @@ final class OwnerOverviewReport
                 ->where('factory_id', $this->factoryId)
                 ->whereBetween('created_at', [$this->start, $this->end])
                 ->sum('downtime_minutes'),
+        ];
+    }
+
+    /** The live state of the garment production flow, or null for factories that do not use it. */
+    private function flow(): ?array
+    {
+        $factory = Factory::withoutGlobalScopes()->find($this->factoryId);
+
+        if (! $factory?->hasFeature('garment_flow')) {
+            return null;
+        }
+
+        $done = ProductionEntry::withoutGlobalScopes()
+            ->where('factory_id', $this->factoryId)
+            ->whereNull('voided_at')
+            ->where('entry_date', '>=', $this->start->toDateString())
+            ->where('entry_date', '<=', $this->end->toDateString())
+            ->selectRaw('stage, COALESCE(SUM(good_quantity), 0) as good, COALESCE(SUM(damaged_quantity), 0) as damaged')
+            ->groupBy('stage')
+            ->get()
+            ->keyBy('stage');
+
+        $open = ProductionLot::withoutGlobalScopes()->where('factory_id', $this->factoryId)->where('status', 'open')->pluck('id');
+        $balances = collect(app(FlowBalances::class)->forLots($open));
+
+        $stages = collect(ProductionFlowCatalog::keys())->map(function (string $stage) use ($done, $balances) {
+            $now = $balances->pluck("stages.{$stage}");
+
+            return [
+                'key' => $stage,
+                'label' => ProductionFlowCatalog::STAGES[$stage]['label'],
+                'done' => (int) ($done[$stage]->good ?? 0),
+                'damaged' => (int) ($done[$stage]->damaged ?? 0),
+                'here' => (int) $now->sum(fn ($row) => $row['wip'] + $row['outbox'] + $row['awaiting_quality']),
+            ];
+        })->values()->all();
+
+        return [
+            'stages' => $stages,
+            'lots_open' => $open->count(),
+            'lots_held' => ProductionLot::withoutGlobalScopes()->where('factory_id', $this->factoryId)->whereNotNull('held_at')->count(),
+            'requests_waiting' => MaterialRequest::withoutGlobalScopes()->where('factory_id', $this->factoryId)->whereNull('from_stage')->where('status', 'pending')->count(),
+            'deliveries_waiting' => ProductionTransfer::withoutGlobalScopes()->where('factory_id', $this->factoryId)->where('status', 'sent')->count(),
+            'stuck_deliveries' => ProductionTransfer::withoutGlobalScopes()->where('factory_id', $this->factoryId)->where('status', 'sent')->where('sent_at', '<', now()->subDay())->count(),
+            'awaiting_final_check' => (int) $balances->sum(fn ($lot) => $lot['stages']['packing']['awaiting_quality'] ?? 0),
         ];
     }
 
@@ -417,6 +470,7 @@ final class OwnerOverviewReport
         array $quality,
         array $safety,
         array $equipment,
+        ?array $flow = null,
     ): array {
         $rules = [
             ['serious_incident', 'critical', $safety['serious_open'], 'safety'],
@@ -429,6 +483,10 @@ final class OwnerOverviewReport
             ['service_overdue', 'warning', $equipment['service_overdue'], 'machines'],
             ['failed_inspections', 'warning', $quality['failed'], 'quality'],
             ['payment_receipts', 'info', $cash['pending_receipts'], 'finance'],
+            ['held_lots', 'warning', $flow['lots_held'] ?? 0, 'production-flow'],
+            ['stuck_deliveries', 'warning', $flow['stuck_deliveries'] ?? 0, 'production-flow'],
+            ['material_requests', 'info', $flow['requests_waiting'] ?? 0, 'incoming-requests'],
+            ['final_check', 'info', $flow['awaiting_final_check'] ?? 0, 'production-flow'],
         ];
 
         return collect($rules)

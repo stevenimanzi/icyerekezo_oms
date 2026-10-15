@@ -4,10 +4,12 @@ namespace App\Support\Reports;
 
 use App\Models\ProductionEntry;
 use App\Models\ProductionTransfer;
+use App\Models\QualityInspection;
 use App\Models\StockTransaction;
 use App\Services\StockAnalytics;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The daily register of a garment factory in the layout management already knows from the paper and Excel register:
@@ -19,9 +21,9 @@ final class FactoryRegister
     private const FABRIC_UNITS = ['m', 'meter', 'meters', 'metre', 'metres', 'yd', 'yard', 'yards'];
 
     /** Which register block each allowed department unlocks. */
-    public const SECTION_FOR = ['warehouse' => 'wh', 'cutting' => 'cut', 'sewing' => 'prod', 'finishing' => 'fin', 'packing' => 'stock'];
+    public const SECTION_FOR = ['warehouse' => 'wh', 'cutting' => 'cut', 'sewing' => 'prod', 'finishing' => 'fin', 'packing' => 'stock', 'quality' => 'quality', 'sales' => 'sales'];
 
-    public function __construct(private readonly Collection $warehouseIds) {}
+    public function __construct(private readonly Collection $warehouseIds, private readonly int $factoryId) {}
 
     /** @return array<int, array{date: string, groups: array<int, array<int, array<int, mixed>>>}> */
     public function days(CarbonInterface $from, CarbonInterface $to, array $allowed): array
@@ -30,10 +32,22 @@ final class FactoryRegister
         $end = $to->copy()->endOfDay();
         $days = [];
 
-        $add = function (string $date, int $group, array $row) use (&$days) {
-            $days[$date] ??= array_fill(0, 10, []);
-            $days[$date][$group][] = $row;
+        $blank = fn () => ['groups' => array_fill(0, 10, []), 'quality' => [], 'sales' => []];
+        $add = function (string $date, int $group, array $row) use (&$days, $blank) {
+            $days[$date] ??= $blank();
+            $days[$date]['groups'][$group][] = $row;
         };
+        $extra = function (string $date, string $kind, array $row) use (&$days, $blank) {
+            $days[$date] ??= $blank();
+            $days[$date][$kind][] = $row;
+        };
+
+        if (in_array('quality', $allowed, true)) {
+            $this->quality($start, $end, $extra);
+        }
+        if (in_array('sales', $allowed, true)) {
+            $this->sales($start, $end, $extra);
+        }
 
         if (in_array('warehouse', $allowed, true)) {
             $this->warehouse($start, $end, $add);
@@ -75,16 +89,56 @@ final class FactoryRegister
 
         ksort($days);
 
-        return collect($days)->map(fn (array $groups, string $date) => [
-            'date' => $date,
-            'groups' => [
-                $groups[0], $groups[1], $groups[2], $groups[3],
-                $this->arrange($groups[4], 0, 2, 3),
-                $this->arrange($groups[5], 0, 1, 2), $this->arrange($groups[6], 0, 1, 2),
-                $this->arrange($groups[7], 0, 1, 2), $this->arrange($groups[8], 0, 1, 2),
-                $this->arrange($groups[9], 0, 1, 2),
-            ],
-        ])->values()->all();
+        return collect($days)->map(function (array $day, string $date) {
+            $groups = $day['groups'];
+
+            return [
+                'date' => $date,
+                'groups' => [
+                    $groups[0], $groups[1], $groups[2], $groups[3],
+                    $this->arrange($groups[4], 0, 2, 3),
+                    $this->arrange($groups[5], 0, 1, 2), $this->arrange($groups[6], 0, 1, 2),
+                    $this->arrange($groups[7], 0, 1, 2), $this->arrange($groups[8], 0, 1, 2),
+                    $this->arrange($groups[9], 0, 1, 2),
+                ],
+                'quality' => $this->arrange($day['quality'], 0, 1, 2),
+                'sales' => collect($day['sales'])->sortByDesc(fn (array $row) => $row[1])->values()->all(),
+            ];
+        })->values()->all();
+    }
+
+    private function quality(CarbonInterface $start, CarbonInterface $end, callable $extra): void
+    {
+        $checks = QualityInspection::whereNotNull('lot_id')->where('created_at', '>=', $start)->where('created_at', '<=', $end)
+            ->with('lot.product:id,name')->get();
+
+        foreach ($checks as $check) {
+            $lot = $check->lot;
+            $extra($check->created_at->toDateString(), 'quality', [
+                (string) $lot?->color, (string) $lot?->product?->name, (string) $lot?->size, (string) $check->stage,
+                (float) $check->inspected_quantity, (float) $check->passed_quantity, (float) $check->rejected_quantity,
+            ]);
+        }
+    }
+
+    private function sales(CarbonInterface $start, CarbonInterface $end, callable $extra): void
+    {
+        $rows = DB::table('sales_documents as d')
+            ->join('sales_document_lines as l', 'l.sales_document_id', '=', 'd.id')
+            ->leftJoin('items as i', 'i.id', '=', 'l.item_id')
+            ->where('d.factory_id', $this->factoryId)
+            ->where('d.document_type', 'customer_order')
+            ->where('d.source', 'manual')
+            ->whereNotIn('d.status', ['cancelled', 'rejected'])
+            ->where('d.document_date', '>=', $start->toDateString())
+            ->where('d.document_date', '<=', $end->toDateString())
+            ->selectRaw("d.document_date as day, COALESCE(i.name, l.garment_category, 'Other') as name, SUM(l.quantity_ordered) as quantity, COALESCE(SUM(l.line_total), 0) as revenue")
+            ->groupBy('d.document_date', 'i.name', 'l.garment_category')
+            ->get();
+
+        foreach ($rows as $row) {
+            $extra(substr((string) $row->day, 0, 10), 'sales', [(string) $row->name, (float) $row->quantity, (float) $row->revenue]);
+        }
     }
 
     private function warehouse(CarbonInterface $start, CarbonInterface $end, callable $add): void

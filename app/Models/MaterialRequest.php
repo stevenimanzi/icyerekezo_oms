@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\Model;
         'factory_id',
         'request_number',
         'stage',
+        'from_stage',
         'item_id',
+        'lot_id',
         'warehouse_id',
         'quantity',
+        'fulfilled_quantity',
         'reason',
         'status',
         'requested_by',
@@ -34,6 +37,17 @@ class MaterialRequest extends Model
     public function item()
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function lot()
+    {
+        return $this->belongsTo(ProductionLot::class, 'lot_id');
+    }
+
+    /** True when a stage asks the stage before it for finished pieces, instead of asking the warehouse for materials. */
+    public function isForPieces(): bool
+    {
+        return $this->from_stage !== null;
     }
 
     public function warehouse()

@@ -591,6 +591,10 @@
     padding: 14px 12px 6px;
 }
 
+.ui-chart.compact {
+    height: 210px;
+}
+
 .ui-empty {
     padding: 36px 16px;
     color: var(--muted);
@@ -667,4 +671,40 @@
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
+}
+
+.ui-kpis.eight {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.ui-kpis.eight .ui-kpi {
+    padding: 14px;
+}
+
+.ui-kpis.eight .ui-kpi strong {
+    font-size: 22px;
+}
+
+@media (min-width: 1366px) {
+    .ui-kpis.eight {
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .ui-kpis.eight {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.ui-row-actions .primary-btn,
+.ui-row-actions .secondary-btn {
+    padding: 7px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.ui-row-actions {
+    flex-wrap: wrap;
 }

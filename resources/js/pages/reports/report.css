@@ -165,3 +165,21 @@
 .rg-group table {
     min-width: 0;
 }
+
+@media print {
+    .rg-block {
+        break-inside: avoid;
+    }
+
+    .rg-day > header {
+        background: #f1f5f9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .rg-block > h3,
+    .rg-group > h4 {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

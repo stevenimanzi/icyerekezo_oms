@@ -3,12 +3,12 @@ import type { Locale } from '../../../../core/types';
 import { LotFilters, useLotFilters } from '../LotFilters';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
-import type { LotRow, StageOverview, TransferRow } from '../types';
+import type { LotRow, StageKey, StageOverview, TransferRow } from '../types';
 
 export type WorkModal =
     | { kind: 'receive'; transfer: TransferRow }
     | { kind: 'record'; lot: LotRow }
-    | { kind: 'send'; lot: LotRow }
+    | { kind: 'send'; lot: LotRow; to: StageKey }
     | { kind: 'cut'; lot?: LotRow }
     | { kind: 'loss' };
 
@@ -34,7 +34,6 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
     const filters = useLotFilters(everything);
     const lots = here.filter((lot) => filters.filtered.includes(lot));
     const arriving = data.incoming.filter((transfer) => filters.filtered.includes(transfer));
-    const next = stage.next ? stageLabel(stage.next, locale) : '';
 
     return (
         <>
@@ -52,7 +51,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
             {!isCutting && (
                 <article className="panel">
                     <div className="panel-title">
-                        <h2>{text.work.arrivingTitle(stageLabel(stage.previous, locale))}</h2>
+                        <h2>{text.work.arrivingTitle()}</h2>
                     </div>
                     <div className="ui-table-wrap">
                         <table className="ui-table" style={{ minWidth: 720 }}>
@@ -62,6 +61,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                     <th>{text.work.product}</th>
                                     <th>{text.work.colour}</th>
                                     <th>{text.work.size}</th>
+                                    <th>{text.work.from}</th>
                                     <th className="num">{text.work.sent}</th>
                                     <th>{text.work.sentBy}</th>
                                     <th>{text.work.note}</th>
@@ -86,6 +86,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                 )}
                                             </td>
                                             <td>{transfer.size ?? text.none}</td>
+                                            <td>{stageLabel(transfer.from, locale)}</td>
                                             <td className="num">
                                                 <b>{format.whole(transfer.quantity_sent)}</b>
                                             </td>
@@ -110,7 +111,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={8} className="empty">
+                                        <td colSpan={9} className="empty">
                                             {filters.active && data.incoming.length
                                                 ? text.work.noMatch
                                                 : text.work.arrivingEmpty}
@@ -224,7 +225,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                     )}
                                                     {!isCutting && lot.wip > 0 && (
                                                         <button
-                                                            className="ui-link"
+                                                            className="primary-btn"
                                                             disabled={lot.held}
                                                             onClick={() =>
                                                                 onModal({ kind: 'record', lot })
@@ -232,20 +233,31 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                         >
                                                             {isPacking
                                                                 ? text.work.recordPacking
-                                                                : text.work.record}
+                                                                : text.work.recordStage(
+                                                                      stageLabel(stage.key, locale),
+                                                                  )}
                                                         </button>
                                                     )}
-                                                    {stage.next && lot.outbox > 0 && (
-                                                        <button
-                                                            className="ui-link"
-                                                            disabled={lot.held}
-                                                            onClick={() =>
-                                                                onModal({ kind: 'send', lot })
-                                                            }
-                                                        >
-                                                            {text.work.send(next)} →
-                                                        </button>
-                                                    )}
+                                                    {lot.outbox > 0 &&
+                                                        stage.destinations.map((to) => (
+                                                            <button
+                                                                key={to}
+                                                                className="secondary-btn"
+                                                                disabled={lot.held}
+                                                                onClick={() =>
+                                                                    onModal({
+                                                                        kind: 'send',
+                                                                        lot,
+                                                                        to,
+                                                                    })
+                                                                }
+                                                            >
+                                                                {text.work.send(
+                                                                    stageLabel(to, locale),
+                                                                )}{' '}
+                                                                →
+                                                            </button>
+                                                        ))}
                                                 </div>
                                             )}
                                         </td>

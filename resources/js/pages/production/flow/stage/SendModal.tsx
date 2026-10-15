@@ -3,21 +3,22 @@ import { Modal } from '../../../../components/Modal';
 import type { Locale } from '../../../../core/types';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
-import type { LotRow, StageInfo } from '../types';
+import type { LotRow, StageInfo, StageKey } from '../types';
 import { postJson } from '../../../../core/liveData';
 
 type Props = {
     lot: LotRow;
     stage: StageInfo;
+    to: StageKey;
     locale: Locale;
     text: FlowText;
     onClose: () => void;
     onDone: (message: string) => void;
 };
 
-export function SendModal({ lot, stage, locale, text, onClose, onDone }: Props) {
+export function SendModal({ lot, stage, to, locale, text, onClose, onDone }: Props) {
     const t = text.send;
-    const next = stageLabel(stage.next, locale);
+    const next = stageLabel(to, locale);
     const [quantity, setQuantity] = useState(String(lot.outbox));
     const [note, setNote] = useState('');
     const [error, setError] = useState('');
@@ -29,6 +30,7 @@ export function SendModal({ lot, stage, locale, text, onClose, onDone }: Props) 
         try {
             await postJson(`/api/flow/lots/${lot.id}/send`, {
                 from_stage: stage.key,
+                to_stage: to,
                 quantity: Number(quantity),
                 note: note.trim() || null,
             });

@@ -32,6 +32,9 @@ final class ProductionFlowCatalog
 
     public const WAREHOUSE_ROLES = ['warehouse-keeper', 'factory-administrator'];
 
+    /** Stages a lot may skip: pieces can go from the stage before straight to the one after. */
+    public const SKIPPABLE = ['finishing'];
+
     public static function keys(): array
     {
         return array_keys(self::STAGES);
@@ -48,6 +51,20 @@ final class ProductionFlowCatalog
         $position = array_search($stage, $keys, true);
 
         return $position === false ? null : ($keys[$position + 1] ?? null);
+    }
+
+    /** Where finished pieces of a stage can be sent: the next stage, or the one after it when the next may be skipped. */
+    public static function destinations(string $stage): array
+    {
+        $next = self::next($stage);
+
+        if ($next === null) {
+            return [];
+        }
+
+        $after = in_array($next, self::SKIPPABLE, true) ? self::next($next) : null;
+
+        return array_values(array_filter([$next, $after]));
     }
 
     public static function previous(string $stage): ?string

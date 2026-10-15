@@ -156,10 +156,12 @@ class ProductionFlowService
         });
     }
 
-    public function send(User $user, ProductionLot $lot, string $fromStage, int $quantity, ?string $note): ProductionTransfer
+    public function send(User $user, ProductionLot $lot, string $fromStage, int $quantity, ?string $note, ?string $toStage = null): ProductionTransfer
     {
-        $next = ProductionFlowCatalog::next($fromStage);
-        abort_if($next === null, 422, 'Packed pieces go to quality control, not to another stage.');
+        $destinations = ProductionFlowCatalog::destinations($fromStage);
+        abort_if($destinations === [], 422, 'Packed pieces go to quality control, not to another stage.');
+        $next = $toStage ?? $destinations[0];
+        abort_unless(in_array($next, $destinations, true), 422, 'Pieces cannot be sent to that stage from here.');
         $this->requireStageAccess($user, $fromStage);
 
         return DB::transaction(function () use ($user, $lot, $fromStage, $next, $quantity, $note) {
@@ -185,6 +187,7 @@ class ProductionFlowService
             ]);
 
             AuditLog::record('production.sent', "Sent {$quantity} of {$lot->lot_number} to {$this->label($next)}", $lot);
+            $this->materials->countDelivery($transfer, $user);
 
             return $transfer;
         });

@@ -95,7 +95,7 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                 <>
                     <FlowChain stage={data.stage} locale={locale} text={text} />
 
-                    <div className="ui-kpis six">
+                    <div className="ui-kpis eight">
                         {buildKpis(stage, data, text).map((kpi) => (
                             <article
                                 className={`panel ui-kpi ${kpi.alert ? 'alert' : ''}`}
@@ -165,6 +165,7 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                         <SendModal
                             lot={modal.lot}
                             stage={data.stage}
+                            to={modal.to}
                             locale={locale}
                             text={text}
                             onClose={close}

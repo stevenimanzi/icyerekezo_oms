@@ -10,6 +10,7 @@ import { CashSection } from './sections/CashSection';
 import { CustomersSection } from './sections/CustomersSection';
 import { EquipmentSection } from './sections/EquipmentSection';
 import { PeopleSection } from './sections/PeopleSection';
+import { ProductionFlowSection } from './sections/ProductionFlowSection';
 import { ProductionSection } from './sections/ProductionSection';
 import { QualitySection } from './sections/QualitySection';
 import { SafetySection } from './sections/SafetySection';
@@ -127,7 +128,16 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
 
                     <div className="ow-grid">
                         <CashSection data={data.cash} text={text} format={format} />
-                        <ProductionSection data={data.production} text={text} format={format} />
+                        {data.flow ? (
+                            <ProductionFlowSection
+                                data={data.flow}
+                                text={text}
+                                format={format}
+                                locale={locale}
+                            />
+                        ) : (
+                            <ProductionSection data={data.production} text={text} format={format} />
+                        )}
                         <StockSection data={data.stock} text={text} format={format} />
                         <CustomersSection data={data.customers} text={text} format={format} />
                         <QualitySection data={data.quality} text={text} format={format} />

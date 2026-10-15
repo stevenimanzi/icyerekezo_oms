@@ -30,6 +30,7 @@ Route::controller(ProductionFlowController::class)
         Route::post('/requests', 'storeRequest')->middleware('permission:production.execute');
         Route::post('/requests/{materialRequest}/decision', 'decide')->middleware('permission:inventory.issue');
         Route::post('/requests/{materialRequest}/cancel', 'cancelRequest')->middleware('permission:production.execute');
+        Route::post('/requests/{materialRequest}/answer', 'answerRequest')->middleware('permission:production.execute');
 
         Route::post('/cutting', 'cut')->middleware('permission:production.execute');
         Route::post('/fabric-loss', 'fabricLoss')->middleware('permission:production.execute');

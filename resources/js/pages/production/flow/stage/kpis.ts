@@ -6,6 +6,9 @@ export type Kpi = { label: string; value: number; alert?: boolean };
 export function buildKpis(stage: StageKey, data: StageOverview, text: FlowText): Kpi[] {
     const { summary } = data;
     const waitingRequests = data.requests.filter((request) => request.status === 'pending').length;
+    const lotsHere = data.lots.length;
+    const piecesDone = data.lots.reduce((sum, lot) => sum + lot.good, 0);
+    const fabricLeft = data.materials.reduce((sum, material) => sum + material.on_hand, 0);
 
     if (stage === 'cutting') {
         return [
@@ -19,6 +22,8 @@ export function buildKpis(stage: StageKey, data: StageOverview, text: FlowText):
             { label: text.kpi.sentToday, value: summary.sent_today },
             { label: text.kpi.requestsWaiting, value: waitingRequests },
             { label: text.work.cutTotal, value: data.lots.reduce((sum, lot) => sum + lot.cut, 0) },
+            { label: text.kpi.lots, value: lotsHere },
+            { label: text.kpi.fabricLeft, value: fabricLeft },
         ];
     }
 
@@ -34,6 +39,8 @@ export function buildKpis(stage: StageKey, data: StageOverview, text: FlowText):
             },
             { label: text.kpi.awaitingQuality, value: summary.awaiting_quality },
             { label: text.kpi.requestsWaiting, value: waitingRequests },
+            { label: text.kpi.lots, value: lotsHere },
+            { label: text.kpi.packedTotal, value: piecesDone },
         ];
     }
 
@@ -48,5 +55,7 @@ export function buildKpis(stage: StageKey, data: StageOverview, text: FlowText):
         },
         { label: text.kpi.readyToSend, value: summary.ready_to_send },
         { label: text.kpi.sentToday, value: summary.sent_today },
+        { label: text.kpi.lots, value: lotsHere },
+        { label: text.kpi.requestsWaiting, value: waitingRequests },
     ];
 }

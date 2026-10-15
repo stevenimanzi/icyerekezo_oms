@@ -4,33 +4,33 @@ import type { RegisterBlock, RegisterData } from './types';
 
 type Props = { register: RegisterData; text: ReportText; format: Format };
 
+type Columns = keyof ReportText['register']['columns'];
 type GroupSpec = {
-    id: number;
+    source: number | 'quality' | 'sales';
     label: keyof ReportText['register']['groups'];
-    columns: (keyof ReportText['register']['columns'])[];
+    columns: Columns[];
     numeric: number[];
-    total: number;
+    money?: number[];
 };
 
 const BLOCKS: Record<RegisterBlock, { colour: string; groups: GroupSpec[] }> = {
     wh: {
         colour: '#2E75B5',
         groups: [
-            { id: 0, label: 'fabricIn', columns: ['colour', 'metres'], numeric: [1], total: 1 },
-            { id: 1, label: 'accessoriesIn', columns: ['item', 'qty'], numeric: [1], total: 1 },
-            { id: 2, label: 'fabricOut', columns: ['colour', 'metres'], numeric: [1], total: 1 },
-            { id: 3, label: 'accessoriesOut', columns: ['item', 'qty'], numeric: [1], total: 1 },
+            { source: 0, label: 'fabricIn', columns: ['colour', 'metres'], numeric: [1] },
+            { source: 1, label: 'accessoriesIn', columns: ['item', 'qty'], numeric: [1] },
+            { source: 2, label: 'fabricOut', columns: ['colour', 'metres'], numeric: [1] },
+            { source: 3, label: 'accessoriesOut', columns: ['item', 'qty'], numeric: [1] },
         ],
     },
     cut: {
         colour: '#5FA02A',
         groups: [
             {
-                id: 4,
+                source: 4,
                 label: 'cut',
                 columns: ['colour', 'metresUsed', 'style', 'size', 'pieces'],
                 numeric: [1, 4],
-                total: 4,
             },
         ],
     },
@@ -38,49 +38,57 @@ const BLOCKS: Record<RegisterBlock, { colour: string; groups: GroupSpec[] }> = {
         colour: '#C55A11',
         groups: [
             {
-                id: 5,
+                source: 5,
                 label: 'received',
                 columns: ['colour', 'style', 'size', 'qty'],
                 numeric: [3],
-                total: 3,
             },
-            {
-                id: 6,
-                label: 'done',
-                columns: ['colour', 'style', 'size', 'qty'],
-                numeric: [3],
-                total: 3,
-            },
+            { source: 6, label: 'done', columns: ['colour', 'style', 'size', 'qty'], numeric: [3] },
         ],
     },
     fin: {
         colour: '#8F3EC4',
         groups: [
             {
-                id: 7,
+                source: 7,
                 label: 'received',
                 columns: ['colour', 'style', 'size', 'qty'],
                 numeric: [3],
-                total: 3,
             },
-            {
-                id: 8,
-                label: 'done',
-                columns: ['colour', 'style', 'size', 'qty'],
-                numeric: [3],
-                total: 3,
-            },
+            { source: 8, label: 'done', columns: ['colour', 'style', 'size', 'qty'], numeric: [3] },
         ],
     },
     stock: {
         colour: '#0070C0',
         groups: [
             {
-                id: 9,
+                source: 9,
                 label: 'packed',
                 columns: ['colour', 'style', 'size', 'qty'],
                 numeric: [3],
-                total: 3,
+            },
+        ],
+    },
+    quality: {
+        colour: '#C0392B',
+        groups: [
+            {
+                source: 'quality',
+                label: 'checks',
+                columns: ['colour', 'style', 'size', 'stage', 'checked', 'passed', 'rejected'],
+                numeric: [4, 5, 6],
+            },
+        ],
+    },
+    sales: {
+        colour: '#1E8E5A',
+        groups: [
+            {
+                source: 'sales',
+                label: 'sold',
+                columns: ['item', 'qty', 'value'],
+                numeric: [1, 2],
+                money: [2],
             },
         ],
     },
@@ -91,6 +99,26 @@ export function RegisterView({ register, text, format }: Props) {
     const t = text.register;
 
     if (!register.days.length) return <div className="ui-empty">{t.empty}</div>;
+
+    const cell = (
+        column: Columns,
+        group: GroupSpec,
+        index: number,
+        value: string | number | undefined,
+    ) => {
+        if (group.numeric.includes(index)) {
+            return group.money?.includes(index)
+                ? format.money(Number(value))
+                : format.number(Number(value));
+        }
+        if (column === 'stage')
+            return (
+                text.departments[String(value) as keyof typeof text.departments] ??
+                String(value ?? '')
+            );
+
+        return String(value ?? '') || text.none;
+    };
 
     return (
         <div className="rg">
@@ -112,14 +140,16 @@ export function RegisterView({ register, text, format }: Props) {
                                     <h3>{t.sections[key]}</h3>
                                     <div className="rg-groups">
                                         {block.groups.map((group) => {
-                                            const rows = day.groups[group.id] ?? [];
-                                            const total = rows.reduce(
-                                                (sum, row) => sum + Number(row[group.total] || 0),
-                                                0,
-                                            );
+                                            const rows =
+                                                (typeof group.source === 'number'
+                                                    ? day.groups[group.source]
+                                                    : day[group.source]) ?? [];
 
                                             return (
-                                                <div className="rg-group" key={group.id}>
+                                                <div
+                                                    className="rg-group"
+                                                    key={String(group.source)}
+                                                >
                                                     <h4>{t.groups[group.label]}</h4>
                                                     <table>
                                                         <thead>
@@ -158,23 +188,12 @@ export function RegisterView({ register, text, format }: Props) {
                                                                                             : ''
                                                                                     }
                                                                                 >
-                                                                                    {group.numeric.includes(
+                                                                                    {cell(
+                                                                                        column,
+                                                                                        group,
                                                                                         index,
-                                                                                    )
-                                                                                        ? format.number(
-                                                                                              Number(
-                                                                                                  row[
-                                                                                                      index
-                                                                                                  ],
-                                                                                              ),
-                                                                                          )
-                                                                                        : String(
-                                                                                              row[
-                                                                                                  index
-                                                                                              ] ??
-                                                                                                  '',
-                                                                                          ) ||
-                                                                                          text.none}
+                                                                                        row[index],
+                                                                                    )}
                                                                                 </td>
                                                                             ),
                                                                         )}
@@ -196,24 +215,45 @@ export function RegisterView({ register, text, format }: Props) {
                                                         {rows.length > 1 && (
                                                             <tfoot>
                                                                 <tr>
-                                                                    <td colSpan={group.total}>
-                                                                        {t.total}
-                                                                    </td>
-                                                                    <td className="num">
-                                                                        {format.number(total)}
-                                                                    </td>
-                                                                    {group.columns.length -
-                                                                        group.total -
-                                                                        1 >
-                                                                        0 && (
-                                                                        <td
-                                                                            colSpan={
-                                                                                group.columns
-                                                                                    .length -
-                                                                                group.total -
-                                                                                1
-                                                                            }
-                                                                        />
+                                                                    {group.columns.map(
+                                                                        (column, index) => (
+                                                                            <td
+                                                                                key={column}
+                                                                                className={
+                                                                                    group.numeric.includes(
+                                                                                        index,
+                                                                                    )
+                                                                                        ? 'num'
+                                                                                        : ''
+                                                                                }
+                                                                            >
+                                                                                {index === 0
+                                                                                    ? t.total
+                                                                                    : group.numeric.includes(
+                                                                                            index,
+                                                                                        )
+                                                                                      ? cell(
+                                                                                            column,
+                                                                                            group,
+                                                                                            index,
+                                                                                            rows.reduce(
+                                                                                                (
+                                                                                                    sum,
+                                                                                                    row,
+                                                                                                ) =>
+                                                                                                    sum +
+                                                                                                    Number(
+                                                                                                        row[
+                                                                                                            index
+                                                                                                        ] ||
+                                                                                                            0,
+                                                                                                    ),
+                                                                                                0,
+                                                                                            ),
+                                                                                        )
+                                                                                      : ''}
+                                                                            </td>
+                                                                        ),
                                                                     )}
                                                                 </tr>
                                                             </tfoot>

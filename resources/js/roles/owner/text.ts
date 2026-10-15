@@ -41,6 +41,14 @@ const en = {
             `${n} quality ${n === 1 ? 'inspection' : 'inspections'} failed this period`,
         payment_receipts: (n: number) =>
             `${n} payment ${n === 1 ? 'receipt is' : 'receipts are'} waiting for review`,
+        held_lots: (n: number) =>
+            `${n} production ${n === 1 ? 'lot is' : 'lots are'} on quality hold`,
+        stuck_deliveries: (n: number) =>
+            `${n} ${n === 1 ? 'delivery has' : 'deliveries have'} waited over a day to be received`,
+        material_requests: (n: number) =>
+            `${n} material ${n === 1 ? 'request is' : 'requests are'} waiting for the warehouse`,
+        final_check: (n: number) =>
+            `${n} packed ${n === 1 ? 'piece waits' : 'pieces wait'} for the final quality check`,
     } as Record<string, (n: number) => string>,
 
     kpi: {
@@ -64,6 +72,17 @@ const en = {
         payable: 'Owed to suppliers',
         receipts: 'Payment receipts to review',
         maintenance: 'Maintenance spending',
+    },
+    flow: {
+        title: 'Production flow',
+        headline: 'pieces in progress',
+        stageLine: (done: number, here: number) => `${done} done · ${here} here now`,
+        damaged: 'Damaged in this period',
+        lots: 'Lots in progress',
+        held: 'Lots on quality hold',
+        requests: 'Material requests waiting',
+        deliveries: 'Deliveries waiting to be received',
+        finalCheck: 'Packed pieces waiting for quality',
     },
     production: {
         title: 'Production',
@@ -199,6 +218,14 @@ const fr: typeof en = {
             `${n} inspection${n === 1 ? '' : 's'} qualité en échec sur la période`,
         payment_receipts: (n) =>
             `${n} reçu${n === 1 ? ' de paiement attend' : 's de paiement attendent'} une vérification`,
+        held_lots: (n) =>
+            `${n} lot${n === 1 ? ' de production est' : 's de production sont'} bloqué${n === 1 ? '' : 's'} par la qualité`,
+        stuck_deliveries: (n) =>
+            `${n} livraison${n === 1 ? ' attend' : 's attendent'} depuis plus d’un jour d’être reçue${n === 1 ? '' : 's'}`,
+        material_requests: (n) =>
+            `${n} demande${n === 1 ? ' de matières attend' : 's de matières attendent'} l’entrepôt`,
+        final_check: (n) =>
+            `${n} pièce${n === 1 ? ' emballée attend' : 's emballées attendent'} le contrôle qualité final`,
     },
 
     kpi: {
@@ -222,6 +249,17 @@ const fr: typeof en = {
         payable: 'Dû aux fournisseurs',
         receipts: 'Reçus de paiement à vérifier',
         maintenance: 'Dépenses de maintenance',
+    },
+    flow: {
+        title: 'Flux de production',
+        headline: 'pièces en cours',
+        stageLine: (done, here) => `${done} faites · ${here} ici maintenant`,
+        damaged: 'Abîmées sur la période',
+        lots: 'Lots en cours',
+        held: 'Lots bloqués par la qualité',
+        requests: 'Demandes de matières en attente',
+        deliveries: 'Livraisons à recevoir',
+        finalCheck: 'Pièces emballées en attente de la qualité',
     },
     production: {
         title: 'Production',
