@@ -181,12 +181,13 @@ export default function LogisticsOverviewPage({ initialTab = 'shipments', can = 
     const schoolOrderRows = (schoolOrders?.documents?.data || []).filter((x: any) => x.document_type === 'customer_order');
     const schoolOrdersLastPage = schoolOrders?.documents?.last_page || 1;
 
-    const tabs: [string, string, number][] = [
+    const allTabs: [string, string, number][] = [
         ['shipments', 'Shipments', summary.total_shipments],
         ['dispatch', 'Dispatch board', Number(summary.ready || 0) + Number(summary.in_transit || 0) + Number(summary.planned || 0)],
         ['vehicles', 'Vehicles and drivers', summary.vehicles],
         ['proof', 'Delivery confirmation', specialized ? (schoolOrders?.documents?.total || 0) : summary.proof_of_delivery],
-    ].filter(t => !specialized || t[0] === 'proof');
+    ];
+    const tabs = allTabs.filter((entry) => !specialized || entry[0] === 'proof');
 
     useEffect(() => {
         if (specialized && tab !== 'proof') {
