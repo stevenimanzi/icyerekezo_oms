@@ -1,5 +1,6 @@
 import React from 'react';
-import { Activity, Building2, CreditCard, MessageSquare, Users } from 'lucide-react';
+import { Activity } from 'lucide-react';
+
 import {
     CartesianGrid,
     Line,
@@ -17,25 +18,21 @@ export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
     const { data } = ctx;
     const s = data?.statistics || {};
     const growth = data?.growth || [];
-    const cards: [string, string | number, React.ElementType][] = [
-        ['Factories', s.factories || 0, Building2],
+    const cards: [string, string | number][] = [
+        ['Factories', s.factories || 0],
         [
             'Total revenue',
             s.revenue ? 'RWF ' + Number(s.revenue).toLocaleString() : 'RWF 0',
-            CreditCard,
         ],
-        ['Platform users', s.users || 0, Users],
-        ['Open support tickets', s.open_tickets || 0, MessageSquare],
+        ['Platform users', s.users || 0],
+        ['Open support tickets', s.open_tickets || 0],
     ];
 
     return (
         <>
             <div className="admin-metrics">
-                {cards.map(([label, value, CardIcon]) => (
+                {cards.map(([label, value]) => (
                     <article key={label}>
-                        <span>
-                            <CardIcon size={20} />
-                        </span>
                         <div>
                             <small>{label}</small>
                             <strong>{value}</strong>

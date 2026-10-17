@@ -579,9 +579,10 @@ svg.lucide {
     gap: 15px;
 }
 .metric-card {
-    min-height: 126px;
+    min-height: 116px;
     display: flex;
-    gap: 14px;
+    flex-direction: column;
+    justify-content: center;
     padding: 20px;
     background: var(--panel);
     border: 1px solid var(--line);
@@ -589,31 +590,7 @@ svg.lucide {
     box-shadow: 0 2px 5px #0f172a08;
 }
 .metric-icon {
-    width: 42px;
-    height: 42px;
-    flex: none;
-    display: grid;
-    place-items: center;
-    border-radius: 11px;
-}
-.metric-icon svg {
-    width: 19px;
-}
-.metric-icon.blue {
-    color: #2563eb;
-    background: transparent;
-}
-.metric-icon.amber {
-    color: #df7b1d;
-    background: transparent;
-}
-.metric-icon.violet {
-    color: #7c3aed;
-    background: transparent;
-}
-.metric-icon.green {
-    color: #159b66;
-    background: transparent;
+    display: none;
 }
 .metric-copy {
     min-width: 0;
@@ -1891,21 +1868,16 @@ tbody tr:last-child td {
 }
 .admin-metrics article {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 18px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 18px 20px;
     border: 1px solid var(--line);
     border-radius: 12px;
     background: var(--panel);
 }
 .admin-metrics article > span {
-    display: grid;
-    width: 42px;
-    height: 42px;
-    place-items: center;
-    border-radius: 11px;
-    background: transparent;
-    color: #2563eb;
+    display: none;
 }
 .admin-metrics small,
 .admin-metrics strong {

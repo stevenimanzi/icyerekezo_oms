@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, CreditCard, Plus, Save, TrendingUp, X } from 'lucide-react';
+import { CheckCircle2, CreditCard, Plus, Save, X } from 'lucide-react';
 import { AdminTable } from './AdminTable';
 import { Status } from './Status';
 import { dateAfter, localDate, planTemplates } from './planHelpers';
@@ -426,9 +426,6 @@ export function SubscriptionPanel({
 
             <div className="admin-metrics">
                 <article>
-                    <span>
-                        <CheckCircle2 size={20} />
-                    </span>
                     <div>
                         <small>Active Subscriptions</small>
                         <strong>{activeCount}</strong>
@@ -436,9 +433,6 @@ export function SubscriptionPanel({
                     </div>
                 </article>
                 <article>
-                    <span>
-                        <TrendingUp size={20} />
-                    </span>
                     <div>
                         <small>Monthly Recurring Revenue</small>
                         <strong>RWF {Number(mrr).toLocaleString()}</strong>
@@ -446,9 +440,6 @@ export function SubscriptionPanel({
                     </div>
                 </article>
                 <article>
-                    <span>
-                        <CreditCard size={20} />
-                    </span>
                     <div>
                         <small>Total Revenue</small>
                         <strong>RWF {Number(totalRev).toLocaleString()}</strong>
@@ -456,9 +447,6 @@ export function SubscriptionPanel({
                     </div>
                 </article>
                 <article>
-                    <span>
-                        <Clock size={20} />
-                    </span>
                     <div>
                         <small>Expiring & In Grace</small>
                         <strong>{expiringSoon + graceCount}</strong>
