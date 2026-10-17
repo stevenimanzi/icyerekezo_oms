@@ -74,7 +74,10 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
     if (own) {
         const summary = own.summary;
         if (summary.incoming > 0) attention.push(words.alertArriving(own.incoming.length));
-        const pending = own.requests.filter((request) => request.status === 'pending').length;
+        const waiting = own.requests.filter((request) => request.status === 'pending');
+        const asked = waiting.filter((request) => request.from_stage === own.stage.key).length;
+        if (asked > 0) attention.push(words.alertAsked(asked));
+        const pending = waiting.length - asked;
         if (pending > 0) attention.push(words.alertRequests(pending));
         const held = own.lots.filter((lot) => lot.held).length;
         if (held > 0) attention.push(words.alertHeld(held));

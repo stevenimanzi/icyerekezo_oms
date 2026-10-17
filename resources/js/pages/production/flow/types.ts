@@ -24,6 +24,9 @@ export type LotRow = {
     outbox: number;
     incoming: number;
     awaiting_quality: number;
+    ready_for_stock: number;
+    stock_pending: number;
+    in_stock: number;
     good: number;
     damaged: number;
     sent: number;

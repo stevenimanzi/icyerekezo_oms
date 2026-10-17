@@ -38,6 +38,10 @@ Route::controller(ProductionFlowController::class)
         Route::post('/lots/{lot}/send', 'send')->middleware('permission:production.execute');
         Route::post('/transfers/{transfer}/receive', 'receive')->middleware('permission:production.execute');
         Route::post('/transfers/{transfer}/cancel', 'cancelTransfer')->middleware('permission:production.execute');
+        Route::get('/stock-handovers', 'stockHandovers')->middleware('permission:inventory.view|production.view');
+        Route::post('/lots/{lot}/stock-handover', 'sendToStock')->middleware('permission:production.execute');
+        Route::post('/stock-handovers/{handover}/receive', 'receiveStock')->middleware('permission:inventory.issue');
+        Route::post('/stock-handovers/{handover}/cancel', 'cancelStockHandover')->middleware('permission:production.execute');
         Route::post('/entries/{entry}/void', 'voidEntry')->middleware('permission:production.execute');
 
         Route::post('/inspections', 'inspect')->middleware('permission:quality.inspect');

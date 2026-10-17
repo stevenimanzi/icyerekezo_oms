@@ -78,6 +78,8 @@ const en = {
         record: 'Record work',
         recordPacking: 'Record packing',
         recordStage: (stage: string) => `Record ${stage.toLowerCase()}`,
+        sendToStock: 'Send to stock',
+        readyForStock: 'Ready for stock',
         send: (to: string) => `Send to ${to}`,
         cutMore: 'Cut more',
         newCut: 'New cut',
@@ -107,6 +109,33 @@ const en = {
         save: 'Save record',
     },
 
+    stockHandover: {
+        title: 'Send to stock',
+        ready: (n: number) => `${n} pieces passed the quality check.`,
+        quantity: 'How many go to stock?',
+        note: 'Note (optional)',
+        confirm: 'Send to stock',
+        hint: 'The storekeeper counts them in. They only become sellable stock after that.',
+    },
+
+    stockReceive: {
+        title: 'Finished goods from Packing',
+        subtitle:
+            'Count the pieces in to put them on the shelf. They become sellable stock when you receive them.',
+        lot: 'Lot',
+        product: 'Product',
+        colour: 'Colour',
+        size: 'Size',
+        sent: 'Sent',
+        sentBy: 'Sent by',
+        receive: 'Receive',
+        modalTitle: (lot: string) => `Receive ${lot}`,
+        quantity: 'How many arrived?',
+        note: 'Note (required if fewer arrived)',
+        confirm: 'Receive into stock',
+        done: 'Received into stock.',
+    },
+
     send: {
         title: (to: string) => `Send to ${to}`,
         ready: (n: number) => `${n} pieces are ready to send.`,
@@ -128,8 +157,7 @@ const en = {
         size: 'Size',
         style: 'Style (optional)',
         fabric: 'Which fabric did you use?',
-        fabricNone:
-            'You have no fabric yet. Open “Request materials” and ask the warehouse for some.',
+        fabricNone: 'You have no fabric yet. Open “Requests” and ask the warehouse for some.',
         chooseFabric: 'Choose a fabric',
         onHand: (n: string, unit: string) => `${n} ${unit} left with cutting`,
         fabricUsed: 'How much fabric did you use?',
@@ -151,7 +179,7 @@ const en = {
     },
 
     requestsPage: {
-        title: 'Request materials',
+        title: 'Requests',
         subtitle:
             'Ask the stage before for finished pieces, or the warehouse for materials like zippers and thread. Follow every request here.',
         newRequest: 'New request',
@@ -201,6 +229,8 @@ const en = {
         requestTitle: 'New request',
         requestHint: 'The warehouse approves the request and the stock leaves its shelves.',
         whatKind: 'Who do you ask?',
+        noMaterials:
+            'No materials are set up in the warehouse yet, so there is nothing to request.',
         kindPieces: (from: string) => `${from} (finished pieces)`,
         kindMaterial: 'Warehouse (zippers, thread, buttons…)',
         piecesHint: (from: string) =>
@@ -376,6 +406,8 @@ const fr: typeof en = {
         record: 'Enregistrer le travail',
         recordPacking: 'Enregistrer l’emballage',
         recordStage: (stage) => `Enregistrer : ${stage.toLowerCase()}`,
+        sendToStock: 'Envoyer en stock',
+        readyForStock: 'Prêtes pour le stock',
         send: (to) => `Envoyer à ${to}`,
         cutMore: 'Couper plus',
         newCut: 'Nouvelle coupe',
@@ -406,6 +438,33 @@ const fr: typeof en = {
         save: 'Enregistrer',
     },
 
+    stockHandover: {
+        title: 'Envoyer en stock',
+        ready: (n) => `${n} pièces ont passé le contrôle qualité.`,
+        quantity: 'Combien partent en stock ?',
+        note: 'Note (facultatif)',
+        confirm: 'Envoyer en stock',
+        hint: 'Le magasinier les compte. Elles ne deviennent du stock vendable qu’après.',
+    },
+
+    stockReceive: {
+        title: 'Produits finis de l’emballage',
+        subtitle:
+            'Comptez les pièces pour les ranger. Elles deviennent du stock vendable à la réception.',
+        lot: 'Lot',
+        product: 'Produit',
+        colour: 'Couleur',
+        size: 'Taille',
+        sent: 'Envoyé',
+        sentBy: 'Envoyé par',
+        receive: 'Recevoir',
+        modalTitle: (lot) => `Recevoir ${lot}`,
+        quantity: 'Combien sont arrivées ?',
+        note: 'Note (obligatoire si moins)',
+        confirm: 'Recevoir en stock',
+        done: 'Reçu en stock.',
+    },
+
     send: {
         title: (to) => `Envoyer à ${to}`,
         ready: (n) => `${n} pièces sont prêtes à être envoyées.`,
@@ -428,7 +487,7 @@ const fr: typeof en = {
         style: 'Modèle (facultatif)',
         fabric: 'Quel tissu avez-vous utilisé ?',
         fabricNone:
-            'Vous n’avez pas encore de tissu. Ouvrez « Demander des matières » et demandez-en à l’entrepôt.',
+            'Vous n’avez pas encore de tissu. Ouvrez « Demandes » et demandez-en à l’entrepôt.',
         chooseFabric: 'Choisir un tissu',
         onHand: (n, unit) => `${n} ${unit} restants à la coupe`,
         fabricUsed: 'Quelle quantité de tissu avez-vous utilisée ?',
@@ -450,7 +509,7 @@ const fr: typeof en = {
     },
 
     requestsPage: {
-        title: 'Demander des matières',
+        title: 'Demandes',
         subtitle:
             'Demandez à l’étape précédente des pièces finies, ou à l’entrepôt des matières comme les fermetures et le fil. Suivez chaque demande ici.',
         newRequest: 'Nouvelle demande',
@@ -502,6 +561,8 @@ const fr: typeof en = {
         requestTitle: 'Nouvelle demande',
         requestHint: 'L’entrepôt approuve la demande et le stock quitte ses étagères.',
         whatKind: 'À qui demandez-vous ?',
+        noMaterials:
+            'Aucune matière n’est encore configurée dans l’entrepôt, il n’y a donc rien à demander.',
         kindPieces: (from) => `${from} (pièces finies)`,
         kindMaterial: 'Entrepôt (fermetures, fil, boutons…)',
         piecesHint: (from) =>

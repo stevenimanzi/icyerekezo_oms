@@ -7,6 +7,7 @@ use App\Models\MaterialRequest;
 use App\Models\ProductionEntry;
 use App\Models\ProductionLot;
 use App\Models\ProductionTransfer;
+use App\Models\StockHandover;
 use App\Services\ProductionFlow\FactoryReport;
 use App\Services\ProductionFlow\FlowAccess;
 use App\Services\ProductionFlow\FlowQueries;
@@ -244,6 +245,58 @@ class ProductionFlowController extends Controller
         $transfer = $service->send($request->user(), $lot, $data['from_stage'], (int) $data['quantity'], $data['note'] ?? null, $data['to_stage'] ?? null);
 
         return response()->json(['message' => "Sent {$transfer->quantity_sent} pieces to the next stage. They will count there once received.", 'transfer' => $transfer], 201);
+    }
+
+    public function stockHandovers(Request $request): JsonResponse
+    {
+        $access = FlowAccess::for($request->user());
+        $rows = StockHandover::with(['lot.product:id,name', 'sender:id,name', 'receiver:id,name'])
+            ->when(! $request->boolean('all'), fn ($query) => $query->where('status', 'sent'))
+            ->latest('id')->limit(100)->get()
+            ->map(fn (StockHandover $handover) => [
+                'id' => $handover->id,
+                'lot_number' => $handover->lot?->lot_number,
+                'product' => $handover->lot?->product?->name,
+                'color' => $handover->lot?->color,
+                'size' => $handover->lot?->size,
+                'quantity' => $handover->quantity,
+                'quantity_received' => $handover->quantity_received,
+                'status' => $handover->status,
+                'note' => $handover->note,
+                'sent_by' => $handover->sender?->name,
+                'received_by' => $handover->receiver?->name,
+                'sent_at' => $handover->sent_at?->toIso8601String(),
+                'received_at' => $handover->received_at?->toIso8601String(),
+            ]);
+
+        return response()->json(['capabilities' => ['receive' => $access->canApproveRequests()], 'handovers' => $rows]);
+    }
+
+    public function sendToStock(Request $request, ProductionLot $lot, ProductionFlowService $service): JsonResponse
+    {
+        $data = $request->validate([
+            'quantity' => ['required', 'integer', 'min:1', 'max:1000000'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $handover = $service->sendToStock($request->user(), $lot, (int) $data['quantity'], $data['note'] ?? null);
+
+        return response()->json(['message' => "Sent {$handover->quantity} pieces to stock. They count as stock once the storekeeper receives them.", 'handover' => $handover], 201);
+    }
+
+    public function receiveStock(Request $request, StockHandover $handover, ProductionFlowService $service): JsonResponse
+    {
+        $data = $request->validate([
+            'quantity' => ['required', 'integer', 'min:1', 'max:1000000'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        return response()->json(['message' => 'Received into stock.', 'handover' => $service->receiveIntoStock($request->user(), $handover, (int) $data['quantity'], $data['note'] ?? null)]);
+    }
+
+    public function cancelStockHandover(Request $request, StockHandover $handover, ProductionFlowService $service): JsonResponse
+    {
+        return response()->json(['message' => 'Handover taken back.', 'handover' => $service->cancelStockHandover($request->user(), $handover)]);
     }
 
     public function receive(Request $request, ProductionTransfer $transfer, ProductionFlowService $service): JsonResponse

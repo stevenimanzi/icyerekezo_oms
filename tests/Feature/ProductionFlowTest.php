@@ -299,6 +299,57 @@ class ProductionFlowTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_waiting_work_shows_in_notifications_can_be_read_and_comes_back_when_it_changes(): void
+    {
+        $this->approvedFabric();
+        $lot = $this->cutLot(100);
+        $this->as('sewing-operator')->getJson('/api/notifications')->assertOk()->assertJsonPath('unread_count', 0);
+
+        $this->send('cutting-operator', $lot, 'cutting', 40);
+        $list = $this->as('sewing-operator')->getJson('/api/notifications')->assertOk();
+        $this->assertSame(1, $list->json('unread_count'));
+        $this->assertSame('dyn-flow-deliveries-sewing', $list->json('notifications.0.id'));
+        $this->assertNull($list->json('notifications.0.read_at'));
+
+        $this->as('sewing-operator')->postJson('/api/notifications/dyn-flow-deliveries-sewing/read')->assertOk();
+        $this->as('sewing-operator')->getJson('/api/notifications')->assertJsonPath('unread_count', 0);
+
+        $this->send('cutting-operator', $lot, 'cutting', 20);
+        $this->as('sewing-operator')->getJson('/api/notifications')->assertJsonPath('unread_count', 1);
+
+        $this->as('sewing-operator')->postJson('/api/notifications/read-all')->assertOk();
+        $this->as('sewing-operator')->getJson('/api/notifications')->assertJsonPath('unread_count', 0);
+
+        $cutting = collect($this->as('cutting-operator')->getJson('/api/notifications')->json('notifications'));
+        $this->assertCount(0, $cutting->filter(fn (array $row) => str_starts_with($row['id'], 'dyn-')));
+    }
+
+    public function test_a_department_role_dashboard_only_carries_the_parts_its_permissions_allow(): void
+    {
+        $keeper = $this->as('warehouse-keeper')->getJson('/api/dashboard/role-overview')->assertOk()->json();
+        $this->assertContains('stock', $keeper['sections']);
+        $this->assertNotContains('cash', $keeper['sections']);
+        $this->assertArrayNotHasKey('cash', $keeper);
+        $this->assertNull($keeper['growth']['collected']);
+
+        $manager = $this->as('production-manager')->getJson('/api/dashboard/role-overview')->assertOk()->json();
+        $this->assertContains('flow', $manager['sections']);
+        $this->assertNotContains('production', $manager['sections'], 'A flow factory shows the stage flow, not the older production orders.');
+        $this->assertArrayNotHasKey('customers', $manager);
+    }
+
+    public function test_a_notification_is_saved_at_once_without_a_queue_worker(): void
+    {
+        $this->approvedFabric();
+        $this->as('sewing-operator')->postJson('/api/flow/requests', [
+            'stage' => 'sewing', 'item_id' => $this->fabric->id, 'quantity' => 2, 'reason' => 'Test request',
+        ])->assertCreated();
+
+        $this->as('warehouse-keeper')->getJson('/api/notifications')
+            ->assertJsonPath('notifications.0.data.title', 'Material requests to answer')
+            ->assertJsonFragment(['title' => 'New material request']);
+    }
+
     public function test_receiving_fewer_than_were_sent_needs_a_reason_and_is_tracked_as_missing(): void
     {
         $this->approvedFabric();
@@ -370,7 +421,21 @@ class ProductionFlowTest extends TestCase
 
         [$onHand, $held] = $this->packedStock($lot);
         $this->assertEquals(86, $onHand);
+        $this->assertEquals(86, $held, 'Passed pieces stay held until the storekeeper receives them.');
+        $this->assertSame(86, $this->stages($lot)['packing']['ready_for_stock']);
+
+        $this->as('packaging-operator')->postJson("/api/flow/lots/{$lot}/stock-handover", ['quantity' => 87])->assertUnprocessable();
+        $this->as('sewing-operator')->postJson("/api/flow/lots/{$lot}/stock-handover", ['quantity' => 10])->assertForbidden();
+        $handover = $this->as('packaging-operator')->postJson("/api/flow/lots/{$lot}/stock-handover", ['quantity' => 86])->assertCreated()->json('handover.id');
+        $this->assertSame(0, $this->stages($lot)['packing']['ready_for_stock']);
+        $this->as('packaging-operator')->postJson("/api/flow/stock-handovers/{$handover}/receive", ['quantity' => 86])->assertForbidden();
+        $this->as('warehouse-keeper')->postJson("/api/flow/stock-handovers/{$handover}/receive", ['quantity' => 80])->assertUnprocessable();
+        $this->as('warehouse-keeper')->postJson("/api/flow/stock-handovers/{$handover}/receive", ['quantity' => 86])->assertOk();
+
+        [$onHand, $held] = $this->packedStock($lot);
+        $this->assertEquals(86, $onHand);
         $this->assertEquals(0, $held);
+        $this->as('warehouse-keeper')->postJson("/api/flow/stock-handovers/{$handover}/receive", ['quantity' => 86])->assertUnprocessable();
 
         $balances = $this->as('production-manager')->getJson("/api/flow/lots/{$lot}")->json('balances');
         $this->assertSame(86, $balances['finished']);
@@ -473,6 +538,8 @@ class ProductionFlowTest extends TestCase
         $this->as('quality-officer')->postJson('/api/flow/inspections', [
             'lot_id' => $lot, 'stage' => 'packing', 'inspected_quantity' => 90, 'passed_quantity' => 86, 'rejected_quantity' => 4, 'defect_details' => 'Loose buttons',
         ])->assertCreated();
+        $handover = $this->as('packaging-operator')->postJson("/api/flow/lots/{$lot}/stock-handover", ['quantity' => 86])->assertCreated()->json('handover.id');
+        $this->as('warehouse-keeper')->postJson("/api/flow/stock-handovers/{$handover}/receive", ['quantity' => 86])->assertOk();
         $admin = $this->makeUser($this->factory, 'admin@test.test', 'factory-administrator');
         $this->actingAs($admin)->postJson('/api/sales/manual', [
             'customer_name' => 'Jean Claude', 'sale_date' => today()->toDateString(), 'paid_amount' => 50000, 'payment_method' => 'cash',

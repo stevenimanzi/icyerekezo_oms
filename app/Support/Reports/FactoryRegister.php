@@ -32,7 +32,7 @@ final class FactoryRegister
         $end = $to->copy()->endOfDay();
         $days = [];
 
-        $blank = fn () => ['groups' => array_fill(0, 10, []), 'quality' => [], 'sales' => [], 'cut_damaged' => [], 'sew_damaged' => []];
+        $blank = fn () => ['groups' => array_fill(0, 10, []), 'quality' => [], 'sales' => [], 'cut_damaged' => [], 'sew_damaged' => [], 'pack_received' => [], 'pack_damaged' => []];
         $add = function (string $date, int $group, array $row) use (&$days, $blank) {
             $days[$date] ??= $blank();
             $days[$date]['groups'][$group][] = $row;
@@ -70,6 +70,9 @@ final class FactoryRegister
             if ($entry->stage === 'cutting' && in_array('cutting', $allowed, true) && ($damaged > 0 || $waste > 0)) {
                 $extra($date, 'cut_damaged', [$colour, $style, $size, $damaged, $waste]);
             }
+            if ($entry->stage === 'packing' && in_array('packing', $allowed, true) && $damaged > 0) {
+                $extra($date, 'pack_damaged', [$colour, $style, $size, $damaged]);
+            }
             if ($entry->stage === 'sewing' && in_array('sewing', $allowed, true) && $damaged > 0) {
                 $extra($date, 'sew_damaged', [$colour, $style, $size, $damaged]);
             }
@@ -83,16 +86,21 @@ final class FactoryRegister
             };
         }
 
-        $received = ProductionTransfer::where('status', 'received')->whereIn('to_stage', ['sewing', 'finishing'])
+        $received = ProductionTransfer::where('status', 'received')->whereIn('to_stage', ['sewing', 'finishing', 'packing'])
             ->where('received_at', '>=', $start)->where('received_at', '<=', $end)
             ->with('lot.product:id,name')->get();
 
         foreach ($received as $transfer) {
-            $stage = $transfer->to_stage === 'sewing' ? 'sewing' : 'finishing';
+            $stage = $transfer->to_stage;
             if (! in_array($stage, $allowed, true)) {
                 continue;
             }
             $lot = $transfer->lot;
+            if ($stage === 'packing') {
+                $extra($transfer->received_at->toDateString(), 'pack_received', [(string) $lot?->color, (string) $lot?->product?->name, (string) $lot?->size, (float) $transfer->quantity_received]);
+
+                continue;
+            }
             $add($transfer->received_at->toDateString(), $stage === 'sewing' ? 5 : 7, [(string) $lot?->color, (string) $lot?->product?->name, (string) $lot?->size, (float) $transfer->quantity_received]);
         }
 
@@ -113,6 +121,8 @@ final class FactoryRegister
                 'quality' => $this->arrange($day['quality'], 0, 1, 2),
                 'cut_damaged' => $this->arrange($day['cut_damaged'], 0, 1, 2),
                 'sew_damaged' => $this->arrange($day['sew_damaged'], 0, 1, 2),
+                'pack_received' => $this->arrange($day['pack_received'], 0, 1, 2),
+                'pack_damaged' => $this->arrange($day['pack_damaged'], 0, 1, 2),
                 'sales' => collect($day['sales'])->sortByDesc(fn (array $row) => $row[1])->values()->all(),
             ];
         })->values()->all();

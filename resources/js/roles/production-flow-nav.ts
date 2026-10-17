@@ -17,7 +17,7 @@ export const requestMaterialsNav = (stage: Stage, { flags, text }: RoleContext):
               [
                   MATERIAL_PAGES[stage],
                   ClipboardList,
-                  text('Request materials', 'Demander des matières'),
+                  text('Requests', 'Demandes'),
                   'production.execute',
               ],
           ]

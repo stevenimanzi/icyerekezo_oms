@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
         'inspected_quantity',
         'passed_quantity',
         'rejected_quantity',
+        'stock_released',
         'result',
         'defect_details',
         'corrective_action',

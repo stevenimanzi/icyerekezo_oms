@@ -71,5 +71,7 @@ export type AppNotificationItem = {
     id: string;
     read_at: string | null;
     created_at: string;
-    data: { title: string; body: string; url?: string; category?: string };
+    data: { title: string; body: string; url?: string; category?: string; count?: number };
+    /** Work waiting for the person; it disappears by itself once it is done. */
+    pending?: boolean;
 };

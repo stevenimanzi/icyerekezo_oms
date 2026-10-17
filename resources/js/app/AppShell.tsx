@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { WifiOff } from 'lucide-react';
 import { api } from '../core/api';
 import { labels } from '../core/labels';
-import type { AuthUser } from '../core/types';
+import type { AppNotificationItem, AuthUser } from '../core/types';
 import { buildRoleContext, navGroupsFor } from '../roles/registry';
 import { useAppearance } from './hooks/useAppearance';
 import { useConnectivity } from './hooks/useConnectivity';
 import { useLowStockCount } from './hooks/useLowStockCount';
 import { useChatUnread } from './hooks/useChatUnread';
 import { useNotifications } from './hooks/useNotifications';
+import { NotificationToasts } from './NotificationCenter';
 import { usePageNavigation } from './hooks/usePageNavigation';
 import { createAccess, groupNav, visibleNav } from './navigation';
 import { PageRouter } from './PageRouter';
@@ -53,6 +54,11 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
 
     const { activePage, setActivePage } = usePageNavigation(user, allowedPages);
     const notifications = useNotifications(user, onMaintenance);
+    const openNotification = (item: AppNotificationItem) => {
+        if (!item.read_at) notifications.markRead(item.id);
+        notifications.dismissToast(item.pending ? `${item.id}:${item.data.count ?? ''}` : item.id);
+        if (item.data.url) setActivePage(pageKeyFromPath(user, item.data.url));
+    };
     const { isOnline, pendingSyncCount } = useConnectivity((url) =>
         setActivePage(pageKeyFromPath(user, url)),
     );
@@ -113,6 +119,7 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
                     onLocaleChange={setLocale}
                     onThemeChange={setDark}
                     onNavigate={setActivePage}
+                    onOpenNotification={openNotification}
                     onOpenMenu={() => setSidebarOpen(true)}
                     onLogout={onLogout}
                 />
@@ -146,6 +153,7 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
                     />
                 </div>
             </main>
+            <NotificationToasts state={notifications} locale={locale} onOpen={openNotification} />
             {notice && <div className="toast">{notice}</div>}
         </div>
     );

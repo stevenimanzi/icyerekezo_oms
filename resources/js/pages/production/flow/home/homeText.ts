@@ -20,6 +20,8 @@ const en = {
         `${n} ${n === 1 ? 'delivery is' : 'deliveries are'} waiting for you to receive`,
     alertRequests: (n: number) =>
         `${n} material ${n === 1 ? 'request is' : 'requests are'} waiting for the warehouse`,
+    alertAsked: (n: number) =>
+        `${n} ${n === 1 ? 'request asks' : 'requests ask'} your team for finished pieces`,
     alertHeld: (n: number) => `${n} ${n === 1 ? 'lot is' : 'lots are'} on quality hold`,
     alertFinal: (n: number) =>
         `${n} packed ${n === 1 ? 'piece waits' : 'pieces wait'} for the final quality check`,
@@ -29,7 +31,7 @@ const en = {
         `${n} ${n === 1 ? 'piece went' : 'pieces went'} missing between stages`,
     openStage: 'Open my work page',
     openFlow: 'Open the production flow',
-    openRequests: 'Request materials',
+    openRequests: 'Requests',
 };
 
 const fr: typeof en = {
@@ -51,6 +53,8 @@ const fr: typeof en = {
     alertArriving: (n) => `${n} livraison${n === 1 ? ' attend' : 's attendent'} votre réception`,
     alertRequests: (n) =>
         `${n} demande${n === 1 ? ' de matières attend' : 's de matières attendent'} l’entrepôt`,
+    alertAsked: (n) =>
+        `${n} ${n === 1 ? 'demande réclame' : 'demandes réclament'} des pièces finies à votre équipe`,
     alertHeld: (n) => `${n} lot${n === 1 ? ' est bloqué' : 's sont bloqués'} par la qualité`,
     alertFinal: (n) =>
         `${n} pièce${n === 1 ? ' emballée attend' : 's emballées attendent'} le contrôle qualité final`,
@@ -58,7 +62,7 @@ const fr: typeof en = {
     alertMissing: (n) => `${n} pièce${n === 1 ? ' a disparu' : 's ont disparu'} entre deux étapes`,
     openStage: 'Ouvrir ma page de travail',
     openFlow: 'Ouvrir le flux de production',
-    openRequests: 'Demander des matières',
+    openRequests: 'Demandes',
 };
 
 export const homeText: Record<Locale, typeof en> = { en, fr };

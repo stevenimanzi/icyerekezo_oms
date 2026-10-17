@@ -359,6 +359,9 @@ class FlowQueries
             'outbox' => $b['outbox'],
             'incoming' => $b['incoming'],
             'awaiting_quality' => $b['awaiting_quality'],
+            'ready_for_stock' => $b['ready_for_stock'] ?? 0,
+            'stock_pending' => $b['stock_pending'] ?? 0,
+            'in_stock' => $b['in_stock'] ?? 0,
             'good' => $b['good'],
             'damaged' => $b['damaged'],
             'sent' => $b['sent'],
@@ -456,7 +459,7 @@ class FlowQueries
         ];
     }
 
-    /** Open lots that have finished pieces waiting at the stage before this one, so a team can ask for a particular lot. */
+    /** Open lots that have pieces at the stage before this one, finished or still being worked, so a team can ask for them before they are sent. */
     private function lotsReadyBefore(string $stage): array
     {
         $previous = ProductionFlowCatalog::previous($stage);
@@ -474,7 +477,7 @@ class FlowQueries
             'product' => $lot->product?->name,
             'color' => $lot->color,
             'size' => $lot->size,
-            'ready' => (int) ($balances[$lot->id]['stages'][$previous]['outbox'] ?? 0),
+            'ready' => (int) ($balances[$lot->id]['stages'][$previous]['outbox'] ?? 0) + (int) ($balances[$lot->id]['stages'][$previous]['wip'] ?? 0),
         ])->filter(fn (array $row) => $row['ready'] > 0)->values()->all();
     }
 

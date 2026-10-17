@@ -11,10 +11,10 @@ import {
     UserRound,
 } from 'lucide-react';
 import type { Labels } from '../core/labels';
-import type { AuthUser, Locale } from '../core/types';
+import type { AppNotificationItem, AuthUser, Locale } from '../core/types';
 import { useGlobalSearch } from './hooks/useGlobalSearch';
 import type { NotificationsState } from './hooks/useNotifications';
-import { pageKeyFromPath } from './routing';
+import { NotificationCenter } from './NotificationCenter';
 
 type Props = {
     user: AuthUser;
@@ -25,6 +25,7 @@ type Props = {
     onLocaleChange: (locale: Locale) => void;
     onThemeChange: (dark: boolean) => void;
     onNavigate: (page: string) => void;
+    onOpenNotification: (item: AppNotificationItem) => void;
     onOpenMenu: () => void;
     onLogout: () => void;
 };
@@ -40,6 +41,7 @@ export function Topbar({
     onLocaleChange,
     onThemeChange,
     onNavigate,
+    onOpenNotification,
     onOpenMenu,
     onLogout,
 }: Props) {
@@ -70,12 +72,6 @@ export function Topbar({
             window.removeEventListener('keydown', shortcuts);
         };
     }, []);
-
-    const openNotification = (item: NotificationsState['notifications'][number]) => {
-        if (!item.read_at) notifications.markRead(item.id);
-        setPopover(null);
-        if (item.data.url) onNavigate(pageKeyFromPath(user, item.data.url));
-    };
 
     const initials = user.name
         .split(' ')
@@ -150,55 +146,23 @@ export function Topbar({
                         onClick={() => toggle('notifications')}
                     >
                         <Bell size={19} />
-                        <b>{notifications.unreadCount + notifications.announcements.length}</b>
+                        {notifications.unreadCount + notifications.announcements.length > 0 && (
+                            <b>{notifications.unreadCount + notifications.announcements.length}</b>
+                        )}
                     </button>
                     {popover === 'notifications' && (
-                        <div className="top-popover notification-menu">
-                            <strong>Notifications</strong>
-                            {notifications.notifications.length ? (
-                                notifications.notifications.slice(0, 4).map((item) => (
-                                    <span
-                                        key={item.id}
-                                        style={{
-                                            cursor: 'pointer',
-                                            opacity: item.read_at ? 0.62 : 1,
-                                        }}
-                                        onClick={() => openNotification(item)}
-                                    >
-                                        <b>{item.data.title}</b>
-                                        {item.data.body}
-                                    </span>
-                                ))
-                            ) : notifications.announcements.length ? (
-                                notifications.announcements.slice(0, 4).map((item) => (
-                                    <span key={item.id}>
-                                        <b>{item.title}</b>
-                                        {item.message}
-                                    </span>
-                                ))
-                            ) : (
-                                <span>
-                                    {text('No new notifications', 'Aucune nouvelle notification')}
-                                </span>
-                            )}
-                            {!notifications.pushSubscribed && (
-                                <button onClick={notifications.enablePush}>
-                                    <Bell size={14} />
-                                    {text(
-                                        'Enable browser notifications',
-                                        'Activer les notifications',
-                                    )}
-                                </button>
-                            )}
-                            <button
-                                onClick={() => {
-                                    setPopover(null);
-                                    onNavigate('notifications');
-                                }}
-                            >
-                                {text('View all notifications', 'Voir toutes les notifications')}
-                            </button>
-                        </div>
+                        <NotificationCenter
+                            state={notifications}
+                            locale={locale}
+                            onOpen={(item) => {
+                                setPopover(null);
+                                onOpenNotification(item);
+                            }}
+                            onViewAll={() => {
+                                setPopover(null);
+                                onNavigate('notifications');
+                            }}
+                        />
                     )}
                 </div>
                 <div className="popover-anchor">

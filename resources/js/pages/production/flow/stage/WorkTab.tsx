@@ -9,6 +9,7 @@ export type WorkModal =
     | { kind: 'receive'; transfer: TransferRow }
     | { kind: 'record'; lot?: LotRow }
     | { kind: 'send'; lot: LotRow; to: StageKey }
+    | { kind: 'stock'; lot: LotRow }
     | { kind: 'cut'; lot?: LotRow }
     | { kind: 'loss' };
 
@@ -48,7 +49,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                 />
             </article>
 
-            {!isCutting && (
+            {!isCutting && data.incoming.length > 0 && (
                 <article className="panel">
                     <div className="panel-title">
                         <h2>{text.work.arrivingTitle()}</h2>
@@ -149,6 +150,9 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                         <th className="num">
                                             {isPacking ? text.work.qcWaiting : text.work.ready}
                                         </th>
+                                        {isPacking && (
+                                            <th className="num">{text.work.readyForStock}</th>
+                                        )}
                                         <th className="num">{text.work.damaged}</th>
                                     </>
                                 )}
@@ -206,6 +210,11 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                         )}
                                                     </b>
                                                 </td>
+                                                {isPacking && (
+                                                    <td className="num">
+                                                        <b>{format.whole(lot.ready_for_stock)}</b>
+                                                    </td>
+                                                )}
                                                 <td className="num">{format.whole(lot.damaged)}</td>
                                             </>
                                         )}
@@ -238,6 +247,17 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                                   )}
                                                         </button>
                                                     )}
+                                                    {isPacking && lot.ready_for_stock > 0 && (
+                                                        <button
+                                                            className="secondary-btn"
+                                                            disabled={lot.held}
+                                                            onClick={() =>
+                                                                onModal({ kind: 'stock', lot })
+                                                            }
+                                                        >
+                                                            {text.work.sendToStock} →
+                                                        </button>
+                                                    )}
                                                     {lot.outbox > 0 &&
                                                         stage.destinations.map((to) => (
                                                             <button
@@ -265,7 +285,10 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={isCutting ? 8 : 10} className="empty">
+                                    <td
+                                        colSpan={isCutting ? 8 : isPacking ? 11 : 10}
+                                        className="empty"
+                                    >
                                         {filters.active && here.length
                                             ? text.work.noMatch
                                             : isCutting

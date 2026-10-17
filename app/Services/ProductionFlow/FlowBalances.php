@@ -5,6 +5,7 @@ namespace App\Services\ProductionFlow;
 use App\Models\ProductionEntry;
 use App\Models\ProductionTransfer;
 use App\Models\QualityInspection;
+use App\Models\StockHandover;
 use App\Support\Catalogs\ProductionFlowCatalog;
 use Illuminate\Support\Collection;
 
@@ -50,6 +51,13 @@ final class FlowBalances
             ->get()
             ->groupBy('lot_id');
 
+        $last = ProductionFlowCatalog::keys()[count(ProductionFlowCatalog::keys()) - 1];
+        $unreleased = QualityInspection::whereIn('lot_id', $lotIds)->where('stage', $last)->where('stock_released', false)
+            ->selectRaw('lot_id, SUM(passed_quantity) as passed')->groupBy('lot_id')->pluck('passed', 'lot_id');
+        $handovers = StockHandover::whereIn('lot_id', $lotIds)->whereIn('status', ['sent', 'received'])
+            ->selectRaw("lot_id, SUM(CASE WHEN status = 'sent' THEN quantity ELSE 0 END) as pending, SUM(CASE WHEN status = 'received' THEN quantity ELSE 0 END) as received")
+            ->groupBy('lot_id')->get()->keyBy('lot_id');
+
         $balances = [];
 
         foreach ($lotIds as $lotId) {
@@ -59,6 +67,15 @@ final class FlowBalances
                 $arrived->get($lotId, collect())->keyBy('stage'),
                 $inspections->get($lotId, collect())->keyBy('stage'),
             );
+        }
+
+        foreach ($balances as $lotId => $balance) {
+            $pending = (int) ($handovers[$lotId]->pending ?? 0);
+            $received = (int) ($handovers[$lotId]->received ?? 0);
+
+            $balances[$lotId]['stages'][$last]['ready_for_stock'] = max(0, (int) ($unreleased[$lotId] ?? 0) - $pending - $received);
+            $balances[$lotId]['stages'][$last]['stock_pending'] = $pending;
+            $balances[$lotId]['stages'][$last]['in_stock'] = $received;
         }
 
         return $balances;

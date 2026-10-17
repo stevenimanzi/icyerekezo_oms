@@ -3,14 +3,11 @@
 namespace App\Notifications;
 
 use App\Notifications\Channels\WebPushChannel;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class AppNotification extends Notification implements ShouldQueue
+/** Saved at once (no queue worker needed); the browser push is sent right after the response. */
+class AppNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public string $title,
         public string $body,

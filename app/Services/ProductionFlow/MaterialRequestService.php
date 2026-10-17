@@ -73,10 +73,11 @@ class MaterialRequestService
 
         $lot = ProductionLot::findOrFail($data['lot_id'] ?? 0);
         $quantity = (int) $data['quantity'];
-        $ready = app(FlowBalances::class)->forLot($lot->id)['stages'][$from]['outbox'];
+        $before = app(FlowBalances::class)->forLot($lot->id)['stages'][$from];
+        $ready = $before['outbox'] + $before['wip'];
 
         if ($quantity > $ready) {
-            throw ValidationException::withMessages(['quantity' => "Only {$ready} pieces of {$lot->lot_number} are ready to send."]);
+            throw ValidationException::withMessages(['quantity' => "Only {$ready} pieces of {$lot->lot_number} are at {$from}."]);
         }
 
         $request = MaterialRequest::create([

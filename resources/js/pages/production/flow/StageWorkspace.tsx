@@ -12,6 +12,7 @@ import { ReceiveModal } from './stage/ReceiveModal';
 import { RecordWorkModal } from './stage/RecordWorkModal';
 import { ReportTab } from './stage/ReportTab';
 import { SendModal } from './stage/SendModal';
+import { SendStockModal } from './stage/SendStockModal';
 import { stageLabel } from './stages';
 import { WorkTab, type WorkModal } from './stage/WorkTab';
 import { buildKpis } from './stage/kpis';
@@ -184,6 +185,9 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                             onClose={close}
                             onDone={done}
                         />
+                    )}
+                    {modal?.kind === 'stock' && (
+                        <SendStockModal lot={modal.lot} text={text} onClose={close} onDone={done} />
                     )}
                     {modal?.kind === 'cut' && (
                         <CutModal

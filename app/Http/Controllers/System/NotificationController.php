@@ -6,105 +6,99 @@ use App\Http\Controllers\Controller;
 use App\Models\PushSubscription;
 use App\Models\SalesDocument;
 use App\Models\SupportTicket;
+use App\Support\Notifications\PendingWork;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class NotificationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $notifications = $user->notifications()->latest()->limit(30)->get();
+        $notifications = $user->notifications()->latest()->limit(30)->get()->map(fn ($row) => $row->toArray());
         $unreadCount = $user->unreadNotifications()->count();
 
-        if ($user->current_factory_id) {
-            $pendingOrders = SalesDocument::where('factory_id', $user->current_factory_id)
-                ->where('document_type', 'customer_order')
-                ->where('status', 'pending')
-                ->count();
+        $pending = collect($this->pending($user))->map(function (array $item) use ($user) {
+            $read = Cache::get($this->readKey($user->id, $item['id'])) === $item['count'];
 
-            if ($pendingOrders > 0) {
-                $notifications->prepend([
-                    'id' => 'dyn-orders',
-                    'type' => 'App\Notifications\IncomingOrder',
-                    'data' => [
-                        'title' => 'Incoming Orders',
-                        'body' => "You have $pendingOrders incoming customer order(s) pending your review.",
-                        'url' => '/app/sales',
-                        'icon' => 'shopping-cart',
-                    ],
-                    'read_at' => null,
-                    'created_at' => now()->toIso8601String(),
-                ]);
-                $unreadCount++;
-            }
-
-            $openTickets = SupportTicket::where('factory_id', $user->current_factory_id)
-                ->whereNotIn('status', ['resolved', 'closed'])
-                ->count();
-
-            if ($openTickets > 0) {
-                $notifications->prepend([
-                    'id' => 'dyn-tickets-factory',
-                    'type' => 'App\Notifications\SupportTicket',
-                    'data' => [
-                        'title' => 'Open Support Tickets',
-                        'body' => "You have $openTickets open support ticket(s) awaiting resolution.",
-                        'url' => '/app/support',
-                        'icon' => 'message-square',
-                    ],
-                    'read_at' => null,
-                    'created_at' => now()->toIso8601String(),
-                ]);
-                $unreadCount++;
-            }
-        }
-
-        if ($user->is_platform_admin) {
-            $openTickets = SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count();
-
-            if ($openTickets > 0) {
-                $notifications->prepend([
-                    'id' => 'dyn-tickets-admin',
-                    'type' => 'App\Notifications\SupportTicket',
-                    'data' => [
-                        'title' => 'Unanswered Support Tickets',
-                        'body' => "There are $openTickets support ticket(s) across the platform waiting for a response.",
-                        'url' => '/admin',
-                        'icon' => 'message-square',
-                    ],
-                    'read_at' => null,
-                    'created_at' => now()->toIso8601String(),
-                ]);
-                $unreadCount++;
-            }
-        }
+            return [
+                'id' => $item['id'],
+                'type' => 'pending',
+                'data' => ['title' => $item['title'], 'body' => $item['body'], 'url' => $item['url'], 'category' => $item['category'], 'count' => $item['count']],
+                'read_at' => $read ? now()->toIso8601String() : null,
+                'created_at' => now()->toIso8601String(),
+                'pending' => true,
+            ];
+        });
 
         return response()->json([
-            'notifications' => collect($notifications)->values(),
-            'unread_count' => $unreadCount,
+            'notifications' => $pending->concat($notifications)->values(),
+            'unread_count' => $unreadCount + $pending->whereNull('read_at')->count(),
         ]);
     }
 
     public function markRead(Request $request, string $id): JsonResponse
     {
+        $user = $request->user();
+
         if (str_starts_with($id, 'dyn-')) {
-            return response()->json(['body' => 'Dynamic notification acknowledged']);
+            $item = collect($this->pending($user))->firstWhere('id', $id);
+            if ($item) {
+                Cache::put($this->readKey($user->id, $id), $item['count'], now()->addDays(30));
+            }
+
+            return response()->json(['body' => 'Notification marked as read']);
         }
-        $notification = $request->user()->notifications()->whereKey($id)->firstOrFail();
-        $notification->markAsRead();
+
+        $user->notifications()->whereKey($id)->firstOrFail()->markAsRead();
 
         return response()->json(['body' => 'Notification marked as read']);
     }
 
     public function markAllRead(Request $request): JsonResponse
     {
-        $request
-            ->user()
-            ->unreadNotifications()
-            ->update(['read_at' => now()]);
+        $user = $request->user();
+
+        foreach ($this->pending($user) as $item) {
+            Cache::put($this->readKey($user->id, $item['id']), $item['count'], now()->addDays(30));
+        }
+        $user->unreadNotifications()->update(['read_at' => now()]);
 
         return response()->json(['body' => 'All notifications marked as read']);
+    }
+
+    /** Work waiting for this person: sales orders, support tickets and the production flow. Each one returns when its count changes. */
+    private function pending($user): array
+    {
+        $items = [];
+        $factoryId = $user->current_factory_id;
+
+        if ($factoryId && $user->hasPermission('sales.view')) {
+            $orders = SalesDocument::where('factory_id', $factoryId)->where('document_type', 'customer_order')->where('status', 'pending')->count();
+            if ($orders > 0) {
+                $items[] = ['id' => 'dyn-orders', 'title' => 'Incoming orders', 'body' => "You have {$orders} incoming customer order(s) pending your review.", 'url' => '/app/sales', 'category' => 'sales', 'count' => $orders];
+            }
+
+            $tickets = $user->hasPermission('users.view') ? SupportTicket::where('factory_id', $factoryId)->whereNotIn('status', ['resolved', 'closed'])->count() : 0;
+            if ($tickets > 0) {
+                $items[] = ['id' => 'dyn-tickets-factory', 'title' => 'Open support tickets', 'body' => "You have {$tickets} open support ticket(s) awaiting resolution.", 'url' => '/app/support', 'category' => 'support', 'count' => $tickets];
+            }
+        }
+
+        if ($user->is_platform_admin) {
+            $tickets = SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count();
+            if ($tickets > 0) {
+                $items[] = ['id' => 'dyn-tickets-admin', 'title' => 'Unanswered support tickets', 'body' => "There are {$tickets} support ticket(s) across the platform waiting for a response.", 'url' => '/admin', 'category' => 'support', 'count' => $tickets];
+            }
+        }
+
+        return [...$items, ...PendingWork::for($user)];
+    }
+
+    private function readKey(int $userId, string $id): string
+    {
+        return "notification-read:{$userId}:{$id}";
     }
 
     public function vapidPublicKey(): JsonResponse

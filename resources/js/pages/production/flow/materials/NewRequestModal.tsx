@@ -31,6 +31,7 @@ export function NewRequestModal({
     onDone,
 }: Props) {
     const t = text.materials;
+    const hasMaterials = options.length > 0;
     const [kind, setKind] = useState<Kind>(previous ? 'stage' : 'warehouse');
     const [itemId, setItemId] = useState('');
     const [lotId, setLotId] = useState('');
@@ -87,7 +88,7 @@ export function NewRequestModal({
         >
             {error && <div className="ui-error">{error}</div>}
 
-            {previous && (
+            {previous && hasMaterials && (
                 <label className="ui-field">
                     {t.whatKind}
                     <select value={kind} onChange={(event) => setKind(event.target.value as Kind)}>
@@ -113,7 +114,9 @@ export function NewRequestModal({
                 </label>
             )}
 
-            {!pieces && (
+            {!pieces && !hasMaterials && <div className="ui-empty">{t.noMaterials}</div>}
+
+            {!pieces && hasMaterials && (
                 <label className="ui-field">
                     {t.requestItem}
                     <select value={itemId} onChange={(event) => setItemId(event.target.value)}>

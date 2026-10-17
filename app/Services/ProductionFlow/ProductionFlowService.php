@@ -8,6 +8,7 @@ use App\Models\ProductionEntry;
 use App\Models\ProductionLot;
 use App\Models\ProductionTransfer;
 use App\Models\QualityInspection;
+use App\Models\StockHandover;
 use App\Models\StockTransaction;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -357,6 +358,7 @@ class ProductionFlowService
                 'inspected_quantity' => $inspected,
                 'passed_quantity' => $passed,
                 'rejected_quantity' => $rejected,
+                'stock_released' => ! ($isFinalGate && $passed > 0),
                 'result' => $result,
                 'defect_details' => $data['defect_details'] ?? null,
                 'notes' => $data['notes'] ?? null,
@@ -456,14 +458,108 @@ class ProductionFlowService
         $warehouseId = $origin?->warehouse_id ?? $this->finishedGoodsWarehouse()->id;
         $common = ['item_id' => $lot->product_item_id, 'warehouse_id' => $warehouseId, 'reference_type' => $inspection->getMorphClass(), 'reference_id' => $inspection->id];
 
-        if ($passed > 0) {
-            $this->ledger->post($common + ['type' => 'release_quarantine', 'quantity' => $passed, 'reason' => "Passed quality check {$inspection->inspection_number}: {$lot->lot_number}"]);
-        }
-
         if ($rejected > 0) {
             $this->ledger->post($common + ['type' => 'release_quarantine', 'quantity' => $rejected, 'reason' => "Rejected at quality check {$inspection->inspection_number}"]);
             $this->ledger->post($common + ['type' => 'waste', 'quantity' => $rejected, 'reason' => "Rejected at quality check {$inspection->inspection_number}: {$lot->lot_number}"]);
         }
+    }
+
+    /** Packing hands pieces that passed the final check to the storekeeper. They stay out of sellable stock until received. */
+    public function sendToStock(User $user, ProductionLot $lot, int $quantity, ?string $note): StockHandover
+    {
+        $this->requireStageAccess($user, ProductionFlowCatalog::keys()[count(ProductionFlowCatalog::keys()) - 1]);
+
+        return DB::transaction(function () use ($user, $lot, $quantity, $note) {
+            $lot = $this->lockLot($lot->id);
+            $this->requireActive($lot);
+            $last = ProductionFlowCatalog::keys()[count(ProductionFlowCatalog::keys()) - 1];
+            $ready = $this->balances->forLot($lot->id)['stages'][$last]['ready_for_stock'];
+
+            if ($quantity < 1 || $quantity > $ready) {
+                throw ValidationException::withMessages(['quantity' => "Only {$ready} pieces have passed the quality check and are ready to go to stock."]);
+            }
+
+            $handover = StockHandover::create([
+                'lot_id' => $lot->id,
+                'quantity' => $quantity,
+                'status' => 'sent',
+                'note' => $note,
+                'sent_by' => $user->id,
+                'sent_at' => now(),
+            ]);
+
+            AuditLog::record('production.stock_sent', "Sent {$quantity} of {$lot->lot_number} to stock", $handover);
+
+            FactoryNotifier::notifyRoles(
+                $user->current_factory_id,
+                ProductionFlowCatalog::WAREHOUSE_ROLES,
+                'Finished goods to receive',
+                "Packing sent {$quantity} {$lot->product?->name} ({$lot->lot_number}) to stock. Receive them to put them on the shelf.",
+                '/warehouse/stock-in',
+                'inventory',
+                $user->id,
+            );
+
+            return $handover->load('lot');
+        });
+    }
+
+    /** The storekeeper counts the pieces in. Only now do they become sellable stock. */
+    public function receiveIntoStock(User $user, StockHandover $handover, int $quantity, ?string $note): StockHandover
+    {
+        abort_unless(FlowAccess::for($user)->canApproveRequests(), 403, 'Only the warehouse can receive finished goods.');
+
+        return DB::transaction(function () use ($user, $handover, $quantity, $note) {
+            $handover = StockHandover::lockForUpdate()->findOrFail($handover->id);
+            abort_unless($handover->status === 'sent', 422, 'This handover was already received or cancelled.');
+
+            if ($quantity < 1 || $quantity > $handover->quantity) {
+                throw ValidationException::withMessages(['quantity' => "Enter a number from 1 to {$handover->quantity}."]);
+            }
+
+            if ($quantity < $handover->quantity && ! trim((string) $note)) {
+                throw ValidationException::withMessages(['note' => 'Fewer pieces arrived than were sent. Please say what happened.']);
+            }
+
+            $lot = $this->lockLot($handover->lot_id);
+            $origin = StockTransaction::where('item_id', $lot->product_item_id)->where('type', 'production_output')->latest('id')->first();
+            $warehouseId = $origin?->warehouse_id ?? $this->finishedGoodsWarehouse()->id;
+
+            $this->ledger->post([
+                'item_id' => $lot->product_item_id,
+                'warehouse_id' => $warehouseId,
+                'quantity' => $quantity,
+                'type' => 'release_quarantine',
+                'reference_type' => $handover->getMorphClass(),
+                'reference_id' => $handover->id,
+                'reason' => "Received from packing: {$lot->lot_number}",
+            ]);
+
+            $handover->update([
+                'status' => 'received',
+                'quantity_received' => $quantity,
+                'receive_note' => $note,
+                'warehouse_id' => $warehouseId,
+                'received_by' => $user->id,
+                'received_at' => now(),
+            ]);
+
+            AuditLog::record('production.stock_received', "Received {$quantity} of {$lot->lot_number} into stock", $handover);
+            FactoryNotifier::notifyUser((int) $handover->sent_by, 'Finished goods received', "{$quantity} of {$lot->lot_number} are now in stock.", '/packing/packing-workspace', 'inventory');
+
+            return $handover->load('lot');
+        });
+    }
+
+    public function cancelStockHandover(User $user, StockHandover $handover): StockHandover
+    {
+        $this->requireStageAccess($user, ProductionFlowCatalog::keys()[count(ProductionFlowCatalog::keys()) - 1]);
+        abort_unless($handover->status === 'sent', 422, 'Only a handover that was not received yet can be taken back.');
+
+        $handover->update(['status' => 'cancelled']);
+        AuditLog::record('production.stock_cancelled', "Took back handover of {$handover->quantity} pieces", $handover);
+
+        return $handover;
     }
 
     private function finishedGoodsWarehouse(): Warehouse
