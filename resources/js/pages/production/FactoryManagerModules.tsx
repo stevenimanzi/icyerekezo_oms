@@ -759,7 +759,6 @@ export function TeamManagementPage() {
                     <section className="team-user-metrics">
                         {metrics.map((item) => (
                             <article className="panel" key={item.label}>
-                                <span className={item.tone || ''}>{item.icon}</span>
                                 <div>
                                     <small>{item.label}</small>
                                     <strong>{item.value}</strong>
