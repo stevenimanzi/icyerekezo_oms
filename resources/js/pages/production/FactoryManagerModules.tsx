@@ -12,10 +12,7 @@ import {
     Save,
     Settings,
     Trash2,
-    UserCheck,
-    UserMinus,
     UserPlus,
-    Users,
     X,
 } from 'lucide-react';
 import { startPolling } from '../../core/polling';
@@ -673,28 +670,21 @@ export function TeamManagementPage() {
             label: 'Total users',
             value: statistics.total_users || 0,
             detail: 'People with factory access',
-            icon: <Users />,
         },
         {
             label: 'Active users',
             value: statistics.active_users || 0,
             detail: 'Can sign in and work',
-            icon: <UserCheck />,
-            tone: 'green',
         },
         {
             label: 'Assigned users',
             value: statistics.assigned_users || 0,
             detail: 'Placed in a department',
-            icon: <UserPlus />,
-            tone: 'blue',
         },
         {
             label: 'Not assigned',
             value: statistics.unassigned_users || 0,
             detail: 'Need a department',
-            icon: <UserMinus />,
-            tone: 'amber',
         },
     ];
 
