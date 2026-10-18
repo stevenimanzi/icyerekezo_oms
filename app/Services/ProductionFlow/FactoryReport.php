@@ -110,8 +110,23 @@ class FactoryReport
             ->map(fn (Collection $rows, string $day) => ['day' => $day, 'good' => (int) $rows->sum('good_quantity'), 'damaged' => (int) $rows->sum('damaged_quantity')])
             ->sortKeys()->values()->all();
 
-        $lots = $entries->groupBy('lot_id')->map(function (Collection $rows) {
+        $qcChecks = QualityInspection::where('stage', $stage)
+            ->where('created_at', '>=', $start)
+            ->where('created_at', '<=', $end)
+            ->get();
+        $qcInspected = (int) $qcChecks->sum('inspected_quantity');
+        $qcPassed = (int) $qcChecks->sum('passed_quantity');
+        $qcRejected = (int) $qcChecks->sum('rejected_quantity');
+        $lotQc = $qcChecks->groupBy('lot_id');
+
+        $lots = $entries->groupBy('lot_id')->map(function (Collection $rows) use ($lotQc) {
             $lot = $rows->first()->lot;
+            $inspections = $lotQc->get($lot?->id, collect());
+            $good = (int) $rows->sum('good_quantity');
+            $damaged = (int) $rows->sum('damaged_quantity');
+            $qcPassed = (int) $inspections->sum('passed_quantity');
+            $qcRejected = (int) $inspections->sum('rejected_quantity');
+            $qcInspected = (int) $inspections->sum('inspected_quantity');
 
             return [
                 'lot_number' => $lot?->lot_number,
@@ -119,8 +134,12 @@ class FactoryReport
                 'color' => $lot?->color,
                 'size' => $lot?->size,
                 'fabric' => $lot?->fabric?->name,
-                'good' => (int) $rows->sum('good_quantity'),
-                'damaged' => (int) $rows->sum('damaged_quantity'),
+                'good' => $good,
+                'damaged' => $damaged,
+                'qc_inspected' => $qcInspected,
+                'qc_passed' => $qcPassed,
+                'qc_rejected' => $qcRejected,
+                'qc_status' => $qcInspected === 0 ? ($good > 0 ? 'verified' : 'pending') : ($qcRejected === 0 ? 'passed' : 'defects'),
             ];
         })->sortByDesc('good')->values()->take(60)->all();
 
@@ -135,6 +154,14 @@ class FactoryReport
             'waiting_now' => (int) $now->sum('wip'),
             'ready_now' => (int) $now->sum('outbox'),
             'waiting_quality_now' => (int) $now->sum('awaiting_quality'),
+            'quality' => [
+                'checks' => $qcChecks->count(),
+                'inspected' => $qcInspected,
+                'passed' => $qcPassed,
+                'rejected' => $qcRejected,
+                'pass_rate' => $qcInspected > 0 ? round($qcPassed / $qcInspected * 100, 1) : null,
+                'status' => $qcInspected === 0 ? 'pending' : ($qcRejected === 0 ? 'passed' : ($qcPassed === 0 ? 'failed' : 'conditional')),
+            ],
             'daily' => $daily,
             'lots' => $lots,
         ];

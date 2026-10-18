@@ -39,6 +39,11 @@ export function StageSection({ block, text, format, locale }: Common & { block: 
         ...(isCutting ? [] : [{ label: t.received, value: format.whole(block.received) }]),
         { label: isCutting ? t.cut : t.done, value: format.whole(block.good) },
         { label: t.damaged, value: format.whole(block.damaged), alert: block.damaged > 0 },
+        ...(block.quality ? [
+            { label: locale === 'en' ? 'QC Inspected' : 'CQ Inspecté', value: format.whole(block.quality.inspected) },
+            { label: locale === 'en' ? 'QC Passed' : 'CQ Conforme', value: format.whole(block.quality.passed) },
+            { label: locale === 'en' ? 'QC Rejected' : 'CQ Rejeté', value: format.whole(block.quality.rejected), alert: block.quality.rejected > 0 },
+        ] : []),
         { label: t.sent, value: format.whole(block.sent) },
         { label: t.missing, value: format.whole(block.missing), alert: block.missing > 0 },
         { label: t.waiting, value: format.whole(block.waiting_now) },
@@ -136,7 +141,7 @@ export function StageSection({ block, text, format, locale }: Common & { block: 
                         <h3>{t.lotsTitle}</h3>
                     </div>
                     <div className="ui-table-wrap">
-                        <table className="ui-table" style={{ minWidth: 520 }}>
+                        <table className="ui-table" style={{ minWidth: 620 }}>
                             <thead>
                                 <tr>
                                     <th>{t.lot}</th>
@@ -145,6 +150,8 @@ export function StageSection({ block, text, format, locale }: Common & { block: 
                                     <th>{t.size}</th>
                                     <th className="num">{t.good}</th>
                                     <th className="num">{t.damaged}</th>
+                                    <th className="num">{locale === 'en' ? 'QC Pass' : 'CQ Conforme'}</th>
+                                    <th>{locale === 'en' ? 'QC Status' : 'Statut CQ'}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -166,11 +173,17 @@ export function StageSection({ block, text, format, locale }: Common & { block: 
                                             <td>{lot.size ?? text.none}</td>
                                             <td className="num">{format.whole(lot.good)}</td>
                                             <td className="num">{format.whole(lot.damaged)}</td>
+                                            <td className="num bold">{format.whole(lot.qc_passed ?? lot.good)}</td>
+                                            <td>
+                                                <span className={`ui-chip ${lot.qc_rejected ? 'bad' : 'good'}`}>
+                                                    {lot.qc_status ? lot.qc_status.toUpperCase() : (lot.good > 0 ? 'PASSED' : 'PENDING')}
+                                                </span>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={6} className="empty">
+                                        <td colSpan={8} className="empty">
                                             {t.empty}
                                         </td>
                                     </tr>

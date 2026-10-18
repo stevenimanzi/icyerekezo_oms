@@ -12,12 +12,16 @@ use App\Models\Shipment;
 use App\Models\StockTransaction;
 use App\Support\Catalogs\IndustryDailyReportCatalog;
 use App\Support\Exports\NoguchiDailyReportXlsxExporter;
+use App\Services\ProductionFlow\FactoryReport;
+use App\Support\Catalogs\ProductionFlowCatalog;
 use App\Support\Exports\SchoolOrderXlsxExporter;
 use App\Support\Exports\SchoolSummaryXlsxExporter;
 use App\Support\Tenancy\OperationalScope;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -38,6 +42,86 @@ class ReportController extends Controller
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ])
             ->deleteFileAfterSend(true);
+    }
+
+    public function exportDailyPdf(Request $request, FactoryReport $report): Response
+    {
+        $factory = $request->user()->currentFactory;
+        $data = $request->validate([
+            'period' => ['nullable', Rule::in(['all', 'day', 'week', 'month', 'year', 'custom'])],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'department_id' => ['nullable', 'integer'],
+        ]);
+
+        [$from, $to] = $this->range($data);
+        $result = $report->build($request->user(), $from, $to, null);
+
+        $reportTitle = 'FACTORY DAILY OPERATIONS & QUALITY REGISTER';
+        $departmentName = 'All Factory Departments';
+        $periodString = $from->toDateString() . ' to ' . $to->toDateString();
+
+        $summaryStages = [];
+        $detailRows = [];
+
+        foreach (ProductionFlowCatalog::keys() as $key) {
+            if (isset($result[$key])) {
+                $block = $result[$key];
+                $qc = $block['quality'] ?? [];
+                $inputVal = $key === 'cutting'
+                    ? (float) collect($block['fabric'] ?? [])->sum('used')
+                    : (float) ($block['received'] ?? 0);
+
+                $summaryStages[] = [
+                    'key' => $key,
+                    'name' => ProductionFlowCatalog::STAGES[$key]['label']['en'] ?? ucfirst($key),
+                    'input' => $inputVal,
+                    'input_unit' => $key === 'cutting' ? 'Meters fabric' : 'Pieces received',
+                    'good' => $block['good'] ?? 0,
+                    'damaged' => $block['damaged'] ?? 0,
+                    'inspected' => $qc['inspected'] ?? 0,
+                    'passed' => $qc['passed'] ?? 0,
+                    'rejected' => $qc['rejected'] ?? 0,
+                    'output_status' => ($block['good'] ?? 0) > 0 ? 'COMPLETED' : 'IN WORK',
+                ];
+
+                foreach ($block['lots'] ?? [] as $lot) {
+                    $detailRows[] = [
+                        'date' => $result['period']['from'],
+                        'lot_number' => $lot['lot_number'] ?? '—',
+                        'product' => $lot['product'] ?? 'Garment',
+                        'style' => $lot['product'] ?? '',
+                        'color' => $lot['color'] ?? '',
+                        'size' => $lot['size'] ?? '',
+                        'input' => $key === 'cutting' ? ($lot['fabric'] ?? 'Fabric') : null,
+                        'input_unit' => '',
+                        'good' => $lot['good'] ?? 0,
+                        'damaged' => $lot['damaged'] ?? 0,
+                        'qc_passed' => $lot['qc_passed'] ?? $lot['good'] ?? 0,
+                        'qc_result' => $lot['qc_status'] ?? 'PASSED',
+                        'notes' => 'Stage: ' . ucfirst($key),
+                    ];
+                }
+            }
+        }
+
+        $user = $request->user();
+        $userRole = 'Operations Manager';
+
+        $pdf = Pdf::loadView('pdf.operations-report', compact(
+            'factory',
+            'reportTitle',
+            'departmentName',
+            'periodString',
+            'user',
+            'userRole',
+            'summaryStages',
+            'detailRows'
+        ))->setPaper('a4', 'portrait');
+
+        $fileName = 'daily-register-report-' . now()->format('Y-m-d-His') . '.pdf';
+
+        return $pdf->stream($fileName);
     }
 
     public function exportOrders(Request $request): BinaryFileResponse

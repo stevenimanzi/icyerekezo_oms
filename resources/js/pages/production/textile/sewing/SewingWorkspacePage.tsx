@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, FileText, Package, RefreshCw, Scissors } from 'lucide-react';
+import { AlertTriangle, Download, FileText, Package, RefreshCw, Scissors } from 'lucide-react';
 import {
     EditRecordModal,
     EditRecordForm,
@@ -1010,104 +1010,107 @@ export default function SewingWorkspacePage({
                                 {locale === 'en' ? 'Clear filters' : 'Effacer les filtres'}
                             </button>
                         </div>
-                        <button className="primary-btn" onClick={() => window.print()}>
-                            <FileText size={17} />
-                            {locale === 'en'
-                                ? 'Print filtered report'
-                                : 'Imprimer le rapport filtré'}
-                        </button>
+                        <a
+                            href="/api/flow/factory-report.pdf?department=sewing"
+                            className="primary-btn"
+                            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <Download size={16} />
+                            Download Official PDF (Excel Format)
+                        </a>
                     </section>
-                    <article className="panel noguchi-cutting-report">
-                        <header>
-                            <div>
-                                <small>OFFICIAL FACTORY REGISTER</small>
-                                <h2>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'}</h2>
-                                <p>
-                                    {locale === 'en'
-                                        ? 'Sewing input and output report'
-                                        : 'Rapport des entrées et sorties de couture'}
-                                </p>
+                    <article className="panel" style={{ background: '#fff', border: '1.5px solid #000', borderRadius: 4, padding: 24, color: '#000' }}>
+                        <div style={{ borderBottom: '2px solid #000', paddingBottom: 12, marginBottom: 16 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                        OFFICIAL FACTORY PRODUCTION REGISTER &middot; DEPARTMENT OF SEWING
+                                    </div>
+                                    <h2 style={{ margin: '4px 0 2px 0', fontSize: '1.35rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                                        {user.current_factory?.name || 'ICYEREKEZO OMS'}
+                                    </h2>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', textDecoration: 'underline' }}>
+                                        SEWING OPERATIONS &amp; QUALITY CONTROL LEDGER
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right', fontSize: '0.8rem', lineHeight: 1.5, borderLeft: '1px solid #000', paddingLeft: 12 }}>
+                                    <div><b>REPORT DATE:</b> {new Date().toISOString().split('T')[0]}</div>
+                                    <div><b>PERIOD:</b> {reportFrom || 'Start'} to {reportTo || 'Today'}</div>
+                                    <div><b>PREPARED BY:</b> {user.name}</div>
+                                    <div><b>DOC REF:</b> SEW-OPS-{new Date().getFullYear()}-001</div>
+                                </div>
                             </div>
-                            <div>
-                                <span>
-                                    {locale === 'en' ? 'REPORT DATE' : 'DATE DU RAPPORT'}
-                                    <b>{new Date().toLocaleDateString()}</b>
-                                </span>
-                                <span>
-                                    {locale === 'en' ? 'PREPARED BY' : 'PRÉPARÉ PAR'}
-                                    <b>{user.name}</b>
-                                </span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>TOTAL INPUT (PCS)</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{num(totalAcceptedQty)}</div>
                             </div>
-                        </header>
-                        <div className="noguchi-cutting-table-wrap">
-                            <table>
+                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>TOTAL OUTPUT (SEWN)</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{num(totalSewnQty)}</div>
+                            </div>
+                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>DAMAGED / WASTE</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{num(totalDamagedQty)}</div>
+                            </div>
+                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>QUALITY CONTROL</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                                    {totalDamagedQty === 0 && totalSewnQty > 0 ? 'PASSED (100%)' : totalSewnQty > 0 ? `VERIFIED (${(100 - Number(wastePercent)).toFixed(1)}%)` : 'PENDING'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ overflowX: 'auto', marginBottom: 20 }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', fontSize: '0.82rem' }}>
                                 <thead>
-                                    <tr>
-                                        <th rowSpan={2}>{locale === 'en' ? 'DATE' : 'DATE'}</th>
-                                        <th colSpan={4}>
-                                            {locale === 'en'
-                                                ? 'CUT PIECE DETAILS'
-                                                : 'DÉTAILS DE LA PIÈCE'}
-                                        </th>
-                                        <th colSpan={3}>
-                                            {locale === 'en' ? 'QUANTITIES' : 'QUANTITÉS'}
-                                        </th>
-                                    </tr>
-                                    <tr>
-                                        <th>{locale === 'en' ? 'FABRIC' : 'TISSU'}</th>
-                                        <th>{locale === 'en' ? 'STYLE' : 'STYLE'}</th>
-                                        <th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th>
-                                        <th>{locale === 'en' ? 'SIZE' : 'TAILLE'}</th>
-                                        <th>
-                                            {locale === 'en'
-                                                ? 'INPUT (ACCEPTED)'
-                                                : 'ENTRÉE (ACCEPTÉ)'}
-                                        </th>
-                                        <th>
-                                            {locale === 'en' ? 'OUTPUT (SEWN)' : 'SORTIE (COUSUS)'}
-                                        </th>
-                                        <th>{locale === 'en' ? 'WASTE' : 'DÉCHETS'}</th>
+                                    <tr style={{ background: '#f2f2f2', borderBottom: '1.5px solid #000' }}>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left' }}>DATE</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left' }}>FABRIC &amp; STYLE</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left' }}>COLOR / SIZE</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>INPUT (PCS)</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>OUTPUT (SEWN)</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>DAMAGED (WASTE)</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>QUALITY CONTROL</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredSewReportRows.length ? (
-                                        filteredSewReportRows.map((row: any) => (
-                                            <tr key={row.id}>
-                                                <td>{row.date}</td>
-                                                <td>
-                                                    <b>{row.fabric}</b>
-                                                </td>
-                                                <td>{row.style}</td>
-                                                <td>{row.color}</td>
-                                                <td>{row.size}</td>
-                                                <td>
-                                                    {row.input > 0 ? <b>{num(row.input)}</b> : '—'}
-                                                </td>
-                                                <td>
-                                                    {row.output > 0 ? (
-                                                        <b style={{ color: '#10b981' }}>
-                                                            {num(row.output)}
-                                                        </b>
-                                                    ) : (
-                                                        '—'
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {row.waste > 0 ? (
-                                                        <span className="admin-status warning">
-                                                            {num(row.waste)}
-                                                        </span>
-                                                    ) : (
-                                                        '—'
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
+                                        filteredSewReportRows.map((row: any) => {
+                                            const isPass = row.waste === 0 && row.output > 0;
+                                            return (
+                                                <tr key={row.id} style={{ borderBottom: '1px solid #000' }}>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px' }}>{row.date}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px' }}>
+                                                        <b>{row.fabric}</b> &middot; {row.style}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px' }}>
+                                                        {row.color} / {row.size}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'right' }}>
+                                                        {row.input > 0 ? num(row.input) : '—'}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold' }}>
+                                                        {row.output > 0 ? num(row.output) : '—'}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'right' }}>
+                                                        {row.waste > 0 ? num(row.waste) : '—'}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
+                                                        {isPass ? 'QC PASSED' : row.waste > 0 ? 'QC FLAGGED' : 'PENDING'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     ) : (
                                         <tr>
-                                            <td colSpan={8} className="empty-cell">
+                                            <td colSpan={7} style={{ border: '1px solid #000', padding: 12, textAlign: 'center', color: '#666' }}>
                                                 {locale === 'en'
-                                                    ? 'No sewing records match the selected dates.'
+                                                    ? 'No sewing operations recorded for the selected dates.'
                                                     : 'Aucun enregistrement ne correspond aux dates sélectionnées.'}
                                             </td>
                                         </tr>
@@ -1115,11 +1118,53 @@ export default function SewingWorkspacePage({
                                 </tbody>
                             </table>
                         </div>
-                        <footer>
-                            <span>
-                                {user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'} ·{' '}
-                                {locale === 'en' ? 'SEWING OPERATIONS' : 'OPÉRATIONS DE COUTURE'}
-                            </span>
+
+                        <div style={{ marginTop: 24, borderTop: '1.5px solid #000', paddingTop: 16 }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: 12, textTransform: 'uppercase' }}>
+                                AUTHORIZATION &amp; QUALITY VERIFICATION SIGN-OFF
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                                <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
+                                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
+                                        1. PREPARED BY
+                                    </div>
+                                    <div>Name: {user.name}</div>
+                                    <div>Role: Sewing Floor Lead</div>
+                                    <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                </div>
+                                <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
+                                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
+                                        2. SUPERVISOR REVIEW
+                                    </div>
+                                    <div>Name: _________________</div>
+                                    <div>Role: Production Supervisor</div>
+                                    <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                </div>
+                                <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
+                                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
+                                        3. QUALITY CONTROL
+                                    </div>
+                                    <div>Name: _________________</div>
+                                    <div>Status: Verified &amp; Accepted</div>
+                                    <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                </div>
+                                <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
+                                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
+                                        4. FACTORY MANAGER
+                                    </div>
+                                    <div>Name: _________________</div>
+                                    <div>Decision: Approved</div>
+                                    <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <footer style={{ marginTop: 14, paddingTop: 8, borderTop: '0.5px solid #888', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#444' }}>
+                            <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} &middot; OFFICIAL SEWING OPERATIONS REGISTER</span>
                             <span>Generated by ICYEREKEZO OMS</span>
                         </footer>
                     </article>

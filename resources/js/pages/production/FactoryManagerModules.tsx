@@ -3,6 +3,7 @@ import {
     Activity,
     ArrowDown,
     ArrowUp,
+    Download,
     Edit3,
     Factory,
     FileText,
@@ -1446,14 +1447,16 @@ export function ReportsPage({
                     }
                     action={
                         canExport ? (
-                            <button
+                            <a
                                 className="primary-btn"
-                                disabled={!data}
-                                onClick={() => window.print()}
+                                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                href={`/api/flow/factory-report.pdf?period=${filters.period || 'day'}${filters.from ? `&from=${filters.from}` : ''}${filters.to ? `&to=${filters.to}` : ''}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                             >
-                                <Printer size={17} />
-                                Print / Save PDF
-                            </button>
+                                <Download size={17} />
+                                Export Official PDF
+                            </a>
                         ) : null
                     }
                 />

@@ -295,13 +295,20 @@ class FlowQueries
             ->selectRaw('from_stage as stage, COALESCE(SUM(quantity_sent), 0) as sent, COALESCE(SUM(quantity_sent - COALESCE(quantity_received, quantity_sent)), 0) as missing')
             ->groupBy('from_stage')->get()->keyBy('stage');
 
-        $stages = collect(ProductionFlowCatalog::keys())->map(function (string $stage) use ($byStage, $quality, $sent) {
+        $received = ProductionTransfer::where('status', 'received')->where('received_at', '>=', $start)->where('received_at', '<', $end)
+            ->selectRaw('to_stage as stage, COALESCE(SUM(quantity_received), 0) as received')
+            ->groupBy('to_stage')->get()->keyBy('stage');
+
+        $stages = collect(ProductionFlowCatalog::keys())->map(function (string $stage) use ($byStage, $quality, $sent, $received) {
             $row = $byStage->get($stage);
             $q = $quality->get($stage);
             $good = (int) ($row->good ?? 0);
             $damaged = (int) ($row->damaged ?? 0);
+            $input = $stage === 'cutting' ? (float) ($row->fabric_used ?? 0) : (int) ($received->get($stage)->received ?? 0);
 
             return $this->stageInfo($stage) + [
+                'input' => $input,
+                'input_label' => $stage === 'cutting' ? 'Meters fabric' : 'Pieces received',
                 'good' => $good,
                 'damaged' => $damaged,
                 'damage_rate' => $good + $damaged > 0 ? round($damaged / ($good + $damaged) * 100, 1) : null,
@@ -311,6 +318,7 @@ class FlowQueries
                 'inspected' => (int) ($q->inspected ?? 0),
                 'passed' => (int) ($q->passed ?? 0),
                 'rejected' => (int) ($q->rejected ?? 0),
+                'qc_status' => (int) ($q->inspected ?? 0) === 0 ? 'pending' : ((int) ($q->rejected ?? 0) === 0 ? 'passed' : 'conditional'),
             ];
         })->values();
 

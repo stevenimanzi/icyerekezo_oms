@@ -61,7 +61,7 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
     const monitor = useLiveData<FlowMonitor>(
         '/api/flow/monitor?status=open',
         REFRESH_MS,
-        mode === 'manager',
+        true,
     );
     const report = useLiveData<FlowReport>(`/api/flow/report?${period}`, REFRESH_MS * 4);
 
@@ -135,42 +135,52 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
             {error && <div className="ui-error">{error}</div>}
 
             {own && stage && (
-                <div className="ui-kpis eight">
-                    {buildKpis(stage, own, text).map((kpi) => (
-                        <article
-                            className={`panel ui-kpi ${kpi.alert ? 'alert' : ''}`}
-                            key={kpi.label}
-                        >
-                            <small>{kpi.label}</small>
-                            <strong>{format.whole(kpi.value)}</strong>
-                        </article>
-                    ))}
+                <div style={{ marginBottom: 24 }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)', marginBottom: 8 }}>
+                        {words.deptOverview} &mdash; {stageLabel(stage, locale)}
+                    </div>
+                    <div className="ui-kpis eight">
+                        {buildKpis(stage, own, text).map((kpi) => (
+                            <article
+                                className={`panel ui-kpi ${kpi.alert ? 'alert' : ''}`}
+                                key={kpi.label}
+                            >
+                                <small>{kpi.label}</small>
+                                <strong>{format.whole(kpi.value)}</strong>
+                            </article>
+                        ))}
+                    </div>
                 </div>
             )}
 
-            {!stageMode && monitor.data && (
-                <div
-                    className="ui-kpis"
-                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}
-                >
-                    {monitor.data.flow.map((row) => (
-                        <article className="panel ui-kpi" key={row.key}>
-                            <small>{row.label[locale]}</small>
-                            <strong>{format.whole(row.here)}</strong>
-                            <div className="ui-stage-facts">
-                                <span>{words.arriving}</span>
-                                <b>{format.whole(row.arriving)}</b>
-                                <span>{words.ready}</span>
-                                <b>{format.whole(row.ready_to_send)}</b>
-                                <span>{words.waitingQuality}</span>
-                                <b>{format.whole(row.awaiting_quality)}</b>
-                                <span>{words.damaged}</span>
-                                <b className={row.damaged > 0 ? 'alert' : ''}>
-                                    {format.whole(row.damaged)}
-                                </b>
-                            </div>
-                        </article>
-                    ))}
+            {monitor.data && (
+                <div style={{ marginBottom: 24 }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#4f46e5', marginBottom: 8 }}>
+                        {words.wholeProject} &mdash; {words.stageCards}
+                    </div>
+                    <div
+                        className="ui-kpis"
+                        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}
+                    >
+                        {monitor.data.flow.map((row) => (
+                            <article className="panel ui-kpi" key={row.key}>
+                                <small>{row.label[locale]}</small>
+                                <strong>{format.whole(row.here)}</strong>
+                                <div className="ui-stage-facts">
+                                    <span>{words.arriving} (Input)</span>
+                                    <b>{format.whole(row.arriving)}</b>
+                                    <span>{words.ready} (Output)</span>
+                                    <b>{format.whole(row.ready_to_send)}</b>
+                                    <span>{words.waitingQuality}</span>
+                                    <b>{format.whole(row.awaiting_quality)}</b>
+                                    <span>{words.damaged}</span>
+                                    <b className={row.damaged > 0 ? 'alert' : ''}>
+                                        {format.whole(row.damaged)}
+                                    </b>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
                 </div>
             )}
 

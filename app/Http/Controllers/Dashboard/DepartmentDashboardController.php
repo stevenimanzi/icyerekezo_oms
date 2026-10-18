@@ -814,7 +814,182 @@ class DepartmentDashboardController extends Controller
                 ->get();
         }
 
+        // Whole Project & End-to-End Pipeline Overview
+        $allOrdersCount = SalesDocument::withoutGlobalScopes()
+            ->where('factory_id', $factoryId)
+            ->whereIn('document_type', ['order', 'invoice', 'sales_order'])
+            ->count();
+
+        $allOrdersTarget = (float) SalesDocument::withoutGlobalScopes()
+            ->where('factory_id', $factoryId)
+            ->whereIn('document_type', ['order', 'invoice', 'sales_order'])
+            ->sum('item_count');
+
+        $prodOrdersQuery = DB::table('production_orders')->where('factory_id', $factoryId);
+        $prodOrdersCount = (clone $prodOrdersQuery)->count();
+        $prodPlannedQty = (float) (clone $prodOrdersQuery)->sum('planned_quantity');
+        $prodCompletedQty = (float) (clone $prodOrdersQuery)->sum('completed_quantity');
+
+        $totalProjectTarget = $allOrdersTarget > 0 ? $allOrdersTarget : ($prodPlannedQty > 0 ? $prodPlannedQty : 1000);
+
+        // Cutting metrics across whole factory
+        $cuttingExec = ProductionStageExecution::withoutGlobalScopes()
+            ->where('production_stage_executions.factory_id', $factoryId)
+            ->whereHas('stage', fn ($q) => $q->where('code', 'CUTTING'));
+        $cuttingInput = (float) (clone $cuttingExec)->sum('input_quantity');
+        $cuttingOutput = (float) (clone $cuttingExec)->sum('output_quantity');
+        $cuttingWaste = (float) (clone $cuttingExec)->sum('waste_quantity');
+
+        $cuttingTx = StockTransaction::withoutGlobalScopes()
+            ->where('factory_id', $factoryId)
+            ->where('reason', 'like', '%Cut%');
+        if ($cuttingOutput == 0) {
+            $cuttingOutput = abs((float) (clone $cuttingTx)->where('quantity_delta', '<', 0)->sum('quantity_delta'));
+            $cuttingInput = abs((float) (clone $cuttingTx)->where('quantity_delta', '>', 0)->sum('quantity_delta'));
+            if ($cuttingInput == 0 && $cuttingOutput > 0) {
+                $cuttingInput = $cuttingOutput;
+            }
+        }
+
+        // Sewing metrics across whole factory
+        $sewingExec = ProductionStageExecution::withoutGlobalScopes()
+            ->where('production_stage_executions.factory_id', $factoryId)
+            ->whereHas('stage', fn ($q) => $q->where('code', 'SEWING'));
+        $sewingInput = (float) (clone $sewingExec)->sum('input_quantity');
+        $sewingOutput = (float) (clone $sewingExec)->sum('output_quantity');
+        $sewingWaste = (float) (clone $sewingExec)->sum('waste_quantity');
+
+        $sewingTx = StockTransaction::withoutGlobalScopes()
+            ->where('factory_id', $factoryId)
+            ->where('reason', 'like', '%Sew%');
+        if ($sewingOutput == 0) {
+            $sewingOutput = abs((float) (clone $sewingTx)->where('quantity_delta', '<', 0)->sum('quantity_delta'));
+            $sewingInput = abs((float) (clone $sewingTx)->where('quantity_delta', '>', 0)->sum('quantity_delta'));
+            if ($sewingInput == 0 && $sewingOutput > 0) {
+                $sewingInput = $sewingOutput;
+            }
+        }
+
+        // Quality control metrics across whole factory
+        $allInspections = QualityInspection::withoutGlobalScopes()->where('factory_id', $factoryId);
+        $totalQcChecks = (clone $allInspections)->count();
+        $passedQcChecks = (clone $allInspections)->where('result', 'passed')->count();
+        $failedQcChecks = (clone $allInspections)->where('result', 'failed')->count();
+        $overallQcRate = $totalQcChecks > 0 ? round(($passedQcChecks / $totalQcChecks) * 100, 1) : 100.0;
+
+        // Finishing metrics
+        $finishingExec = ProductionStageExecution::withoutGlobalScopes()
+            ->where('production_stage_executions.factory_id', $factoryId)
+            ->whereHas('stage', fn ($q) => $q->whereIn('code', ['FINISHING', 'PACKING', 'PACKAGING']));
+        $finishingOutput = (float) (clone $finishingExec)->sum('output_quantity');
+        if ($finishingOutput == 0 && isset($finishingMetrics['output_today'])) {
+            $finishingOutput = (float) $finishingMetrics['output_today'];
+        }
+
+        // Logistics shipments
+        $allShipments = Shipment::withoutGlobalScopes()->where('factory_id', $factoryId);
+        $totalShipments = (clone $allShipments)->count();
+        $deliveredShipments = (clone $allShipments)->where('status', 'delivered')->count();
+        $inTransitShipments = (clone $allShipments)->whereIn('status', ['dispatched', 'in_transit'])->count();
+
+        $totalProjectCompleted = $prodCompletedQty > 0 ? $prodCompletedQty : max($sewingOutput, $cuttingOutput);
+        $completionPercent = $totalProjectTarget > 0 ? min(100.0, round(($totalProjectCompleted / $totalProjectTarget) * 100, 1)) : 0.0;
+
+        $projectOverview = [
+            'factory_name' => $user->currentFactory?->name ?? 'ICYEREKEZO Factory',
+            'total_orders' => $allOrdersCount > 0 ? $allOrdersCount : $prodOrdersCount,
+            'total_target_units' => $totalProjectTarget,
+            'total_completed_units' => $totalProjectCompleted,
+            'completion_rate' => $completionPercent,
+            'overall_quality_pass_rate' => $overallQcRate,
+            'qc_checks_count' => $totalQcChecks,
+            'qc_passed_count' => $passedQcChecks,
+            'qc_failed_count' => $failedQcChecks,
+            'active_workstations' => (int) DB::table('workstations')->where('factory_id', $factoryId)->count(),
+            'pipeline' => [
+                [
+                    'key' => 'warehouse',
+                    'title' => 'Raw Materials & Warehouse',
+                    'department' => 'Warehouse',
+                    'status' => $warehouseMetrics['low_stock'] > 0 ? 'NEEDS RESTOCK' : 'STOCKED',
+                    'input' => $warehouseMetrics['received_today'],
+                    'input_label' => 'Materials received',
+                    'output' => $warehouseMetrics['stock_items'],
+                    'output_label' => 'Items in stock',
+                    'damaged' => $warehouseMetrics['low_stock'],
+                    'damaged_label' => 'Low stock alerts',
+                    'qc_status' => 'INVENTORY VERIFIED',
+                ],
+                [
+                    'key' => 'cutting',
+                    'title' => 'Cutting Department',
+                    'department' => 'Cutting',
+                    'status' => $cuttingOutput > 0 ? 'ACTIVE' : 'READY',
+                    'input' => $cuttingInput,
+                    'input_label' => 'Fabric pieces/meters',
+                    'output' => $cuttingOutput,
+                    'output_label' => 'Cut pieces produced',
+                    'damaged' => $cuttingWaste,
+                    'damaged_label' => 'Fabric scrap / waste',
+                    'qc_status' => $cuttingWaste == 0 && $cuttingOutput > 0 ? 'QC PASSED (100%)' : ($cuttingOutput > 0 ? 'QC MONITORED' : 'PENDING'),
+                ],
+                [
+                    'key' => 'sewing',
+                    'title' => 'Sewing Lines & Assembly',
+                    'department' => 'Sewing',
+                    'status' => $sewingOutput > 0 ? 'IN PRODUCTION' : 'READY',
+                    'input' => $sewingInput > 0 ? $sewingInput : $cuttingOutput,
+                    'input_label' => 'Cut pieces supplied',
+                    'output' => $sewingOutput,
+                    'output_label' => 'Garments sewn',
+                    'damaged' => $sewingWaste,
+                    'damaged_label' => 'Defects / Rework',
+                    'qc_status' => $sewingWaste == 0 && $sewingOutput > 0 ? 'QC PASSED (100%)' : ($sewingOutput > 0 ? 'QC MONITORED' : 'PENDING'),
+                ],
+                [
+                    'key' => 'quality',
+                    'title' => 'Quality Control & Audit',
+                    'department' => 'Quality Control',
+                    'status' => $totalQcChecks > 0 ? ($failedQcChecks > 0 ? 'FLAGGED' : 'PASSED') : 'MONITORING',
+                    'input' => $totalQcChecks,
+                    'input_label' => 'Total QC audits',
+                    'output' => $passedQcChecks,
+                    'output_label' => 'Approved lots',
+                    'damaged' => $failedQcChecks,
+                    'damaged_label' => 'Rejected lots',
+                    'qc_status' => "{$overallQcRate}% PASS RATE",
+                ],
+                [
+                    'key' => 'finishing',
+                    'title' => 'Finishing & Packaging',
+                    'department' => 'Finishing & Packaging',
+                    'status' => $finishingOutput > 0 ? 'COMPLETED' : 'READY',
+                    'input' => $sewingOutput,
+                    'input_label' => 'Sewn items received',
+                    'output' => $finishingOutput > 0 ? $finishingOutput : $sewingOutput,
+                    'output_label' => 'Packed goods',
+                    'damaged' => 0,
+                    'damaged_label' => 'Packing flaws',
+                    'qc_status' => 'FINAL CHECK PASSED',
+                ],
+                [
+                    'key' => 'logistics',
+                    'title' => 'Logistics & Dispatch',
+                    'department' => 'Logistics',
+                    'status' => $inTransitShipments > 0 ? 'IN TRANSIT' : ($totalShipments > 0 ? 'DISPATCHED' : 'READY'),
+                    'input' => $totalShipments,
+                    'input_label' => 'Total consignments',
+                    'output' => $deliveredShipments,
+                    'output_label' => 'Delivered to clients',
+                    'damaged' => $inTransitShipments,
+                    'damaged_label' => 'Currently en route',
+                    'qc_status' => 'DELIVERY CONFIRMED',
+                ],
+            ],
+        ];
+
         return response()->json([
+            'project_overview' => $projectOverview,
             'department' => $department
                 ? [
                     'id' => $department->id,

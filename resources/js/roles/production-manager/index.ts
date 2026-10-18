@@ -1,6 +1,14 @@
-import { BadgeCheck, ChartColumn, Cog, Factory, LayoutDashboard, Warehouse } from 'lucide-react';
+import {
+    BadgeCheck,
+    ChartColumn,
+    Factory,
+    LayoutDashboard,
+    Scissors,
+    Shirt,
+    Warehouse,
+    Workflow,
+} from 'lucide-react';
 import type { RoleModule } from '../types';
-import { productionFlowNav } from '../production-flow-nav';
 
 export const productionManagerRole: RoleModule = {
     id: 'production-manager',
@@ -10,12 +18,13 @@ export const productionManagerRole: RoleModule = {
 
         return [
             ['dashboard', LayoutDashboard, labels.dashboard, '*'],
+            ['production-flow', Workflow, text('Production flow', 'Flux de production'), 'production.view'],
+            ['cutting-workspace', Scissors, text('Cutting lines', 'Lignes de coupe'), 'production.view'],
+            ['sewing-workspace', Shirt, text('Sewing lines', 'Lignes de couture'), 'production.view'],
             ['production', Factory, labels.planning, 'production.view'],
-            ['inventory', Warehouse, text('Materials', 'Matières'), 'inventory.view'],
             ['quality', BadgeCheck, labels.control, 'quality.view'],
-            ['machines', Cog, labels.machines, 'maintenance.view'],
-            ...productionFlowNav(context),
             ['reports', ChartColumn, labels.reports, 'reports.view'],
+            ['inventory', Warehouse, text('Materials', 'Matières'), 'inventory.view'],
         ];
     },
 };

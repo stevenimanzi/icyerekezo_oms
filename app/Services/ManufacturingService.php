@@ -138,6 +138,16 @@ class ManufacturingService
                     422,
                     'This stage is not ready for completion.',
                 );
+                if ($execution->stage?->quality_required) {
+                    $hasPassedQc = \App\Models\QualityInspection::where('stage_execution_id', $execution->id)
+                        ->where('result', 'passed')
+                        ->exists();
+                    if (! $hasPassedQc) {
+                        throw ValidationException::withMessages([
+                            'status' => 'This stage requires quality control inspection and must be passed before completion.',
+                        ]);
+                    }
+                }
                 $updates['completed_at'] = now();
                 $next = $order
                     ->executions()

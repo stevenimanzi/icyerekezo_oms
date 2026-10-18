@@ -32,6 +32,8 @@ const en = {
     openStage: 'Open my work page',
     openFlow: 'Open the production flow',
     openRequests: 'Requests',
+    wholeProject: 'Whole Factory Project Overview',
+    deptOverview: 'Department Overview',
 };
 
 const fr: typeof en = {
@@ -63,6 +65,8 @@ const fr: typeof en = {
     openStage: 'Ouvrir ma page de travail',
     openFlow: 'Ouvrir le flux de production',
     openRequests: 'Demandes',
+    wholeProject: 'Vue d’ensemble du projet d’usine',
+    deptOverview: 'Aperçu du département',
 };
 
 export const homeText: Record<Locale, typeof en> = { en, fr };

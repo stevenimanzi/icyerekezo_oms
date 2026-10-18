@@ -33,16 +33,29 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
 
     return (
         <>
-            <div className="ui-report-controls">
-                {(Object.keys(t.periods) as Period[]).map((key) => (
-                    <button
-                        key={key}
-                        className={period === key ? 'primary-btn' : 'secondary-btn'}
-                        onClick={() => setPeriod(key)}
+            <div className="ui-report-controls" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {(Object.keys(t.periods) as Period[]).map((key) => (
+                        <button
+                            key={key}
+                            className={period === key ? 'primary-btn' : 'secondary-btn'}
+                            onClick={() => setPeriod(key)}
+                        >
+                            {t.periods[key]}
+                        </button>
+                    ))}
+                </div>
+                <div>
+                    <a
+                        className="primary-btn"
+                        href={`/api/flow/factory-report.pdf?period=custom&from=${range.from}&to=${range.to}${highlight ? `&department=${highlight}` : ''}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
                     >
-                        {t.periods[key]}
-                    </button>
-                ))}
+                        {locale === 'en' ? 'Download PDF Report' : 'Télécharger le rapport PDF'}
+                    </a>
+                </div>
             </div>
 
             {error && <div className="ui-error">{error}</div>}
@@ -55,10 +68,11 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                             <h2>{t.stagesTitle}</h2>
                         </div>
                         <div className="ui-table-wrap">
-                            <table className="ui-table" style={{ minWidth: 820 }}>
+                            <table className="ui-table" style={{ minWidth: 920 }}>
                                 <thead>
                                     <tr>
                                         <th>{t.stage}</th>
+                                        <th className="num">{locale === 'en' ? 'Input' : 'Entrée'}</th>
                                         <th className="num">{t.good}</th>
                                         <th className="num">{t.damaged}</th>
                                         <th className="num">{t.damageRate}</th>
@@ -67,6 +81,7 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                                         <th className="num">{t.checks}</th>
                                         <th className="num">{t.passed}</th>
                                         <th className="num">{t.rejected}</th>
+                                        <th style={{ textAlign: 'center' }}>{locale === 'en' ? 'QC Status' : 'Statut CQ'}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -80,6 +95,7 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                                             }
                                         >
                                             <td>{row.label[locale]}</td>
+                                            <td className="num bold">{format.number((row as any).input ?? 0)}</td>
                                             <td className="num">{format.whole(row.good)}</td>
                                             <td className="num">{format.whole(row.damaged)}</td>
                                             <td className="num">
@@ -88,8 +104,13 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                                             <td className="num">{format.whole(row.sent)}</td>
                                             <td className="num">{format.whole(row.missing)}</td>
                                             <td className="num">{format.whole(row.checks)}</td>
-                                            <td className="num">{format.whole(row.passed)}</td>
+                                            <td className="num bold">{format.whole(row.passed)}</td>
                                             <td className="num">{format.whole(row.rejected)}</td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <span className={`ui-chip ${(row as any).rejected > 0 ? 'bad' : 'good'}`}>
+                                                    {(row as any).qc_status ? (row as any).qc_status.toUpperCase() : 'PASSED'}
+                                                </span>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

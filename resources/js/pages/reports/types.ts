@@ -12,6 +12,14 @@ export type StageBlock = {
     waiting_now: number;
     ready_now: number;
     waiting_quality_now: number;
+    quality?: {
+        checks: number;
+        inspected: number;
+        passed: number;
+        rejected: number;
+        pass_rate: number | null;
+        status: string;
+    };
     daily: { day: string; good: number; damaged: number }[];
     lots: {
         lot_number: string | null;
@@ -21,6 +29,10 @@ export type StageBlock = {
         fabric: string | null;
         good: number;
         damaged: number;
+        qc_inspected?: number;
+        qc_passed?: number;
+        qc_rejected?: number;
+        qc_status?: string;
     }[];
     fabric?: { name: string | null; color: string | null; used: number; waste: number }[];
     lots_cut?: number;

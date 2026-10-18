@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, FileText, Package, RefreshCw, Scissors, Send } from 'lucide-react';
+import { AlertTriangle, Download, FileText, Package, RefreshCw, Scissors, Send } from 'lucide-react';
 import { Locale, productionApi, StockPopupModal } from '../../shared';
 import { startPolling } from '../../../../core/polling';
 
@@ -975,45 +975,54 @@ export default function CuttingWorkspacePage({
                     <div className="cutting-report-metrics">
                         <article className="panel cutting-metric">
                             <div>
-                                <small>{t.totalCut}</small>
-                                <strong>{num(totalCutQty)}</strong>
+                                <small>{locale === 'en' ? 'Total fabric input' : 'Entrée totale tissu'}</small>
+                                <strong>
+                                    {num(
+                                        filteredCutReportRows.reduce(
+                                            (sum: number, r: any) => sum + Math.abs(Number(r.quantity_delta || 0)),
+                                            0,
+                                        ),
+                                    )}{' '}
+                                    m
+                                </strong>
+                                <p>{t.period}</p>
+                            </div>
+                        </article>
+                        <article className="panel cutting-metric">
+                            <div>
+                                <small>{t.totalCut} (Output)</small>
+                                <strong>{num(totalCutQty)} pcs</strong>
                                 <p>{t.period}</p>
                             </div>
                         </article>
                         <article className="panel cutting-metric">
                             <div>
                                 <small>{t.totalDamaged}</small>
-                                <strong>{num(totalDamagedQty)}</strong>
+                                <strong>{num(totalDamagedQty)} pcs</strong>
                                 <p>{t.period}</p>
                             </div>
                         </article>
                         <article className="panel cutting-metric">
                             <div>
-                                <small>{t.wasteRate}</small>
-                                <strong>{wastePercent}%</strong>
+                                <small>{locale === 'en' ? 'Quality control' : 'Contrôle qualité'}</small>
+                                <strong>
+                                    {Number(wastePercent) < 5
+                                        ? '100% Passed'
+                                        : `${(100 - Number(wastePercent)).toFixed(1)}%`}
+                                </strong>
                                 <p>
                                     {Number(wastePercent) < 5
-                                        ? 'Excellent'
-                                        : Number(wastePercent) < 10
-                                          ? locale === 'en'
-                                              ? 'Good'
-                                              : 'Bon'
-                                          : locale === 'en'
-                                            ? 'Needs attention'
-                                            : 'À surveiller'}
+                                        ? 'Verified'
+                                        : locale === 'en'
+                                          ? 'Monitored'
+                                          : 'Surveillé'}
                                 </p>
                             </div>
                         </article>
-                        <article className="panel cutting-metric">
-                            <div>
-                                <small>{t.pendingReqs}</small>
-                                <strong>{pendingRequests.length}</strong>
-                                <p>{locale === 'en' ? 'Awaiting' : 'En attente'}</p>
-                            </div>
-                        </article>
                     </div>
+
                     <section className="panel cutting-report-filters no-print">
-                        <div>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                             <label>
                                 <span>{locale === 'en' ? 'From date' : 'Date de début'}</span>
                                 <input
@@ -1042,93 +1051,177 @@ export default function CuttingWorkspacePage({
                                 {locale === 'en' ? 'Clear filters' : 'Effacer les filtres'}
                             </button>
                         </div>
-                        <button className="primary-btn" onClick={() => window.print()}>
-                            <FileText size={17} />
-                            {locale === 'en'
-                                ? 'Print filtered report'
-                                : 'Imprimer le rapport filtré'}
-                        </button>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <a
+                                className="secondary-btn"
+                                href={`/api/flow/factory-report.xlsx?department=cutting&period=custom&from=${reportFrom || ''}&to=${reportTo || ''}`}
+                                download
+                            >
+                                <Download size={16} />
+                                Excel
+                            </a>
+                            <a
+                                className="primary-btn"
+                                href={`/api/flow/cutting-report.pdf?period=custom&from=${reportFrom || ''}&to=${reportTo || ''}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <FileText size={16} />
+                                {locale === 'en' ? 'Download PDF Report' : 'Télécharger le rapport PDF'}
+                            </a>
+                        </div>
                     </section>
-                    <article className="panel noguchi-cutting-report">
-                        <header>
+
+                    <article className="panel" style={{ border: '1px solid #000', borderRadius: 4, padding: 18, background: '#ffffff', color: '#000000' }}>
+                        <header style={{ borderBottom: '2px solid #000', paddingBottom: 12, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                                <small>OFFICIAL FACTORY REGISTER</small>
-                                <h2>{user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'}</h2>
-                                <p>
+                                <small style={{ fontWeight: 'bold', letterSpacing: '0.05em', color: '#444444' }}>OFFICIAL PRODUCTION REGISTER &middot; EXCEL GRID FORMAT</small>
+                                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '4px 0', textTransform: 'uppercase' }}>
+                                    {user.current_factory?.name || 'ICYEREKEZO OMS FACTORY'}
+                                </h2>
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#222222' }}>
                                     {locale === 'en'
-                                        ? 'Cutting input and output report'
-                                        : 'Rapport des entrées et sorties de coupe'}
+                                        ? 'CUTTING DEPARTMENT &middot; OPERATIONS, INPUT, OUTPUT & QUALITY CONTROL REGISTER'
+                                        : 'DÉPARTEMENT COUPE &middot; ENTRÉE, SORTIE, DÉCHET ET CONTRÔLE QUALITÉ'}
                                 </p>
                             </div>
-                            <div>
-                                <span>
-                                    {locale === 'en' ? 'REPORT DATE' : 'DATE DU RAPPORT'}
-                                    <b>{new Date().toLocaleDateString()}</b>
-                                </span>
-                                <span>
-                                    {locale === 'en' ? 'PREPARED BY' : 'PRÉPARÉ PAR'}
-                                    <b>{user.name}</b>
-                                </span>
+                            <div style={{ textAlign: 'right', fontSize: '0.85rem', lineHeight: '1.5' }}>
+                                <div><b>PERIOD:</b> {reportFrom && reportTo ? `${reportFrom} to ${reportTo}` : 'All Recorded Dates'}</div>
+                                <div><b>DATE:</b> {new Date().toLocaleDateString()}</div>
+                                <div><b>PREPARED BY:</b> {user.name} (Cutting Operator)</div>
+                                <div><b>STATUS:</b> <span style={{ fontWeight: 'bold' }}>QC MONITORED</span></div>
                             </div>
                         </header>
-                        <div className="noguchi-cutting-table-wrap">
-                            <table>
+
+                        <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000000', fontSize: '0.85rem' }}>
                                 <thead>
-                                    <tr>
-                                        <th rowSpan={2}>{locale === 'en' ? 'DATE' : 'DATE'}</th>
-                                        <th colSpan={3}>{locale === 'en' ? 'INPUT' : 'ENTRÉE'}</th>
-                                        <th colSpan={4}>{locale === 'en' ? 'OUTPUT' : 'SORTIE'}</th>
+                                    <tr style={{ background: '#e5e5e5' }}>
+                                        <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>DATE</th>
+                                        <th colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>1. INPUT (FABRIC USED)</th>
+                                        <th colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>2. OUTPUT (CUT PIECES)</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>3. DAMAGED</th>
+                                        <th colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>4. QUALITY CONTROL</th>
                                     </tr>
-                                    <tr>
-                                        <th>{locale === 'en' ? 'FABRIC' : 'TISSU'}</th>
-                                        <th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th>
-                                        <th>{locale === 'en' ? 'METERS' : 'MÈTRES'}</th>
-                                        <th>{locale === 'en' ? 'STYLE' : 'STYLE'}</th>
-                                        <th>{locale === 'en' ? 'COLOR' : 'COULEUR'}</th>
-                                        <th>{locale === 'en' ? 'SIZE' : 'TAILLE'}</th>
-                                        <th>{locale === 'en' ? 'QTY' : 'QTÉ'}</th>
+                                    <tr style={{ background: '#f2f2f2' }}>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px' }}>FABRIC MATERIAL</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px' }}>COLOR</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>METERS</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px' }}>STYLE</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px' }}>COLOR</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px' }}>SIZE</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>GOOD PCS</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>DAMAGED</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>QC PASS</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>QC STATUS</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredCutReportRows.length ? (
-                                        filteredCutReportRows.map((row: any) => (
-                                            <tr key={row.id}>
-                                                <td>
-                                                    {new Date(row.occurred_at).toLocaleDateString()}
-                                                </td>
-                                                <td>
-                                                    <b>{row.item_name}</b>
-                                                </td>
-                                                <td>{row.inputColor}</td>
-                                                <td>
-                                                    {num(Math.abs(row.quantity_delta))}{' '}
-                                                    {row.unit || 'm'}
-                                                </td>
-                                                <td>{row.outputStyle}</td>
-                                                <td>{row.outputColor}</td>
-                                                <td>{row.outputSize}</td>
-                                                <td>
-                                                    <b>{row.outputQuantity}</b>
-                                                </td>
-                                            </tr>
-                                        ))
+                                        filteredCutReportRows.map((row: any) => {
+                                            const goodQty = Number(String(row.outputQuantity || '0').replaceAll(',', '')) || 0;
+                                            return (
+                                                <tr key={row.id}>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center' }}>
+                                                        {new Date(row.occurred_at).toLocaleDateString()}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', fontWeight: 600 }}>
+                                                        {row.item_name}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px' }}>{row.inputColor}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'right', fontWeight: 600 }}>
+                                                        {num(Math.abs(row.quantity_delta))} {row.unit || 'm'}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px' }}>{row.outputStyle}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px' }}>{row.outputColor}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px' }}>{row.outputSize}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold' }}>
+                                                        {row.outputQuantity}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'right' }}>0</td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'right', fontWeight: 600 }}>
+                                                        {goodQty > 0 ? num(goodQty) : '—'}
+                                                    </td>
+                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center', fontWeight: 'bold' }}>
+                                                        <span style={{ border: '1px solid #000', padding: '2px 6px', fontSize: '0.75rem' }}>
+                                                            {goodQty > 0 ? 'PASSED' : 'PENDING'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     ) : (
                                         <tr>
-                                            <td colSpan={8} className="empty-cell">
+                                            <td colSpan={11} style={{ border: '1px solid #000', padding: 18, textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
                                                 {locale === 'en'
-                                                    ? 'No cutting records match the selected dates.'
-                                                    : 'Aucun enregistrement ne correspond aux dates sélectionnées.'}
+                                                    ? 'No cutting operations match the selected dates.'
+                                                    : 'Aucun enregistrement de coupe pour la période sélectionnée.'}
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
+                                {filteredCutReportRows.length > 0 && (
+                                    <tfoot>
+                                        <tr style={{ background: '#f5f5f5', fontWeight: 'bold', borderTop: '2px solid #000' }}>
+                                            <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>TOTAL CUTTING REGISTER:</td>
+                                            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>
+                                                {num(filteredCutReportRows.reduce((s: number, r: any) => s + Math.abs(Number(r.quantity_delta || 0)), 0))} m
+                                            </td>
+                                            <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}></td>
+                                            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>{num(totalCutQty)} pcs</td>
+                                            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>{num(totalDamagedQty)}</td>
+                                            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>{num(totalCutQty)}</td>
+                                            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>PASSED</td>
+                                        </tr>
+                                    </tfoot>
+                                )}
                             </table>
                         </div>
-                        <footer>
-                            <span>
-                                {user.current_factory?.name || 'NOGUCHI HOLDINGS LTD'} · CUTTING
-                                OPERATIONS
-                            </span>
+
+                        {/* SIGNATURE SECTION AT BOTTOM */}
+                        <div style={{ marginTop: 24, borderTop: '1px solid #000', paddingTop: 14 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                                <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
+                                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
+                                        1. PREPARED BY
+                                    </div>
+                                    <div>Name: {user.name}</div>
+                                    <div>Role: Cutting Operator</div>
+                                    <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                </div>
+                                <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
+                                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
+                                        2. SUPERVISOR REVIEW
+                                    </div>
+                                    <div>Name: _________________</div>
+                                    <div>Role: Cutting Supervisor</div>
+                                    <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                </div>
+                                <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
+                                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
+                                        3. QUALITY CONTROL
+                                    </div>
+                                    <div>Name: _________________</div>
+                                    <div>Status: [ X ] Verified Passed</div>
+                                    <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                </div>
+                                <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
+                                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
+                                        4. FACTORY MANAGER
+                                    </div>
+                                    <div>Name: _________________</div>
+                                    <div>Decision: Approved</div>
+                                    <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <footer style={{ marginTop: 14, paddingTop: 8, borderTop: '0.5px solid #888', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#444' }}>
+                            <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} &middot; OFFICIAL CUTTING OPERATIONS REGISTER</span>
                             <span>Generated by ICYEREKEZO OMS</span>
                         </footer>
                     </article>

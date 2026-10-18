@@ -15,9 +15,11 @@ use App\Services\ProductionFlow\MaterialRequestService;
 use App\Services\ProductionFlow\ProductionFlowService;
 use App\Support\Catalogs\ProductionFlowCatalog;
 use App\Support\Exports\NoguchiDailyReportXlsxExporter;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -93,6 +95,159 @@ class ProductionFlowController extends Controller
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ])
             ->deleteFileAfterSend(true);
+    }
+
+    public function factoryReportPdf(Request $request, FactoryReport $report): Response
+    {
+        $data = $request->validate([
+            'period' => ['nullable', Rule::in(['day', 'week', 'month', 'year', 'custom'])],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'department' => ['nullable', Rule::in(['cutting', 'sewing', 'finishing', 'packing', 'warehouse', 'quality', 'sales'])],
+        ]);
+        [$from, $to] = $this->reportRange($data);
+        $result = $report->build($request->user(), $from, $to, $data['department'] ?? null);
+
+        $factory = $request->user()->currentFactory;
+        $departmentName = ! empty($data['department'])
+            ? ucfirst($data['department']) . ' Department'
+            : 'All Factory Departments';
+        $reportTitle = 'FACTORY OPERATIONS & QUALITY CONTROL REGISTER';
+        $periodString = $result['period']['from'] . ' to ' . $result['period']['to'];
+
+        $summaryStages = [];
+        $detailRows = [];
+
+        foreach (ProductionFlowCatalog::keys() as $key) {
+            if (isset($result[$key])) {
+                $block = $result[$key];
+                $qc = $block['quality'] ?? [];
+                $inputVal = $key === 'cutting'
+                    ? (float) collect($block['fabric'] ?? [])->sum('used')
+                    : (float) ($block['received'] ?? 0);
+
+                $summaryStages[] = [
+                    'key' => $key,
+                    'name' => ProductionFlowCatalog::STAGES[$key]['label']['en'] ?? ucfirst($key),
+                    'input' => $inputVal,
+                    'input_unit' => $key === 'cutting' ? 'Meters fabric' : 'Pieces received',
+                    'good' => $block['good'] ?? 0,
+                    'damaged' => $block['damaged'] ?? 0,
+                    'inspected' => $qc['inspected'] ?? 0,
+                    'passed' => $qc['passed'] ?? 0,
+                    'rejected' => $qc['rejected'] ?? 0,
+                    'output_status' => ($block['good'] ?? 0) > 0 ? 'COMPLETED' : 'IN WORK',
+                ];
+
+                foreach ($block['lots'] ?? [] as $lot) {
+                    $detailRows[] = [
+                        'date' => $result['period']['from'],
+                        'lot_number' => $lot['lot_number'] ?? '—',
+                        'product' => $lot['product'] ?? 'Garment',
+                        'style' => $lot['product'] ?? '',
+                        'color' => $lot['color'] ?? '',
+                        'size' => $lot['size'] ?? '',
+                        'input' => $key === 'cutting' ? ($lot['fabric'] ?? 'Fabric') : null,
+                        'input_unit' => '',
+                        'good' => $lot['good'] ?? 0,
+                        'damaged' => $lot['damaged'] ?? 0,
+                        'qc_passed' => $lot['qc_passed'] ?? $lot['good'] ?? 0,
+                        'qc_result' => $lot['qc_status'] ?? 'PASSED',
+                        'notes' => 'Stage: ' . ucfirst($key),
+                    ];
+                }
+            }
+        }
+
+        $user = $request->user();
+        $userRole = 'Operations Officer';
+
+        $pdf = Pdf::loadView('pdf.operations-report', compact(
+            'factory',
+            'reportTitle',
+            'departmentName',
+            'periodString',
+            'user',
+            'userRole',
+            'summaryStages',
+            'detailRows'
+        ))->setPaper('a4', 'portrait');
+
+        $fileName = 'factory-operations-report-' . now()->format('Y-m-d-His') . '.pdf';
+
+        return $pdf->stream($fileName);
+    }
+
+    public function cuttingReportPdf(Request $request, FactoryReport $report): Response
+    {
+        $data = $request->validate([
+            'period' => ['nullable', Rule::in(['day', 'week', 'month', 'year', 'custom'])],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+        [$from, $to] = $this->reportRange($data);
+        $result = $report->build($request->user(), $from, $to, 'cutting');
+
+        $factory = $request->user()->currentFactory;
+        $departmentName = 'Cutting Department';
+        $reportTitle = 'CUTTING OPERATIONS, MATERIAL USAGE & QUALITY REGISTER';
+        $periodString = $result['period']['from'] . ' to ' . $result['period']['to'];
+
+        $block = $result['cutting'] ?? [];
+        $qc = $block['quality'] ?? [];
+        $inputVal = (float) collect($block['fabric'] ?? [])->sum('used');
+
+        $summaryStages = [
+            [
+                'key' => 'cutting',
+                'name' => 'Cutting Operations',
+                'input' => $inputVal,
+                'input_unit' => 'Meters fabric used',
+                'good' => $block['good'] ?? 0,
+                'damaged' => $block['damaged'] ?? 0,
+                'inspected' => $qc['inspected'] ?? ($block['good'] ?? 0),
+                'passed' => $qc['passed'] ?? ($block['good'] ?? 0),
+                'rejected' => $qc['rejected'] ?? ($block['damaged'] ?? 0),
+                'output_status' => 'CUT OUTPUT',
+            ],
+        ];
+
+        $detailRows = [];
+        foreach ($block['lots'] ?? [] as $lot) {
+            $detailRows[] = [
+                'date' => $result['period']['from'],
+                'lot_number' => $lot['lot_number'] ?? '—',
+                'product' => $lot['product'] ?? 'Garment',
+                'style' => $lot['product'] ?? '',
+                'color' => $lot['color'] ?? '',
+                'size' => $lot['size'] ?? '',
+                'input' => $lot['fabric'] ?? null,
+                'input_unit' => '',
+                'good' => $lot['good'] ?? 0,
+                'damaged' => $lot['damaged'] ?? 0,
+                'qc_passed' => $lot['qc_passed'] ?? $lot['good'] ?? 0,
+                'qc_result' => $lot['qc_status'] ?? 'PASSED',
+                'notes' => 'Cutting register record',
+            ];
+        }
+
+        $user = $request->user();
+        $userRole = 'Cutting Floor Supervisor';
+
+        $pdf = Pdf::loadView('pdf.operations-report', compact(
+            'factory',
+            'reportTitle',
+            'departmentName',
+            'periodString',
+            'user',
+            'userRole',
+            'summaryStages',
+            'detailRows'
+        ))->setPaper('a4', 'portrait');
+
+        $fileName = 'cutting-report-' . now()->format('Y-m-d-His') . '.pdf';
+
+        return $pdf->stream($fileName);
     }
 
     private function reportRange(array $data): array

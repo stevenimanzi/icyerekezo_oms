@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+    Activity,
     Factory,
     FileText,
     PackageCheck,
@@ -285,6 +286,23 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
                 </div>
             </div>
             {error && <div className="admin-alert error">{error}</div>}
+
+            {/* Whole Project & End-to-End Pipeline Overview */}
+            <ProjectOverviewSection overview={data?.project_overview} fr={fr} number={number} />
+
+            <div style={{ margin: '22px 0 14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
+                <div>
+                    <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        {fr ? 'Aperçu du département' : 'Department Operational Overview'} &mdash; {department?.name || user.workspace}
+                    </h2>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
+                        {fr ? 'Métriques spécifiques, charges de travail et activités de ce département' : 'Detailed performance, active tasks, and operational throughput for this department'}
+                    </p>
+                </div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--muted)', background: 'var(--soft)', padding: '4px 10px', borderRadius: '6px' }}>
+                    {fr ? 'Rôle actif:' : 'Active scope:'} <b>{data?.profile?.job_title || user.workspace}</b>
+                </span>
+            </div>
 
             {logistics ? (
                 <LogisticsMetrics values={logisticsMetrics} fr={fr} user={user} money={money} />
@@ -1456,6 +1474,207 @@ function QualityRecentInspections({ inspections, fr, status }: any) {
                     )}
                 </div>
             </article>
+        </section>
+    );
+}
+
+function ProjectOverviewSection({ overview, fr, number }: any) {
+    if (!overview) return null;
+
+    const {
+        factory_name,
+        total_target_units = 0,
+        total_completed_units = 0,
+        completion_rate = 0,
+        overall_quality_pass_rate = 100,
+        pipeline = [],
+    } = overview;
+
+    return (
+        <section
+            style={{
+                background: 'var(--panel)',
+                border: '1px solid var(--line)',
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+            }}
+        >
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    borderBottom: '1px solid var(--line)',
+                    paddingBottom: '16px',
+                    marginBottom: '16px',
+                }}
+            >
+                <div>
+                    <div
+                        style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            color: '#4f46e5',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            marginBottom: '4px',
+                        }}
+                    >
+                        <Activity size={14} />
+                        {fr ? 'VUE D’ENSEMBLE DU PROJET D’USINE' : 'WHOLE FACTORY PROJECT OVERVIEW'}
+                    </div>
+                    <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>
+                        {factory_name} &middot; {fr ? 'État global des opérations' : 'End-to-End Operational Pipeline'}
+                    </h2>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--muted)' }}>
+                        {fr
+                            ? 'Supervision complète de toutes les étapes de fabrication, du stock matière aux expéditions.'
+                            : 'Real-time whole project tracking across all operational departments and stages.'}
+                    </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                            {fr ? 'Objectif total projet' : 'Total Project Target'}
+                        </div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>
+                            {number(total_target_units)} <small style={{ fontSize: '0.75rem', fontWeight: 500 }}>{fr ? 'unités' : 'units'}</small>
+                        </div>
+                    </div>
+                    <div style={{ width: '1px', height: '36px', background: 'var(--line)' }} />
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                            {fr ? 'Unités produites' : 'Produced Units'}
+                        </div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#16a34a' }}>
+                            {number(total_completed_units)}
+                        </div>
+                    </div>
+                    <div style={{ width: '1px', height: '36px', background: 'var(--line)' }} />
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                            {fr ? 'Taux de réussite QC' : 'Overall QC Pass'}
+                        </div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb' }}>
+                            {overall_quality_pass_rate}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Project progress bar */}
+            <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px' }}>
+                    <span>{fr ? 'Progression globale du projet' : 'Overall Project Completion'} ({completion_rate}%)</span>
+                    <span>{number(total_completed_units)} / {number(total_target_units)} {fr ? 'unités terminées' : 'units completed'}</span>
+                </div>
+                <div style={{ height: '8px', background: 'var(--soft)', borderRadius: '999px', overflow: 'hidden' }}>
+                    <div
+                        style={{
+                            height: '100%',
+                            width: `${Math.min(100, Math.max(2, completion_rate))}%`,
+                            background: 'linear-gradient(90deg, #4f46e5 0%, #16a34a 100%)',
+                            borderRadius: '999px',
+                            transition: 'width 0.5s ease',
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* 6 Stage Pipeline Matrix with Input, Output, Damaged, Quality Control */}
+            <div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '12px' }}>
+                    {fr ? 'Flux de production par département (Entrée, Sortie, Déchets, Contrôle Qualité)' : 'Departmental Flow Pipeline (Input, Output, Damaged, Quality Control)'}
+                </div>
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                        gap: '12px',
+                    }}
+                >
+                    {pipeline.map((p: any, idx: number) => (
+                        <div
+                            key={p.key || idx}
+                            style={{
+                                border: '1px solid var(--line)',
+                                borderRadius: '8px',
+                                padding: '12px 14px',
+                                background: 'var(--surface, #fff)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4f46e5' }}>
+                                        {idx + 1}. {p.department}
+                                    </span>
+                                    <span
+                                        style={{
+                                            fontSize: '0.68rem',
+                                            fontWeight: 700,
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            background: '#f3f4f6',
+                                            border: '1px solid #e5e7eb',
+                                            color: '#111827',
+                                        }}
+                                    >
+                                        {p.status}
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>
+                                    {p.title}
+                                </div>
+                            </div>
+
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(2, 1fr)',
+                                    gap: '6px',
+                                    paddingTop: '8px',
+                                    borderTop: '1px solid var(--line)',
+                                    fontSize: '0.75rem',
+                                }}
+                            >
+                                <div style={{ padding: '4px 6px', background: 'var(--soft)', borderRadius: '4px' }}>
+                                    <div style={{ color: 'var(--muted)', fontSize: '0.68rem' }}>INPUT</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{number(p.input)}</div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.input_label}</div>
+                                </div>
+                                <div style={{ padding: '4px 6px', background: 'var(--soft)', borderRadius: '4px' }}>
+                                    <div style={{ color: 'var(--muted)', fontSize: '0.68rem' }}>OUTPUT</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#16a34a' }}>{number(p.output)}</div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.output_label}</div>
+                                </div>
+                                <div style={{ padding: '4px 6px', background: 'var(--soft)', borderRadius: '4px' }}>
+                                    <div style={{ color: 'var(--muted)', fontSize: '0.68rem' }}>DAMAGED</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: p.damaged > 0 ? '#dc2626' : 'var(--text)' }}>{number(p.damaged)}</div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.damaged_label}</div>
+                                </div>
+                                <div style={{ padding: '4px 6px', background: 'var(--soft)', borderRadius: '4px' }}>
+                                    <div style={{ color: 'var(--muted)', fontSize: '0.68rem' }}>QC STATUS</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#2563eb', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {p.qc_status}
+                                    </div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--muted)' }}>VERIFIED</div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </section>
     );
 }

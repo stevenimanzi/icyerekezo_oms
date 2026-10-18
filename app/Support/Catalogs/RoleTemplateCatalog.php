@@ -53,7 +53,7 @@ final class RoleTemplateCatalog
         'production-manager' => [
             'Production Manager',
             'production',
-            ['production.*', 'products.view', 'inventory.view', 'quality.view', 'maintenance.view', 'reports.view'],
+            ['production.*', 'products.view', 'inventory.view', 'quality.*', 'maintenance.view', 'reports.*'],
         ],
         'production-planner' => [
             'Production Planner',

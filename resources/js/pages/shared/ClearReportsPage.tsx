@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, FileText, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, FileText, Printer } from 'lucide-react';
 import { LegacyOrderMatrix, OrderDetailsModal } from '../sales/SalesOverviewPage';
 import NoguchiDailySheet, { buildDays, sectionsForDepartment } from './NoguchiDailySheet';
 
@@ -1307,14 +1307,16 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                                 Export Excel
                             </a>
                         )}
-                        <button
+                        <a
                             className="primary-btn"
-                            disabled={!data}
-                            onClick={() => window.print()}
+                            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            href={`/api/reports/daily.pdf?${new URLSearchParams(filters)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                         >
-                            <Printer size={17} />
-                            Print
-                        </button>
+                            <Download size={17} />
+                            Export PDF
+                        </a>
                     </div>
                 </div>
                 {error && <div className="admin-alert error">{error}</div>}

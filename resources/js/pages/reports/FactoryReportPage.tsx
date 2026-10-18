@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Download, Printer, RefreshCw } from 'lucide-react';
+import { Download, FileText, RefreshCw } from 'lucide-react';
 import '../../components/ui.css';
 import { makeFormat } from '../../core/format';
 import { useLiveData } from '../../core/liveData';
@@ -64,10 +64,15 @@ export default function FactoryReportPage({ user, locale }: Props) {
                         <Download size={15} />
                         {text.download}
                     </a>
-                    <button className="primary-btn" onClick={() => window.print()} disabled={!data}>
-                        <Printer size={15} />
-                        {text.print}
-                    </button>
+                    <a
+                        className="primary-btn"
+                        href={`/api/flow/factory-report.pdf?${params.toString()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <FileText size={15} />
+                        {locale === 'en' ? 'Download PDF Report' : 'Télécharger le rapport PDF'}
+                    </a>
                 </div>
             </div>
 
