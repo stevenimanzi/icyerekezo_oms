@@ -57,17 +57,32 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
     const format = useMemo(() => makeFormat(locale, ''), [locale]);
     const period = useMemo(range, []);
 
-    const overview = useLiveData<StageOverview>('/api/flow/overview', REFRESH_MS, mode === 'stage');
+    const defaultStage: StageKey | undefined =
+        user.workspace === 'cutting' || user.roles?.some((r) => r.slug === 'cutting-operator')
+            ? 'cutting'
+            : user.workspace === 'sewing' || user.roles?.some((r) => r.slug === 'sewing-operator')
+              ? 'sewing'
+              : user.workspace === 'finishing' || user.roles?.some((r) => r.slug === 'finishing-manager')
+                ? 'finishing'
+                : user.workspace === 'packing' ||
+                    user.workspace === 'packaging' ||
+                    user.roles?.some(
+                        (r) => r.slug === 'packing-manager' || r.slug === 'packaging-operator',
+                    )
+                  ? 'packing'
+                  : undefined;
+
+    const isStageMode = mode === 'stage';
+    const overview = useLiveData<StageOverview>('/api/flow/overview', REFRESH_MS, isStageMode);
     const monitor = useLiveData<FlowMonitor>(
         '/api/flow/monitor?status=open',
         REFRESH_MS,
-        true,
+        mode === 'manager',
     );
     const report = useLiveData<FlowReport>(`/api/flow/report?${period}`, REFRESH_MS * 4);
 
-    const stage = (mode === 'stage' ? overview.data : null)?.stage.key;
-    const own = mode === 'stage' ? overview.data : null;
-    const stageMode = own !== null;
+    const stage = isStageMode ? (overview.data?.stage.key || defaultStage) : null;
+    const own = isStageMode ? overview.data : null;
     const error = overview.error || monitor.error || report.error;
 
     const attention: string[] = [];
@@ -90,15 +105,16 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
         if (alerts.missing_pieces) attention.push(words.alertMissing(alerts.missing_pieces));
     }
 
-    const keys: StageKey[] = stageMode && stage ? [stage] : STAGE_ORDER;
+    // Isolate chart keys: stage dashboards must ONLY show their own stage, never other departments
+    const keys: StageKey[] = isStageMode ? (stage ? [stage] : []) : STAGE_ORDER;
     const recorded = new Map((report.data?.daily ?? []).map((day) => [day.day, day]));
     const chart = lastDays(14).map((date) => {
         const day = recorded.get(date);
 
         return {
             label: format.date(date).replace(/\s\d{4}$/, ''),
-            ...Object.fromEntries(keys.map((key) => [key, day?.[key].good ?? 0])),
-            total: day ? keys.reduce((sum, key) => sum + day[key].good + day[key].damaged, 0) : 0,
+            ...Object.fromEntries(keys.map((key) => [key, day?.[key]?.good ?? 0])),
+            total: day ? keys.reduce((sum, key) => sum + (day[key]?.good ?? 0) + (day[key]?.damaged ?? 0), 0) : 0,
         };
     });
     const hasChart = chart.some((day) => day.total > 0);
@@ -108,12 +124,12 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
             <div className="page-heading">
                 <div>
                     <h1>
-                        {stageMode && stage ? stageLabel(stage, locale) : flowHomeTitle(locale)}
+                        {isStageMode && stage ? stageLabel(stage, locale) : flowHomeTitle(locale)}
                     </h1>
                     <p>{words.hello(user.name)}</p>
                 </div>
                 <div className="ui-actions">
-                    {stageMode && stage && (
+                    {isStageMode && stage && (
                         <button
                             className="primary-btn"
                             onClick={() => onNavigate(STAGE_PAGE[stage])}
@@ -121,7 +137,7 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
                             {words.openStage}
                         </button>
                     )}
-                    {!stageMode && (
+                    {!isStageMode && (
                         <button
                             className="primary-btn"
                             onClick={() => onNavigate('production-flow')}
@@ -133,6 +149,12 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
             </div>
 
             {error && <div className="ui-error">{error}</div>}
+
+            {isStageMode && overview.loading && !overview.data && (
+                <div className="panel" style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--muted)', marginBottom: 20 }}>
+                    <p style={{ margin: 0 }}>{text.loading}</p>
+                </div>
+            )}
 
             {own && stage && (
                 <div style={{ marginBottom: 24 }}>
@@ -153,7 +175,8 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
                 </div>
             )}
 
-            {monitor.data && (
+            {/* Whole project stage cards: ONLY shown for production manager, never on stage dashboards */}
+            {mode === 'manager' && monitor.data && (
                 <div style={{ marginBottom: 24 }}>
                     <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#4f46e5', marginBottom: 8 }}>
                         {words.wholeProject} &mdash; {words.stageCards}

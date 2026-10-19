@@ -48,12 +48,22 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                 <div>
                     <a
                         className="primary-btn"
-                        href={`/api/flow/factory-report.pdf?period=custom&from=${range.from}&to=${range.to}${highlight ? `&department=${highlight}` : ''}`}
+                        href={
+                            highlight === 'cutting'
+                                ? `/api/flow/cutting-report.pdf?period=custom&from=${range.from}&to=${range.to}`
+                                : `/api/flow/factory-report.pdf?period=custom&from=${range.from}&to=${range.to}${highlight ? `&department=${highlight}` : ''}`
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
                     >
-                        {locale === 'en' ? 'Download PDF Report' : 'Télécharger le rapport PDF'}
+                        {highlight
+                            ? locale === 'en'
+                                ? `Download ${stageLabel(highlight, locale)} PDF Report`
+                                : `Télécharger le rapport PDF ${stageLabel(highlight, locale)}`
+                            : locale === 'en'
+                              ? 'Download PDF Report'
+                              : 'Télécharger le rapport PDF'}
                     </a>
                 </div>
             </div>
@@ -63,153 +73,171 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
 
             {data && (
                 <>
-                    <article className="panel">
-                        <div className="panel-title">
-                            <h2>{t.stagesTitle}</h2>
-                        </div>
-                        <div className="ui-table-wrap">
-                            <table className="ui-table" style={{ minWidth: 920 }}>
-                                <thead>
-                                    <tr>
-                                        <th>{t.stage}</th>
-                                        <th className="num">{locale === 'en' ? 'Input' : 'Entrée'}</th>
-                                        <th className="num">{t.good}</th>
-                                        <th className="num">{t.damaged}</th>
-                                        <th className="num">{t.damageRate}</th>
-                                        <th className="num">{t.sent}</th>
-                                        <th className="num">{t.missing}</th>
-                                        <th className="num">{t.checks}</th>
-                                        <th className="num">{t.passed}</th>
-                                        <th className="num">{t.rejected}</th>
-                                        <th style={{ textAlign: 'center' }}>{locale === 'en' ? 'QC Status' : 'Statut CQ'}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.stages.map((row) => (
-                                        <tr
-                                            key={row.key}
-                                            style={
-                                                row.key === highlight
-                                                    ? { fontWeight: 700 }
-                                                    : undefined
-                                            }
-                                        >
-                                            <td>{row.label[locale]}</td>
-                                            <td className="num bold">{format.number((row as any).input ?? 0)}</td>
-                                            <td className="num">{format.whole(row.good)}</td>
-                                            <td className="num">{format.whole(row.damaged)}</td>
-                                            <td className="num">
-                                                {format.percent(row.damage_rate)}
-                                            </td>
-                                            <td className="num">{format.whole(row.sent)}</td>
-                                            <td className="num">{format.whole(row.missing)}</td>
-                                            <td className="num">{format.whole(row.checks)}</td>
-                                            <td className="num bold">{format.whole(row.passed)}</td>
-                                            <td className="num">{format.whole(row.rejected)}</td>
-                                            <td style={{ textAlign: 'center' }}>
-                                                <span className={`ui-chip ${(row as any).rejected > 0 ? 'bad' : 'good'}`}>
-                                                    {(row as any).qc_status ? (row as any).qc_status.toUpperCase() : 'PASSED'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </article>
+                    {(() => {
+                        const visibleStages = highlight
+                            ? data.stages.filter((s) => s.key === highlight)
+                            : data.stages;
+                        const visibleKeys = highlight ? [highlight] : STAGE_ORDER;
+                        const showFabric = !highlight || highlight === 'cutting';
 
-                    <div className="ui-report-grid">
-                        <article className="panel">
-                            <div className="panel-title">
-                                <h2>{t.dailyTitle}</h2>
-                            </div>
-                            <div className="ui-table-wrap">
-                                <table className="ui-table" style={{ minWidth: 420 }}>
-                                    <thead>
-                                        <tr>
-                                            <th>{t.day}</th>
-                                            {STAGE_ORDER.map((key) => (
-                                                <th key={key} className="num">
-                                                    {stageLabel(key, locale)}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.daily.length ? (
-                                            data.daily.map((day) => (
-                                                <tr key={day.day}>
-                                                    <td>{format.date(day.day)}</td>
-                                                    {STAGE_ORDER.map((key) => (
-                                                        <td key={key} className="num">
-                                                            {format.whole(day[key].good)}
-                                                            {day[key].damaged > 0 && (
-                                                                <small>
-                                                                    −
-                                                                    {format.whole(day[key].damaged)}
-                                                                </small>
-                                                            )}
+                        return (
+                            <>
+                                <article className="panel">
+                                    <div className="panel-title">
+                                        <h2>
+                                            {highlight
+                                                ? `${stageLabel(highlight, locale)} — ${t.stagesTitle}`
+                                                : t.stagesTitle}
+                                        </h2>
+                                    </div>
+                                    <div className="ui-table-wrap">
+                                        <table className="ui-table" style={{ minWidth: 920 }}>
+                                            <thead>
+                                                <tr>
+                                                    <th>{t.stage}</th>
+                                                    <th className="num">{locale === 'en' ? 'Input' : 'Entrée'}</th>
+                                                    <th className="num">{t.good}</th>
+                                                    <th className="num">{t.damaged}</th>
+                                                    <th className="num">{t.damageRate}</th>
+                                                    <th className="num">{t.sent}</th>
+                                                    <th className="num">{t.missing}</th>
+                                                    <th className="num">{t.checks}</th>
+                                                    <th className="num">{t.passed}</th>
+                                                    <th className="num">{t.rejected}</th>
+                                                    <th style={{ textAlign: 'center' }}>{locale === 'en' ? 'QC Status' : 'Statut CQ'}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {visibleStages.map((row) => (
+                                                    <tr
+                                                        key={row.key}
+                                                        style={
+                                                            row.key === highlight
+                                                                ? { fontWeight: 700 }
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        <td>{row.label[locale]}</td>
+                                                        <td className="num bold">{format.number((row as any).input ?? 0)}</td>
+                                                        <td className="num">{format.whole(row.good)}</td>
+                                                        <td className="num">{format.whole(row.damaged)}</td>
+                                                        <td className="num">
+                                                            {format.percent(row.damage_rate)}
                                                         </td>
-                                                    ))}
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan={5} className="empty">
-                                                    {t.empty}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </article>
+                                                        <td className="num">{format.whole(row.sent)}</td>
+                                                        <td className="num">{format.whole(row.missing)}</td>
+                                                        <td className="num">{format.whole(row.checks)}</td>
+                                                        <td className="num bold">{format.whole(row.passed)}</td>
+                                                        <td className="num">{format.whole(row.rejected)}</td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <span className={`ui-chip ${(row as any).rejected > 0 ? 'bad' : 'good'}`}>
+                                                                {(row as any).qc_status ? (row as any).qc_status.toUpperCase() : 'PASSED'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </article>
 
-                        <article className="panel">
-                            <div className="panel-title">
-                                <h2>{t.fabricTitle}</h2>
-                            </div>
-                            <div className="ui-table-wrap">
-                                <table className="ui-table" style={{ minWidth: 380 }}>
-                                    <thead>
-                                        <tr>
-                                            <th>{t.fabric}</th>
-                                            <th className="num">{t.used}</th>
-                                            <th className="num">{t.waste}</th>
-                                            <th className="num">{t.wasteRate}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.fabric.length ? (
-                                            data.fabric.map((row) => (
-                                                <tr key={row.name}>
-                                                    <td>
-                                                        <b>{row.name}</b>
-                                                        <small>{row.unit ?? text.none}</small>
-                                                    </td>
-                                                    <td className="num">
-                                                        {format.number(row.used)}
-                                                    </td>
-                                                    <td className="num">
-                                                        {format.number(row.waste)}
-                                                    </td>
-                                                    <td className="num">
-                                                        {format.percent(row.waste_rate)}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan={4} className="empty">
-                                                    {t.empty}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </article>
-                    </div>
+                                <div className="ui-report-grid">
+                                    <article className="panel">
+                                        <div className="panel-title">
+                                            <h2>{t.dailyTitle}</h2>
+                                        </div>
+                                        <div className="ui-table-wrap">
+                                            <table className="ui-table" style={{ minWidth: 420 }}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>{t.day}</th>
+                                                        {visibleKeys.map((key) => (
+                                                            <th key={key} className="num">
+                                                                {stageLabel(key, locale)}
+                                                            </th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {data.daily.length ? (
+                                                        data.daily.map((day) => (
+                                                            <tr key={day.day}>
+                                                                <td>{format.date(day.day)}</td>
+                                                                {visibleKeys.map((key) => (
+                                                                    <td key={key} className="num">
+                                                                        {format.whole(day[key].good)}
+                                                                        {day[key].damaged > 0 && (
+                                                                            <small>
+                                                                                −
+                                                                                {format.whole(day[key].damaged)}
+                                                                            </small>
+                                                                        )}
+                                                                    </td>
+                                                                ))}
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={visibleKeys.length + 1} className="empty">
+                                                                {t.empty}
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </article>
+
+                                    {showFabric && (
+                                        <article className="panel">
+                                            <div className="panel-title">
+                                                <h2>{t.fabricTitle}</h2>
+                                            </div>
+                                            <div className="ui-table-wrap">
+                                                <table className="ui-table" style={{ minWidth: 380 }}>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>{t.fabric}</th>
+                                                            <th className="num">{t.used}</th>
+                                                            <th className="num">{t.waste}</th>
+                                                            <th className="num">{t.wasteRate}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {data.fabric.length ? (
+                                                            data.fabric.map((row) => (
+                                                                <tr key={row.name}>
+                                                                    <td>
+                                                                        <b>{row.name}</b>
+                                                                        <small>{row.unit ?? text.none}</small>
+                                                                    </td>
+                                                                    <td className="num">
+                                                                        {format.number(row.used)}
+                                                                    </td>
+                                                                    <td className="num">
+                                                                        {format.number(row.waste)}
+                                                                    </td>
+                                                                    <td className="num">
+                                                                        {format.percent(row.waste_rate)}
+                                                                    </td>
+                                                                </tr>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td colSpan={4} className="empty">
+                                                                    {t.empty}
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </article>
+                                    )}
+                                </div>
+                            </>
+                        );
+                    })()}
                 </>
             )}
         </>
