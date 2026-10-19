@@ -112,7 +112,9 @@ class ProductionFlowController extends Controller
         $departmentName = ! empty($data['department'])
             ? ucfirst($data['department']) . ' Department'
             : 'All Factory Departments';
-        $reportTitle = 'FACTORY OPERATIONS & QUALITY CONTROL REGISTER';
+        $reportTitle = ! empty($data['department'])
+            ? strtoupper($data['department']) . ' DEPARTMENT REPORT'
+            : 'FACTORY OPERATIONS & QUALITY CONTROL REPORT';
         $periodString = $result['period']['from'] . ' to ' . $result['period']['to'];
 
         $summaryStages = [];
@@ -190,7 +192,7 @@ class ProductionFlowController extends Controller
 
         $factory = $request->user()->currentFactory;
         $departmentName = 'Cutting Department';
-        $reportTitle = 'CUTTING OPERATIONS, MATERIAL USAGE & QUALITY REGISTER';
+        $reportTitle = 'CUTTING DEPARTMENT REPORT';
         $periodString = $result['period']['from'] . ' to ' . $result['period']['to'];
 
         $block = $result['cutting'] ?? [];

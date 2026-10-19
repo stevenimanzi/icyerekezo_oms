@@ -315,22 +315,17 @@ export default function FinishingReportPage({ user, locale }: Props) {
             >
                 <header style={{ borderBottom: '2pt solid #000000', paddingBottom: 14, marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: '#555555', textTransform: 'uppercase' }}>
-                            OFFICIAL PRODUCTION REGISTER · MICROSOFT EXCEL GRID FORMAT
-                        </div>
-                        <h2 style={{ fontSize: '1.45rem', fontWeight: 900, margin: '4px 0', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                        <h2 style={{ fontSize: '1.45rem', fontWeight: 900, margin: 0, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#000000' }}>
                             {user.current_factory?.name || 'ICYEREKEZO OMS FACTORY'}
                         </h2>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111111' }}>
-                            {locale === 'en'
-                                ? 'DEPARTMENT OF FINISHING · PROCESSING, IRONING & QUALITY AUDIT'
-                                : 'DÉPARTEMENT DE FINITION · REPASSAGE, FINITION ET CONTRÔLE QUALITÉ'}
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, margin: '4px 0 0 0', textTransform: 'uppercase', letterSpacing: '0.02em', color: '#000000' }}>
+                            {locale === 'en' ? 'FINISHING DEPARTMENT REPORT' : 'RAPPORT DU DÉPARTEMENT FINITION'}
                         </div>
                     </div>
-                    <div style={{ textAlign: 'right', fontSize: '0.82rem', lineHeight: 1.6, borderLeft: '1pt solid #cccccc', paddingLeft: 16 }}>
+                    <div style={{ textAlign: 'left', fontSize: '0.82rem', lineHeight: 1.6, borderLeft: '1.5pt solid #000000', paddingLeft: 16 }}>
                         <div><b>PERIOD:</b> {fromDate === toDate ? fromDate : `${fromDate} to ${toDate}`}</div>
                         <div><b>DEPARTMENT:</b> FINISHING</div>
-                        <div><b>PREPARED BY:</b> {user.name} (Finishing Lead)</div>
+                        <div><b>PREPARED BY:</b> {user.name} (Finishing Operator)</div>
                         <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({passRate}%)</span></div>
                     </div>
                 </header>
@@ -507,7 +502,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
                 </div>
 
                 <footer style={{ marginTop: 16, paddingTop: 6, borderTop: '0.5pt solid #999999', display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#555555' }}>
-                    <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} · OFFICIAL FINISHING OPERATIONS REGISTER</span>
+                    <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} · FINISHING DEPARTMENT REPORT</span>
                     <span>Page 1 of 1 · Confidential</span>
                 </footer>
             </article>
