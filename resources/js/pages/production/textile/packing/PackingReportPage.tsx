@@ -182,10 +182,13 @@ export default function PackingReportPage({ user, locale }: Props) {
     };
 
     return (
-        <section className="ui" style={{ maxWidth: 1240, margin: '0 auto', paddingBottom: 60 }}>
+        <section className="ui" style={{ maxWidth: 1240, margin: '0 auto', paddingBottom: 60, background: '#ffffff' }}>
             {/* INLINE CSS FOR EXCEL PAPER SHEET & PRINT MEDIA */}
             <style>
                 {`
+                .print-signatures-block {
+                    display: none;
+                }
                 @media print {
                     body {
                         background: #ffffff !important;
@@ -195,30 +198,36 @@ export default function PackingReportPage({ user, locale }: Props) {
                     .no-print, header, nav, aside, .app-sidebar, .app-header {
                         display: none !important;
                     }
+                    .print-signatures-block {
+                        display: block !important;
+                    }
                     .excel-table-container {
                         box-shadow: none !important;
                         border: 1pt solid #000000 !important;
                         padding: 0 !important;
                         margin: 0 !important;
                         width: 100% !important;
+                        background: #ffffff !important;
                     }
                     table {
                         width: 100% !important;
                         border-collapse: collapse !important;
                         font-size: 8.5pt !important;
+                        background: #ffffff !important;
                     }
                     th, td {
                         border: 1pt solid #000000 !important;
                         padding: 4pt 6pt !important;
                         color: #000000 !important;
+                        background: #ffffff !important;
                     }
                     thead tr {
-                        background: #e2e2e2 !important;
+                        background: #ffffff !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
                     tfoot tr {
-                        background: #ececec !important;
+                        background: #ffffff !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
@@ -280,9 +289,9 @@ export default function PackingReportPage({ user, locale }: Props) {
                     style={{
                         marginTop: 16,
                         padding: '12px 16px',
-                        background: 'var(--card-bg, #ffffff)',
-                        border: '1px solid var(--border-color, #e5e7eb)',
-                        borderRadius: 8,
+                        background: '#ffffff',
+                        border: '1px solid #000000',
+                        borderRadius: 4,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -383,71 +392,71 @@ export default function PackingReportPage({ user, locale }: Props) {
                 </header>
 
                 {/* 5-COLUMN EXCEL KPI SUMMARY MATRIX */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#f9f9f9', textAlign: 'center' }}>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>1. Received (Input)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#ffffff', textAlign: 'center' }}>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>1. Received (Input)</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalInput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Finished garments from finishing</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Finished garments from finishing</div>
                     </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>2. Used Items</div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>2. Used Items</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalOutput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Polybags &amp; boxes consumed</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Polybags &amp; boxes consumed</div>
                     </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>3. Output Produced</div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>3. Output Produced</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalOutput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Packaged units ready for stock</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Packaged units ready for stock</div>
                     </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>4. Damaged / Waste</div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>4. Damaged / Waste</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: totalDamaged > 0 ? '#b91c1c' : '#000000' }}>{num(totalDamaged)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Packaging flaws &amp; torn bags</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Packaging flaws &amp; torn bags</div>
                     </div>
-                    <div style={{ padding: '10px 8px' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>5. Quality Control</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#15803d' }}>{qcPassRate}%</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Final AQL Verified</div>
+                    <div style={{ padding: '10px 8px', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>5. Quality Control</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#000000' }}>{qcPassRate}%</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Final AQL Verified</div>
                     </div>
                 </div>
 
                 {/* SINGLE EXCEL DATA TABLE */}
                 <div style={{ overflowX: 'auto', marginBottom: 20 }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.82rem', fontFamily: 'Segoe UI, Arial, sans-serif' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.82rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff' }}>
                         <thead>
-                            <tr style={{ background: '#e2e2e2' }}>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 40 }}>#</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 95 }}>DATE</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'left', width: 110 }}>CARTON / BATCH #</th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#d5d5d5' }}>
+                            <tr style={{ background: '#ffffff' }}>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 40, background: '#ffffff' }}>#</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 95, background: '#ffffff' }}>DATE</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'left', width: 110, background: '#ffffff' }}>CARTON / BATCH #</th>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
                                     1. RECEIVED (INPUT) &amp; USED
                                 </th>
-                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#e2e2e2' }}>
+                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
                                     2. OUTPUT PRODUCED (PACKAGED GOODS)
                                 </th>
-                                <th style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#d5d5d5', width: 85 }}>
+                                <th style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff', width: 85 }}>
                                     3. DAMAGED
                                 </th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#e2e2e2', width: 130 }}>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff', width: 130 }}>
                                     4. QUALITY CONTROL
                                 </th>
                             </tr>
-                            <tr style={{ background: '#f0f0f0' }}>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left' }}>RECEIVED ITEM</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80 }}>INPUT (PCS)</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left' }}>PRODUCT STYLE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 60 }}>COLOR</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 50 }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80 }}>PACKED (PCS)</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right' }}>PACK FLAW</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right' }}>PASSED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>QC STATUS</th>
+                            <tr style={{ background: '#ffffff' }}>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left', background: '#ffffff' }}>RECEIVED ITEM</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80, background: '#ffffff' }}>INPUT (PCS)</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left', background: '#ffffff' }}>PRODUCT STYLE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 60, background: '#ffffff' }}>COLOR</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 50, background: '#ffffff' }}>SIZE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80, background: '#ffffff' }}>PACKED (PCS)</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', background: '#ffffff' }}>PACK FLAW</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', background: '#ffffff' }}>PASSED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', background: '#ffffff' }}>QC STATUS</th>
                             </tr>
                         </thead>
                         <tbody>
                             {packingRows.length > 0 ? (
                                 packingRows.map((row: any, index: number) => (
-                                    <tr key={row.id || index} style={{ background: index % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                                    <tr key={row.id || index} style={{ background: '#ffffff' }}>
                                         <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>{index + 1}</td>
                                         <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>{row.date}</td>
                                         <td style={{ border: '1pt solid #000000', padding: '5px 6px', fontWeight: 600 }}>{row.lotNumber}</td>
@@ -468,7 +477,7 @@ export default function PackingReportPage({ user, locale }: Props) {
                                             {num(row.qcPassed)}
                                         </td>
                                         <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', fontWeight: 700 }}>
-                                            <span style={{ border: '1pt solid #000000', padding: '1px 5px', fontSize: '0.72rem', background: '#f5f5f5' }}>
+                                            <span style={{ border: '1pt solid #000000', padding: '1px 5px', fontSize: '0.72rem', background: '#ffffff' }}>
                                                 {row.qcStatus}
                                             </span>
                                         </td>
@@ -476,7 +485,7 @@ export default function PackingReportPage({ user, locale }: Props) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={12} style={{ border: '1pt solid #000000', padding: 24, textAlign: 'center', fontStyle: 'italic', color: '#666666' }}>
+                                    <td colSpan={12} style={{ border: '1pt solid #000000', padding: 24, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
                                         {locale === 'en'
                                             ? 'No packing operations match the selected date or date range.'
                                             : "Aucune opération d'emballage enregistrée pour la date ou période sélectionnée."}
@@ -485,24 +494,24 @@ export default function PackingReportPage({ user, locale }: Props) {
                             )}
                         </tbody>
                         <tfoot>
-                            <tr style={{ background: '#ececec', fontWeight: 800, borderTop: '2pt solid #000000' }}>
-                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                            <tr style={{ background: '#ffffff', fontWeight: 800, borderTop: '2pt solid #000000' }}>
+                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     TOTAL PACKING REGISTER:
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalInput)}
                                 </td>
-                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 8px' }}></td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 8px', background: '#ffffff' }}></td>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalOutput)} pcs
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalDamaged)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalQcPassed)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
                                     {qcPassRate}% VERIFIED
                                 </td>
                             </tr>
@@ -510,47 +519,47 @@ export default function PackingReportPage({ user, locale }: Props) {
                     </table>
                 </div>
 
-                {/* OFFICIAL SIGNATURES BLOCK AT BOTTOM */}
-                <div style={{ marginTop: 28, borderTop: '1.5pt solid #000000', paddingTop: 14 }}>
+                {/* OFFICIAL SIGNATURES BLOCK - ON PRINTED REPORT ONLY */}
+                <div className="print-signatures-block" style={{ marginTop: 28, borderTop: '1.5pt solid #000000', paddingTop: 14 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem' }}>
-                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #cccccc', paddingBottom: 4, marginBottom: 6 }}>
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
                                 1. PREPARED BY
                             </div>
-                            <div>Name: {user.name}</div>
+                            <div>Name: Packing Manager</div>
                             <div>Role: Packing Operator</div>
                             <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
-                            <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#666' }}>Signature &amp; Date</div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
                         </div>
 
-                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem' }}>
-                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #cccccc', paddingBottom: 4, marginBottom: 6 }}>
-                                2. PACKAGING SUPERVISOR
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
+                                2. SUPERVISOR REVIEW
                             </div>
                             <div>Name: ____________________</div>
                             <div>Role: Packing Supervisor</div>
                             <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
-                            <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#666' }}>Signature &amp; Date</div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
                         </div>
 
-                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem' }}>
-                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #cccccc', paddingBottom: 4, marginBottom: 6 }}>
-                                3. QUALITY CONTROL (AQL)
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
+                                3. QUALITY CONTROL
                             </div>
                             <div>Name: ____________________</div>
                             <div>Result: [ X ] Verified Passed</div>
                             <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
-                            <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#666' }}>Signature &amp; Date</div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
                         </div>
 
-                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem' }}>
-                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #cccccc', paddingBottom: 4, marginBottom: 6 }}>
-                                4. WAREHOUSE RECEIVER
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
+                                4. FACTORY MANAGER
                             </div>
                             <div>Name: ____________________</div>
-                            <div>Decision: Accepted into Stock</div>
+                            <div>Decision: Approved</div>
                             <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
-                            <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#666' }}>Signature &amp; Date</div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
                         </div>
                     </div>
                 </div>

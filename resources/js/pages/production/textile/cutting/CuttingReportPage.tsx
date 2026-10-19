@@ -150,8 +150,11 @@ export default function CuttingReportPage({ user, locale }: Props) {
     const qcPassRate = totalOutputPieces > 0 ? ((totalQcPassed / totalOutputPieces) * 100).toFixed(1) : '100.0';
 
     return (
-        <section className="module-page cutting-report-page" style={{ padding: '20px 24px', maxWidth: 1200, margin: '0 auto' }}>
+        <section className="module-page cutting-report-page" style={{ padding: '20px 24px', maxWidth: 1200, margin: '0 auto', background: '#ffffff' }}>
             <style>{`
+                .print-signatures-block {
+                    display: none;
+                }
                 @media print {
                     nav, header, .app-sidebar, .module-actions, .no-print, button, .ui-tabs {
                         display: none !important;
@@ -160,14 +163,27 @@ export default function CuttingReportPage({ user, locale }: Props) {
                         background: #ffffff !important;
                         padding: 0 !important;
                         margin: 0 !important;
+                        color: #000000 !important;
+                    }
+                    .print-signatures-block {
+                        display: block !important;
                     }
                     .excel-table-container {
                         box-shadow: none !important;
-                        border: none !important;
+                        border: 1pt solid #000000 !important;
+                        background: #ffffff !important;
                     }
                     table {
                         width: 100% !important;
                         page-break-inside: auto;
+                        background: #ffffff !important;
+                    }
+                    th, td {
+                        background: #ffffff !important;
+                        color: #000000 !important;
+                    }
+                    thead tr, tfoot tr {
+                        background: #ffffff !important;
                     }
                     tr {
                         page-break-inside: avoid;
@@ -224,7 +240,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
             </div>
 
             {/* DATE FILTER BAR */}
-            <div className="panel no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 16px', marginBottom: 20 }}>
+            <div className="panel no-print" style={{ background: '#ffffff', border: '1px solid #000000', borderRadius: 4, padding: '12px 16px', marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginRight: 4 }}>
@@ -341,71 +357,71 @@ export default function CuttingReportPage({ user, locale }: Props) {
                 </header>
 
                 {/* 5-COLUMN EXCEL KPI SUMMARY MATRIX */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#f9f9f9', textAlign: 'center' }}>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>1. Received (Input)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#ffffff', textAlign: 'center' }}>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>1. Received (Input)</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalFabricUsed)} m</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Fabric material allocated</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Fabric material allocated</div>
                     </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>2. Used Items</div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>2. Used Items</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalFabricUsed)} m</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Consumed in cutting</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Consumed in cutting</div>
                     </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>3. Output Produced</div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>3. Output Produced</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalOutputPieces)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Cut pieces passed to sewing</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Cut pieces passed to sewing</div>
                     </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>4. Damaged / Waste</div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>4. Damaged / Waste</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: totalDamaged > 0 ? '#b91c1c' : '#000000' }}>{num(totalDamaged)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>Scraps &amp; defective cuts</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Scraps &amp; defective cuts</div>
                     </div>
-                    <div style={{ padding: '10px 8px' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555555', textTransform: 'uppercase' }}>5. Quality Control</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#15803d' }}>{qcPassRate}%</div>
-                        <div style={{ fontSize: '0.7rem', color: '#666666' }}>QC Inspected &amp; Verified</div>
+                    <div style={{ padding: '10px 8px', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>5. Quality Control</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#000000' }}>{qcPassRate}%</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>QC Inspected &amp; Verified</div>
                     </div>
                 </div>
 
                 {/* SINGLE EXCEL DATA TABLE */}
                 <div style={{ overflowX: 'auto', marginBottom: 20 }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.82rem', fontFamily: 'Segoe UI, Arial, sans-serif' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.82rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff' }}>
                         <thead>
-                            <tr style={{ background: '#e2e2e2' }}>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 40 }}>#</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 95 }}>DATE</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'left', width: 110 }}>LOT / CUT #</th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#d5d5d5' }}>
+                            <tr style={{ background: '#ffffff' }}>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 40, background: '#ffffff' }}>#</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 95, background: '#ffffff' }}>DATE</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'left', width: 110, background: '#ffffff' }}>LOT / CUT #</th>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
                                     1. RECEIVED (INPUT) &amp; USED
                                 </th>
-                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#e2e2e2' }}>
+                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
                                     2. OUTPUT PRODUCED (CUT PIECES)
                                 </th>
-                                <th style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#d5d5d5', width: 85 }}>
+                                <th style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff', width: 85 }}>
                                     3. DAMAGED
                                 </th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#e2e2e2', width: 130 }}>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff', width: 130 }}>
                                     4. QUALITY CONTROL
                                 </th>
                             </tr>
-                            <tr style={{ background: '#f0f0f0' }}>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left' }}>FABRIC MATERIAL</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80 }}>METERS USED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left' }}>GARMENT STYLE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 60 }}>COLOR</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 50 }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80 }}>GOOD PCS</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right' }}>SCRAP / DEF</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right' }}>PASSED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>QC STATUS</th>
+                            <tr style={{ background: '#ffffff' }}>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left', background: '#ffffff' }}>FABRIC MATERIAL</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80, background: '#ffffff' }}>METERS USED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left', background: '#ffffff' }}>GARMENT STYLE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 60, background: '#ffffff' }}>COLOR</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 50, background: '#ffffff' }}>SIZE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80, background: '#ffffff' }}>GOOD PCS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', background: '#ffffff' }}>SCRAP / DEF</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', background: '#ffffff' }}>PASSED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', background: '#ffffff' }}>QC STATUS</th>
                             </tr>
                         </thead>
                         <tbody>
                             {cuttingRows.length > 0 ? (
                                 cuttingRows.map((row: any, index: number) => (
-                                    <tr key={row.id || index} style={{ background: index % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                                    <tr key={row.id || index} style={{ background: '#ffffff' }}>
                                         <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>{index + 1}</td>
                                         <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>{row.date}</td>
                                         <td style={{ border: '1pt solid #000000', padding: '5px 6px', fontWeight: 600 }}>{row.lotNumber}</td>
@@ -426,7 +442,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
                                             {num(row.qcPassed)}
                                         </td>
                                         <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', fontWeight: 700 }}>
-                                            <span style={{ border: '1pt solid #000000', padding: '1px 5px', fontSize: '0.72rem', background: '#f5f5f5' }}>
+                                            <span style={{ border: '1pt solid #000000', padding: '1px 5px', fontSize: '0.72rem', background: '#ffffff' }}>
                                                 {row.qcStatus}
                                             </span>
                                         </td>
@@ -434,7 +450,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={12} style={{ border: '1pt solid #000000', padding: 24, textAlign: 'center', fontStyle: 'italic', color: '#666666' }}>
+                                    <td colSpan={12} style={{ border: '1pt solid #000000', padding: 24, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
                                         {locale === 'en'
                                             ? 'No cutting operations match the selected date or date range.'
                                             : 'Aucune opération de coupe enregistrée pour la date ou période sélectionnée.'}
@@ -443,24 +459,24 @@ export default function CuttingReportPage({ user, locale }: Props) {
                             )}
                         </tbody>
                         <tfoot>
-                            <tr style={{ background: '#ececec', fontWeight: 800, borderTop: '2pt solid #000000' }}>
-                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                            <tr style={{ background: '#ffffff', fontWeight: 800, borderTop: '2pt solid #000000' }}>
+                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     TOTAL CUTTING REGISTER:
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalFabricUsed)} m
                                 </td>
-                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 8px' }}></td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 8px', background: '#ffffff' }}></td>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalOutputPieces)} pcs
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalDamaged)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalQcPassed)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
                                     {qcPassRate}% VERIFIED
                                 </td>
                             </tr>
@@ -468,47 +484,47 @@ export default function CuttingReportPage({ user, locale }: Props) {
                     </table>
                 </div>
 
-                {/* OFFICIAL SIGNATURES BLOCK AT BOTTOM */}
-                <div style={{ marginTop: 28, borderTop: '1.5pt solid #000000', paddingTop: 14 }}>
+                {/* OFFICIAL SIGNATURES BLOCK - ON PRINTED REPORT ONLY */}
+                <div className="print-signatures-block" style={{ marginTop: 28, borderTop: '1.5pt solid #000000', paddingTop: 14 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem' }}>
-                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #cccccc', paddingBottom: 4, marginBottom: 6 }}>
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
                                 1. PREPARED BY
                             </div>
-                            <div>Name: {user.name}</div>
+                            <div>Name: Cutting Manager</div>
                             <div>Role: Cutting Operator</div>
                             <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
-                            <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#666' }}>Signature &amp; Date</div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
                         </div>
 
-                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem' }}>
-                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #cccccc', paddingBottom: 4, marginBottom: 6 }}>
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
                                 2. SUPERVISOR REVIEW
                             </div>
                             <div>Name: ____________________</div>
                             <div>Role: Cutting Line Supervisor</div>
                             <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
-                            <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#666' }}>Signature &amp; Date</div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
                         </div>
 
-                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem' }}>
-                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #cccccc', paddingBottom: 4, marginBottom: 6 }}>
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
                                 3. QUALITY CONTROL
                             </div>
                             <div>Name: ____________________</div>
                             <div>Result: [ X ] Verified Passed</div>
                             <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
-                            <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#666' }}>Signature &amp; Date</div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
                         </div>
 
-                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem' }}>
-                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #cccccc', paddingBottom: 4, marginBottom: 6 }}>
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
                                 4. FACTORY MANAGER
                             </div>
                             <div>Name: ____________________</div>
                             <div>Decision: Approved</div>
                             <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
-                            <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#666' }}>Signature &amp; Date</div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
                         </div>
                     </div>
                 </div>

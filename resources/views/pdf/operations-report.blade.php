@@ -74,7 +74,7 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.3pt;
-            background-color: #e5e5e5;
+            background-color: #ffffff;
             border: 1pt solid #000000;
             border-bottom: none;
             padding: 3pt 6pt;
@@ -94,7 +94,7 @@
             font-size: 7.5pt;
         }
         table.excel-table thead th {
-            background-color: #f2f2f2;
+            background-color: #ffffff;
             font-weight: bold;
             text-align: center;
             vertical-align: middle;
@@ -103,7 +103,7 @@
             letter-spacing: 0.2pt;
         }
         table.excel-table .group-head {
-            background-color: #e8e8e8;
+            background-color: #ffffff;
             font-weight: bold;
             text-align: center;
             border-bottom: 1pt solid #000000;
@@ -120,7 +120,7 @@
         }
         table.excel-table tr.total-row td {
             font-weight: bold;
-            background-color: #f5f5f5;
+            background-color: #ffffff;
             border-top: 1.25pt solid #000000;
             border-bottom: 2pt double #000000;
         }
@@ -387,29 +387,29 @@
         <tr>
             <td>
                 <div class="sign-role">1. PREPARED BY</div>
-                <div class="sign-field"><strong>Name:</strong> {{ $user?->name ?? 'Operator' }}</div>
-                <div class="sign-field"><strong>Role:</strong> {{ $userRole ?? 'Department Operator' }}</div>
+                <div class="sign-field"><strong>Name:</strong> {{ $user?->name ?? 'Cutting Manager' }}</div>
+                <div class="sign-field"><strong>Role:</strong> Cutting Operator</div>
                 <div class="sign-line"></div>
                 <div class="sign-field"><strong>Signature &amp; Date</strong></div>
             </td>
             <td>
                 <div class="sign-role">2. SUPERVISOR REVIEW</div>
-                <div class="sign-field"><strong>Name:</strong> _____________________</div>
-                <div class="sign-field"><strong>Role:</strong> Production Supervisor</div>
+                <div class="sign-field"><strong>Name:</strong> ____________________</div>
+                <div class="sign-field"><strong>Role:</strong> Cutting Line Supervisor</div>
                 <div class="sign-line"></div>
                 <div class="sign-field"><strong>Signature &amp; Date</strong></div>
             </td>
             <td>
-                <div class="sign-role">3. QUALITY CONTROL OFFICER</div>
-                <div class="sign-field"><strong>Name:</strong> _____________________</div>
-                <div class="sign-field"><strong>Status:</strong> [ &nbsp; ] Passed &nbsp; [ &nbsp; ] Conditional</div>
+                <div class="sign-role">3. QUALITY CONTROL</div>
+                <div class="sign-field"><strong>Name:</strong> ____________________</div>
+                <div class="sign-field"><strong>Result:</strong> [ X ] Verified Passed</div>
                 <div class="sign-line"></div>
                 <div class="sign-field"><strong>Signature &amp; Date</strong></div>
             </td>
             <td>
-                <div class="sign-role">4. FACTORY MANAGER APPROVAL</div>
-                <div class="sign-field"><strong>Name:</strong> _____________________</div>
-                <div class="sign-field"><strong>Decision:</strong> [ &nbsp; ] Approved &nbsp; [ &nbsp; ] Audit</div>
+                <div class="sign-role">4. FACTORY MANAGER</div>
+                <div class="sign-field"><strong>Name:</strong> ____________________</div>
+                <div class="sign-field"><strong>Decision:</strong> Approved</div>
                 <div class="sign-line"></div>
                 <div class="sign-field"><strong>Signature &amp; Date</strong></div>
             </td>
