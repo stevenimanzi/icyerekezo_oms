@@ -183,51 +183,77 @@ export default function PackingReportPage({ user, locale }: Props) {
 
     return (
         <section className="ui" style={{ maxWidth: 1240, margin: '0 auto', paddingBottom: 60, background: '#ffffff' }}>
-            {/* INLINE CSS FOR EXCEL PAPER SHEET & PRINT MEDIA */}
             <style>
                 {`
+                .excel-table-container,
+                .excel-table-container table,
+                .excel-table-container thead,
+                .excel-table-container tbody,
+                .excel-table-container tfoot,
+                .excel-table-container tr {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                }
+                .excel-table-container th {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    border: 1pt solid #000000 !important;
+                    font-weight: 700 !important;
+                }
+                .excel-table-container td {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    border: 1pt solid #000000 !important;
+                }
                 .print-signatures-block {
-                    display: none;
+                    display: block !important;
                 }
                 @media print {
-                    body {
+                    @page {
+                        size: auto;
+                        margin: 8mm;
+                    }
+                    body, #root, .app-layout, .app-content, .ui {
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
                         color: #000000 !important;
                         font-family: 'Segoe UI', Arial, sans-serif !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
                     }
                     .no-print, header, nav, aside, .app-sidebar, .app-header {
                         display: none !important;
                     }
-                    .print-signatures-block {
-                        display: block !important;
-                    }
                     .excel-table-container {
                         box-shadow: none !important;
-                        border: 1pt solid #000000 !important;
-                        padding: 0 !important;
+                        border: 1.5pt solid #000000 !important;
+                        padding: 16px 20px !important;
                         margin: 0 !important;
                         width: 100% !important;
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
                     }
                     table {
                         width: 100% !important;
                         border-collapse: collapse !important;
                         font-size: 8.5pt !important;
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
                     }
                     th, td {
                         border: 1pt solid #000000 !important;
                         padding: 4pt 6pt !important;
                         color: #000000 !important;
                         background: #ffffff !important;
-                    }
-                    thead tr {
-                        background: #ffffff !important;
+                        background-color: #ffffff !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
-                    tfoot tr {
+                    thead tr, tfoot tr, tbody tr {
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
@@ -372,15 +398,15 @@ export default function PackingReportPage({ user, locale }: Props) {
                 <header style={{ borderBottom: '2pt solid #000000', paddingBottom: 14, marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: '#555555', textTransform: 'uppercase' }}>
-                            OFFICIAL PRODUCTION REGISTER &middot; MICROSOFT EXCEL GRID FORMAT
+                            OFFICIAL PRODUCTION REGISTER · MICROSOFT EXCEL GRID FORMAT
                         </div>
                         <h2 style={{ fontSize: '1.45rem', fontWeight: 900, margin: '4px 0', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                             {user.current_factory?.name || 'ICYEREKEZO OMS FACTORY'}
                         </h2>
                         <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111111' }}>
                             {locale === 'en'
-                                ? 'DEPARTMENT OF PACKING &middot; FINISHED GOODS PACKAGING, DEFECTS & AQL AUDIT REPORT'
-                                : "DÉPARTEMENT D'EMBALLAGE &middot; CONDITIONNEMENT, DÉFAUTS ET CONTRÔLE AQL"}
+                                ? 'DEPARTMENT OF PACKING · FINISHED GOODS PACKAGING, DEFECTS & AQL AUDIT REPORT'
+                                : "DÉPARTEMENT D'EMBALLAGE · CONDITIONNEMENT, DÉFAUTS ET CONTRÔLE AQL"}
                         </div>
                     </div>
                     <div style={{ textAlign: 'right', fontSize: '0.82rem', lineHeight: 1.6, borderLeft: '1pt solid #cccccc', paddingLeft: 16 }}>
@@ -565,8 +591,8 @@ export default function PackingReportPage({ user, locale }: Props) {
                 </div>
 
                 <footer style={{ marginTop: 16, paddingTop: 6, borderTop: '0.5pt solid #999999', display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#555555' }}>
-                    <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} &middot; OFFICIAL PACKING &amp; HANDOVER REGISTER</span>
-                    <span>Page 1 of 1 &middot; Confidential</span>
+                    <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} · OFFICIAL PACKING &amp; HANDOVER REGISTER</span>
+                    <span>Page 1 of 1 · Confidential</span>
                 </footer>
             </article>
         </section>

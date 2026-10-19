@@ -149,38 +149,72 @@ export default function SewingReportPage({ user, locale }: Props) {
     return (
         <section className="module-page sewing-report-page" style={{ padding: '20px 24px', maxWidth: 1200, margin: '0 auto', background: '#ffffff' }}>
             <style>{`
+                .excel-table-container,
+                .excel-table-container table,
+                .excel-table-container thead,
+                .excel-table-container tbody,
+                .excel-table-container tfoot,
+                .excel-table-container tr {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                }
+                .excel-table-container th {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    border: 1pt solid #000000 !important;
+                    font-weight: 700 !important;
+                }
+                .excel-table-container td {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    border: 1pt solid #000000 !important;
+                }
                 .print-signatures-block {
-                    display: none;
+                    display: block !important;
                 }
                 @media print {
-                    nav, header, .app-sidebar, .module-actions, .no-print, button, .ui-tabs {
+                    @page {
+                        size: auto;
+                        margin: 8mm;
+                    }
+                    nav, header, .app-sidebar, .module-actions, .no-print, button, .ui-tabs, .app-header {
                         display: none !important;
                     }
-                    body, .module-page {
+                    body, #root, .app-layout, .app-content, .module-page {
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
                         padding: 0 !important;
                         margin: 0 !important;
                         color: #000000 !important;
-                    }
-                    .print-signatures-block {
-                        display: block !important;
+                        box-shadow: none !important;
                     }
                     .excel-table-container {
                         box-shadow: none !important;
-                        border: 1pt solid #000000 !important;
+                        border: 1.5pt solid #000000 !important;
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        padding: 16px 20px !important;
+                        margin: 0 !important;
+                        max-width: 100% !important;
                     }
                     table {
                         width: 100% !important;
                         page-break-inside: auto;
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
                     }
                     th, td {
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
                         color: #000000 !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
-                    thead tr, tfoot tr {
+                    thead tr, tfoot tr, tbody tr {
                         background: #ffffff !important;
+                        background-color: #ffffff !important;
                     }
                     tr {
                         page-break-inside: avoid;
@@ -330,15 +364,15 @@ export default function SewingReportPage({ user, locale }: Props) {
                 <header style={{ borderBottom: '2pt solid #000000', paddingBottom: 14, marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: '#555555', textTransform: 'uppercase' }}>
-                            OFFICIAL PRODUCTION REGISTER &middot; MICROSOFT EXCEL GRID FORMAT
+                            OFFICIAL PRODUCTION REGISTER · MICROSOFT EXCEL GRID FORMAT
                         </div>
                         <h2 style={{ fontSize: '1.45rem', fontWeight: 900, margin: '4px 0', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                             {user.current_factory?.name || 'ICYEREKEZO OMS FACTORY'}
                         </h2>
                         <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111111' }}>
                             {locale === 'en'
-                                ? 'DEPARTMENT OF SEWING &middot; ASSEMBLY LINES, GARMENTS PRODUCED & QUALITY AUDIT'
-                                : 'DÉPARTEMENT DE COUTURE &middot; LIGNES D’ASSEMBLAGE, PRODUCTION ET CONTRÔLE QUALITÉ'}
+                                ? 'DEPARTMENT OF SEWING · ASSEMBLY LINES, GARMENTS PRODUCED & QUALITY AUDIT'
+                                : 'DÉPARTEMENT DE COUTURE · LIGNES D’ASSEMBLAGE, PRODUCTION ET CONTRÔLE QUALITÉ'}
                         </div>
                     </div>
                     <div style={{ textAlign: 'right', fontSize: '0.82rem', lineHeight: 1.6, borderLeft: '1pt solid #cccccc', paddingLeft: 16 }}>
@@ -523,8 +557,8 @@ export default function SewingReportPage({ user, locale }: Props) {
                 </div>
 
                 <footer style={{ marginTop: 16, paddingTop: 6, borderTop: '0.5pt solid #999999', display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#555555' }}>
-                    <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} &middot; OFFICIAL SEWING OPERATIONS REGISTER</span>
-                    <span>Page 1 of 1 &middot; Confidential</span>
+                    <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} · OFFICIAL SEWING OPERATIONS REGISTER</span>
+                    <span>Page 1 of 1 · Confidential</span>
                 </footer>
             </article>
         </section>
