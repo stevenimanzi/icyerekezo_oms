@@ -104,6 +104,17 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (url.pathname.startsWith('/api/')) {
+        // Operational flow, department dashboard, and user auth endpoints must NEVER serve stale cached data from previous users or departments.
+        if (
+            url.pathname.startsWith('/api/flow/') ||
+            url.pathname.startsWith('/api/department/') ||
+            url.pathname.startsWith('/api/auth/') ||
+            url.pathname.startsWith('/api/inventory/') ||
+            url.pathname.startsWith('/api/manufacturing/')
+        ) {
+            return;
+        }
+
         if (request.method === 'GET') {
             event.respondWith(
                 fetch(request).then((response) => {
