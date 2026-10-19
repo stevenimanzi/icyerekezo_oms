@@ -40,4 +40,4 @@ Route::prefix('api')->group(function () {
     });
 });
 
-Route::get('/{path?}', fn () => view('app'))->where('path', '^(?!api(?:/|$)).*');
+Route::get('/{path?}', fn () => view('app'))->where('path', '^(?!api(?:/|$)).*')->name('login');

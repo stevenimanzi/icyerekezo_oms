@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(fn () => '/');
         $middleware->web(append: [EnsurePlatformAvailable::class]);
         $middleware->append(SecurityHeaders::class);
         $middleware->alias([

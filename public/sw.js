@@ -1,7 +1,7 @@
 // ICYEREKEZO OMS service worker — app-shell caching, offline API read cache,
 // an offline write queue for mutations, and browser push notifications.
 
-const CACHE_VERSION = 'icyerekezo-v1';
+const CACHE_VERSION = 'icyerekezo-v2';
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 const SHELL_URLS = ['/dashboard'];
