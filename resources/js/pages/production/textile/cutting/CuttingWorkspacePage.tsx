@@ -213,27 +213,29 @@ export default function CuttingWorkspacePage({
                 String(item.name || ''),
             ),
     );
-    const cuttingWarehouseId =
-        warehouses.find((w) => w.code === 'CUT' || /cutting/i.test(w.name))?.id || 1;
-    const mainWarehouseId =
-        warehouses.find((w) => w.code === 'MAIN' || /main/i.test(w.name))?.id || 1;
+    const cuttingWarehouse = warehouses.find((w) => w.code === 'CUT' || /cutting/i.test(w.name));
+    const mainWarehouse = warehouses.find((w) => w.code === 'MAIN' || /main/i.test(w.name));
+    const cuttingWarehouseId = cuttingWarehouse?.id ?? (warehouses.length > 0 ? warehouses[0].id : null);
+    const mainWarehouseId = mainWarehouse?.id ?? (warehouses.length > 0 ? warehouses[0].id : null);
 
     const requestableItems = (fabricItems.length > 0 ? fabricItems : items)
         .map((item: any) => ({
             ...item,
-            available_qty: Number(
-                stock.find((s) => s.item_id === item.id && s.warehouse_id === mainWarehouseId)
-                    ?.quantity_on_hand || 0,
-            ),
+            available_qty: mainWarehouseId
+                ? Number(
+                      stock.find((s) => s.item_id === item.id && s.warehouse_id === mainWarehouseId)
+                          ?.quantity_on_hand || 0,
+                  )
+                : 0,
         }))
         .filter((item: any) => item.available_qty > 0);
 
-    const cuttingStock = stock.filter(
-        (s) => s.warehouse_id === cuttingWarehouseId && s.quantity_on_hand > 0,
-    );
-    const damageablePieces = cutPieces.filter(
-        (p: any) => p.warehouse_id === cuttingWarehouseId && p.available_qty > 0,
-    );
+    const cuttingStock = cuttingWarehouseId
+        ? stock.filter((s) => s.warehouse_id === cuttingWarehouseId && s.quantity_on_hand > 0)
+        : [];
+    const damageablePieces = cuttingWarehouseId
+        ? cutPieces.filter((p: any) => p.warehouse_id === cuttingWarehouseId && p.available_qty > 0)
+        : [];
     const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
     const cuttingTransactions = transactions.filter((tx: any) =>
@@ -486,6 +488,16 @@ export default function CuttingWorkspacePage({
             setBusy(false);
         }
     };
+
+    if (loading && !updated) {
+        return (
+            <section className="module-page cutting-workspace">
+                <div className="panel" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+                    <p style={{ margin: 0 }}>{t.loading}</p>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="module-page cutting-workspace">

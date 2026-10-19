@@ -185,7 +185,7 @@ function CurrentPage({
         if (flowStage) {
             return (
                 <StageWorkspace
-                    key={flowStage.stage}
+                    key={`${flowStage.stage}-${flowStage.tab}`}
                     user={user}
                     locale={locale}
                     stage={flowStage.stage}

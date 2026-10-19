@@ -197,6 +197,53 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
     const hasDedicatedPanels =
         logistics || isNoguchiSewing || isFinishingManager || isPackingManager || isQualityManager;
 
+    const canSeeProjectOverview = Boolean(
+        user.is_platform_admin ||
+            user.roles?.some((r: any) =>
+                [
+                    'production-manager',
+                    'factory-owner',
+                    'factory-administrator',
+                    'factory-manager',
+                ].includes(r.slug),
+            ) ||
+            (user.workspace === 'production' &&
+                user.roles?.some((r: any) => r.slug === 'production-manager')),
+    );
+
+    if (loading && !data) {
+        return (
+            <section
+                className={`department-dashboard ${user.workspace === 'cutting' ? 'cutting-dashboard' : ''}`}
+            >
+                <div className="page-heading">
+                    <div>
+                        <h1>{title}</h1>
+                        <p>{description}</p>
+                    </div>
+                </div>
+                <div
+                    className="panel"
+                    style={{
+                        textAlign: 'center',
+                        padding: '60px 20px',
+                        color: 'var(--muted)',
+                        background: 'var(--panel)',
+                        borderRadius: 12,
+                        border: '1px solid var(--line)',
+                    }}
+                >
+                    <RefreshCw className="spin" size={24} style={{ marginBottom: 12 }} />
+                    <p style={{ margin: 0, fontWeight: 500 }}>
+                        {fr
+                            ? 'Chargement des données en temps réel...'
+                            : 'Loading live operational data...'}
+                    </p>
+                </div>
+            </section>
+        );
+    }
+
     return (
         <section
             className={`department-dashboard ${user.workspace === 'cutting' ? 'cutting-dashboard' : ''}`}
@@ -287,8 +334,10 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
             </div>
             {error && <div className="admin-alert error">{error}</div>}
 
-            {/* Whole Project & End-to-End Pipeline Overview */}
-            <ProjectOverviewSection overview={data?.project_overview} fr={fr} number={number} />
+            {/* Whole Project & End-to-End Pipeline Overview: ONLY for Production Manager, Factory Admin, or Owner */}
+            {canSeeProjectOverview && (
+                <ProjectOverviewSection overview={data?.project_overview} fr={fr} number={number} />
+            )}
 
             <div style={{ margin: '22px 0 14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
                 <div>

@@ -162,8 +162,8 @@ export default function SewingWorkspacePage({
         return () => window.clearTimeout(timer);
     }, [success]);
 
-    const sewingWarehouseId =
-        warehouses.find((w) => w.code === 'SEW' || /sewing/i.test(w.name))?.id || 1;
+    const sewingWarehouse = warehouses.find((w) => w.code === 'SEW' || /sewing/i.test(w.name));
+    const sewingWarehouseId = sewingWarehouse?.id ?? (warehouses.length > 0 ? warehouses[0].id : null);
     const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
     const sewingTransactions = transactions.filter((tx: any) =>
@@ -462,6 +462,16 @@ export default function SewingWorkspacePage({
             setBusy(false);
         }
     };
+
+    if (loading && !updated) {
+        return (
+            <section className="module-page cutting-workspace">
+                <div className="panel" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+                    <p style={{ margin: 0 }}>{t.loading}</p>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="module-page cutting-workspace">
