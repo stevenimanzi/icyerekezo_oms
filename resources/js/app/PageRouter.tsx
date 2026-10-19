@@ -14,6 +14,18 @@ const AgreementWorkspacePage = lazy(() => import('../pages/logistics/AgreementWo
 const CuttingWorkspacePage = lazy(
     () => import('../pages/production/textile/cutting/CuttingWorkspacePage'),
 );
+const CuttingReportPage = lazy(
+    () => import('../pages/production/textile/cutting/CuttingReportPage'),
+);
+const SewingReportPage = lazy(
+    () => import('../pages/production/textile/sewing/SewingReportPage'),
+);
+const FinishingReportPage = lazy(
+    () => import('../pages/production/textile/finishing/FinishingReportPage'),
+);
+const PackingReportPage = lazy(
+    () => import('../pages/production/textile/packing/PackingReportPage'),
+);
 const FlowMonitorPage = lazy(() => import('../pages/production/flow/monitor/FlowMonitorPage'));
 const FactorySettingsPage = lazy(() => import('../pages/factory/FactorySettingsPage'));
 const FinanceOverviewPage = lazy(() => import('../pages/finance/FinanceOverviewPage'));
@@ -95,7 +107,6 @@ const FLOW_STAGE_PAGES: Record<string, { stage: StageKey; tab: FlowTab }> = {
     'cutting-workspace': { stage: 'cutting', tab: 'work' },
     'cut-fabrics': { stage: 'cutting', tab: 'work' },
     'damaged-fabrics': { stage: 'cutting', tab: 'work' },
-    'cutting-report': { stage: 'cutting', tab: 'report' },
     'sewing-workspace': { stage: 'sewing', tab: 'work' },
     'finishing-workspace': { stage: 'finishing', tab: 'work' },
     'packing-workspace': { stage: 'packing', tab: 'work' },
@@ -178,6 +189,19 @@ function CurrentPage({
     if (user.is_platform_admin) return <SystemAdminPage page={activePage} locale={locale} />;
 
     if (activePage === 'support') return <ChatPage user={user} locale={locale} />;
+
+    if (activePage === 'cutting-report' || (flags.isCuttingUser && activePage === 'reports')) {
+        return <CuttingReportPage user={user} locale={locale} />;
+    }
+    if (activePage === 'sewing-report' || (flags.isSewingUser && activePage === 'reports')) {
+        return <SewingReportPage user={user} locale={locale} />;
+    }
+    if (activePage === 'finishing-report' || (flags.isFinishingUser && activePage === 'reports')) {
+        return <FinishingReportPage user={user} locale={locale} />;
+    }
+    if (activePage === 'packing-report' || (flags.isPackagingUser && activePage === 'reports')) {
+        return <PackingReportPage user={user} locale={locale} />;
+    }
 
     if (flags.hasProductionFlow) {
         const flowStage = FLOW_STAGE_PAGES[activePage];

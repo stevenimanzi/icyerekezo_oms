@@ -27,7 +27,7 @@ const NOTICE_MS = 7000;
 
 type Props = { user: AuthUser; locale: Locale; stage: StageKey; initialTab?: Tab };
 
-export default function StageWorkspace({ locale, stage, initialTab = 'work' }: Props) {
+export default function StageWorkspace({ user, locale, stage, initialTab = 'work' }: Props) {
     const text = flowText[locale];
     const format = useMemo(() => makeFormat(locale, ''), [locale]);
     const [tab, setTab] = useState<Tab>(initialTab);
@@ -67,7 +67,7 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                         <RefreshCw size={15} />
                         {text.refresh}
                     </button>
-                    {canWork && stage !== 'cutting' && (
+                    {tab === 'work' && canWork && stage !== 'cutting' && (
                         <button
                             className="primary-btn"
                             onClick={() => setModal({ kind: 'record' })}
@@ -78,7 +78,7 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                                 : text.work.recordStage(stageLabel(stage, locale))}
                         </button>
                     )}
-                    {canWork && stage === 'cutting' && (
+                    {tab === 'work' && canWork && stage === 'cutting' && (
                         <>
                             <button
                                 className="secondary-btn"
@@ -153,7 +153,7 @@ export default function StageWorkspace({ locale, stage, initialTab = 'work' }: P
                         />
                     )}
                     {tab === 'report' && (
-                        <ReportTab stage={stage} locale={locale} text={text} format={format} />
+                        <ReportTab stage={stage} locale={locale} text={text} format={format} user={user} />
                     )}
 
                     {modal?.kind === 'receive' && (
