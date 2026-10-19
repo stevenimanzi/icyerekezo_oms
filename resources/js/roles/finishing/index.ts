@@ -9,6 +9,6 @@ export const finishingRole: RoleModule = {
         ['dashboard', LayoutDashboard, context.labels.dashboard, '*'],
         ['finishing-workspace', Sparkles, context.text('Finishing', 'Finition'), 'production.view'],
         ...requestMaterialsNav('finishing', context),
-        ['reports', ChartColumn, context.labels.reports, 'reports.view'],
+        ['finishing-report', ChartColumn, context.text('Report', 'Rapport'), 'production.view'],
     ],
 };

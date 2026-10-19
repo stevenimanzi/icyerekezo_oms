@@ -9,6 +9,6 @@ export const sewingRole: RoleModule = {
         ['dashboard', LayoutDashboard, context.labels.dashboard, '*'],
         ['sewing-workspace', Shirt, context.text('Sewing', 'Couture'), 'production.view'],
         ...requestMaterialsNav('sewing', context),
-        ['reports', ChartColumn, context.labels.reports, 'reports.view'],
+        ['sewing-report', ChartColumn, context.text('Report', 'Rapport'), 'production.view'],
     ],
 };

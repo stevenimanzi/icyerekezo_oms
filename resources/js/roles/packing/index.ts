@@ -14,6 +14,6 @@ export const packingRole: RoleModule = {
             'production.view',
         ],
         ...requestMaterialsNav('packing', context),
-        ['reports', ChartColumn, context.labels.reports, 'reports.view'],
+        ['packing-report', ChartColumn, context.text('Report', 'Rapport'), 'production.view'],
     ],
 };
