@@ -29,40 +29,91 @@ class FlowQueries
         private readonly MaterialRequestService $materials,
     ) {}
 
-    public function stage(User $user, string $stage): array
+    public function stage(User $user, string $stage, array $filters = []): array
     {
         $access = FlowAccess::for($user);
-        $lots = ProductionLot::where('status', 'open')->with(['product:id,name', 'fabric:id,name'])->latest('id')->limit(300)->get();
+        $period = $filters['period'] ?? 'daily';
+        $today = today();
+
+        $fromParam = $filters['from'] ?? ($filters['date'] ?? null);
+        $toParam = $filters['to'] ?? ($filters['date'] ?? null);
+
+        $startDate = match ($period) {
+            'daily' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->startOfDay(),
+            'weekly' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->subDays(6)->startOfDay(),
+            'monthly' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->startOfMonth(),
+            'yearly', 'anualy' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->startOfYear(),
+            'custom' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->startOfDay(),
+            'all_time' => Carbon::parse('2020-01-01')->startOfDay(),
+            default => $today->copy()->startOfDay(),
+        };
+
+        $endDate = match ($period) {
+            'daily' => $toParam ? Carbon::parse($toParam)->endOfDay() : ($fromParam ? Carbon::parse($fromParam)->endOfDay() : $today->copy()->endOfDay()),
+            'custom' => $toParam ? Carbon::parse($toParam)->endOfDay() : ($fromParam ? Carbon::parse($fromParam)->endOfDay() : $today->copy()->endOfDay()),
+            'weekly' => $toParam ? Carbon::parse($toParam)->endOfDay() : $today->copy()->endOfDay(),
+            'monthly' => $toParam ? Carbon::parse($toParam)->endOfDay() : $today->copy()->endOfDay(),
+            'yearly', 'anualy' => $toParam ? Carbon::parse($toParam)->endOfDay() : $today->copy()->endOfDay(),
+            default => $today->copy()->endOfDay(),
+        };
+
+        $lots = ProductionLot::where('status', 'open')->with(['product:id,name', 'fabric:id,name', 'inspections'])->latest('id')->limit(300)->get();
         $balances = $this->balances->forLots($lots->pluck('id'));
 
         $rows = $lots->map(fn (ProductionLot $lot) => $this->stageRow($lot, $balances[$lot->id], $stage))
             ->filter(fn (array $row) => $row['wip'] + $row['outbox'] + $row['incoming'] + $row['awaiting_quality'] > 0 || ($stage === 'cutting' && $row['cut_on'] >= today()->subDays(14)->toDateString()))
             ->values();
 
-        $today = ProductionEntry::where('stage', $stage)->whereNull('voided_at')->where('entry_date', '>=', today()->toDateString())->where('entry_date', '<', today()->addDay()->toDateString())
+        $entryQuery = ProductionEntry::where('stage', $stage)->whereNull('voided_at');
+        if ($period !== 'all_time') {
+            $entryQuery->where('entry_date', '>=', $startDate->toDateString())
+                ->where('entry_date', '<=', $endDate->toDateString());
+        }
+        $todayEntry = (clone $entryQuery)
             ->selectRaw('COALESCE(SUM(good_quantity), 0) as good, COALESCE(SUM(damaged_quantity), 0) as damaged')->first();
 
         $incoming = ProductionTransfer::where('to_stage', $stage)->where('status', 'sent')
             ->with(['lot.product:id,name', 'lot.fabric:id,name', 'sender:id,name'])->orderBy('sent_at')->get()
             ->map(fn (ProductionTransfer $transfer) => $this->transferRow($transfer));
 
-        $sentToday = (int) ProductionTransfer::where('from_stage', $stage)->whereIn('status', ['sent', 'received'])->where('sent_at', '>=', today())->sum('quantity_sent');
+        $sentQuery = ProductionTransfer::where('from_stage', $stage)->whereIn('status', ['sent', 'received']);
+        if ($period !== 'all_time') {
+            $sentQuery->where('sent_at', '>=', $startDate)->where('sent_at', '<=', $endDate);
+        } else {
+            $sentQuery->where('sent_at', '>=', today());
+        }
+        $sentToday = (int) $sentQuery->sum('quantity_sent');
+
+        $incomingSum = (int) $incoming->sum('quantity_sent');
+        if ($period !== 'daily' && $period !== 'all_time') {
+            $incomingInPeriod = (int) ProductionTransfer::where('to_stage', $stage)
+                ->whereIn('status', ['sent', 'received'])
+                ->where('sent_at', '>=', $startDate)
+                ->where('sent_at', '<=', $endDate)
+                ->sum('quantity_sent');
+            if ($incomingInPeriod > 0) {
+                $incomingSum = $incomingInPeriod;
+            }
+        }
 
         return [
             'stage' => $this->stageInfo($stage),
             'capabilities' => $this->capabilities($access, $stage),
             'summary' => [
-                'incoming' => (int) $incoming->sum('quantity_sent'),
+                'incoming' => $incomingSum,
                 'in_work' => (int) $rows->sum('wip'),
                 'ready_to_send' => (int) $rows->sum('outbox'),
                 'awaiting_quality' => (int) $rows->sum('awaiting_quality'),
-                'done_today' => (int) $today->good,
-                'damaged_today' => (int) $today->damaged,
+                'done_today' => (int) ($todayEntry?->good ?? 0),
+                'damaged_today' => (int) ($todayEntry?->damaged ?? 0),
                 'sent_today' => $sentToday,
+                'period' => $period,
+                'from' => $startDate->toDateString(),
+                'to' => $endDate->toDateString(),
             ],
             'lots' => $rows,
             'incoming' => $incoming,
-            'entries' => ProductionEntry::where('stage', $stage)->with(['lot:id,lot_number', 'recorder:id,name', 'fabric:id,name'])->latest('id')->limit(self::RECENT)->get()
+            'entries' => (clone $entryQuery)->with(['lot:id,lot_number', 'recorder:id,name', 'fabric:id,name'])->latest('id')->limit(self::RECENT)->get()
                 ->map(fn (ProductionEntry $entry) => $this->entryRow($entry, $access)),
             'transfers' => ProductionTransfer::where(fn ($query) => $query->where('from_stage', $stage)->orWhere('to_stage', $stage))
                 ->with(['lot:id,lot_number', 'sender:id,name', 'receiver:id,name'])->latest('id')->limit(self::RECENT)->get()
@@ -351,6 +402,15 @@ class FlowQueries
     {
         $b = $balance['stages'][$stage];
 
+        $inspections = $lot->relationLoaded('inspections')
+            ? $lot->inspections->where('stage', $stage)
+            : $lot->inspections()->where('stage', $stage)->get();
+
+        $latestInspection = $inspections->sortByDesc('id')->first();
+        $latestFailed = $inspections->where('rejected_quantity', '>', 0)->sortByDesc('id')->first();
+        $qcMessage = $latestFailed?->defect_details ?: ($latestFailed?->notes ?: ($latestInspection?->defect_details ?: $latestInspection?->notes));
+        $qcStatus = $latestInspection?->result ?: ($b['awaiting_quality'] > 0 ? 'pending' : ($b['quality_passed'] > 0 ? 'passed' : null));
+
         return [
             'id' => $lot->id,
             'lot_number' => $lot->lot_number,
@@ -373,6 +433,10 @@ class FlowQueries
             'good' => $b['good'],
             'damaged' => $b['damaged'],
             'sent' => $b['sent'],
+            'quality_passed' => $b['quality_passed'] ?? 0,
+            'quality_rejected' => $b['quality_rejected'] ?? 0,
+            'qc_message' => $qcMessage,
+            'qc_status' => $qcStatus,
         ];
     }
 

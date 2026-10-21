@@ -5,7 +5,7 @@ import { startPolling } from '../../core/polling';
 
 const REFRESH_EVERY_MS = 15000;
 
-export function useOwnerOverview(days: number) {
+export function useOwnerOverview(days: number | string, from?: string, to?: string) {
     const [data, setData] = useState<OwnerOverview | null>(null);
     const [error, setError] = useState('');
     const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -14,7 +14,12 @@ export function useOwnerOverview(days: number) {
     const load = useCallback(() => {
         setLoading(true);
 
-        return api<OwnerOverview>(`/api/executive/owner-overview?days=${days}`)
+        let url = `/api/executive/owner-overview?days=${days}`;
+        if (days === 'custom' && from && to) {
+            url += `&from=${from}&to=${to}`;
+        }
+
+        return api<OwnerOverview>(url)
             .then((result) => {
                 setData(result);
                 setError('');
@@ -22,7 +27,7 @@ export function useOwnerOverview(days: number) {
             })
             .catch((reason: Error) => setError(reason.message))
             .finally(() => setLoading(false));
-    }, [days]);
+    }, [days, from, to]);
 
     useEffect(() => {
         load();

@@ -28,10 +28,16 @@ class ProductionFlowController extends Controller
     public function overview(Request $request, FlowQueries $queries): JsonResponse
     {
         $access = FlowAccess::for($request->user());
-        $data = $request->validate(['stage' => ['nullable', Rule::in(ProductionFlowCatalog::keys())]]);
+        $data = $request->validate([
+            'stage' => ['nullable', Rule::in(ProductionFlowCatalog::keys())],
+            'period' => ['nullable', 'string', Rule::in(['daily', 'weekly', 'monthly', 'yearly', 'anualy', 'custom', 'all_time'])],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'date' => ['nullable', 'date'],
+        ]);
         $stage = $data['stage'] ?? $access->defaultStage() ?? ProductionFlowCatalog::keys()[0];
 
-        return response()->json($queries->stage($request->user(), $stage));
+        return response()->json($queries->stage($request->user(), $stage, $data));
     }
 
     public function monitor(Request $request, FlowQueries $queries): JsonResponse
@@ -144,7 +150,7 @@ class ProductionFlowController extends Controller
                 foreach ($block['lots'] ?? [] as $lot) {
                     $detailRows[] = [
                         'date' => $result['period']['from'],
-                        'lot_number' => $lot['lot_number'] ?? '—',
+                        'department' => ucfirst($key),
                         'product' => $lot['product'] ?? 'Garment',
                         'style' => $lot['product'] ?? '',
                         'color' => $lot['color'] ?? '',
@@ -155,14 +161,14 @@ class ProductionFlowController extends Controller
                         'damaged' => $lot['damaged'] ?? 0,
                         'qc_passed' => $lot['qc_passed'] ?? $lot['good'] ?? 0,
                         'qc_result' => $lot['qc_status'] ?? 'PASSED',
-                        'notes' => 'Stage: ' . ucfirst($key),
+                        'notes' => 'Department: ' . ucfirst($key),
                     ];
                 }
             }
         }
 
         $user = $request->user();
-        $userRole = 'Operations Officer';
+        $userRole = 'Factory Operations Manager';
 
         $pdf = Pdf::loadView('pdf.operations-report', compact(
             'factory',
@@ -173,7 +179,7 @@ class ProductionFlowController extends Controller
             'userRole',
             'summaryStages',
             'detailRows'
-        ))->setPaper('a4', 'portrait');
+        ))->setPaper('a4', 'landscape');
 
         $fileName = 'factory-operations-report-' . now()->format('Y-m-d-His') . '.pdf';
 
@@ -218,7 +224,7 @@ class ProductionFlowController extends Controller
         foreach ($block['lots'] ?? [] as $lot) {
             $detailRows[] = [
                 'date' => $result['period']['from'],
-                'lot_number' => $lot['lot_number'] ?? '—',
+                'department' => 'Cutting',
                 'product' => $lot['product'] ?? 'Garment',
                 'style' => $lot['product'] ?? '',
                 'color' => $lot['color'] ?? '',
@@ -245,7 +251,7 @@ class ProductionFlowController extends Controller
             'userRole',
             'summaryStages',
             'detailRows'
-        ))->setPaper('a4', 'portrait');
+        ))->setPaper('a4', 'landscape');
 
         $fileName = 'cutting-report-' . now()->format('Y-m-d-His') . '.pdf';
 

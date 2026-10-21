@@ -146,13 +146,30 @@ class InventoryLedger
         }
         if (
             $batch &&
-            $batch->production_stage === 'packed' &&
-            in_array($data['type'], ['issue', 'dispatch'], true) &&
-            $batch->qc_status !== 'passed'
+            in_array($batch->production_stage, ['cut', 'sewn', 'finished', 'packed'], true) &&
+            in_array($data['type'], ['receipt', 'issue', 'dispatch'], true)
         ) {
-            throw ValidationException::withMessages([
-                'batch_id' => 'This batch has not passed quality control and cannot be issued or dispatched.',
-            ]);
+            $latestInspection = $batch->qualityInspections()->latest('id')->first();
+            if ($batch->qc_status !== 'passed') {
+                $stageName = ucfirst($batch->production_stage);
+                $defectNote = '';
+                if ($latestInspection && (float) $latestInspection->rejected_quantity > 0) {
+                    $details = $latestInspection->defect_details ?: $latestInspection->notes;
+                    $defectNote = " Some items failed in quality control: {$latestInspection->rejected_quantity} items failed quality control inspection" . ($details ? " (\"{$details}\")" : '') . ".";
+                }
+                throw ValidationException::withMessages([
+                    'batch_id' => "This {$stageName} batch has not passed quality control inspection and cannot be submitted or accepted in the next stage.{$defectNote}",
+                ]);
+            }
+            if ($latestInspection && (float) $latestInspection->rejected_quantity > 0 && (float) $data['quantity'] > (float) $latestInspection->passed_quantity) {
+                $details = $latestInspection->defect_details ?: $latestInspection->notes;
+                $passedQty = (float) $latestInspection->passed_quantity;
+                $rejectedQty = (float) $latestInspection->rejected_quantity;
+                $typedQty = (float) $data['quantity'];
+                throw ValidationException::withMessages([
+                    'quantity' => "Some items failed in quality control: {$rejectedQty} items failed quality control inspection" . ($details ? " (\"{$details}\")" : '') . ". Only {$passedQty} passed items are approved to send. You typed {$typedQty}.",
+                ]);
+            }
         }
     }
 

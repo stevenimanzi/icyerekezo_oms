@@ -25,8 +25,18 @@ export async function api<T>(url: string, options: RequestInit = {}): Promise<T>
         throw error;
     }
     if (!response.ok) {
-        const error: any = new Error(payload.message || "This didn't work. Please try again.");
+        let msg = payload.message || "This didn't work. Please try again.";
+        if (payload.errors && typeof payload.errors === 'object') {
+            const errorList = Object.values(payload.errors)
+                .flat()
+                .filter((v) => typeof v === 'string');
+            if (errorList.length > 0) {
+                msg = errorList.join(' ');
+            }
+        }
+        const error: any = new Error(msg);
         error.status = response.status;
+        error.payload = payload;
         throw error;
     }
     return payload;

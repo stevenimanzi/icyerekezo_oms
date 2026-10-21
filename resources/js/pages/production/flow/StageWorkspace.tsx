@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { makeFormat } from '../../../core/format';
 import type { AuthUser, Locale } from '../../../core/types';
 import '../../../components/ui.css';
@@ -13,6 +13,8 @@ import { RecordWorkModal } from './stage/RecordWorkModal';
 import { ReportTab } from './stage/ReportTab';
 import { SendModal } from './stage/SendModal';
 import { SendStockModal } from './stage/SendStockModal';
+import { InspectModal } from './monitor/InspectModal';
+import { monitorText } from './monitor/monitorText';
 import { stageLabel } from './stages';
 import { WorkTab, type WorkModal } from './stage/WorkTab';
 import { buildKpis } from './stage/kpis';
@@ -67,6 +69,16 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
                         <RefreshCw size={15} />
                         {text.refresh}
                     </button>
+                    {data?.capabilities.inspect && data.lots.length > 0 && (
+                        <button
+                            className="secondary-btn"
+                            onClick={() => setModal({ kind: 'inspect', lot: data.lots[0] })}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: '#0284c7', color: '#0284c7' }}
+                        >
+                            <ShieldCheck size={15} />
+                            {locale === 'en' ? 'Quality Inspection' : 'Contrôle Qualité'}
+                        </button>
+                    )}
                     {tab === 'work' && canWork && stage !== 'cutting' && (
                         <button
                             className="primary-btn"
@@ -188,6 +200,18 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
                     )}
                     {modal?.kind === 'stock' && (
                         <SendStockModal lot={modal.lot} text={text} onClose={close} onDone={done} />
+                    )}
+                    {modal?.kind === 'inspect' && (
+                        <InspectModal
+                            lots={data.lots as any}
+                            initialLot={modal.lot?.id}
+                            initialStage={stage}
+                            locale={locale}
+                            text={text}
+                            words={monitorText[locale]}
+                            onClose={close}
+                            onDone={done}
+                        />
                     )}
                     {modal?.kind === 'cut' && (
                         <CutModal

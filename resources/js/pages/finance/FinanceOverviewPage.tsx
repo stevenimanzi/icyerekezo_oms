@@ -149,7 +149,7 @@ export default function FinanceOverviewPage({
             {error && <div className="admin-alert error">{error}</div>}
             {success && <div className="admin-alert success">{success}</div>}
 
-            <section className="department-metrics cols-4">
+            <section className="department-metrics cols-5">
                 <article className="department-metric panel">
                     <div>
                         <small>Invoiced</small>
@@ -158,7 +158,7 @@ export default function FinanceOverviewPage({
                 </article>
                 <article className="department-metric panel">
                     <div>
-                        <small>Paid</small>
+                        <small>Collected / Paid</small>
                         <strong>{money(summary.paid_amount, currency)}</strong>
                     </div>
                 </article>
@@ -166,6 +166,12 @@ export default function FinanceOverviewPage({
                     <div>
                         <small>Outstanding</small>
                         <strong>{money(summary.outstanding_amount, currency)}</strong>
+                    </div>
+                </article>
+                <article className="department-metric panel">
+                    <div>
+                        <small>Stock Inventory Value</small>
+                        <strong>{money(summary.inventory_value || 0, currency)}</strong>
                     </div>
                 </article>
                 <article className="department-metric panel">

@@ -44,11 +44,22 @@ final class OwnerOverviewReport
 
     private CarbonInterface $previousStart;
 
-    public function __construct(private readonly int $factoryId, private readonly int $days)
-    {
-        $this->end = now();
-        $this->start = $this->end->copy()->subDays($days);
-        $this->previousStart = $this->start->copy()->subDays($days);
+    public function __construct(
+        private readonly int $factoryId,
+        private readonly int $days = 30,
+        ?CarbonInterface $from = null,
+        ?CarbonInterface $to = null,
+    ) {
+        if ($from && $to) {
+            $this->end = $to->copy()->endOfDay();
+            $this->start = $from->copy()->startOfDay();
+            $diffDays = max(1, (int) $this->start->diffInDays($this->end) + 1);
+            $this->previousStart = $this->start->copy()->subDays($diffDays);
+        } else {
+            $this->end = now();
+            $this->start = $this->end->copy()->subDays($days);
+            $this->previousStart = $this->start->copy()->subDays($days);
+        }
     }
 
     public function build(): array

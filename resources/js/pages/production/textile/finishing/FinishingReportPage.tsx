@@ -104,12 +104,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
     return (
         <section className="module-page finishing-report-page" style={{ padding: '20px 24px', maxWidth: 1200, margin: '0 auto', background: '#ffffff' }}>
             <style>{`
-                .excel-table-container,
-                .excel-table-container table,
-                .excel-table-container thead,
-                .excel-table-container tbody,
-                .excel-table-container tfoot,
-                .excel-table-container tr {
+                .excel-table-container {
                     background-color: #ffffff !important;
                     background: #ffffff !important;
                 }
@@ -127,43 +122,67 @@ export default function FinishingReportPage({ user, locale }: Props) {
                     border: 1pt solid #000000 !important;
                 }
                 .print-signatures-block {
-                    display: block !important;
+                    display: none !important;
+                }
+                .print-footer-block {
+                    display: none !important;
                 }
                 @media print {
                     @page {
-                        size: auto;
-                        margin: 8mm;
+                        size: landscape;
+                        margin: 6mm 8mm;
                     }
-                    nav, header, .app-sidebar, .module-actions, .no-print, button, .ui-tabs, .app-header {
+                    nav, aside, .app-sidebar, .module-actions, .no-print, button, .ui-tabs, .app-header, .app-shell-header {
                         display: none !important;
                     }
-                    body, #root, .app-layout, .app-content, .module-page {
+                    header:not(.excel-table-container header):not(.sheet-print-header) {
+                        display: none !important;
+                    }
+                    html, body, #root, .app-layout, .app-content, .module-page {
                         background: #ffffff !important;
                         background-color: #ffffff !important;
                         padding: 0 !important;
                         margin: 0 !important;
                         color: #000000 !important;
                         box-shadow: none !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
                     }
                     .excel-table-container {
                         box-shadow: none !important;
                         border: 1.5pt solid #000000 !important;
                         background: #ffffff !important;
                         background-color: #ffffff !important;
-                        padding: 16px 20px !important;
+                        padding: 12px 14px !important;
                         margin: 0 !important;
-                        max-width: 100% !important;
-                    }
-                    table {
                         width: 100% !important;
-                        page-break-inside: auto;
+                        max-width: 100% !important;
+                        box-sizing: border-box !important;
+                        overflow: visible !important;
+                    }
+                    .report-table-scroll-wrapper {
+                        overflow: visible !important;
+                        width: 100% !important;
+                        margin-bottom: 12px !important;
+                    }
+                    table.report-print-table {
+                        width: 100% !important;
+                        table-layout: fixed !important;
+                        border-collapse: collapse !important;
                         background: #ffffff !important;
                         background-color: #ffffff !important;
+                        font-size: 0.72rem !important;
                     }
-                    th, td {
+                    table.report-print-table th, table.report-print-table td {
                         background: #ffffff !important;
                         background-color: #ffffff !important;
                         color: #000000 !important;
+                        border: 1pt solid #000000 !important;
+                        padding: 4px 3px !important;
+                        word-break: break-word !important;
+                        overflow-wrap: break-word !important;
+                        white-space: normal !important;
+                        line-height: 1.15 !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
@@ -174,6 +193,15 @@ export default function FinishingReportPage({ user, locale }: Props) {
                     tr {
                         page-break-inside: avoid;
                         page-break-after: auto;
+                    }
+                    .print-signatures-block {
+                        display: block !important;
+                        margin-top: 14px !important;
+                        page-break-inside: avoid !important;
+                    }
+                    .print-footer-block {
+                        display: flex !important;
+                        page-break-inside: avoid !important;
                     }
                 }
             `}</style>
@@ -313,7 +341,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
                     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
                 }}
             >
-                <header style={{ borderBottom: '2pt solid #000000', paddingBottom: 14, marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="sheet-print-header" style={{ borderBottom: '2pt solid #000000', paddingBottom: 14, marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <h2 style={{ fontSize: '1.45rem', fontWeight: 900, margin: 0, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#000000' }}>
                             {user.current_factory?.name || 'ICYEREKEZO OMS FACTORY'}
@@ -328,7 +356,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
                         <div><b>PREPARED BY:</b> {user.name} (Finishing Operator)</div>
                         <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({passRate}%)</span></div>
                     </div>
-                </header>
+                </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#ffffff', textAlign: 'center' }}>
                     <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
@@ -358,63 +386,62 @@ export default function FinishingReportPage({ user, locale }: Props) {
                     </div>
                 </div>
 
-                <div style={{ overflowX: 'auto', marginBottom: 20 }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.82rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff' }}>
+                {/* SINGLE EXCEL DATA TABLE */}
+                <div className="report-table-scroll-wrapper" style={{ overflowX: 'auto', marginBottom: 20 }}>
+                    <table className="report-print-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.82rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff', tableLayout: 'fixed' }}>
                         <thead>
                             <tr style={{ background: '#ffffff' }}>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 40, background: '#ffffff' }}>#</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', width: 95, background: '#ffffff' }}>DATE</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'left', width: 110, background: '#ffffff' }}>LOT / BATCH #</th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '4%', background: '#ffffff' }}>#</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '11%', background: '#ffffff' }}>DATE</th>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff' }}>
                                     1. RECEIVED (INPUT)
                                 </th>
-                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
+                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff' }}>
                                     2. OUTPUT PRODUCED (FINISHED GARMENTS)
                                 </th>
-                                <th style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff', width: 85 }}>
+                                <th style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff', width: '8%' }}>
                                     3. FLAWS
                                 </th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff', width: 130 }}>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff', width: '17%' }}>
                                     4. QUALITY CONTROL
                                 </th>
                             </tr>
                             <tr style={{ background: '#ffffff' }}>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left', background: '#ffffff' }}>GARMENT DESCRIPTION</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80, background: '#ffffff' }}>PCS RECEIVED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'left', background: '#ffffff' }}>PRODUCT STYLE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 60, background: '#ffffff' }}>COLOR</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', width: 50, background: '#ffffff' }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', width: 80, background: '#ffffff' }}>FINISHED GOOD</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', background: '#ffffff' }}>STAINS / FLAWS</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', background: '#ffffff' }}>PASSED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', background: '#ffffff' }}>QC STATUS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '15%', background: '#ffffff' }}>GARMENT DESCRIPTION</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>PCS RECV</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '13%', background: '#ffffff' }}>PRODUCT STYLE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff' }}>COLOR</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff' }}>SIZE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>FINISHED GOOD</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>STAINS/FLAWS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>PASSED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '9%', background: '#ffffff' }}>QC STATUS</th>
                             </tr>
                         </thead>
                         <tbody>
                             {finishingRows.length > 0 ? (
                                 finishingRows.map((row: any, index: number) => (
                                     <tr key={row.id || index} style={{ background: '#ffffff' }}>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>{index + 1}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>{row.date}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', fontWeight: 600 }}>{row.lotNumber}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px' }}>{row.receivedItem}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', fontWeight: 600 }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{index + 1}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.date}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px' }}>{row.receivedItem}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 600 }}>
                                             {num(row.inputReceived || row.outputFinished)}
                                         </td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px' }}>{row.style}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>{row.color}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center' }}>{row.size}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', fontWeight: 800 }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px' }}>{row.style}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.color}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.size}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 800 }}>
                                             {num(row.outputFinished)}
                                         </td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000' }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000' }}>
                                             {num(row.damaged)}
                                         </td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'right', fontWeight: 700 }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 700 }}>
                                             {num(row.qcPassed || row.outputFinished)}
                                         </td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 6px', textAlign: 'center', fontWeight: 700 }}>
-                                            <span style={{ border: '1pt solid #000000', padding: '1px 5px', fontSize: '0.72rem', background: '#ffffff' }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', fontWeight: 700 }}>
+                                            <span style={{ border: '1pt solid #000000', padding: '1px 3px', fontSize: '0.7rem', background: '#ffffff', display: 'inline-block' }}>
                                                 {row.qcStatus}
                                             </span>
                                         </td>
@@ -422,7 +449,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={12} style={{ border: '1pt solid #000000', padding: 24, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
+                                    <td colSpan={11} style={{ border: '1pt solid #000000', padding: 24, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
                                         {locale === 'en'
                                             ? 'No finishing operations recorded for the selected date or date range.'
                                             : 'Aucune opération de finition enregistrée pour la date ou période sélectionnée.'}
@@ -432,24 +459,24 @@ export default function FinishingReportPage({ user, locale }: Props) {
                         </tbody>
                         <tfoot>
                             <tr style={{ background: '#ffffff', fontWeight: 800, borderTop: '2pt solid #000000' }}>
-                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
-                                    TOTAL FINISHING REGISTER:
+                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff' }}>
+                                    TOTAL:
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
-                                    {num(totalInput || totalOutput)} pcs
+                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                    {num(totalInput || totalOutput)}
                                 </td>
-                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 8px', background: '#ffffff' }}></td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
-                                    {num(totalOutput)} pcs
+                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '5px 4px', background: '#ffffff' }}></td>
+                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                    {num(totalOutput)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalDamaged)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'right', background: '#ffffff' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
                                     {num(totalQc || totalOutput)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 8px', textAlign: 'center', background: '#ffffff' }}>
-                                    {passRate}% VERIFIED
+                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', background: '#ffffff', fontSize: '0.72rem' }}>
+                                    {passRate}%
                                 </td>
                             </tr>
                         </tfoot>
@@ -501,7 +528,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
                     </div>
                 </div>
 
-                <footer style={{ marginTop: 16, paddingTop: 6, borderTop: '0.5pt solid #999999', display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#555555' }}>
+                <footer className="print-footer-block" style={{ marginTop: 16, paddingTop: 6, borderTop: '0.5pt solid #999999', display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#555555' }}>
                     <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} · FINISHING DEPARTMENT REPORT</span>
                     <span>Page 1 of 1 · Confidential</span>
                 </footer>

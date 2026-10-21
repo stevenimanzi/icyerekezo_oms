@@ -45,8 +45,15 @@ export type SellableItem = {
     unit: string | null;
 };
 
+export type WarehouseStockEntry = {
+    item_id: number;
+    warehouse_id: number;
+    available: string | number;
+};
+
 export type SaleFormOptions = {
     items: SellableItem[];
+    warehouse_stock?: WarehouseStockEntry[];
     customers: { name: string; phone: string | null }[];
     warehouses: { id: number; name: string }[];
     payment_methods: string[];

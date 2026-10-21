@@ -105,9 +105,9 @@ final class FlowBalances
             $isFirst = ProductionFlowCatalog::previous($stage) === null;
             $isLast = ProductionFlowCatalog::next($stage) === null;
 
-            $wip = $isFirst ? 0 : $received - $good - $damagedHere;
-            $outbox = $isLast ? 0 : $good - (int) ($sent[$stage]->sent ?? 0) - $rejectedHere;
-            $awaitingQuality = $isLast ? $good - $passed - $rejectedHere : 0;
+            $wip = $isFirst ? 0 : max(0, $received - $good - $damagedHere);
+            $awaitingQuality = max(0, $good - $passed - $rejectedHere);
+            $outbox = $isLast ? 0 : max(0, $passed - (int) ($sent[$stage]->sent ?? 0));
 
             $stages[$stage] = [
                 'good' => $good,

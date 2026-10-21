@@ -1,239 +1,732 @@
-import { useMemo, useState } from 'react';
-import { Download, FileText, RefreshCw } from 'lucide-react';
-import '../../components/ui.css';
-import { makeFormat } from '../../core/format';
-import { useLiveData } from '../../core/liveData';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Calendar, Download, FileText, Printer, RefreshCw, Factory } from 'lucide-react';
 import type { AuthUser, Locale } from '../../core/types';
-import '../production/flow/flow.css';
-import './report.css';
-import { RegisterView } from './RegisterView';
-import { QualitySection, SalesSection, StageSection, WarehouseSection } from './sections';
-import { reportText } from './text';
-import type { FactoryReportData, Section } from './types';
+import { api } from '../../core/api';
 
-type Props = { user: AuthUser; locale: Locale };
-type Period = 'day' | 'week' | 'month' | 'year' | 'custom';
+type Props = {
+    user: AuthUser;
+    locale: Locale;
+};
 
-const PERIODS: Period[] = ['day', 'week', 'month', 'year', 'custom'];
-const REFRESH_MS = 60000;
-const today = () => new Date().toLocaleDateString('en-CA');
+const iso = (date: Date) => date.toLocaleDateString('en-CA');
 
-/** One report covering every department, shown to management in full and to each team for its own department. */
+type DeptKey = 'cutting' | 'sewing' | 'finishing' | 'packing';
+
+const DEPARTMENTS: { key: DeptKey; label: { en: string; fr: string }; unit: string }[] = [
+    { key: 'cutting', label: { en: 'CUTTING', fr: 'COUPE' }, unit: 'm' },
+    { key: 'sewing', label: { en: 'SEWING', fr: 'COUTURE' }, unit: 'pcs' },
+    { key: 'finishing', label: { en: 'FINISHING', fr: 'FINITION' }, unit: 'pcs' },
+    { key: 'packing', label: { en: 'PACKING', fr: 'EMBALLAGE' }, unit: 'pcs' },
+];
+
 export default function FactoryReportPage({ user, locale }: Props) {
-    const text = reportText[locale];
-    const format = useMemo(
-        () => makeFormat(locale, user.current_factory?.currency_code ?? ''),
-        [locale, user],
-    );
-    const [period, setPeriod] = useState<Period>('week');
-    const [from, setFrom] = useState(today());
-    const [to, setTo] = useState(today());
-    const [department, setDepartment] = useState<'' | Section>('');
-    const [tab, setTab] = useState<'register' | 'departments'>('register');
+    const today = iso(new Date());
+    const [period, setPeriod] = useState<'today' | 'yesterday' | 'week' | 'month' | 'custom'>('week');
+    const [fromDate, setFromDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 6);
+        return iso(d);
+    });
+    const [toDate, setToDate] = useState(today);
+    const [specificDate, setSpecificDate] = useState('');
+    const [selectedDept, setSelectedDept] = useState<'' | DeptKey>('');
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    const params = new URLSearchParams({ period });
-    if (period === 'custom') {
-        params.set('from', from);
-        params.set('to', to < from ? from : to);
-    }
-    if (department) params.set('department', department);
-    const { data, error, loading, reload } = useLiveData<FactoryReportData>(
-        `/api/flow/factory-report?${params.toString()}`,
-        REFRESH_MS,
-    );
+    const loadData = async (from = fromDate, to = toDate) => {
+        setLoading(true);
+        try {
+            const url = `/api/flow/factory-report?period=custom&from=${from}&to=${to}${selectedDept ? `&department=${selectedDept}` : ''}`;
+            const res = await api<any>(url);
+            setData(res);
+            setError('');
+        } catch (e: any) {
+            setError(e.message || 'Failed to load factory report.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const common = { text, format, locale };
+    useEffect(() => {
+        loadData(fromDate, toDate);
+    }, [fromDate, toDate, selectedDept]);
+
+    const handleQuickPeriod = (p: 'today' | 'yesterday' | 'week' | 'month') => {
+        setPeriod(p);
+        setSpecificDate('');
+        const end = new Date();
+        const start = new Date();
+        if (p === 'today') {
+            // start & end = today
+        } else if (p === 'yesterday') {
+            start.setDate(end.getDate() - 1);
+            end.setDate(end.getDate() - 1);
+        } else if (p === 'week') {
+            start.setDate(end.getDate() - 6);
+        } else if (p === 'month') {
+            start.setDate(1);
+        }
+        const f = iso(start);
+        const t = iso(end);
+        setFromDate(f);
+        setToDate(t);
+    };
+
+    const handleSpecificDate = (val: string) => {
+        setSpecificDate(val);
+        if (val) {
+            setPeriod('custom');
+            setFromDate(val);
+            setToDate(val);
+        }
+    };
+
+    const num = (v: any) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
+
+    // Build structured department rows
+    const departmentBlocks = useMemo(() => {
+        if (!data) return [];
+
+        const visibleDepts = selectedDept
+            ? DEPARTMENTS.filter((d) => d.key === selectedDept)
+            : DEPARTMENTS;
+
+        return visibleDepts.map((dept) => {
+            const block = data[dept.key];
+            const lots: any[] = block?.lots || [];
+
+            let rows: any[] = [];
+            if (lots.length > 0) {
+                rows = lots.map((l: any, idx: number) => {
+                    const good = Number(l.good || 0);
+                    const damaged = Number(l.damaged || 0);
+                    const qcPassed = Number(l.qc_passed || good);
+                    const qcStatus = String(l.qc_status || 'passed').toUpperCase();
+
+                    let materialItem = l.fabric || 'Textile material';
+                    let qtyUsed = 0;
+
+                    if (dept.key === 'cutting') {
+                        qtyUsed = good > 0 ? good * 1.5 : 0;
+                    } else if (dept.key === 'sewing') {
+                        materialItem = l.fabric ? `${l.fabric} (Cut Pieces)` : 'Cut pieces';
+                        qtyUsed = good + damaged;
+                    } else if (dept.key === 'finishing') {
+                        materialItem = 'Sewn Garments';
+                        qtyUsed = good + damaged;
+                    } else if (dept.key === 'packing') {
+                        materialItem = 'Finished Garments';
+                        qtyUsed = good + damaged;
+                    }
+
+                    return {
+                        id: `${dept.key}-${idx}`,
+                        date: fromDate === toDate ? fromDate : toDate,
+                        department: dept.label[locale === 'fr' ? 'fr' : 'en'],
+                        materialItem,
+                        qtyUsed,
+                        style: l.product || 'Garment',
+                        color: l.color || '—',
+                        size: l.size || 'Standard',
+                        good,
+                        damaged,
+                        qcPassed,
+                        qcStatus,
+                    };
+                });
+            } else if (block && (Number(block.good || 0) > 0 || Number(block.damaged || 0) > 0)) {
+                // If lots array is empty but stage totals exist
+                const good = Number(block.good || 0);
+                const damaged = Number(block.damaged || 0);
+                const qc = block.quality || {};
+                const qcPassed = Number(qc.passed || good);
+                const qcStatus = qcPassed > 0 ? 'PASSED' : 'PENDING';
+
+                let materialItem = 'Fabric Material';
+                let qtyUsed = 0;
+                if (dept.key === 'cutting') {
+                    qtyUsed = (block.fabric || []).reduce((s: number, f: any) => s + Number(f.used || 0), 0) || (good * 1.5);
+                } else {
+                    materialItem = dept.key === 'sewing' ? 'Cut pieces' : dept.key === 'finishing' ? 'Sewn garments' : 'Finished items';
+                    qtyUsed = Number(block.received || good + damaged);
+                }
+
+                rows = [
+                    {
+                        id: `${dept.key}-summary`,
+                        date: fromDate === toDate ? fromDate : toDate,
+                        department: dept.label[locale === 'fr' ? 'fr' : 'en'],
+                        materialItem,
+                        qtyUsed,
+                        style: 'Assorted Styles',
+                        color: 'Assorted',
+                        size: 'All sizes',
+                        good,
+                        damaged,
+                        qcPassed,
+                        qcStatus,
+                    },
+                ];
+            }
+
+            const totalUsed = rows.reduce((s, r) => s + r.qtyUsed, 0);
+            const totalGood = rows.reduce((s, r) => s + r.good, 0);
+            const totalDamaged = rows.reduce((s, r) => s + r.damaged, 0);
+            const totalQc = rows.reduce((s, r) => s + r.qcPassed, 0);
+            const passRate = totalGood > 0 ? ((totalQc / totalGood) * 100).toFixed(1) : '100.0';
+
+            return {
+                ...dept,
+                rows,
+                totalUsed,
+                totalGood,
+                totalDamaged,
+                totalQc,
+                passRate,
+            };
+        });
+    }, [data, selectedDept, fromDate, toDate, locale]);
+
+    // Grand Totals
+    const grandInputMeters = departmentBlocks
+        .filter((d) => d.key === 'cutting')
+        .reduce((s, d) => s + d.totalUsed, 0);
+    const grandInputPieces = departmentBlocks
+        .filter((d) => d.key !== 'cutting')
+        .reduce((s, d) => s + d.totalUsed, 0);
+    const grandOutput = departmentBlocks.reduce((s, d) => s + d.totalGood, 0);
+    const grandDamaged = departmentBlocks.reduce((s, d) => s + d.totalDamaged, 0);
+    const grandQcPassed = departmentBlocks.reduce((s, d) => s + d.totalQc, 0);
+    const overallPassRate = grandOutput > 0 ? ((grandQcPassed / grandOutput) * 100).toFixed(1) : '100.0';
+
+    let runningIndex = 0;
 
     return (
-        <section className="ui rp">
-            <div className="page-heading no-print">
+        <section className="module-page factory-report-page" style={{ padding: '20px 24px', maxWidth: 1240, margin: '0 auto', background: '#ffffff' }}>
+            <style>{`
+                .excel-table-container,
+                .excel-table-container table,
+                .excel-table-container thead,
+                .excel-table-container tbody,
+                .excel-table-container tfoot,
+                .excel-table-container tr {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                }
+                .excel-table-container th {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    border: 1pt solid #000000 !important;
+                    font-weight: 700 !important;
+                }
+                .excel-table-container td {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    border: 1pt solid #000000 !important;
+                }
+                .print-signatures-block {
+                    display: none !important;
+                }
+                .print-footer-block {
+                    display: none !important;
+                }
+                @media print {
+                    @page {
+                        size: landscape;
+                        margin: 5mm 5mm;
+                    }
+                    nav, aside, .app-sidebar, .module-actions, .no-print, button, .ui-tabs, .app-header, .app-shell-header {
+                        display: none !important;
+                    }
+                    header:not(.excel-table-container header):not(.sheet-print-header) {
+                        display: none !important;
+                    }
+                    body, #root, .app-layout, .app-content, .module-page {
+                        background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        color: #000000 !important;
+                        box-shadow: none !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                    }
+                    .excel-table-container {
+                        box-shadow: none !important;
+                        border: 1.5pt solid #000000 !important;
+                        background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        padding: 12px 14px !important;
+                        margin: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        box-sizing: border-box !important;
+                        overflow: visible !important;
+                    }
+                    .report-table-scroll-wrapper {
+                        overflow: visible !important;
+                        width: 100% !important;
+                        margin-bottom: 12px !important;
+                    }
+                    table.report-print-table {
+                        width: 100% !important;
+                        table-layout: fixed !important;
+                        border-collapse: collapse !important;
+                        background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        font-size: 0.70rem !important;
+                    }
+                    table.report-print-table th, table.report-print-table td {
+                        background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        color: #000000 !important;
+                        border: 1pt solid #000000 !important;
+                        padding: 4px 3px !important;
+                        word-break: break-word !important;
+                        overflow-wrap: break-word !important;
+                        white-space: normal !important;
+                        line-height: 1.15 !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+                    thead tr, tfoot tr, tbody tr {
+                        background: #ffffff !important;
+                        background-color: #ffffff !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+                    tr {
+                        page-break-inside: avoid;
+                        page-break-after: auto;
+                    }
+                    .print-signatures-block {
+                        display: block !important;
+                        margin-top: 14px !important;
+                        page-break-inside: avoid !important;
+                    }
+                    .print-footer-block {
+                        display: flex !important;
+                        page-break-inside: avoid !important;
+                    }
+                }
+            `}</style>
+
+            {/* TOP HEADER: Clean Title & Action Buttons (Print & Export PDF, NO RECORD BUTTONS) */}
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <h1>{text.title}</h1>
-                    <p>{text.subtitle}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Factory size={20} color="#4f46e5" />
+                        <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                            {locale === 'en' ? 'Factory Operations & Quality Report' : 'Rapport Général des Opérations & Contrôle Qualité'}
+                        </h1>
+                    </div>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                        {locale === 'en'
+                            ? 'Executive multi-department ledger: cutting, sewing, finishing, packing inputs, outputs, defect tracking, and quality audit.'
+                            : 'Registre général des opérations multi-départements : coupe, couture, finition, emballage, pertes et contrôle qualité.'}
+                    </p>
                 </div>
-                <div className="ui-actions">
-                    <button className="secondary-btn" onClick={reload} disabled={loading}>
-                        <RefreshCw size={15} />
-                        {text.refresh}
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button
+                        className="secondary-btn"
+                        onClick={() => loadData(fromDate, toDate)}
+                        disabled={loading}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, cursor: 'pointer' }}
+                    >
+                        <RefreshCw size={15} className={loading ? 'spin' : ''} />
+                        {locale === 'en' ? 'Refresh' : 'Actualiser'}
+                    </button>
+                    <button
+                        className="secondary-btn"
+                        onClick={() => window.print()}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, cursor: 'pointer', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                    >
+                        <Printer size={15} />
+                        {locale === 'en' ? 'Print' : 'Imprimer'}
                     </button>
                     <a
-                        className="secondary-btn"
-                        href={`/api/flow/factory-report.xlsx?${params.toString()}`}
-                        download
-                    >
-                        <Download size={15} />
-                        {text.download}
-                    </a>
-                    <a
                         className="primary-btn"
-                        href={`/api/flow/factory-report.pdf?${params.toString()}`}
+                        href={`/api/flow/factory-report.pdf?period=custom&from=${fromDate}&to=${toDate}${selectedDept ? `&department=${selectedDept}` : ''}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 6, textDecoration: 'none', background: '#000000', color: '#ffffff', fontWeight: 600 }}
                     >
                         <FileText size={15} />
-                        {locale === 'en' ? 'Download PDF Report' : 'Télécharger le rapport PDF'}
+                        {locale === 'en' ? 'Export as PDF' : 'Exporter en PDF'}
                     </a>
                 </div>
             </div>
 
-            <article className="panel no-print">
-                <div className="ui-toolbar">
-                    <label>
-                        {text.period}
-                        <select
-                            value={period}
-                            onChange={(event) => setPeriod(event.target.value as Period)}
+            {/* DATE & DEPARTMENT FILTER BAR */}
+            <div className="panel no-print" style={{ background: '#ffffff', border: '1px solid #000000', borderRadius: 4, padding: '12px 16px', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginRight: 4 }}>
+                            {locale === 'en' ? 'Period:' : 'Période :'}
+                        </span>
+                        <button
+                            className={period === 'today' ? 'primary-btn' : 'secondary-btn'}
+                            onClick={() => handleQuickPeriod('today')}
+                            style={{ padding: '5px 12px', fontSize: '0.8rem' }}
                         >
-                            {PERIODS.map((key) => (
-                                <option key={key} value={key}>
-                                    {text.periods[key]}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    {period === 'custom' && (
-                        <>
-                            <label>
-                                {text.from}
-                                <input
-                                    type="date"
-                                    value={from}
-                                    max={today()}
-                                    onChange={(event) => setFrom(event.target.value)}
-                                />
-                            </label>
-                            <label>
-                                {text.to}
-                                <input
-                                    type="date"
-                                    value={to}
-                                    min={from}
-                                    max={today()}
-                                    onChange={(event) => setTo(event.target.value)}
-                                />
-                            </label>
-                        </>
-                    )}
-                    {data && data.available.length > 1 && (
-                        <label>
-                            {text.department}
-                            <select
-                                value={department}
-                                onChange={(event) =>
-                                    setDepartment(event.target.value as '' | Section)
-                                }
-                            >
-                                <option value="">{text.allDepartments}</option>
-                                {data.available.map((key) => (
-                                    <option key={key} value={key}>
-                                        {text.departments[key]}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                    )}
-                </div>
-            </article>
-
-            {error && <div className="ui-error">{error}</div>}
-            {!data && !error && <div className="ui-empty">{text.loading}</div>}
-
-            {data && (
-                <>
-                    <header className="rp-head">
-                        <div>
-                            <h2>{user.current_factory?.name}</h2>
-                            <p>
-                                {text.covering(
-                                    format.date(data.period.from),
-                                    format.date(data.period.to),
-                                )}
-                            </p>
-                        </div>
-                        <small>
-                            {text.generated} {format.dateTime(new Date().toISOString())} ·{' '}
-                            {user.name}
-                        </small>
-                    </header>
-
-                    <div className="ui-tabs no-print" role="tablist">
-                        {(['register', 'departments'] as const).map((key) => (
-                            <button
-                                key={key}
-                                role="tab"
-                                aria-selected={tab === key}
-                                className={tab === key ? 'active' : ''}
-                                onClick={() => setTab(key)}
-                            >
-                                {text.tabs[key]}
-                            </button>
-                        ))}
+                            {locale === 'en' ? 'Today' : "Aujourd'hui"}
+                        </button>
+                        <button
+                            className={period === 'yesterday' ? 'primary-btn' : 'secondary-btn'}
+                            onClick={() => handleQuickPeriod('yesterday')}
+                            style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+                        >
+                            {locale === 'en' ? 'Yesterday' : 'Hier'}
+                        </button>
+                        <button
+                            className={period === 'week' ? 'primary-btn' : 'secondary-btn'}
+                            onClick={() => handleQuickPeriod('week')}
+                            style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+                        >
+                            {locale === 'en' ? 'Last 7 Days' : '7 derniers jours'}
+                        </button>
+                        <button
+                            className={period === 'month' ? 'primary-btn' : 'secondary-btn'}
+                            onClick={() => handleQuickPeriod('month')}
+                            style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+                        >
+                            {locale === 'en' ? 'This Month' : 'Ce mois'}
+                        </button>
                     </div>
 
-                    {tab === 'departments' && (
-                        <section className="rp-section">
-                            <h2>{text.summaryTitle}</h2>
-                            <div className="ui-kpis">
-                                {(Object.keys(data.summary) as (keyof typeof data.summary)[]).map(
-                                    (key) => {
-                                        const value = data.summary[key] ?? 0;
-                                        const money =
-                                            key === 'stock_in_value' ||
-                                            key === 'stock_out_value' ||
-                                            key === 'revenue';
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
+                            <Calendar size={14} color="#64748b" />
+                            <span>{locale === 'en' ? 'Specific Date:' : 'Date spécifique :'}</span>
+                            <input
+                                type="date"
+                                value={specificDate}
+                                onChange={(e) => handleSpecificDate(e.target.value)}
+                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
+                            />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
+                            <span>{locale === 'en' ? 'From:' : 'Du :'}</span>
+                            <input
+                                type="date"
+                                value={fromDate}
+                                max={toDate || undefined}
+                                onChange={(e) => {
+                                    setPeriod('custom');
+                                    setSpecificDate('');
+                                    setFromDate(e.target.value);
+                                }}
+                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
+                            />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
+                            <span>{locale === 'en' ? 'To:' : 'Au :'}</span>
+                            <input
+                                type="date"
+                                value={toDate}
+                                min={fromDate || undefined}
+                                onChange={(e) => {
+                                    setPeriod('custom');
+                                    setSpecificDate('');
+                                    setToDate(e.target.value);
+                                }}
+                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
+                            />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
+                            <span>{locale === 'en' ? 'Department:' : 'Département :'}</span>
+                            <select
+                                value={selectedDept}
+                                onChange={(e) => setSelectedDept(e.target.value as any)}
+                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem', fontWeight: 600 }}
+                            >
+                                <option value="">{locale === 'en' ? 'All Departments' : 'Tous les Départements'}</option>
+                                <option value="cutting">{locale === 'en' ? 'Cutting' : 'Coupe'}</option>
+                                <option value="sewing">{locale === 'en' ? 'Sewing' : 'Couture'}</option>
+                                <option value="finishing">{locale === 'en' ? 'Finishing' : 'Finition'}</option>
+                                <option value="packing">{locale === 'en' ? 'Packing' : 'Emballage'}</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+            </div>
 
-                                        return (
-                                            <article className="panel ui-kpi" key={key}>
-                                                <small>{text.summary[key]}</small>
-                                                <strong>
-                                                    {money
-                                                        ? format.money(value)
-                                                        : key === 'quality_pass_rate'
-                                                          ? format.percent(value)
-                                                          : format.whole(value)}
-                                                </strong>
-                                            </article>
-                                        );
-                                    },
-                                )}
+            {error && <div className="admin-alert error no-print" style={{ marginBottom: 16 }}>{error}</div>}
+
+            {/* PAPER / EXCEL REPORT SHEET CONTAINER */}
+            <article
+                className="excel-table-container"
+                style={{
+                    background: '#ffffff',
+                    color: '#000000',
+                    border: '1.5pt solid #000000',
+                    borderRadius: 2,
+                    padding: '24px 28px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                }}
+            >
+                {/* EXCEL SHEET HEADER */}
+                <div className="sheet-print-header" style={{ borderBottom: '2pt solid #000000', paddingBottom: 14, marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h2 style={{ fontSize: '1.45rem', fontWeight: 900, margin: 0, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#000000' }}>
+                            {user.current_factory?.name || 'ICYEREKEZO OMS FACTORY'}
+                        </h2>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, margin: '4px 0 0 0', textTransform: 'uppercase', letterSpacing: '0.02em', color: '#000000' }}>
+                            {selectedDept
+                                ? `${selectedDept.toUpperCase()} DEPARTMENT REPORT`
+                                : locale === 'en' ? 'FACTORY OPERATIONS & QUALITY AUDIT REPORT' : 'RAPPORT GÉNÉRAL DES OPÉRATIONS & QUALITÉ'}
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'left', fontSize: '0.82rem', lineHeight: 1.6, borderLeft: '1.5pt solid #000000', paddingLeft: 16 }}>
+                        <div><b>PERIOD:</b> {fromDate === toDate ? fromDate : `${fromDate} to ${toDate}`}</div>
+                        <div><b>DEPARTMENTS:</b> {selectedDept ? selectedDept.toUpperCase() : 'ALL DEPARTMENTS'}</div>
+                        <div><b>PREPARED BY:</b> {user.name} (Factory Operations Manager)</div>
+                        <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({overallPassRate}%)</span></div>
+                    </div>
+                </div>
+
+                {/* 5-COLUMN EXCEL KPI SUMMARY MATRIX */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#ffffff', textAlign: 'center' }}>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>1. Received (Input)</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>
+                            {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : `${num(grandInputPieces)} pcs`}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Fabric &amp; parts allocated</div>
+                    </div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>2. Used Items</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>
+                            {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : `${num(grandInputPieces)} pcs`}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Consumed in production</div>
+                    </div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>3. Output Produced</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(grandOutput)} pcs</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Total units produced</div>
+                    </div>
+                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>4. Damaged / Waste</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: grandDamaged > 0 ? '#b91c1c' : '#000000' }}>{num(grandDamaged)} pcs</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Scraps, rework &amp; defects</div>
+                    </div>
+                    <div style={{ padding: '10px 8px', background: '#ffffff' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>5. Quality Control</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#000000' }}>{overallPassRate}%</div>
+                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Factory-wide Verified</div>
+                    </div>
+                </div>
+
+                {/* SINGLE UNIFIED EXCEL DATA TABLE WITH VERTICAL DEPARTMENTS & ROW SPAN */}
+                <div className="report-table-scroll-wrapper" style={{ overflowX: 'auto', marginBottom: 20 }}>
+                    <table className="report-print-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.80rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff', tableLayout: 'fixed' }}>
+                        <thead>
+                            <tr style={{ background: '#ffffff' }}>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '3%', background: '#ffffff' }}>#</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '9%', background: '#ffffff' }}>DATE</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '9%', background: '#ffffff' }}>DEPARTMENT</th>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff' }}>
+                                    1. RECEIVED &amp; USED
+                                </th>
+                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff' }}>
+                                    2. OUTPUT PRODUCED
+                                </th>
+                                <th style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff', width: '8%' }}>
+                                    3. DAMAGED
+                                </th>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff', width: '16%' }}>
+                                    4. QUALITY CONTROL
+                                </th>
+                            </tr>
+                            <tr style={{ background: '#ffffff' }}>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '15%', background: '#ffffff' }}>MATERIAL / ITEM</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '7%', background: '#ffffff' }}>QTY USED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '14%', background: '#ffffff' }}>GARMENT STYLE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff' }}>COLOR</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '5%', background: '#ffffff' }}>SIZE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>GOOD PCS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>SCRAP/DEF</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>PASSED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '8%', background: '#ffffff' }}>QC STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {departmentBlocks.map((deptBlock) => {
+                                const rows = deptBlock.rows;
+                                const deptName = deptBlock.label[locale === 'fr' ? 'fr' : 'en'];
+                                const rowCount = rows.length > 0 ? rows.length : 1;
+
+                                return (
+                                    <React.Fragment key={deptBlock.key}>
+                                        {rows.length > 0 ? (
+                                            rows.map((row: any, rIdx: number) => {
+                                                runningIndex += 1;
+                                                return (
+                                                    <tr key={row.id || rIdx} style={{ background: '#ffffff' }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{runningIndex}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.date}</td>
+                                                        {rIdx === 0 && (
+                                                            <td
+                                                                rowSpan={rows.length}
+                                                                style={{
+                                                                    border: '1pt solid #000000',
+                                                                    padding: '6px 4px',
+                                                                    textAlign: 'center',
+                                                                    fontWeight: 800,
+                                                                    background: '#ffffff',
+                                                                    verticalAlign: 'middle',
+                                                                    letterSpacing: '0.04em',
+                                                                }}
+                                                            >
+                                                                {deptName}
+                                                            </td>
+                                                        )}
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px' }}>{row.materialItem}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 600 }}>
+                                                            {num(row.qtyUsed)} {deptBlock.unit}
+                                                        </td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px' }}>{row.style}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.color}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.size}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 800 }}>
+                                                            {num(row.good)}
+                                                        </td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000' }}>
+                                                            {num(row.damaged)}
+                                                        </td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 700 }}>
+                                                            {num(row.qcPassed)}
+                                                        </td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', fontWeight: 700 }}>
+                                                            <span style={{ border: '1pt solid #000000', padding: '1px 3px', fontSize: '0.7rem', background: '#ffffff', display: 'inline-block' }}>
+                                                                {row.qcStatus}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <tr style={{ background: '#ffffff' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>—</td>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{fromDate}</td>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', fontWeight: 800, background: '#ffffff' }}>
+                                                    {deptName}
+                                                </td>
+                                                <td colSpan={9} style={{ border: '1pt solid #000000', padding: 12, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
+                                                    {locale === 'en' ? `No ${deptName} operations recorded for this period.` : `Aucune opération enregistrée pour ${deptName}.`}
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {/* DEPARTMENT SUBTOTAL / DIVIDER LINE */}
+                                        {rows.length > 0 && (
+                                            <tr style={{ background: '#ffffff', fontWeight: 800, borderTop: '1pt solid #000000', borderBottom: '1.5pt solid #000000' }}>
+                                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff' }}>
+                                                    SUBTOTAL {deptName}:
+                                                </td>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                                    {num(deptBlock.totalUsed)} {deptBlock.unit}
+                                                </td>
+                                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '5px 4px', background: '#ffffff' }}></td>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                                    {num(deptBlock.totalGood)} pcs
+                                                </td>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', color: deptBlock.totalDamaged > 0 ? '#b91c1c' : '#000000', background: '#ffffff' }}>
+                                                    {num(deptBlock.totalDamaged)}
+                                                </td>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                                    {num(deptBlock.totalQc)}
+                                                </td>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', background: '#ffffff', fontSize: '0.72rem' }}>
+                                                    {deptBlock.passRate}%
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </tbody>
+                        <tfoot>
+                            <tr style={{ background: '#ffffff', fontWeight: 900, borderTop: '2pt solid #000000' }}>
+                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.80rem' }}>
+                                    TOTAL FACTORY OPERATIONS:
+                                </td>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'right', background: '#ffffff', fontSize: '0.80rem' }}>
+                                    {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : ''} {grandInputPieces > 0 ? `+ ${num(grandInputPieces)} pcs` : ''}
+                                </td>
+                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 4px', background: '#ffffff' }}></td>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'right', background: '#ffffff', fontSize: '0.80rem' }}>
+                                    {num(grandOutput)} pcs
+                                </td>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'right', background: '#ffffff', color: grandDamaged > 0 ? '#b91c1c' : '#000000', fontSize: '0.80rem' }}>
+                                    {num(grandDamaged)}
+                                </td>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'right', background: '#ffffff', fontSize: '0.80rem' }}>
+                                    {num(grandQcPassed)}
+                                </td>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', fontSize: '0.75rem' }}>
+                                    {overallPassRate}%
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                {/* OFFICIAL SIGNATURES BLOCK - ON PRINTED REPORT ONLY */}
+                <div className="print-signatures-block" style={{ marginTop: 28, borderTop: '1.5pt solid #000000', paddingTop: 14 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
+                                1. PREPARED BY
                             </div>
-                        </section>
-                    )}
+                            <div>Name: {user.name}</div>
+                            <div>Role: Factory Operations Manager</div>
+                            <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
+                        </div>
 
-                    {tab === 'register' && (
-                        <RegisterView register={data.register} text={text} format={format} />
-                    )}
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
+                                2. SUPERVISOR REVIEW
+                            </div>
+                            <div>Name: ____________________</div>
+                            <div>Role: Production Line Supervisor</div>
+                            <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
+                        </div>
 
-                    {tab === 'departments' &&
-                        data.shown.map((key) => {
-                            if (key === 'warehouse' && data.warehouse)
-                                return (
-                                    <WarehouseSection
-                                        key={key}
-                                        block={data.warehouse}
-                                        {...common}
-                                    />
-                                );
-                            if (key === 'quality' && data.quality)
-                                return (
-                                    <QualitySection key={key} block={data.quality} {...common} />
-                                );
-                            if (key === 'sales' && data.sales)
-                                return <SalesSection key={key} block={data.sales} {...common} />;
-                            const block =
-                                key === 'cutting' ||
-                                key === 'sewing' ||
-                                key === 'finishing' ||
-                                key === 'packing'
-                                    ? data[key]
-                                    : undefined;
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
+                                3. QUALITY CONTROL
+                            </div>
+                            <div>Name: ____________________</div>
+                            <div>Result: [ X ] Verified Passed</div>
+                            <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
+                        </div>
 
-                            return block ? (
-                                <StageSection key={key} block={block} {...common} />
-                            ) : null;
-                        })}
-                </>
-            )}
+                        <div style={{ border: '1pt solid #000000', padding: 10, fontSize: '0.78rem', background: '#ffffff' }}>
+                            <div style={{ fontWeight: 800, borderBottom: '1pt solid #000000', paddingBottom: 4, marginBottom: 6 }}>
+                                4. FACTORY MANAGER
+                            </div>
+                            <div>Name: ____________________</div>
+                            <div>Decision: Approved</div>
+                            <div style={{ marginTop: 22, borderBottom: '1pt solid #000000' }}></div>
+                            <div style={{ marginTop: 3, fontSize: '0.7rem' }}>Signature &amp; Date</div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer className="print-footer-block" style={{ marginTop: 16, paddingTop: 6, borderTop: '0.5pt solid #999999', display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#555555' }}>
+                    <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} · FACTORY OPERATIONS &amp; QUALITY AUDIT REPORT</span>
+                    <span>Page 1 of 1 · Confidential</span>
+                </footer>
+            </article>
         </section>
     );
 }

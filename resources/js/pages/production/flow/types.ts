@@ -30,6 +30,10 @@ export type LotRow = {
     good: number;
     damaged: number;
     sent: number;
+    quality_passed?: number;
+    quality_rejected?: number;
+    qc_message?: string | null;
+    qc_status?: 'pending' | 'passed' | 'failed' | 'conditional' | null;
 };
 
 export type TransferRow = {

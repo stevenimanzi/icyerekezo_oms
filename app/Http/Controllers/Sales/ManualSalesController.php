@@ -161,8 +161,14 @@ class ManualSalesController extends Controller
     private function formOptions(): array
     {
         $available = DB::table('stock_balances')
-            ->selectRaw('item_id, SUM(quantity_on_hand - quantity_reserved - quantity_quarantined) as available')
-            ->groupBy('item_id');
+            ->leftJoin('batches', 'batches.id', '=', 'stock_balances.batch_id')
+            ->where(function ($query) {
+                $query->whereNull('stock_balances.batch_id')
+                    ->orWhere('batches.qc_status', 'passed')
+                    ->orWhereNull('batches.qc_status');
+            })
+            ->selectRaw('stock_balances.item_id, SUM(stock_balances.quantity_on_hand - stock_balances.quantity_reserved - stock_balances.quantity_quarantined) as available')
+            ->groupBy('stock_balances.item_id');
 
         $lastPrice = DB::table('sales_document_lines as l')
             ->join(DB::raw('(SELECT MAX(id) as id FROM sales_document_lines WHERE unit_price > 0 GROUP BY item_id) as latest'), 'latest.id', '=', 'l.id')
@@ -182,6 +188,17 @@ class ManualSalesController extends Controller
                 'units.symbol as unit',
             ]);
 
+        $warehouseStock = DB::table('stock_balances')
+            ->leftJoin('batches', 'batches.id', '=', 'stock_balances.batch_id')
+            ->where(function ($query) {
+                $query->whereNull('stock_balances.batch_id')
+                    ->orWhere('batches.qc_status', 'passed')
+                    ->orWhereNull('batches.qc_status');
+            })
+            ->selectRaw('stock_balances.item_id, stock_balances.warehouse_id, SUM(stock_balances.quantity_on_hand - stock_balances.quantity_reserved - stock_balances.quantity_quarantined) as available')
+            ->groupBy('stock_balances.item_id', 'stock_balances.warehouse_id')
+            ->get();
+
         $customers = SalesDocument::query()
             ->where('source', 'manual')
             ->selectRaw('customer_name as name, MAX(customer_phone) as phone, MAX(id) as last_id')
@@ -192,6 +209,7 @@ class ManualSalesController extends Controller
 
         return [
             'items' => $items,
+            'warehouse_stock' => $warehouseStock,
             'customers' => $customers,
             'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'payment_methods' => SalesPayment::METHODS,

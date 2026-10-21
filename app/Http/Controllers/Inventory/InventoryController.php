@@ -556,6 +556,7 @@ class InventoryController extends Controller
                 'batches.id as batch_id',
                 'batches.item_id',
                 'batches.metadata',
+                'batches.qc_status',
                 'items.name as item_name',
             ])
             ->map(function ($row) {
@@ -566,12 +567,18 @@ class InventoryController extends Controller
                         (! empty($meta['size']) ? ' (' . $meta['size'] . ')' : ''),
                 );
 
+                $latestInspection = \App\Models\QualityInspection::where('batch_id', $row->batch_id)->latest('id')->first();
+
                 return [
                     'id' => $row->batch_id,
                     'item_id' => $row->item_id,
                     'warehouse_id' => $row->warehouse_id,
                     'name' => trim(($label !== '' ? $label . ' - ' : '') . $row->item_name),
                     'available_qty' => (float) $row->quantity_on_hand,
+                    'qc_status' => $row->qc_status ?? 'pending',
+                    'qc_passed' => (float) ($latestInspection?->passed_quantity ?? 0),
+                    'qc_rejected' => (float) ($latestInspection?->rejected_quantity ?? 0),
+                    'qc_defect_details' => $latestInspection?->defect_details ?: $latestInspection?->notes,
                 ];
             })
             ->values()

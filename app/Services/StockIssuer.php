@@ -17,7 +17,18 @@ class StockIssuer
         $warehouse ??= $this->warehouseWithMostStock($item);
 
         if (! $warehouse) {
-            throw ValidationException::withMessages([$errorKey => "{$item->name} is not in stock in any warehouse."]);
+            throw ValidationException::withMessages([$errorKey => "{$item->name} is not in stock in any warehouse. Sales must be fulfilled from inventory."]);
+        }
+
+        $availableInWarehouse = (float) DB::table('stock_balances')
+            ->where('item_id', $item->id)
+            ->where('warehouse_id', $warehouse->id)
+            ->value(DB::raw('SUM(quantity_on_hand - quantity_reserved - quantity_quarantined)')) ?? 0;
+
+        if ($availableInWarehouse < $quantity) {
+            throw ValidationException::withMessages([
+                $errorKey => "{$item->name}: only {$availableInWarehouse} units available in {$warehouse->name} (requested: {$quantity}). Cannot sell more than available in stock.",
+            ]);
         }
 
         $posted = [];
@@ -44,7 +55,9 @@ class StockIssuer
         }
 
         if ($remaining > 0.0000001) {
-            throw ValidationException::withMessages([$errorKey => "{$item->name}: not enough stock."]);
+            throw ValidationException::withMessages([
+                $errorKey => "{$item->name}: only " . round($quantity - $remaining, 2) . " units available to issue from {$warehouse->name} (requested: {$quantity}).",
+            ]);
         }
 
         return $posted;
@@ -75,6 +88,7 @@ class StockIssuer
             ->where('stock_balances.item_id', $item->id)
             ->where('stock_balances.warehouse_id', $warehouse->id)
             ->where(fn ($query) => $query->whereNull('batches.expires_at')->orWhere('batches.expires_at', '>=', today()))
+            ->where(fn ($query) => $query->whereNull('batches.qc_status')->orWhere('batches.qc_status', 'passed'))
             ->selectRaw('batches.id as batch_id, (stock_balances.quantity_on_hand - stock_balances.quantity_reserved - stock_balances.quantity_quarantined) as available')
             ->orderByRaw('batches.expires_at IS NULL, batches.expires_at')
             ->get();

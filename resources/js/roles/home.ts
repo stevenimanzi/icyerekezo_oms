@@ -11,6 +11,7 @@ const RoleHome = lazy(() => import('./default/RoleHome'));
 const FlowStageHome = lazy(() => import('../pages/production/flow/home/StageHome'));
 const FlowManagerHome = lazy(() => import('../pages/production/flow/home/ManagerHome'));
 const SafetyOfficerHome = lazy(() => import('./safety-officer/Home'));
+const QualityDashboard = lazy(() => import('./quality/QualityDashboard'));
 
 export function homeFor(flags: RoleFlags): HomeComponent {
     if (flags.isFactoryOwner) return OwnerDashboard;
@@ -18,6 +19,7 @@ export function homeFor(flags: RoleFlags): HomeComponent {
     if (flags.isFinancialManager) return FinancialManagerHome;
     if (flags.isHrOfficer) return HrOfficerHome;
     if (flags.isSafetyOfficer) return SafetyOfficerHome;
+    if (flags.isQualityUser || flags.isQualityManager) return QualityDashboard;
     if (flags.hasProductionFlow) {
         if (
             flags.isCuttingUser ||
@@ -26,7 +28,7 @@ export function homeFor(flags: RoleFlags): HomeComponent {
             flags.isPackagingUser
         )
             return FlowStageHome;
-        if (flags.isProductionManager || flags.isProductionSupervisor || flags.isQualityUser)
+        if (flags.isProductionManager || flags.isProductionSupervisor)
             return FlowManagerHome;
     }
 

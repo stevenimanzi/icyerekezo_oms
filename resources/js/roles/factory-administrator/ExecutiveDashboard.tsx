@@ -11,8 +11,12 @@ import {
 } from 'recharts';
 import { startPolling } from '../../core/polling';
 
-async function loadDashboard(period: string) {
-    const response = await fetch(`/api/executive/dashboard?period=${period}`, {
+async function loadDashboard(period: string, from?: string, to?: string) {
+    let url = `/api/executive/dashboard?period=${period}`;
+    if (period === 'custom' && from && to) {
+        url += `&from=${from}&to=${to}`;
+    }
+    const response = await fetch(url, {
         headers: { Accept: 'application/json' },
     });
     const text = await response.text();
@@ -56,10 +60,16 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
     const [error, setError] = useState('');
     const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
     const [period, setPeriod] = useState('all_time');
+    const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        return d.toISOString().slice(0, 10);
+    });
+    const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
     const isOwner = user.roles?.some((role: any) => role.slug === 'factory-owner');
 
     const load = () =>
-        loadDashboard(period)
+        loadDashboard(period, startDate, endDate)
             .then((result) => {
                 setData(result);
                 setError('');
@@ -71,7 +81,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
         load();
         const timer = startPolling(load, 15000);
         return () => window.clearInterval(timer);
-    }, [period]);
+    }, [period, startDate, endDate]);
 
     const metrics = data?.metrics || {};
     const orders = data?.orders || [];
@@ -104,7 +114,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                     </h1>
                     <p>{greeting}</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <select
                         className="admin-input"
                         value={period}
@@ -113,18 +123,54 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                             padding: '0.4rem 2rem 0.4rem 1rem',
                             borderRadius: '4px',
                             border: '1px solid var(--border)',
+                            background: '#ffffff',
+                            fontWeight: 600,
                         }}
                     >
-                        <option value="daily">{locale === 'fr' ? 'Quotidien' : 'Daily'}</option>
+                        <option value="daily">{locale === 'fr' ? 'Quotidien (Aujourd’hui)' : 'Daily (Today)'}</option>
                         <option value="weekly">
-                            {locale === 'fr' ? 'Hebdomadaire' : 'Weekly'}
+                            {locale === 'fr' ? 'Hebdomadaire (7 jours)' : 'Weekly (Last 7 Days)'}
                         </option>
-                        <option value="monthly">{locale === 'fr' ? 'Mensuel' : 'Monthly'}</option>
-                        <option value="yearly">{locale === 'fr' ? 'Annuel' : 'Yearly'}</option>
+                        <option value="monthly">{locale === 'fr' ? 'Mensuel (Ce mois)' : 'Monthly (This Month)'}</option>
+                        <option value="yearly">{locale === 'fr' ? 'Annuel (Cette année)' : 'Annually (This Year)'}</option>
+                        <option value="custom">{locale === 'fr' ? 'Période personnalisée' : 'Custom Date Range'}</option>
                         <option value="all_time">
                             {locale === 'fr' ? 'Tout le temps' : 'All Time'}
                         </option>
                     </select>
+
+                    {period === 'custom' && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="admin-input"
+                                style={{
+                                    padding: '0.35rem 0.6rem',
+                                    fontSize: '0.875rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--border)',
+                                    background: '#ffffff',
+                                }}
+                            />
+                            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>~</span>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="admin-input"
+                                style={{
+                                    padding: '0.35rem 0.6rem',
+                                    fontSize: '0.875rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--border)',
+                                    background: '#ffffff',
+                                }}
+                            />
+                        </div>
+                    )}
+
                     {!isOwner && !isSpecialized && (
                         <button className="primary-btn" onClick={() => onNavigate('production')}>
                             {locale === 'fr'
@@ -196,6 +242,57 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                         value={`${number(metrics.completionRate)}%`}
                     />
                 </section>
+            )}
+
+            {data?.stage_overview && (
+                <article className="panel" style={{ marginBottom: '1.5rem' }}>
+                    <div className="panel-title">
+                        <h2>
+                            {locale === 'fr'
+                                ? 'Bilan opérationnel des départements'
+                                : 'Department Operational Overview'}
+                        </h2>
+                        <span className="ui-chip ok" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
+                            {locale === 'fr' ? 'Registre actif' : 'Active stages'}
+                        </span>
+                    </div>
+                    <div className="ui-table-wrap">
+                        <table className="ui-table" style={{ width: '100%', minWidth: 0, tableLayout: 'auto' }}>
+                            <thead>
+                                <tr>
+                                    <th>{locale === 'fr' ? 'Département' : 'Department'}</th>
+                                    <th className="num">{locale === 'fr' ? '1. Entrants' : '1. Input'}</th>
+                                    <th className="num">{locale === 'fr' ? '2. Sortie' : '2. Output'}</th>
+                                    <th className="num">{locale === 'fr' ? '3. Défauts' : '3. Damaged'}</th>
+                                    <th>{locale === 'fr' ? '4. Qualité' : '4. QC Status'}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.stage_overview.map((st: any) => (
+                                    <tr key={st.stage}>
+                                        <td style={{ whiteSpace: 'nowrap' }}>
+                                            <b>{st.stage}</b>
+                                        </td>
+                                        <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                                            <b>{number(st.input)}</b>
+                                        </td>
+                                        <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                                            <b style={{ color: 'var(--ui-good, #16a34a)' }}>{number(st.output)}</b>
+                                        </td>
+                                        <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                                            <b className={st.damaged > 0 ? 'alert' : ''}>{number(st.damaged)}</b>
+                                        </td>
+                                        <td style={{ whiteSpace: 'nowrap' }}>
+                                            <span className={`ui-chip ${st.damaged === 0 ? 'ok' : 'warn'}`}>
+                                                {st.qc_status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
             )}
 
             <article className="panel chart-panel executive-chart-panel">

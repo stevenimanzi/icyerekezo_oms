@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal } from '../../../../components/Modal';
 import { postJson } from '../../../../core/liveData';
+import { notify } from '../../../shared/GlobalOperationToasts';
 import type { Locale } from '../../../../core/types';
 import { stageLabel } from '../stages';
 import type { FlowText } from '../text';
@@ -39,18 +40,58 @@ export function NewRequestModal({
     const [reason, setReason] = useState('');
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
+    const [attempted, setAttempted] = useState(false);
 
     const pieces = kind === 'stage';
     const item = options.find((option) => String(option.id) === itemId);
     const amount = Number(quantity);
     const lot = lots.find((row) => String(row.id) === lotId);
-    const ready =
-        (pieces
-            ? Number.isInteger(amount) && amount > 0 && lot !== undefined && amount <= lot.ready
-            : item !== undefined && amount > 0) && reason.trim().length >= 3;
     const from = stageLabel(previous, locale);
 
     const submit = async () => {
+        setAttempted(true);
+
+        if (pieces) {
+            if (!lot) {
+                const msg = 'Please choose which lot to request pieces from.';
+                setError(msg);
+                notify.warning('Lot Required', msg);
+                return;
+            }
+            if (isNaN(amount) || !Number.isInteger(amount) || amount < 1) {
+                const msg = 'Please enter a valid whole number of pieces (at least 1).';
+                setError(msg);
+                notify.warning('Quantity Required', msg);
+                return;
+            }
+            if (amount > lot.ready) {
+                const msg = `Requested pieces (${amount}) exceeds pieces ready at ${from} (${lot.ready} ready).`;
+                setError(msg);
+                notify.error('Quantity Exceeded', msg);
+                return;
+            }
+        } else {
+            if (!item) {
+                const msg = 'Please select which material you are requesting from the warehouse.';
+                setError(msg);
+                notify.warning('Material Selection Required', msg);
+                return;
+            }
+            if (isNaN(amount) || amount <= 0) {
+                const msg = 'Please enter the quantity needed (greater than 0).';
+                setError(msg);
+                notify.warning('Quantity Required', msg);
+                return;
+            }
+        }
+
+        if (reason.trim().length < 3) {
+            const msg = 'Please explain why you need this material/pieces (at least 3 characters).';
+            setError(msg);
+            notify.warning('Reason Required', msg);
+            return;
+        }
+
         setBusy(true);
         setError('');
         try {
@@ -62,9 +103,13 @@ export function NewRequestModal({
                 quantity: amount,
                 reason: reason.trim(),
             });
-            onDone(result.message);
-        } catch (failure) {
-            setError(failure instanceof Error ? failure.message : '');
+            const successMsg = result.message || 'Material request submitted successfully.';
+            notify.success('Request Submitted', successMsg);
+            onDone(successMsg);
+        } catch (failure: any) {
+            const errorMsg = failure instanceof Error ? failure.message : (failure?.message || 'Failed to submit request.');
+            setError(errorMsg);
+            notify.error('Request Failed', errorMsg);
         } finally {
             setBusy(false);
         }
@@ -80,13 +125,13 @@ export function NewRequestModal({
                     <button className="secondary-btn" onClick={onClose} disabled={busy}>
                         {text.cancel}
                     </button>
-                    <button className="primary-btn" onClick={submit} disabled={busy || !ready}>
+                    <button className="primary-btn" onClick={submit} disabled={busy}>
                         {busy ? text.saving : t.send}
                     </button>
                 </>
             }
         >
-            {error && <div className="ui-error">{error}</div>}
+            {error && <div className="ui-error" style={{ marginBottom: 12 }}>{error}</div>}
 
             {previous && hasMaterials && (
                 <label className="ui-field">

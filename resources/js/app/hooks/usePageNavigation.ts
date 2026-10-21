@@ -2,13 +2,62 @@ import { useEffect, useRef, useState } from 'react';
 import type { AuthUser } from '../../core/types';
 import { pageFromLocation, pathForPage } from '../routing';
 
+function formatPageTitle(page: string): string {
+    const titles: Record<string, string> = {
+        'dashboard': 'Dashboard',
+        'cutting-workspace': 'Cutting Workspace',
+        'cutting-report': 'Cutting Report',
+        'sewing-workspace': 'Sewing Workspace',
+        'sewing-report': 'Sewing Report',
+        'finishing-workspace': 'Finishing Workspace',
+        'finishing-report': 'Finishing Report',
+        'packing-workspace': 'Packing Workspace',
+        'packing-report': 'Packing Report',
+        'factory-report': 'Factory Report',
+        'production-flow': 'Production Flow',
+        'material-requests': 'Material Requests',
+        'requests': 'Requests',
+        'quality-control': 'Quality Control',
+        'stock-overview': 'Stock Overview',
+        'inventory': 'Inventory',
+        'sales': 'Sales',
+        'manual-sales': 'Manual Sales',
+        'sales-orders': 'Sales Orders',
+        'customers': 'Customers',
+        'chat': 'Chat',
+        'notifications': 'Notifications',
+        'profile': 'Profile',
+        'settings': 'Settings',
+        'team': 'Team',
+        'machines': 'Machines',
+        'maintenance': 'Maintenance',
+        'safety': 'Safety',
+        'procurement': 'Procurement',
+        'logistics': 'Logistics',
+        'finance': 'Finance',
+        'hr': 'Human Resources',
+    };
+
+    if (titles[page]) {
+        return titles[page];
+    }
+
+    return page
+        .split(/[-_]/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+}
+
 export function usePageNavigation(user: AuthUser, allowedPages: string[]) {
     const [activePage, setActivePage] = useState(() => pageFromLocation(user));
     const skipHistory = useRef(true);
 
     useEffect(() => {
         const path = pathForPage(user, activePage);
-        document.title = `${activePage.replaceAll('-', ' ')} | ${user.system?.name || 'ICYEREKEZO OMS'}`;
+        const title = formatPageTitle(activePage);
+        const systemName = user.system?.name || 'ICYEREKEZO OMS';
+        document.title = `${title} | ${systemName}`;
 
         if (skipHistory.current) {
             skipHistory.current = false;

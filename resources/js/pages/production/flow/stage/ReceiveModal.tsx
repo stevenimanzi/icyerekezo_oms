@@ -3,6 +3,7 @@ import { Modal } from '../../../../components/Modal';
 import type { FlowText } from '../text';
 import type { TransferRow } from '../types';
 import { postJson } from '../../../../core/liveData';
+import { notify } from '../../../shared/GlobalOperationToasts';
 
 type Props = {
     transfer: TransferRow;
@@ -17,20 +18,42 @@ export function ReceiveModal({ transfer, text, onClose, onDone }: Props) {
     const [note, setNote] = useState('');
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
+    const [attempted, setAttempted] = useState(false);
 
-    const short = Number(quantity) > 0 && Number(quantity) < transfer.quantity_sent;
+    const qtyNum = Number(quantity);
+    const short = qtyNum > 0 && qtyNum < transfer.quantity_sent;
 
     const submit = async () => {
+        setAttempted(true);
+
+        if (isNaN(qtyNum) || qtyNum <= 0) {
+            const msg = 'Please enter a valid received quantity (must be greater than 0).';
+            setError(msg);
+            notify.warning('Quantity Required', msg);
+            return;
+        }
+
+        if (short && note.trim().length < 3) {
+            const msg = 'When receiving fewer pieces than sent, please write a note explaining why (at least 3 characters).';
+            setError(msg);
+            notify.warning('Note Required for Shortage', msg);
+            return;
+        }
+
         setBusy(true);
         setError('');
         try {
             await postJson(`/api/flow/transfers/${transfer.id}/receive`, {
-                quantity: Number(quantity),
+                quantity: qtyNum,
                 note: note.trim() || null,
             });
-            onDone(`${transfer.lot_number}: ${text.pieces(Number(quantity))}.`);
-        } catch (reason) {
-            setError(reason instanceof Error ? reason.message : '');
+            const successMsg = `Received ${qtyNum} pieces for lot ${transfer.lot_number}.`;
+            notify.success('Pieces Received', successMsg);
+            onDone(successMsg);
+        } catch (reason: any) {
+            const errorMsg = reason instanceof Error ? reason.message : (reason?.message || 'Failed to receive pieces.');
+            setError(errorMsg);
+            notify.error('Receiving Failed', errorMsg);
         } finally {
             setBusy(false);
         }
@@ -49,16 +72,14 @@ export function ReceiveModal({ transfer, text, onClose, onDone }: Props) {
                     <button
                         className="primary-btn"
                         onClick={submit}
-                        disabled={
-                            busy || !(Number(quantity) > 0) || (short && note.trim().length < 3)
-                        }
+                        disabled={busy}
                     >
                         {busy ? text.saving : t.confirm}
                     </button>
                 </>
             }
         >
-            {error && <div className="ui-error">{error}</div>}
+            {error && <div className="ui-error" style={{ marginBottom: 12 }}>{error}</div>}
             <p className="ui-help" style={{ margin: 0 }}>
                 {t.sent(transfer.quantity_sent, transfer.sent_by ?? '')}
             </p>

@@ -8,7 +8,7 @@ type Props = {
     label: string;
     value: string;
     comparison: Comparison;
-    days: number;
+    days: number | string;
     text: Text;
     format: Format;
 };

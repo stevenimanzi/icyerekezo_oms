@@ -42,7 +42,9 @@ final class FlowAccess
 
     public function canInspect(): bool
     {
-        return $this->user->hasPermission('quality.inspect');
+        return $this->user->is_platform_admin
+            || $this->user->hasPermission('quality.inspect')
+            || (bool) array_intersect(['quality-officer', 'quality-manager', 'factory-administrator', 'factory-manager', 'production-manager', 'production-supervisor'], $this->roleSlugs);
     }
 
     public function defaultStage(): ?string

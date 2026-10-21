@@ -288,6 +288,25 @@ export default function SewingWorkspacePage({
 
     const acceptCutPiece = async (piece: any) => {
         clearMsg();
+        if (piece.qc_status !== 'passed') {
+            if (piece.qc_rejected > 0) {
+                setError(
+                    locale === 'en'
+                        ? `Some items failed in quality control: ${piece.qc_rejected} items failed quality control inspection ("${piece.qc_defect_details || 'Defects noted'}"). Only passed items can be accepted.`
+                        : `Certains articles ont échoué au contrôle qualité (${piece.qc_rejected} rejetés). Seuls les articles validés peuvent être acceptés.`,
+                );
+            } else {
+                setError(
+                    locale === 'en'
+                        ? 'Quality control inspection required: Cut items cannot be submitted or accepted into sewing without quality control approval.'
+                        : 'Contrôle qualité requis : Les pièces coupées ne peuvent pas être acceptées dans la couture sans approbation du contrôle qualité.',
+                );
+            }
+            return;
+        }
+
+        const qtyToAccept = piece.qc_passed > 0 ? Number(piece.qc_passed) : Number(piece.available_qty);
+
         setBusy(true);
         try {
             await productionApi('/api/inventory/transactions', {
@@ -297,8 +316,8 @@ export default function SewingWorkspacePage({
                     warehouse_id: sewingWarehouseId,
                     batch_id: Number(piece.id),
                     type: 'receipt',
-                    quantity: Number(piece.available_qty),
-                    reason: `[Sewing Receipt] CutID: ${piece.id} | Accepted from cutting`,
+                    quantity: qtyToAccept,
+                    reason: `[Sewing Receipt] CutID: ${piece.id} | Accepted from cutting (QC Approved)`,
                 }),
             });
             setSuccess(
@@ -570,31 +589,57 @@ export default function SewingWorkspacePage({
                                                 : 'Détails du lot'}
                                         </th>
                                         <th>{locale === 'en' ? 'Quantity' : 'Quantité'}</th>
+                                        <th>{locale === 'en' ? 'Quality Control' : 'Contrôle Qualité'}</th>
                                         <th>{locale === 'en' ? 'Action' : 'Action'}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {cutPieces.length ? (
-                                        cutPieces.map((item: any) => (
-                                            <tr key={item.id}>
-                                                <td>
-                                                    <b>{item.name}</b>
-                                                </td>
-                                                <td>{num(item.available_qty)}</td>
-                                                <td>
-                                                    <button
-                                                        className="primary-btn"
-                                                        disabled={busy}
-                                                        onClick={() => acceptCutPiece(item)}
-                                                    >
-                                                        {locale === 'en' ? 'Accept' : 'Accepter'}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
+                                        cutPieces.map((item: any) => {
+                                            const isPassed = item.qc_status === 'passed';
+                                            const isFailed = item.qc_status === 'failed' || (item.qc_rejected > 0 && !isPassed);
+                                            return (
+                                                <tr key={item.id}>
+                                                    <td>
+                                                        <b>{item.name}</b>
+                                                    </td>
+                                                    <td>{num(item.available_qty)}</td>
+                                                    <td>
+                                                        {isPassed ? (
+                                                            <span style={{ color: '#059669', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#059669' }}></span>
+                                                                {locale === 'en' ? 'QC Passed' : 'QC Validé'}
+                                                            </span>
+                                                        ) : isFailed ? (
+                                                            <span style={{ color: '#dc2626', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }} title={item.qc_defect_details || ''}>
+                                                                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#dc2626' }}></span>
+                                                                {locale === 'en' ? `QC Failed (${item.qc_rejected || 'Defect'})` : `Échec QC (${item.qc_rejected || 'Défaut'})`}
+                                                            </span>
+                                                        ) : (
+                                                            <span style={{ color: '#d97706', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#d97706' }}></span>
+                                                                {locale === 'en' ? 'Awaiting QC' : 'En attente QC'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <button
+                                                            className={isPassed ? 'primary-btn' : 'secondary-btn'}
+                                                            disabled={busy || !isPassed}
+                                                            title={!isPassed ? (locale === 'en' ? 'Quality control inspection required before accepting cut pieces' : 'Contrôle qualité requis avant acceptation') : ''}
+                                                            onClick={() => acceptCutPiece(item)}
+                                                        >
+                                                            {isPassed
+                                                                ? (locale === 'en' ? 'Accept' : 'Accepter')
+                                                                : (locale === 'en' ? 'QC Required' : 'QC Requis')}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     ) : (
                                         <tr>
-                                            <td colSpan={3} className="empty-cell">
+                                            <td colSpan={4} className="empty-cell">
                                                 {locale === 'en'
                                                     ? 'No pending pieces from cutting.'
                                                     : 'Aucune pièce en attente de la coupe.'}

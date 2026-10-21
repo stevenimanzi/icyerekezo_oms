@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\SalesDocument;
+use App\Models\SalesPayment;
 use App\Models\SchoolPaymentSubmission;
+use App\Models\StockBalance;
+use App\Models\Warehouse;
 use App\Support\Security\PrivateFile;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -26,15 +29,27 @@ class FinanceController extends Controller
             ->map(function (int $daysAgo) use ($factoryId) {
                 $day = today()->subDays($daysAgo);
 
+                $schoolPaid = (float) SchoolPaymentSubmission::where('factory_id', $factoryId)
+                    ->where('status', 'approved')
+                    ->whereDate('reviewed_at', $day)
+                    ->sum('amount');
+
+                $directPaid = (float) SalesPayment::whereHas('salesDocument', fn ($q) => $q->where('factory_id', $factoryId))
+                    ->whereDate('paid_on', $day)
+                    ->sum('amount');
+
                 return [
                     'date' => $day->format('M j'),
-                    'approved' => (float) SchoolPaymentSubmission::where('factory_id', $factoryId)
-                        ->where('status', 'approved')
-                        ->whereDate('reviewed_at', $day)
-                        ->sum('amount'),
+                    'approved' => round($schoolPaid + $directPaid, 2),
                 ];
             })
             ->values();
+
+        $warehouseIds = Warehouse::where('factory_id', $factoryId)->pluck('id');
+        $inventoryValue = (float) StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)
+            ->join('items', 'items.id', '=', 'stock_balances.item_id')
+            ->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost), 0) as val')
+            ->value('val');
 
         return response()->json([
             'payment_trend' => $paymentTrend,
@@ -42,6 +57,7 @@ class FinanceController extends Controller
                 'invoiced_amount' => $invoiced,
                 'paid_amount' => $paid,
                 'outstanding_amount' => max(0, $invoiced - $paid),
+                'inventory_value' => round($inventoryValue, 2),
                 'pending_receipts' => SchoolPaymentSubmission::where('factory_id', $factoryId)
                     ->where('status', 'pending')
                     ->count(),
@@ -143,14 +159,28 @@ class FinanceController extends Controller
 
         $ordersBase = SalesDocument::where('factory_id', $factoryId)->where('document_type', 'customer_order');
         $receiptsBase = SchoolPaymentSubmission::where('factory_id', $factoryId)->where('status', 'approved');
+        $directPaymentsBase = SalesPayment::whereHas('salesDocument', fn ($q) => $q->where('factory_id', $factoryId));
+
         $orders = (clone $ordersBase)->whereBetween('document_date', [$from->toDateString(), $to->toDateString()]);
         $receipts = (clone $receiptsBase)->whereBetween('reviewed_at', [
             $from->copy()->startOfDay(),
             $to->copy()->endOfDay(),
         ]);
+        $directPayments = (clone $directPaymentsBase)->whereBetween('paid_on', [
+            $from->toDateString(),
+            $to->toDateString(),
+        ]);
 
         $invoiced = (float) (clone $orders)->sum('total_amount');
-        $collected = (float) (clone $receipts)->sum('amount');
+        $schoolCollected = (float) (clone $receipts)->sum('amount');
+        $directCollected = (float) (clone $directPayments)->sum('amount');
+        $collected = round($schoolCollected + $directCollected, 2);
+
+        $warehouseIds = Warehouse::where('factory_id', $factoryId)->pluck('id');
+        $inventoryValue = (float) StockBalance::whereIn('stock_balances.warehouse_id', $warehouseIds)
+            ->join('items', 'items.id', '=', 'stock_balances.item_id')
+            ->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost), 0) as val')
+            ->value('val');
 
         $payload = [
             'report' => [
@@ -172,8 +202,9 @@ class FinanceController extends Controller
                 'outstanding_amount' => (float) (clone $ordersBase)
                     ->selectRaw('COALESCE(SUM(total_amount - paid_amount), 0) as balance')
                     ->value('balance'),
+                'inventory_value' => round($inventoryValue, 2),
                 'orders_count' => (clone $orders)->count(),
-                'receipts_count' => (clone $receipts)->count(),
+                'receipts_count' => (clone $receipts)->count() + (clone $directPayments)->count(),
                 'overdue_count' => (clone $ordersBase)
                     ->whereNotIn('payment_status', ['paid'])
                     ->whereNotNull('due_date')
@@ -217,22 +248,37 @@ class FinanceController extends Controller
                     ],
                 );
         } elseif ($type === 'receipts') {
-            $payload['rows'] = (clone $receipts)
+            $schoolRows = (clone $receipts)
                 ->with(['school:id,name', 'salesDocument:id,document_number', 'reviewer:id,name'])
-                ->orderBy('reviewed_at')
-                ->orderBy('id')
                 ->get()
                 ->map(
                     fn (SchoolPaymentSubmission $receipt) => [
                         'reviewed_at' => $receipt->reviewed_at?->toDateString(),
-                        'customer_name' => $receipt->school?->name,
+                        'customer_name' => $receipt->school?->name ?? 'School',
                         'document_number' => $receipt->salesDocument?->document_number,
                         'payment_method' => $receipt->payment_method,
                         'payment_reference' => $receipt->payment_reference,
                         'amount' => (float) $receipt->amount,
-                        'reviewer' => $receipt->reviewer?->name,
+                        'reviewer' => $receipt->reviewer?->name ?? 'Finance Officer',
                     ],
                 );
+
+            $directRows = (clone $directPayments)
+                ->with(['salesDocument:id,document_number,customer_name', 'recorder:id,name'])
+                ->get()
+                ->map(
+                    fn (SalesPayment $payment) => [
+                        'reviewed_at' => $payment->paid_on?->toDateString() ?? $payment->created_at?->toDateString(),
+                        'customer_name' => $payment->salesDocument?->customer_name ?? 'Customer',
+                        'document_number' => $payment->salesDocument?->document_number,
+                        'payment_method' => $payment->method,
+                        'payment_reference' => $payment->reference,
+                        'amount' => (float) $payment->amount,
+                        'reviewer' => $payment->recorder?->name ?? 'Sales Officer',
+                    ],
+                );
+
+            $payload['rows'] = $schoolRows->concat($directRows)->sortByDesc('reviewed_at')->values();
         } elseif ($type === 'aging') {
             $payload['rows'] = (clone $ordersBase)
                 ->whereIn('payment_status', ['unpaid', 'partially_paid'])

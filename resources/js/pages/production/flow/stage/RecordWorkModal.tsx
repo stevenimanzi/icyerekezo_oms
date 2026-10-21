@@ -4,6 +4,7 @@ import type { Locale } from '../../../../core/types';
 import type { FlowText } from '../text';
 import type { LotRow, StageInfo } from '../types';
 import { postJson } from '../../../../core/liveData';
+import { notify } from '../../../shared/GlobalOperationToasts';
 
 type Props = {
     lot?: LotRow;
@@ -28,12 +29,36 @@ export function RecordWorkModal({ lot: given, lots, stage, locale, text, onClose
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
 
+    const [attempted, setAttempted] = useState(false);
+
     const total = (Number(good) || 0) + (Number(damaged) || 0);
     const wip = lot?.wip ?? 0;
     const tooMany = total > wip;
 
     const submit = async () => {
-        if (!lot) return;
+        setAttempted(true);
+
+        if (!lot) {
+            const msg = 'Please select a lot to record work for.';
+            setError(msg);
+            notify.warning('Lot Required', msg);
+            return;
+        }
+
+        if (total < 1) {
+            const msg = 'Please enter the number of pieces produced (good or damaged must be at least 1).';
+            setError(msg);
+            notify.warning('Quantity Required', msg);
+            return;
+        }
+
+        if (tooMany) {
+            const msg = `Total pieces entered (${total}) exceeds waiting WIP (${wip} pieces ready).`;
+            setError(msg);
+            notify.error('Exceeds WIP', msg);
+            return;
+        }
+
         setBusy(true);
         setError('');
         try {
@@ -44,9 +69,13 @@ export function RecordWorkModal({ lot: given, lots, stage, locale, text, onClose
                 entry_date: date,
                 notes: note.trim() || null,
             });
-            onDone(`${lot.lot_number}: ${text.pieces(Number(good) || 0)}.`);
-        } catch (reason) {
-            setError(reason instanceof Error ? reason.message : '');
+            const successMsg = `Work recorded for ${lot.lot_number}: ${Number(good) || 0} good pieces.`;
+            notify.success('Work Recorded Successfully', successMsg);
+            onDone(successMsg);
+        } catch (reason: any) {
+            const errorMsg = reason instanceof Error ? reason.message : (reason?.message || 'Failed to record work.');
+            setError(errorMsg);
+            notify.error('Recording Failed', errorMsg);
         } finally {
             setBusy(false);
         }
@@ -65,14 +94,14 @@ export function RecordWorkModal({ lot: given, lots, stage, locale, text, onClose
                     <button
                         className="primary-btn"
                         onClick={submit}
-                        disabled={busy || !lot || total < 1 || tooMany}
+                        disabled={busy}
                     >
                         {busy ? text.saving : t.save}
                     </button>
                 </>
             }
         >
-            {error && <div className="ui-error">{error}</div>}
+            {error && <div className="ui-error" style={{ marginBottom: 12 }}>{error}</div>}
             {!given && (
                 <label className="ui-field">
                     {text.work.lot}

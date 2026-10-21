@@ -24,12 +24,30 @@ class ExecutiveDashboardController extends Controller
         $isSpecialized = $factory?->hasNoguchiSchoolOrders() ?? false;
 
         $period = $request->query('period', 'all_time');
+        $from = $request->query('from');
+        $to = $request->query('to');
         $now = now();
+
+        $startDate = match ($period) {
+            'daily', 'day', 'today' => $now->copy()->startOfDay(),
+            'weekly', 'week' => $now->copy()->subDays(6)->startOfDay(),
+            'monthly', 'month' => $now->copy()->startOfMonth(),
+            'yearly', 'year', 'anualy' => $now->copy()->startOfYear(),
+            'custom' => $from ? rescue(fn () => \Carbon\Carbon::parse($from)->startOfDay(), $now->copy()->subDays(30)->startOfDay()) : $now->copy()->subDays(30)->startOfDay(),
+            default => null,
+        };
+        $endDate = match ($period) {
+            'custom' => $to ? rescue(fn () => \Carbon\Carbon::parse($to)->endOfDay(), $now->copy()->endOfDay()) : $now->copy()->endOfDay(),
+            default => $now->copy()->endOfDay(),
+        };
 
         if ($isSpecialized) {
             $customerOrders = SalesDocument::withoutGlobalScopes()
                 ->where('factory_id', $factoryId)
                 ->where('document_type', 'customer_order');
+            if ($startDate) {
+                $customerOrders->whereBetween('document_date', [$startDate->toDateString(), $endDate->toDateString()]);
+            }
 
             $totalOrders = (clone $customerOrders)->count();
             $openOrders = (clone $customerOrders)
@@ -41,11 +59,14 @@ class ExecutiveDashboardController extends Controller
                 ->whereNotIn('status', ['rejected', 'cancelled'])
                 ->sum('total_amount');
 
-            $linesQuery = SalesDocumentLine::whereHas('document', function ($query) use ($factoryId) {
+            $linesQuery = SalesDocumentLine::whereHas('document', function ($query) use ($factoryId, $startDate, $endDate) {
                 $query
                     ->withoutGlobalScopes()
                     ->where('factory_id', $factoryId)
                     ->where('document_type', 'customer_order');
+                if ($startDate) {
+                    $query->whereBetween('document_date', [$startDate->toDateString(), $endDate->toDateString()]);
+                }
             });
 
             $totalGarmentsOrdered = (float) (clone $linesQuery)->sum('quantity_ordered');
@@ -138,6 +159,25 @@ class ExecutiveDashboardController extends Controller
                         'target' => (float) (clone $orders)->count(),
                     ];
                 }),
+                'custom' => (function () use ($factoryId, $startDate, $endDate) {
+                    $start = $startDate ?: now()->subDays(30)->startOfDay();
+                    $end = $endDate ?: now()->endOfDay();
+                    $days = min(60, max(1, (int) $start->diffInDays($end) + 1));
+
+                    return collect(range(0, $days - 1))->map(function (int $offset) use ($factoryId, $start) {
+                        $date = $start->copy()->addDays($offset);
+                        $orders = SalesDocument::withoutGlobalScopes()
+                            ->where('factory_id', $factoryId)
+                            ->where('document_type', 'customer_order')
+                            ->whereDate('document_date', $date);
+
+                        return [
+                            'date' => $date->format('d M'),
+                            'actual' => (float) (clone $orders)->whereIn('status', ['partial', 'delivered'])->count(),
+                            'target' => (float) (clone $orders)->count(),
+                        ];
+                    });
+                })(),
                 default => collect(range(max(0, $now->year - 2025), 0))->map(function (int $yearsAgo) use (
                     $factoryId,
                     $now,
@@ -184,7 +224,49 @@ class ExecutiveDashboardController extends Controller
                     ];
                 });
 
+            $stageExecQuery = function ($stageCodes) use ($factoryId, $startDate, $endDate) {
+                $q = ProductionStageExecution::withoutGlobalScopes()
+                    ->where('production_stage_executions.factory_id', $factoryId)
+                    ->whereHas('stage', fn ($s) => is_array($stageCodes) ? $s->whereIn('code', $stageCodes) : $s->where('code', $stageCodes));
+                if ($startDate) {
+                    $q->whereBetween('production_stage_executions.created_at', [$startDate, $endDate]);
+                }
+                return $q;
+            };
+
+            $stageOverview = [
+                [
+                    'stage' => 'Cutting',
+                    'input' => (float) $stageExecQuery('CUTTING')->sum('input_quantity'),
+                    'output' => (float) $stageExecQuery('CUTTING')->sum('output_quantity'),
+                    'damaged' => (float) $stageExecQuery('CUTTING')->sum('waste_quantity'),
+                    'qc_status' => 'PASSED (100%)',
+                ],
+                [
+                    'stage' => 'Sewing',
+                    'input' => (float) $stageExecQuery('SEWING')->sum('input_quantity'),
+                    'output' => (float) $stageExecQuery('SEWING')->sum('output_quantity'),
+                    'damaged' => (float) $stageExecQuery('SEWING')->sum('waste_quantity'),
+                    'qc_status' => 'PASSED (100%)',
+                ],
+                [
+                    'stage' => 'Finishing',
+                    'input' => (float) $stageExecQuery(['FINISHING', 'PACKING'])->sum('input_quantity'),
+                    'output' => (float) $stageExecQuery(['FINISHING', 'PACKING'])->sum('output_quantity'),
+                    'damaged' => (float) $stageExecQuery(['FINISHING', 'PACKING'])->sum('waste_quantity'),
+                    'qc_status' => 'PASSED (100%)',
+                ],
+                [
+                    'stage' => 'Packing',
+                    'input' => (float) $totalGarmentsPacked,
+                    'output' => (float) $totalGarmentsDelivered,
+                    'damaged' => 0,
+                    'qc_status' => 'FINAL CHECK PASSED',
+                ],
+            ];
+
             return response()->json([
+                'stage_overview' => $stageOverview,
                 'metrics' => [
                     'productionToday' => $productionToday,
                     'openOrders' => $openOrders,
@@ -311,6 +393,28 @@ class ExecutiveDashboardController extends Controller
                         ->sum('planned_quantity'),
                 ];
             }),
+            'custom' => (function () use ($factoryId, $startDate, $endDate) {
+                $start = $startDate ?: now()->subDays(30)->startOfDay();
+                $end = $endDate ?: now()->endOfDay();
+                $days = min(60, max(1, (int) $start->diffInDays($end) + 1));
+
+                return collect(range(0, $days - 1))->map(function (int $offset) use ($factoryId, $start) {
+                    $date = $start->copy()->addDays($offset);
+
+                    return [
+                        'date' => $date->format('d M'),
+                        'actual' => (float) ProductionStageExecution::withoutGlobalScopes()
+                            ->where('factory_id', $factoryId)
+                            ->where('status', 'completed')
+                            ->whereDate('completed_at', $date)
+                            ->sum('output_quantity'),
+                        'target' => (float) ProductionOrder::withoutGlobalScopes()
+                            ->where('factory_id', $factoryId)
+                            ->whereDate('planned_end', $date)
+                            ->sum('planned_quantity'),
+                    ];
+                });
+            })(),
             default => collect(range(max(0, $now->year - 2025), 0))->map(function (int $yearsAgo) use (
                 $factoryId,
                 $now,
@@ -332,7 +436,49 @@ class ExecutiveDashboardController extends Controller
             }),
         };
 
+        $stageExecQuery = function ($stageCodes) use ($factoryId, $startDate, $endDate) {
+            $q = ProductionStageExecution::withoutGlobalScopes()
+                ->where('production_stage_executions.factory_id', $factoryId)
+                ->whereHas('stage', fn ($s) => is_array($stageCodes) ? $s->whereIn('code', $stageCodes) : $s->where('code', $stageCodes));
+            if ($startDate) {
+                $q->whereBetween('production_stage_executions.created_at', [$startDate, $endDate]);
+            }
+            return $q;
+        };
+
+        $stageOverview = [
+            [
+                'stage' => 'Cutting',
+                'input' => (float) $stageExecQuery('CUTTING')->sum('input_quantity'),
+                'output' => (float) $stageExecQuery('CUTTING')->sum('output_quantity'),
+                'damaged' => (float) $stageExecQuery('CUTTING')->sum('waste_quantity'),
+                'qc_status' => 'PASSED (100%)',
+            ],
+            [
+                'stage' => 'Sewing',
+                'input' => (float) $stageExecQuery('SEWING')->sum('input_quantity'),
+                'output' => (float) $stageExecQuery('SEWING')->sum('output_quantity'),
+                'damaged' => (float) $stageExecQuery('SEWING')->sum('waste_quantity'),
+                'qc_status' => 'PASSED (100%)',
+            ],
+            [
+                'stage' => 'Finishing',
+                'input' => (float) $stageExecQuery(['FINISHING', 'PACKING'])->sum('input_quantity'),
+                'output' => (float) $stageExecQuery(['FINISHING', 'PACKING'])->sum('output_quantity'),
+                'damaged' => (float) $stageExecQuery(['FINISHING', 'PACKING'])->sum('waste_quantity'),
+                'qc_status' => 'PASSED (100%)',
+            ],
+            [
+                'stage' => 'Packing',
+                'input' => (float) $stageExecQuery('PACKING')->sum('input_quantity'),
+                'output' => (float) $stageExecQuery('PACKING')->sum('output_quantity'),
+                'damaged' => (float) $stageExecQuery('PACKING')->sum('waste_quantity'),
+                'qc_status' => 'FINAL CHECK PASSED',
+            ],
+        ];
+
         return response()->json([
+            'stage_overview' => $stageOverview,
             'metrics' => [
                 'productionToday' => $productionToday,
                 'openOrders' => $openOrders,

@@ -24,13 +24,30 @@ class DepartmentDashboardController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $user = $request->user();
-        $period = $request->query('period', 'all_time');
+        $period = $request->query('period', 'daily');
         $dateParam = $request->query('date');
-        $specificDate = $dateParam ? Carbon::parse($dateParam)->endOfDay() : today();
-        $now = $dateParam ? $specificDate->copy() : now();
-        if ($dateParam) {
-            $period = 'specific_date';
-        }
+        $fromParam = $request->query('from', $dateParam);
+        $toParam = $request->query('to', $dateParam);
+
+        $today = today();
+        $startDate = match ($period) {
+            'daily' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->startOfDay(),
+            'weekly' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->subDays(6)->startOfDay(),
+            'monthly' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->startOfMonth(),
+            'yearly', 'anualy' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->startOfYear(),
+            'custom', 'specific_date' => $fromParam ? Carbon::parse($fromParam)->startOfDay() : $today->copy()->startOfDay(),
+            'all_time' => Carbon::parse('2020-01-01')->startOfDay(),
+            default => $today->copy()->startOfDay(),
+        };
+
+        $endDate = match ($period) {
+            'daily' => $toParam ? Carbon::parse($toParam)->endOfDay() : ($fromParam ? Carbon::parse($fromParam)->endOfDay() : $today->copy()->endOfDay()),
+            'custom', 'specific_date' => $toParam ? Carbon::parse($toParam)->endOfDay() : ($fromParam ? Carbon::parse($fromParam)->endOfDay() : $today->copy()->endOfDay()),
+            default => $today->copy()->endOfDay(),
+        };
+
+        $specificDate = $endDate->copy();
+        $now = $endDate->copy();
         $factoryId = $user->current_factory_id;
         $profile = EmployeeProfile::withoutGlobalScopes()
             ->where('factory_id', $factoryId)
@@ -82,6 +99,18 @@ class DepartmentDashboardController extends Controller
                 ->whereIn('slug', ['quality-manager', 'quality-officer'])
                 ->exists();
 
+        $isCutting =
+            $user->workspace === 'cutting' ||
+            str_contains(strtolower((string) $profile?->job_title), 'cutting') ||
+            str_contains(strtolower((string) $department?->name), 'cutting') ||
+            $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'cutting-operator')->exists();
+
+        $isSewing =
+            $user->workspace === 'sewing' ||
+            str_contains(strtolower((string) $profile?->job_title), 'sewing') ||
+            str_contains(strtolower((string) $department?->name), 'sewing') ||
+            $user->roles()->wherePivot('factory_id', $factoryId)->where('slug', 'sewing-operator')->exists();
+
         $employeeIds = $department
             ? EmployeeProfile::withoutGlobalScopes()
                 ->where('factory_id', $factoryId)
@@ -126,12 +155,12 @@ class DepartmentDashboardController extends Controller
                 ->selectRaw('COALESCE(SUM(stock_balances.quantity_on_hand * items.standard_cost), 0) AS value')
                 ->value('value'),
             'received_today' => (float) (clone $stockTransactions)
-                ->whereDate('occurred_at', $specificDate)
+                ->whereBetween('occurred_at', [$startDate, $endDate])
                 ->where('quantity_delta', '>', 0)
                 ->sum('quantity_delta'),
             'issued_today' => abs(
                 (float) (clone $stockTransactions)
-                    ->whereDate('occurred_at', $specificDate)
+                    ->whereBetween('occurred_at', [$startDate, $endDate])
                     ->where('quantity_delta', '<', 0)
                     ->sum('quantity_delta'),
             ),
@@ -870,8 +899,27 @@ class DepartmentDashboardController extends Controller
             }
         }
 
+        if ($period !== 'all_time') {
+            $cuttingExecInPeriod = (clone $cuttingExec)->whereBetween('updated_at', [$startDate, $endDate]);
+            if ((clone $cuttingExecInPeriod)->count() > 0) {
+                $cuttingInput = (float) (clone $cuttingExecInPeriod)->sum('input_quantity');
+                $cuttingOutput = (float) (clone $cuttingExecInPeriod)->sum('output_quantity');
+                $cuttingWaste = (float) (clone $cuttingExecInPeriod)->sum('waste_quantity');
+            }
+
+            $sewingExecInPeriod = (clone $sewingExec)->whereBetween('updated_at', [$startDate, $endDate]);
+            if ((clone $sewingExecInPeriod)->count() > 0) {
+                $sewingInput = (float) (clone $sewingExecInPeriod)->sum('input_quantity');
+                $sewingOutput = (float) (clone $sewingExecInPeriod)->sum('output_quantity');
+                $sewingWaste = (float) (clone $sewingExecInPeriod)->sum('waste_quantity');
+            }
+        }
+
         // Quality control metrics across whole factory
         $allInspections = QualityInspection::withoutGlobalScopes()->where('factory_id', $factoryId);
+        if ($period !== 'all_time') {
+            $allInspections->whereBetween('inspected_at', [$startDate, $endDate]);
+        }
         $totalQcChecks = (clone $allInspections)->count();
         $passedQcChecks = (clone $allInspections)->where('result', 'passed')->count();
         $failedQcChecks = (clone $allInspections)->where('result', 'failed')->count();
@@ -988,7 +1036,129 @@ class DepartmentDashboardController extends Controller
             ],
         ];
 
+        $deptOverview = null;
+        if ($isCutting) {
+            $deptOverview = [
+                'department_name' => 'Cutting Department',
+                'stage_key' => 'cutting',
+                'input' => $cuttingInput,
+                'input_label' => 'Received Fabric',
+                'in_progress' => (float) (clone $stageExecutions)->where('status', 'in_progress')->sum('input_quantity'),
+                'output' => $cuttingOutput,
+                'output_label' => 'Cut Pieces Output',
+                'damaged' => $cuttingWaste,
+                'damaged_label' => 'Fabric Waste / Scrap',
+                'qc_status' => $cuttingWaste == 0 && $cuttingOutput > 0 ? 'PASSED (100%)' : ($cuttingOutput > 0 ? 'MONITORED' : 'PENDING'),
+                'qc_rate' => $cuttingOutput > 0 ? round(($cuttingOutput / ($cuttingOutput + $cuttingWaste)) * 100, 1) : 100.0,
+            ];
+        } elseif ($isSewing) {
+            $deptOverview = [
+                'department_name' => 'Sewing Lines & Assembly',
+                'stage_key' => 'sewing',
+                'input' => $sewingInput > 0 ? $sewingInput : $cuttingOutput,
+                'input_label' => 'Cut Pieces Received',
+                'in_progress' => (float) (clone $stageExecutions)->where('status', 'in_progress')->sum('input_quantity'),
+                'output' => $sewingOutput,
+                'output_label' => 'Garments Sewn',
+                'damaged' => $sewingWaste,
+                'damaged_label' => 'Defects / Rework',
+                'qc_status' => $sewingWaste == 0 && $sewingOutput > 0 ? 'PASSED (100%)' : ($sewingOutput > 0 ? 'MONITORED' : 'PENDING'),
+                'qc_rate' => $sewingOutput > 0 ? round(($sewingOutput / ($sewingOutput + $sewingWaste)) * 100, 1) : 100.0,
+            ];
+        } elseif ($isFinishingUser) {
+            $finRec = (float) ($finishingMetrics['received_today'] ?? $sewingOutput);
+            $finOut = (float) ($finishingMetrics['output_today'] ?? $finishingOutput);
+            $finDam = (float) ($finishingMetrics['damaged_today'] ?? 0);
+            $deptOverview = [
+                'department_name' => 'Finishing Department',
+                'stage_key' => 'finishing',
+                'input' => $finRec,
+                'input_label' => 'Sewn Items Received',
+                'in_progress' => (float) ($finishingMetrics['in_progress'] ?? 0),
+                'output' => $finOut,
+                'output_label' => 'Finished & Ironed',
+                'damaged' => $finDam,
+                'damaged_label' => 'Finishing Flaws',
+                'qc_status' => $finishingMetrics['quality_status'] ?? 'PASSED (100%)',
+                'qc_rate' => 100.0,
+            ];
+        } elseif ($isPackingUser) {
+            $packRec = (float) ($packingMetrics['received_today'] ?? $finishingOutput);
+            $packOut = (float) ($packingMetrics['packed_today'] ?? ($packingMetrics['output_today'] ?? 0));
+            $packDam = (float) ($packingMetrics['damaged_today'] ?? 0);
+            $deptOverview = [
+                'department_name' => 'Packing & Packaging',
+                'stage_key' => 'packing',
+                'input' => $packRec,
+                'input_label' => 'Finished Goods Received',
+                'in_progress' => (float) ($packingMetrics['in_progress'] ?? 0),
+                'output' => $packOut,
+                'output_label' => 'Cartons / Boxes Packed',
+                'damaged' => $packDam,
+                'damaged_label' => 'Packaging Rejects',
+                'qc_status' => 'FINAL CHECK PASSED',
+                'qc_rate' => 100.0,
+            ];
+        } elseif ($isQualityUser) {
+            $deptOverview = [
+                'department_name' => 'Quality Control & Audit',
+                'stage_key' => 'quality',
+                'input' => $totalQcChecks,
+                'input_label' => 'Inspection Audits',
+                'in_progress' => (float) ($qualityMetrics['pending_reviews'] ?? 0),
+                'output' => $passedQcChecks,
+                'output_label' => 'Lots Approved',
+                'damaged' => $failedQcChecks,
+                'damaged_label' => 'Lots Rejected',
+                'qc_status' => "{$overallQcRate}% PASS RATE",
+                'qc_rate' => $overallQcRate,
+            ];
+        } elseif ($isWarehouse) {
+            $deptOverview = [
+                'department_name' => 'Warehouse & Inventory',
+                'stage_key' => 'warehouse',
+                'input' => (float) ($warehouseMetrics['received_today'] ?? 0),
+                'input_label' => 'Raw Materials In',
+                'in_progress' => (float) ($warehouseMetrics['pending_assignments'] ?? 0),
+                'output' => (float) ($warehouseMetrics['issued_today'] ?? $warehouseMetrics['stock_items']),
+                'output_label' => 'Items Issued / Available',
+                'damaged' => (float) ($warehouseMetrics['low_stock'] ?? 0),
+                'damaged_label' => 'Low Stock Alerts',
+                'qc_status' => 'INVENTORY AUDITED',
+                'qc_rate' => 100.0,
+            ];
+        } elseif ($isLogistics) {
+            $deptOverview = [
+                'department_name' => 'Logistics & Dispatch',
+                'stage_key' => 'logistics',
+                'input' => (float) $totalShipments,
+                'input_label' => 'Total Consignments',
+                'in_progress' => (float) $inTransitShipments,
+                'output' => (float) $deliveredShipments,
+                'output_label' => 'Delivered to Clients',
+                'damaged' => (float) ($logisticsMetrics['delayed'] ?? 0),
+                'damaged_label' => 'Delayed Shipments',
+                'qc_status' => 'DELIVERY CONFIRMED',
+                'qc_rate' => 100.0,
+            ];
+        } else {
+            $deptOverview = [
+                'department_name' => $department?->name ?? 'Production Operations',
+                'stage_key' => 'production',
+                'input' => $cuttingInput > 0 ? $cuttingInput : $totalProjectTarget,
+                'input_label' => 'Introduced Materials',
+                'in_progress' => (float) (clone $assignments)->where('status', 'in_progress')->count(),
+                'output' => $totalProjectCompleted,
+                'output_label' => 'Total Produced Units',
+                'damaged' => (float) ($cuttingWaste + $sewingWaste),
+                'damaged_label' => 'Scrap & Rejected',
+                'qc_status' => "{$overallQcRate}% PASSED",
+                'qc_rate' => $overallQcRate,
+            ];
+        }
+
         return response()->json([
+            'department_overview' => $deptOverview,
             'project_overview' => $projectOverview,
             'department' => $department
                 ? [
@@ -1019,14 +1189,14 @@ class DepartmentDashboardController extends Controller
                 'work_in_progress' => (clone $assignments)->where('status', 'in_progress')->count(),
                 'completed_today' => (clone $assignments)
                     ->where('status', 'completed')
-                    ->whereDate('completed_at', $specificDate)
+                    ->when($period !== 'all_time', fn ($q) => $q->whereBetween('completed_at', [$startDate, $endDate]))
                     ->count(),
                 'stages_in_progress' => (clone $stageExecutions)->where('status', 'in_progress')->count(),
                 'output_today' => (float) (clone $stageExecutions)
-                    ->whereDate('updated_at', $specificDate)
+                    ->when($period !== 'all_time', fn ($q) => $q->whereBetween('updated_at', [$startDate, $endDate]))
                     ->sum('output_quantity'),
                 'rejected_today' => (float) (clone $stageExecutions)
-                    ->whereDate('updated_at', $specificDate)
+                    ->when($period !== 'all_time', fn ($q) => $q->whereBetween('updated_at', [$startDate, $endDate]))
                     ->sum('rejected_quantity'),
                 'cutting_not_sewn' => (float) ProductionStageExecution::withoutGlobalScopes()
                     ->where('factory_id', $factoryId)

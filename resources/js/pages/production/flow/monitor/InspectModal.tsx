@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal } from '../../../../components/Modal';
+import '../../../../components/ui.css';
 import type { Locale } from '../../../../core/types';
 import { STAGE_ORDER, stageLabel } from '../stages';
 import type { FlowText } from '../text';
@@ -8,9 +9,10 @@ import { postJson } from '../../../../core/liveData';
 import type { MonitorText } from './monitorText';
 
 type Props = {
-    lots: MonitorLot[];
+    lots: Array<{ id: number; lot_number: string; product?: string | null; stages?: any; awaiting_quality?: number }>;
     initialLot?: number;
     initialStage?: StageKey;
+    initialQuantity?: number;
     locale: Locale;
     text: FlowText;
     words: MonitorText;
@@ -23,6 +25,7 @@ export function InspectModal({
     lots,
     initialLot,
     initialStage,
+    initialQuantity,
     locale,
     text,
     words,
@@ -32,10 +35,10 @@ export function InspectModal({
 }: Props) {
     const t = words.inspect;
     const [lotId, setLotId] = useState(initialLot ? String(initialLot) : '');
-    const [stage, setStage] = useState<StageKey>(initialStage ?? 'sewing');
-    const [inspected, setInspected] = useState('');
-    const [passed, setPassed] = useState('');
-    const [rejected, setRejected] = useState('');
+    const [stage, setStage] = useState<StageKey>(initialStage ?? 'cutting');
+    const [inspected, setInspected] = useState(initialQuantity !== undefined && initialQuantity > 0 ? String(initialQuantity) : '');
+    const [passed, setPassed] = useState(initialQuantity !== undefined && initialQuantity > 0 ? String(initialQuantity) : '');
+    const [rejected, setRejected] = useState('0');
     const [defects, setDefects] = useState('');
     const [notes, setNotes] = useState('');
     const [hold, setHold] = useState(false);
@@ -44,7 +47,13 @@ export function InspectModal({
 
     const lot = lots.find((row) => String(row.id) === lotId);
     const isFinal = stage === 'packing';
-    const waiting = lot ? lot.stages.packing.here : 0;
+    const waiting = initialQuantity ?? (lot
+        ? lot.stages && lot.stages[stage]
+            ? lot.stages[stage].awaiting_quality ?? lot.stages[stage].here ?? 0
+            : typeof (lot as any).awaiting_quality === 'number'
+              ? (lot as any).awaiting_quality
+              : 0
+        : 0);
     const bad = Number(rejected) || 0;
     const good = Number(passed) || 0;
     const checked = Number(inspected) || 0;
@@ -52,8 +61,33 @@ export function InspectModal({
         (initialLot !== undefined || lot !== undefined) &&
         checked >= 1 &&
         good + bad <= checked &&
-        (isFinal ? good + bad >= 1 : true) &&
+        good + bad >= 1 &&
         (bad === 0 || defects.trim().length > 0);
+
+    const handleInspectedChange = (val: string) => {
+        setInspected(val);
+        const n = Number(val) || 0;
+        const r = Number(rejected) || 0;
+        setPassed(String(Math.max(0, n - r)));
+    };
+
+    const handleRejectedChange = (val: string) => {
+        setRejected(val);
+        const r = Number(val) || 0;
+        const n = Number(inspected) || 0;
+        if (n > 0) {
+            setPassed(String(Math.max(0, n - r)));
+        }
+    };
+
+    const handlePassedChange = (val: string) => {
+        setPassed(val);
+        const p = Number(val) || 0;
+        const n = Number(inspected) || 0;
+        if (n > 0) {
+            setRejected(String(Math.max(0, n - p)));
+        }
+    };
 
     const submit = async () => {
         setBusy(true);
@@ -71,7 +105,7 @@ export function InspectModal({
             });
             onDone(result.message);
         } catch (reason) {
-            setError(reason instanceof Error ? reason.message : '');
+            setError(reason instanceof Error ? reason.message : 'Inspection submission failed');
         } finally {
             setBusy(false);
         }
@@ -126,71 +160,100 @@ export function InspectModal({
                     </select>
                 </label>
             </div>
-            {(lot || balances) && isFinal && (
-                <span className="ui-help">
-                    {t.finalHint(balances?.stages.packing.awaiting_quality ?? waiting)}
-                </span>
-            )}
-            {!isFinal && balances && (
-                <span className="ui-help">{t.stageHint(balances.stages[stage].outbox)}</span>
-            )}
-            <div className="ui-grid">
+            <div
+                style={{
+                    background: 'color-mix(in srgb, var(--brand, #2563eb) 8%, var(--panel, #ffffff))',
+                    border: '1px solid color-mix(in srgb, var(--brand, #2563eb) 25%, transparent)',
+                    borderRadius: 10,
+                    padding: '10px 14px',
+                    fontSize: '13px',
+                    color: 'var(--brand, #2563eb)',
+                    lineHeight: 1.5,
+                    fontWeight: 500,
+                }}
+            >
+                {isFinal
+                    ? t.finalHint(balances?.stages.packing.awaiting_quality ?? waiting)
+                    : `${balances?.stages[stage]?.awaiting_quality ?? waiting} ${locale === 'en' ? 'finished pieces are waiting for quality inspection at this stage. Only passed pieces can be sent to the next stage.' : 'pièces terminées attendent le contrôle qualité à cette étape. Seules les pièces validées pourront être transférées.'}`}
+            </div>
+            <div className="ui-grid three">
                 <label className="ui-field">
-                    {t.inspected}
+                    <span>{t.inspected}</span>
                     <input
                         type="number"
                         min={1}
                         step={1}
                         value={inspected}
-                        onChange={(event) => setInspected(event.target.value)}
+                        onChange={(event) => handleInspectedChange(event.target.value)}
+                        placeholder="0"
                     />
                 </label>
                 <label className="ui-field">
-                    {t.passed}
+                    <span style={{ color: '#059669' }}>{t.passed}</span>
                     <input
                         type="number"
                         min={0}
                         step={1}
                         value={passed}
-                        onChange={(event) => setPassed(event.target.value)}
+                        onChange={(event) => handlePassedChange(event.target.value)}
+                        placeholder="0"
+                        style={{ borderColor: Number(passed) > 0 ? '#059669' : undefined }}
                     />
                 </label>
                 <label className="ui-field">
-                    {t.rejected}
+                    <span style={{ color: Number(rejected) > 0 ? '#dc2626' : undefined }}>{t.rejected}</span>
                     <input
                         type="number"
                         min={0}
                         step={1}
                         value={rejected}
-                        onChange={(event) => setRejected(event.target.value)}
+                        onChange={(event) => handleRejectedChange(event.target.value)}
+                        placeholder="0"
+                        style={{
+                            borderColor: Number(rejected) > 0 ? '#dc2626' : undefined,
+                            background: Number(rejected) > 0 ? 'color-mix(in srgb, #dc2626 5%, var(--panel, #fff))' : undefined,
+                        }}
                     />
                 </label>
             </div>
             {bad > 0 && (
-                <>
-                    <label className="ui-field">
-                        {t.defects}
+                <div
+                    style={{
+                        background: 'color-mix(in srgb, #dc2626 6%, var(--panel, #ffffff))',
+                        border: '1px solid color-mix(in srgb, #dc2626 25%, transparent)',
+                        borderRadius: 10,
+                        padding: '12px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10,
+                    }}
+                >
+                    <label className="ui-field" style={{ margin: 0 }}>
+                        <span style={{ color: '#dc2626', fontWeight: 600 }}>{t.defects} *</span>
                         <input
                             value={defects}
                             onChange={(event) => setDefects(event.target.value)}
+                            placeholder={locale === 'fr' ? 'Précisez la nature des défauts...' : 'Explain what failed quality control...'}
+                            style={{ borderColor: '#dc2626' }}
                         />
                     </label>
-                    <label className="ui-check">
+                    <label className="ui-check" style={{ margin: 0 }}>
                         <input
                             type="checkbox"
                             checked={hold}
                             onChange={(event) => setHold(event.target.checked)}
                         />
-                        {t.hold}
+                        <span>{t.hold}</span>
                     </label>
-                </>
+                </div>
             )}
             <label className="ui-field">
-                {t.notes}
+                <span>{t.notes}</span>
                 <textarea
                     rows={2}
                     value={notes}
                     onChange={(event) => setNotes(event.target.value)}
+                    placeholder={locale === 'fr' ? 'Remarques ou observations complémentaires...' : 'Optional inspection observations...'}
                 />
             </label>
         </Modal>

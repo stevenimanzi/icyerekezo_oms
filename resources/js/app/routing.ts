@@ -20,7 +20,16 @@ export function pageKeyFromPath(user: AuthUser, rawPath: string): string {
     if (user.is_platform_admin)
         return path === '/admin/profile' ? 'profile' : adminPathPages[path] || 'platform-dashboard';
     const parts = path.split('/').filter(Boolean);
+    const workspace = parts[0] || user.workspace || 'operations';
     const page = parts.length > 1 ? parts[1] : 'dashboard';
+
+    if (page === 'workspace') {
+        return `${workspace}-workspace`;
+    }
+    if (page === 'report') {
+        return `${workspace}-report`;
+    }
+
     return (
         ({ report: 'reports', users: 'team', products_bom: 'products' } as Record<string, string>)[
             page
@@ -36,5 +45,14 @@ export function pathForPage(user: AuthUser, page: string): string {
     if (user.is_platform_admin)
         return page === 'profile' ? '/admin/profile' : adminPagePaths[page] || '/admin';
     const workspace = user.workspace || 'operations';
-    return page === 'dashboard' ? `/${workspace}` : `/${workspace}/${page}`;
+    if (page === 'dashboard') {
+        return `/${workspace}`;
+    }
+    if (page === `${workspace}-workspace`) {
+        return `/${workspace}/workspace`;
+    }
+    if (page === `${workspace}-report`) {
+        return `/${workspace}/report`;
+    }
+    return `/${workspace}/${page}`;
 }

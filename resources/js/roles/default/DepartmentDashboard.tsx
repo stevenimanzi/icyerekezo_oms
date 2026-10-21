@@ -88,13 +88,16 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
         [busy, setBusy] = useState<number | null>(null),
         [loading, setLoading] = useState(true),
         [updated, setUpdated] = useState<Date | null>(null);
-    const [period, setPeriod] = useState('all_time');
+    const [period, setPeriod] = useState('daily');
     const [specificDate, setSpecificDate] = useState(new Date().toISOString().split('T')[0]);
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const load = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
             let url = `/api/department/dashboard?period=${period}`;
             if (period === 'specific_date') url += `&date=${specificDate}`;
+            if (period === 'custom') url += `&from=${startDate}&to=${endDate}`;
             setData(await api(url));
             setError('');
             setUpdated(new Date());
@@ -108,7 +111,7 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
         load();
         const timer = startPolling(() => load(true), 15000);
         return () => window.clearInterval(timer);
-    }, [period, specificDate]);
+    }, [period, specificDate, startDate, endDate]);
     const update = async (id: number, statusValue: string) => {
         setBusy(id);
         setError('');
@@ -279,14 +282,13 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
                             cursor: 'pointer',
                         }}
                     >
-                        <option value="daily">{fr ? "Aujourd'hui" : 'Today'}</option>
-                        <option value="weekly">{fr ? 'Cette semaine' : 'This Week'}</option>
+                        <option value="daily">{fr ? "Quotidien (Aujourd'hui)" : 'Daily (Today)'}</option>
+                        <option value="weekly">{fr ? 'Hebdomadaire (Cette semaine)' : 'Weekly (This Week)'}</option>
                         <option value="monthly">{fr ? 'Ce mois-ci' : 'This Month'}</option>
-                        <option value="yearly">{fr ? 'Cette année' : 'This Year'}</option>
+                        <option value="yearly">{fr ? 'Cette année' : 'Annually (This Year)'}</option>
+                        <option value="custom">{fr ? 'Période personnalisée' : 'Custom Period'}</option>
+                        <option value="specific_date">{fr ? 'Date spécifique' : 'Specific Date'}</option>
                         <option value="all_time">{fr ? 'Tout le temps' : 'All Time'}</option>
-                        <option value="specific_date">
-                            {fr ? 'Date spécifique' : 'Specific Date'}
-                        </option>
                     </select>
                     {period === 'specific_date' && (
                         <input
@@ -302,6 +304,37 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
                                 background: 'var(--soft)',
                             }}
                         />
+                    )}
+                    {period === 'custom' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <input
+                                type="date"
+                                className="admin-input"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                style={{
+                                    border: '1px solid var(--line)',
+                                    borderRadius: '6px',
+                                    padding: '4px 8px',
+                                    fontSize: '12px',
+                                    background: 'var(--soft)',
+                                }}
+                            />
+                            <span style={{ fontSize: '12px', color: 'var(--muted)' }}>&rarr;</span>
+                            <input
+                                type="date"
+                                className="admin-input"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                style={{
+                                    border: '1px solid var(--line)',
+                                    borderRadius: '6px',
+                                    padding: '4px 8px',
+                                    fontSize: '12px',
+                                    background: 'var(--soft)',
+                                }}
+                            />
+                        </div>
                     )}
                     <div
                         style={{
@@ -338,6 +371,9 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
             {canSeeProjectOverview && (
                 <ProjectOverviewSection overview={data?.project_overview} fr={fr} number={number} />
             )}
+
+            {/* Department Operational Overview: Applicable to all individual departments */}
+            <DepartmentOverviewCard overview={data?.department_overview} fr={fr} number={number} />
 
             <div style={{ margin: '22px 0 14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
                 <div>
@@ -1524,6 +1560,60 @@ function QualityRecentInspections({ inspections, fr, status }: any) {
                 </div>
             </article>
         </section>
+    );
+}
+
+function DepartmentOverviewCard({ overview, fr, number }: any) {
+    if (!overview) return null;
+
+    return (
+        <article className="panel" style={{ marginBottom: 20 }}>
+            <div className="panel-title">
+                <h2>{overview.department_name} &mdash; {fr ? 'Bilan opérationnel' : 'Operational Overview'}</h2>
+                <span className="ui-chip ok" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
+                    {fr ? 'Registre actif' : 'Active Register'}
+                </span>
+            </div>
+
+            <div className="ui-table-wrap">
+                <table className="ui-table" style={{ width: '100%', minWidth: 0, tableLayout: 'auto' }}>
+                    <thead>
+                        <tr>
+                            <th>{fr ? 'Département' : 'Department'}</th>
+                            <th className="num">{fr ? '1. Entrants' : '1. Input'}</th>
+                            <th className="num">{fr ? '2. En cours' : '2. In Progress'}</th>
+                            <th className="num">{fr ? '3. Sortie' : '3. Output'}</th>
+                            <th className="num">{fr ? '4. Défauts' : '4. Damaged'}</th>
+                            <th>{fr ? '5. Qualité' : '5. QC Status'}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                                <b>{overview.department_name}</b>
+                            </td>
+                            <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                                <b>{number(overview.input)}</b>
+                            </td>
+                            <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                                <b style={{ color: 'var(--brand)' }}>{number(overview.in_progress)}</b>
+                            </td>
+                            <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                                <b style={{ color: 'var(--ui-good, #16a34a)' }}>{number(overview.output)}</b>
+                            </td>
+                            <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                                <b className={overview.damaged > 0 ? 'alert' : ''}>{number(overview.damaged)}</b>
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                                <span className={`ui-chip ${overview.damaged === 0 ? 'ok' : 'warn'}`}>
+                                    {overview.qc_status || '✓ PASSED'}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
     );
 }
 

@@ -2,8 +2,26 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, CircleAlert, Info, X } from 'lucide-react';
 
-type ToastKind = 'success' | 'error' | 'warning' | 'info';
-type ToastItem = { id: number; kind: ToastKind; title: string; message: string };
+export type ToastKind = 'success' | 'error' | 'warning' | 'info';
+export type ToastItem = { id: number; kind: ToastKind; title: string; message: string };
+
+export const notify = {
+    show: (kind: ToastKind, title: string, message: string) => {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+                new CustomEvent('app:toast', { detail: { kind, title, message } }),
+            );
+        }
+    },
+    success: (title: string, message: string) => notify.show('success', title, message),
+    error: (title: string, message: string) => notify.show('error', title, message),
+    warning: (title: string, message: string) => notify.show('warning', title, message),
+    info: (title: string, message: string) => notify.show('info', title, message),
+};
+
+if (typeof window !== 'undefined') {
+    (window as any).notify = notify;
+}
 
 const mutationMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const silentPaths = new Set(['/api/auth/login', '/api/auth/logout']);
@@ -60,6 +78,14 @@ export default function GlobalOperationToasts() {
             );
         };
 
+        const handleCustomToast = (event: Event) => {
+            const custom = event as CustomEvent<{ kind: ToastKind; title: string; message: string }>;
+            if (custom.detail) {
+                show(custom.detail.kind, custom.detail.title, custom.detail.message);
+            }
+        };
+        window.addEventListener('app:toast', handleCustomToast);
+
         const patchedFetch: typeof window.fetch = async (input, init) => {
             const method = String(
                 init?.method || (input instanceof Request ? input.method : 'GET'),
@@ -82,12 +108,13 @@ export default function GlobalOperationToasts() {
                     try {
                         payload = await response.clone().json();
                     } catch {}
-                    if (!response.ok)
+                    if (!response.ok) {
                         show(
                             'error',
                             'Could not complete action',
                             safeErrorMessage(response, payload),
                         );
+                    }
                 }
                 return response;
             } catch (error) {
@@ -103,6 +130,7 @@ export default function GlobalOperationToasts() {
 
         window.fetch = patchedFetch;
         return () => {
+            window.removeEventListener('app:toast', handleCustomToast);
             if (window.fetch === patchedFetch) window.fetch = originalFetch;
         };
     }, []);

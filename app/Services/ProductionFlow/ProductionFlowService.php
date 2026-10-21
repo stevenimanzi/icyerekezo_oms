@@ -168,11 +168,47 @@ class ProductionFlowService
         return DB::transaction(function () use ($user, $lot, $fromStage, $next, $quantity, $note) {
             $lot = $this->lockLot($lot->id);
             $this->requireActive($lot);
-            $ready = $this->balances->forLot($lot->id)['stages'][$fromStage]['outbox'];
 
-            if ($quantity < 1 || $quantity > $ready) {
+            $balance = $this->balances->forLot($lot->id)['stages'][$fromStage];
+            $ready = $balance['outbox'];
+            $awaitingQc = $balance['awaiting_quality'];
+            $passedQc = $balance['quality_passed'];
+            $rejectedQc = $balance['quality_rejected'];
+
+            // Fetch inspections for this lot at this stage to get defect details / messages
+            $inspections = $lot->inspections()->where('stage', $fromStage)->latest('id')->get();
+            $latestRejection = $inspections->first(fn ($i) => (int) $i->rejected_quantity > 0);
+            $qcMessage = $latestRejection?->defect_details ?: ($latestRejection?->notes ?: null);
+
+            if ($passedQc === 0) {
+                if ($rejectedQc > 0) {
+                    $detail = $qcMessage ? ": \"{$qcMessage}\"" : '.';
+                    throw ValidationException::withMessages([
+                        'quantity' => "Cannot send items: All {$rejectedQc} inspected items failed quality control inspection{$detail}. Items must pass quality control inspection before being sent to " . $this->label($next) . '.',
+                    ]);
+                }
                 throw ValidationException::withMessages([
-                    'quantity' => "Only {$ready} pieces are ready to send from " . $this->label($fromStage) . ' for this lot.',
+                    'quantity' => "Quality control inspection required: Items at " . $this->label($fromStage) . " must be inspected and approved by the Quality Control team before sending to " . $this->label($next) . '. (0 items have passed QC yet).',
+                ]);
+            }
+
+            if ($quantity < 1) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Enter a quantity of at least 1 piece to send.',
+                ]);
+            }
+
+            if ($quantity > $ready) {
+                if ($rejectedQc > 0) {
+                    $detail = $qcMessage ? " (\"{$qcMessage}\")" : "";
+                    throw ValidationException::withMessages([
+                        'quantity' => "Some items failed in quality control: {$rejectedQc} " . ($rejectedQc === 1 ? 'item' : 'items') . " failed quality control inspection{$detail}. Only {$ready} passed " . ($ready === 1 ? 'item is' : 'items are') . " approved to send. You typed {$quantity}.",
+                    ]);
+                }
+
+                $extra = $awaitingQc > 0 ? " ({$awaitingQc} items are still awaiting Quality Control inspection)" : "";
+                throw ValidationException::withMessages([
+                    'quantity' => "Only {$ready} items passed quality control inspection and are ready to send from " . $this->label($fromStage) . " to " . $this->label($next) . ".{$extra}",
                 ]);
             }
 
@@ -334,22 +370,29 @@ class ProductionFlowService
                 throw ValidationException::withMessages(['inspected_quantity' => 'Passed and rejected pieces cannot be more than the pieces checked.']);
             }
 
-            if ($isFinalGate) {
-                $decided = $passed + $rejected;
-                if ($decided < 1 || $decided > $balance['awaiting_quality']) {
-                    throw ValidationException::withMessages([
-                        'passed_quantity' => "Only {$balance['awaiting_quality']} packed pieces are waiting for the final quality check.",
-                    ]);
-                }
-            } elseif ($rejected > $balance['outbox']) {
+            $decided = $passed + $rejected;
+            if ($decided < 1) {
                 throw ValidationException::withMessages([
-                    'rejected_quantity' => "Only {$balance['outbox']} pieces are ready to send from " . $this->label($stage) . '. Reject pieces that are finished at the stage, not ones still being worked on.',
+                    'inspected_quantity' => 'Enter at least 1 piece passed or rejected.',
                 ]);
             }
 
-            $result = $rejected === 0 ? 'passed' : ($passed === 0 && $inspected === $rejected ? 'failed' : 'conditional');
+            if ($decided > $balance['awaiting_quality']) {
+                throw ValidationException::withMessages([
+                    'inspected_quantity' => "Only {$balance['awaiting_quality']} pieces are awaiting quality inspection at " . $this->label($stage) . ' for this lot.',
+                ]);
+            }
+
+            if ($rejected > 0 && empty(trim((string) ($data['defect_details'] ?? '')))) {
+                throw ValidationException::withMessages([
+                    'defect_details' => 'Please provide the defect details or message explaining why items failed quality control.',
+                ]);
+            }
+
+            $result = $rejected === 0 ? 'passed' : ($passed === 0 ? 'failed' : 'conditional');
 
             $inspection = QualityInspection::create([
+                'factory_id' => $user->current_factory_id ?? $lot->factory_id,
                 'inspection_number' => 'QI-' . now()->format('ymd') . '-' . Str::upper(Str::random(6)),
                 'lot_id' => $lot->id,
                 'stage' => $stage,

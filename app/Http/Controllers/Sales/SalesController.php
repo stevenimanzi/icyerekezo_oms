@@ -403,23 +403,27 @@ class SalesController extends Controller
             ->join('stock_balances', 'stock_balances.warehouse_id', '=', 'warehouses.id')
             ->where('stock_balances.item_id', $line->item_id)
             ->selectRaw(
-                'warehouses.id, (stock_balances.quantity_on_hand - stock_balances.quantity_reserved - stock_balances.quantity_quarantined) as available',
+                'warehouses.id, warehouses.name, (stock_balances.quantity_on_hand - stock_balances.quantity_reserved - stock_balances.quantity_quarantined) as available',
             )
             ->orderByDesc('available')
             ->first();
+
         if (! $warehouse || (float) $warehouse->available < $quantity) {
-            return;
-        }
-        try {
-            $ledger->post([
-                'item_id' => $line->item_id,
-                'warehouse_id' => $warehouse->id,
-                'type' => 'dispatch',
-                'quantity' => $quantity,
-                'reason' => "School order {$document->document_number} delivered — {$line->garment_category}",
+            $available = (float) ($warehouse->available ?? 0);
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'quantity_delivered' => "Cannot deliver {$quantity} units of {$line->garment_category}: only {$available} units available in stock. Sales and delivery must be fulfilled from available inventory.",
             ]);
-        } catch (\Throwable) {
         }
+
+        $ledger->post([
+            'item_id' => $line->item_id,
+            'warehouse_id' => $warehouse->id,
+            'type' => 'dispatch',
+            'quantity' => $quantity,
+            'reason' => "School order {$document->document_number} delivered — {$line->garment_category}",
+            'reference_type' => $document->getMorphClass(),
+            'reference_id' => $document->id,
+        ]);
     }
 
     public function uploadInvoice(Request $request, SalesDocument $document): JsonResponse

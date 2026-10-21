@@ -5,8 +5,8 @@
     <title>{{ $reportTitle ?? 'Operations Report' }} - {{ $factory?->name ?? 'Factory' }}</title>
     <style>
         @page {
-            margin: 10mm 12mm 12mm 12mm;
-            size: a4 portrait;
+            margin: 8mm 10mm;
+            size: a4 landscape;
         }
         body {
             font-family: DejaVu Sans, Helvetica, Arial, sans-serif;
@@ -298,18 +298,18 @@
     </table>
 
     <!-- 2. DETAILED REGISTER ENTRIES (INPUT, OUTPUT, DAMAGED, QUALITY CONTROL) -->
-    <div class="section-header">2. DETAILED LOT ENTRIES &amp; QUALITY VERIFICATION LEDGER</div>
+    <div class="section-header">2. DETAILED OPERATIONS &amp; QUALITY VERIFICATION REGISTER</div>
     <table class="excel-table">
         <thead>
             <tr>
                 <th style="width: 10%;">DATE</th>
-                <th style="width: 14%;">LOT / REF</th>
-                <th style="width: 18%;">PRODUCT &amp; SPEC</th>
+                <th style="width: 14%;">DEPARTMENT</th>
+                <th style="width: 20%;">PRODUCT &amp; SPEC</th>
                 <th class="num" style="width: 10%;">INPUT</th>
                 <th class="num" style="width: 10%;">OUTPUT</th>
                 <th class="num" style="width: 9%;">DAMAGED</th>
                 <th colspan="2" class="group-head" style="width: 15%;">QUALITY CONTROL</th>
-                <th style="width: 14%;">NOTES / REMARKS</th>
+                <th style="width: 12%;">NOTES / REMARKS</th>
             </tr>
             <tr>
                 <th colspan="6"></th>
@@ -332,7 +332,7 @@
                 @endphp
                 <tr>
                     <td class="center">{{ $row['date'] ?? '—' }}</td>
-                    <td class="bold">{{ $row['lot_number'] ?? $row['reference'] ?? '—' }}</td>
+                    <td class="center bold">{{ strtoupper($row['department'] ?? 'PRODUCTION') }}</td>
                     <td>
                         <strong>{{ $row['product'] ?? $row['fabric'] ?? 'Garment' }}</strong>
                         @if(!empty($row['color']) || !empty($row['size']) || !empty($row['style']))
@@ -377,15 +377,15 @@
         <tr>
             <td>
                 <div class="sign-role">1. PREPARED BY</div>
-                <div class="sign-field"><strong>Name:</strong> {{ $user?->name ?? 'Cutting Manager' }}</div>
-                <div class="sign-field"><strong>Role:</strong> Cutting Operator</div>
+                <div class="sign-field"><strong>Name:</strong> {{ $user?->name ?? 'Manager' }}</div>
+                <div class="sign-field"><strong>Role:</strong> {{ $userRole ?? 'Operator' }}</div>
                 <div class="sign-line"></div>
                 <div class="sign-field"><strong>Signature &amp; Date</strong></div>
             </td>
             <td>
                 <div class="sign-role">2. SUPERVISOR REVIEW</div>
                 <div class="sign-field"><strong>Name:</strong> ____________________</div>
-                <div class="sign-field"><strong>Role:</strong> Cutting Line Supervisor</div>
+                <div class="sign-field"><strong>Role:</strong> {{ strtoupper($departmentName ?? 'Production') }} Supervisor</div>
                 <div class="sign-line"></div>
                 <div class="sign-field"><strong>Signature &amp; Date</strong></div>
             </td>

@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import './ui.css';
 
 type Props = {
     title: string;

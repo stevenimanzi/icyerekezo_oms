@@ -11,7 +11,8 @@ export type WorkModal =
     | { kind: 'send'; lot: LotRow; to: StageKey }
     | { kind: 'stock'; lot: LotRow }
     | { kind: 'cut'; lot?: LotRow }
-    | { kind: 'loss' };
+    | { kind: 'loss' }
+    | { kind: 'inspect'; lot: LotRow };
 
 type Props = {
     data: StageOverview;
@@ -141,18 +142,21 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                 {isCutting ? (
                                     <>
                                         <th className="num">{text.work.cutTotal}</th>
-                                        <th className="num">{text.work.ready}</th>
+                                        <th className="num">{locale === 'en' ? 'Awaiting QC' : 'Attente QC'}</th>
+                                        <th className="num">{locale === 'en' ? 'QC Passed' : 'Validé QC'}</th>
+                                        <th className="num">{locale === 'en' ? 'QC Failed' : 'Rejeté QC'}</th>
                                     </>
                                 ) : (
                                     <>
                                         <th className="num">{text.work.waiting}</th>
                                         <th className="num">{text.work.done}</th>
+                                        <th className="num">{locale === 'en' ? 'Awaiting QC' : 'Attente QC'}</th>
                                         <th className="num">
-                                            {isPacking ? text.work.qcWaiting : text.work.ready}
+                                            {isPacking
+                                                ? locale === 'en' ? 'Ready for Stock' : 'Prêt Stock'
+                                                : locale === 'en' ? 'QC Passed' : 'Validé QC'}
                                         </th>
-                                        {isPacking && (
-                                            <th className="num">{text.work.readyForStock}</th>
-                                        )}
+                                        <th className="num">{locale === 'en' ? 'QC Failed' : 'Rejeté QC'}</th>
                                         <th className="num">{text.work.damaged}</th>
                                     </>
                                 )}
@@ -177,6 +181,39 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                     </span>
                                                 </small>
                                             )}
+                                            {lot.quality_rejected && lot.quality_rejected > 0 ? (
+                                                <small style={{ display: 'block', marginTop: 2 }}>
+                                                    <span
+                                                        className="ui-chip bad"
+                                                        title={lot.qc_message ? `QC Failed: ${lot.qc_message}` : 'Failed Quality Control'}
+                                                        style={{ fontSize: '0.70rem', padding: '1px 5px' }}
+                                                    >
+                                                        QC Failed: {lot.quality_rejected}
+                                                    </span>
+                                                </small>
+                                            ) : null}
+                                            {lot.awaiting_quality > 0 ? (
+                                                <small style={{ display: 'block', marginTop: 2 }}>
+                                                    <span
+                                                        className="ui-chip warning"
+                                                        title={locale === 'en' ? 'Awaiting Quality Control Inspection' : 'En attente du contrôle qualité'}
+                                                        style={{ fontSize: '0.70rem', padding: '1px 5px' }}
+                                                    >
+                                                        QC Pending: {lot.awaiting_quality}
+                                                    </span>
+                                                </small>
+                                            ) : null}
+                                            {lot.outbox > 0 && !isPacking ? (
+                                                <small style={{ display: 'block', marginTop: 2 }}>
+                                                    <span
+                                                        className="ui-chip good"
+                                                        title={locale === 'en' ? 'Quality Control Passed' : 'Contrôle qualité validé'}
+                                                        style={{ fontSize: '0.70rem', padding: '1px 5px' }}
+                                                    >
+                                                        QC Passed: {lot.outbox}
+                                                    </span>
+                                                </small>
+                                            ) : null}
                                         </td>
                                         <td>{lot.product ?? text.none}</td>
                                         <td>
@@ -192,7 +229,19 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                             <>
                                                 <td className="num">{format.whole(lot.cut)}</td>
                                                 <td className="num">
-                                                    <b>{format.whole(lot.outbox)}</b>
+                                                    <span style={{ color: lot.awaiting_quality > 0 ? '#b45309' : '#64748b' }}>
+                                                        {format.whole(lot.awaiting_quality)}
+                                                    </span>
+                                                </td>
+                                                <td className="num">
+                                                    <b style={{ color: lot.outbox > 0 ? '#15803d' : '#64748b' }}>
+                                                        {format.whole(lot.outbox)}
+                                                    </b>
+                                                </td>
+                                                <td className="num">
+                                                    <span style={{ color: (lot.quality_rejected || 0) > 0 ? '#b91c1c' : '#64748b', fontWeight: (lot.quality_rejected || 0) > 0 ? 700 : 400 }}>
+                                                        {format.whole(lot.quality_rejected || 0)}
+                                                    </span>
                                                 </td>
                                             </>
                                         ) : (
@@ -202,25 +251,40 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                 </td>
                                                 <td className="num">{format.whole(lot.good)}</td>
                                                 <td className="num">
-                                                    <b>
+                                                    <span style={{ color: lot.awaiting_quality > 0 ? '#b45309' : '#64748b' }}>
+                                                        {format.whole(lot.awaiting_quality)}
+                                                    </span>
+                                                </td>
+                                                <td className="num">
+                                                    <b style={{ color: (isPacking ? lot.ready_for_stock : lot.outbox) > 0 ? '#15803d' : '#64748b' }}>
                                                         {format.whole(
                                                             isPacking
-                                                                ? lot.awaiting_quality
+                                                                ? lot.ready_for_stock
                                                                 : lot.outbox,
                                                         )}
                                                     </b>
                                                 </td>
-                                                {isPacking && (
-                                                    <td className="num">
-                                                        <b>{format.whole(lot.ready_for_stock)}</b>
-                                                    </td>
-                                                )}
+                                                <td className="num">
+                                                    <span style={{ color: (lot.quality_rejected || 0) > 0 ? '#b91c1c' : '#64748b', fontWeight: (lot.quality_rejected || 0) > 0 ? 700 : 400 }}>
+                                                        {format.whole(lot.quality_rejected || 0)}
+                                                    </span>
+                                                </td>
                                                 <td className="num">{format.whole(lot.damaged)}</td>
                                             </>
                                         )}
                                         <td>
                                             {canWork && (
                                                 <div className="ui-row-actions">
+                                                    {capabilities.inspect && !lot.held && (lot.awaiting_quality > 0 || lot.good > 0 || lot.cut > 0) && (
+                                                        <button
+                                                            className="secondary-btn"
+                                                            onClick={() => onModal({ kind: 'inspect', lot })}
+                                                            title={locale === 'en' ? 'Quality Control Inspection' : 'Contrôle Qualité'}
+                                                            style={{ borderColor: '#0284c7', color: '#0284c7', fontSize: '0.78rem', padding: '3px 8px' }}
+                                                        >
+                                                            {locale === 'en' ? 'Inspect QC' : 'Contrôler QC'}
+                                                        </button>
+                                                    )}
                                                     {isCutting && (
                                                         <button
                                                             className="ui-link"
@@ -278,6 +342,28 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                                 →
                                                             </button>
                                                         ))}
+                                                    {lot.outbox === 0 && !isPacking && (lot.cut > 0 || lot.good > 0) &&
+                                                        stage.destinations.map((to) => (
+                                                            <button
+                                                                key={to}
+                                                                className="secondary-btn"
+                                                                disabled={lot.held}
+                                                                style={{ opacity: 0.7 }}
+                                                                onClick={() =>
+                                                                    onModal({
+                                                                        kind: 'send',
+                                                                        lot,
+                                                                        to,
+                                                                    })
+                                                                }
+                                                                title={lot.quality_rejected && lot.quality_rejected > 0 ? `Failed QC (${lot.quality_rejected}): ${lot.qc_message || 'Defects found'}` : 'Quality Control inspection required before sending'}
+                                                            >
+                                                                {text.work.send(
+                                                                    stageLabel(to, locale),
+                                                                )}{' '}
+                                                                (QC Req)
+                                                            </button>
+                                                        ))}
                                                 </div>
                                             )}
                                         </td>
@@ -286,7 +372,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                             ) : (
                                 <tr>
                                     <td
-                                        colSpan={isCutting ? 8 : isPacking ? 11 : 10}
+                                        colSpan={isCutting ? 10 : 12}
                                         className="empty"
                                     >
                                         {filters.active && here.length

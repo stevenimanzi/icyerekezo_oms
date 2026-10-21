@@ -39,6 +39,21 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
         [options.items],
     );
 
+    const getStock = useCallback(
+        (itemId: string): number => {
+            if (!itemId) return 0;
+            if (warehouseId && options.warehouse_stock?.length) {
+                const entry = options.warehouse_stock.find(
+                    (w) => String(w.item_id) === itemId && String(w.warehouse_id) === String(warehouseId),
+                );
+                return entry ? Math.max(0, Number(entry.available) || 0) : 0;
+            }
+            const item = items.get(itemId);
+            return item ? Math.max(0, Number(item.on_hand) || 0) : 0;
+        },
+        [items, warehouseId, options.warehouse_stock],
+    );
+
     const lineAmount = (line: Line) =>
         Math.max(0, Number(line.quantity) || 0) * Math.max(0, Number(line.unit_price) || 0);
     const subtotal = lines.reduce((sum, line) => sum + lineAmount(line), 0);
@@ -47,6 +62,17 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
     const paidValue = Math.min(Math.max(0, Number(paid) || 0), total);
     const balance = total - paidValue;
     const ready = lines.some((line) => line.item_id && Number(line.quantity) > 0);
+
+    const hasStockError = useMemo(() => {
+        if (!deductStock) return false;
+        return lines.some((line) => {
+            if (!line.item_id) return false;
+            const item = items.get(line.item_id);
+            if (!item || item.type === 'service') return false;
+            const available = getStock(line.item_id);
+            return Number(line.quantity) > available;
+        });
+    }, [lines, items, deductStock, getStock]);
 
     const changeLine = (key: number, changes: Partial<Line>) =>
         setLines((current) =>
@@ -72,6 +98,22 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
         if (!ready) {
             setError(t.needProduct);
             return;
+        }
+
+        if (deductStock) {
+            for (const line of lines) {
+                if (!line.item_id || Number(line.quantity) <= 0) continue;
+                const item = items.get(line.item_id);
+                if (item && item.type !== 'service') {
+                    const available = getStock(line.item_id);
+                    if (Number(line.quantity) > available) {
+                        setError(
+                            `Cannot sell ${line.quantity} units of ${item.name}: only ${available} available in stock. Sales must be fulfilled from inventory.`,
+                        );
+                        return;
+                    }
+                }
+            }
         }
 
         setBusy(true);
@@ -119,7 +161,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                     <button
                         className="primary-btn"
                         onClick={submit}
-                        disabled={busy || !options.items.length}
+                        disabled={busy || !options.items.length || hasStockError}
                     >
                         {busy ? t.saving : t.save}
                     </button>
@@ -189,26 +231,29 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                             }
                                         >
                                             <option value="">{t.chooseProduct}</option>
-                                            {options.items.map((option) => (
-                                                <option key={option.id} value={option.id}>
-                                                    {option.name} (
-                                                    {format.number(Number(option.on_hand))}{' '}
-                                                    {t.inStock})
-                                                </option>
-                                            ))}
+                                            {options.items.map((option) => {
+                                                const stock = getStock(String(option.id));
+                                                const isOutOfStock = stock <= 0 && option.type !== 'service';
+                                                return (
+                                                    <option key={option.id} value={option.id}>
+                                                        {option.name} {isOutOfStock ? `— [Out of stock]` : `(${format.number(stock)} ${t.inStock})`}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
-                                        {item &&
-                                            Number(line.quantity) > Number(item.on_hand) &&
-                                            deductStock &&
-                                            item.type !== 'service' && (
-                                                <span
-                                                    className="ui-help"
-                                                    style={{ color: 'var(--ui-bad)' }}
-                                                >
-                                                    {format.number(Number(item.on_hand))}{' '}
-                                                    {t.inStock}
-                                                </span>
-                                            )}
+                                        {item && item.type !== 'service' && deductStock && (
+                                            <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                                                {Number(line.quantity) > getStock(String(item.id)) ? (
+                                                    <span style={{ color: 'var(--ui-bad, #dc2626)', fontWeight: 600 }}>
+                                                        ⚠️ Exceeds stock: only {format.number(getStock(String(item.id)))} available
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: '#059669', fontWeight: 500 }}>
+                                                        ✓ {format.number(getStock(String(item.id)))} available in stock
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </label>
                                     <label className="ui-field">
                                         <input
