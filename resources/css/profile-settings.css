@@ -38,7 +38,7 @@
     display: grid;
     flex: 0 0 76px;
     place-items: center;
-    border-radius: 22px;
+    border-radius: 50%;
     color: #fff;
     background: linear-gradient(135deg, #2563eb, #6d4aff);
     font-size: 24px;
@@ -330,6 +330,6 @@
         width: 60px;
         height: 60px;
         flex-basis: 60px;
-        border-radius: 17px;
+        border-radius: 50%;
     }
 }

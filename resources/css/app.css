@@ -296,7 +296,7 @@ svg.lucide {
     flex: none;
     display: grid;
     place-items: center;
-    border-radius: 9px;
+    border-radius: 50%;
     color: #fff;
     font-weight: 700;
     background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
@@ -448,7 +448,7 @@ svg.lucide {
     width: 34px;
     height: 34px;
     font-size: 11px;
-    border-radius: 9px;
+    border-radius: 50%;
 }
 .user-copy strong,
 .user-copy small {
@@ -4897,7 +4897,7 @@ td,
     height: 38px;
     flex: 0 0 38px;
     place-items: center;
-    border-radius: 12px;
+    border-radius: 50%;
     background: #eaf1ff;
     color: #2563eb;
     font-size: 12px;
@@ -9447,7 +9447,7 @@ td,
     width: 70px;
     height: 70px;
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 20px;
+    border-radius: 50%;
     background: rgba(255, 255, 255, 0.16);
     font-size: 24px;
     box-shadow: 0 12px 30px #0b2d8344;
