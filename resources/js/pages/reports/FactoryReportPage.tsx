@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, Download, FileText, Printer, RefreshCw, Factory } from 'lucide-react';
+import { Calendar, Download, FileText, Printer, RefreshCw } from 'lucide-react';
 import type { AuthUser, Locale } from '../../core/types';
 import { api } from '../../core/api';
 
@@ -317,8 +317,7 @@ export default function FactoryReportPage({ user, locale }: Props) {
             {/* TOP HEADER: Clean Title & Action Buttons (Print & Export PDF, NO RECORD BUTTONS) */}
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Factory size={20} color="#4f46e5" />
+                    <div>
                         <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                             {locale === 'en' ? 'Factory Operations & Quality Report' : 'Rapport Général des Opérations & Contrôle Qualité'}
                         </h1>
