@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\EmployeeProfile;
+use App\Models\Factory;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
 use App\Models\WorkAssignment;
+use App\Models\Workstation;
 use App\Services\DepartmentDeduplicationService;
+use App\Support\Catalogs\IndustryProfileCatalog;
 use App\Support\Catalogs\RoleTemplateCatalog;
 use App\Support\Notifications\FactoryNotifier;
 use App\Support\Security\PasswordPolicy;
@@ -25,8 +28,13 @@ class TeamWorkspaceController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $factoryId = $request->user()->current_factory_id;
+        $actor = $request->user();
+        $factoryId = $actor->current_factory_id;
+        $factory = $actor->currentFactory;
+
         app(DepartmentDeduplicationService::class)->mergeForFactory($factoryId);
+        $this->ensureStandardDepartments($factoryId, $factory);
+
         $platformUserIds = User::where('is_platform_admin', true)->pluck('id');
         $memberships = DB::table('factory_user')
             ->where('factory_id', $factoryId)
@@ -39,20 +47,7 @@ class TeamWorkspaceController extends Controller
             ->whereIn('user_id', $employeeUserIds)
             ->whereNotNull('department_id')
             ->count();
-        foreach (['PRODUCTION' => 'Production', 'WAREHOUSE' => 'Warehouse'] as $code => $name) {
-            $department = Department::where('factory_id', $factoryId)
-                ->where(fn ($query) => $query->where('code', $code)->orWhereRaw('LOWER(TRIM(name)) = ?', [strtolower($name)]))
-                ->first();
-
-            if ($department) {
-                $department->update(['name' => $name, 'is_active' => true]);
-            } else {
-                Department::create(['factory_id' => $factoryId, 'code' => $code, 'name' => $name, 'is_active' => true]);
-            }
-        }
-        $actor = $request->user();
-        $factory = $actor->currentFactory;
-        $receivesOnlineOrders = $factory->hasNoguchiSchoolOrders();
+        $receivesOnlineOrders = $factory ? $factory->hasNoguchiSchoolOrders() : false;
         $roles = Role::where('factory_id', $factoryId)->where('slug', '!=', 'factory-owner');
         if (! $receivesOnlineOrders) {
             $roles->where('slug', '!=', 'school-user');
@@ -92,7 +87,9 @@ class TeamWorkspaceController extends Controller
                 ->get(['id', 'name', 'slug', 'dashboard_key', 'is_system'])
                 ->filter(fn (Role $role) => RoleTemplateCatalog::isAvailableFor($factory, $role->slug))
                 ->values(),
-            'departments' => Department::where('is_active', true)
+            'departments' => Department::withoutGlobalScopes()
+                ->where('factory_id', $factoryId)
+                ->where('is_active', true)
                 ->with('manager:id,name,email')
                 ->withCount('employees')
                 ->orderBy('name')
@@ -437,6 +434,111 @@ class TeamWorkspaceController extends Controller
         $unauthorized = collect($permissions)->reject(fn ($permission) => $actor->hasPermission($permission));
         if ($unauthorized->isNotEmpty()) {
             throw ValidationException::withMessages(['permissions' => 'You cannot grant access that you do not have.']);
+        }
+    }
+
+    protected function ensureStandardDepartments(int $factoryId, ?Factory $factory): void
+    {
+        $standardDepartments = [
+            'CUTTING' => 'Cutting',
+            'SEWING' => 'Sewing',
+            'LINE' => 'Line',
+            'FINISHING' => 'Finishing',
+            'PACKING' => 'Packing',
+            'QUALITY' => 'Quality Control',
+            'PRODUCTION' => 'Production',
+            'WAREHOUSE' => 'Warehouse',
+            'RAW_MATERIALS' => 'Raw Materials',
+            'FINISHED_GOODS' => 'Finished Goods',
+            'LOGISTICS' => 'Logistics',
+            'MAINTENANCE' => 'Maintenance',
+            'DESIGN' => 'Design',
+        ];
+
+        if ($factory) {
+            $industryDepts = IndustryProfileCatalog::resolve($factory->profileKeys())['departments'] ?? [];
+            foreach ($industryDepts as $deptName) {
+                if (strtolower(trim($deptName)) === 'packaging') {
+                    continue;
+                }
+                $code = strtoupper(Str::slug($deptName, '_'));
+                if (! isset($standardDepartments[$code])) {
+                    $standardDepartments[$code] = $deptName;
+                }
+            }
+        }
+
+        $existingDepts = Department::withoutGlobalScopes()
+            ->where('factory_id', $factoryId)
+            ->get();
+        $existingCodes = $existingDepts->pluck('code')->flip()->all();
+
+        foreach ($standardDepartments as $code => $name) {
+            $targetLower = strtolower(trim($name));
+            $department = $existingDepts->first(function (Department $dept) use ($code, $targetLower) {
+                $deptCode = strtoupper(trim($dept->code));
+                $deptName = strtolower(trim($dept->name));
+
+                if ($deptCode === $code || $deptName === $targetLower) {
+                    return true;
+                }
+                if ($targetLower === 'packing' && ($deptName === 'packaging' || $deptCode === 'PACKAGING')) {
+                    return true;
+                }
+                if ($targetLower === 'line' && ($deptName === 'production line' || $deptCode === 'PRODUCTION_LINE')) {
+                    return true;
+                }
+                if ($targetLower === 'quality control' && in_array($deptName, ['quality', 'quality assurance', 'qc'], true)) {
+                    return true;
+                }
+                if ($targetLower === 'warehouse' && in_array($deptName, ['storage', 'inventory'], true)) {
+                    return true;
+                }
+
+                return false;
+            });
+
+            if ($department) {
+                $updates = [];
+                if (! $department->is_active) {
+                    $updates['is_active'] = true;
+                }
+                if ($targetLower === 'packing' && strtolower(trim($department->name)) === 'packaging') {
+                    $updates['name'] = 'Packing';
+                }
+                if (! empty($updates)) {
+                    $department->update($updates);
+                }
+            } else {
+                $finalCode = $code;
+                $counter = 1;
+                while (isset($existingCodes[$finalCode])) {
+                    $finalCode = substr($code, 0, 26) . '_' . (++$counter);
+                }
+                $existingCodes[$finalCode] = true;
+
+                $department = Department::withoutGlobalScopes()->create([
+                    'factory_id' => $factoryId,
+                    'code' => $finalCode,
+                    'name' => $name,
+                    'is_active' => true,
+                ]);
+
+                $existingDepts->push($department);
+
+                Workstation::withoutGlobalScopes()->firstOrCreate(
+                    [
+                        'factory_id' => $factoryId,
+                        'code' => substr($finalCode, 0, 30) . '-MAIN',
+                    ],
+                    [
+                        'name' => $name . ' Main Station',
+                        'department_id' => $department->id,
+                        'type' => IndustryProfileCatalog::stationType($name),
+                        'is_active' => true,
+                    ]
+                );
+            }
         }
     }
 }
