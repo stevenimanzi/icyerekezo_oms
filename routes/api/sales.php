@@ -10,10 +10,10 @@ Route::controller(SalesController::class)
         Route::get('/overview', 'overview')->middleware('permission:sales.view');
         Route::get('/orders/{document}/pdf', 'orderPdf')->middleware('permission:sales.view');
         Route::patch('/orders/{document}/decision', 'decide')->middleware(
-            'permission:sales.fulfill|logistics.plan|logistics.dispatch|logistics.deliver',
+            'permission:sales.fulfill|sales.approve|sales.view|finance.approve|logistics.plan|logistics.dispatch|logistics.deliver',
         );
         Route::delete('/orders/{document}', 'destroy')->middleware(
-            'permission:sales.fulfill|logistics.plan|logistics.dispatch|logistics.deliver',
+            'permission:sales.fulfill|sales.manage|finance.approve|logistics.plan',
         );
         Route::post('/orders/{document}/invoice', 'uploadInvoice')->middleware('permission:sales.fulfill');
         Route::post('/school-orders', 'storeSchoolOrder')->middleware('permission:sales.create|sales.fulfill');

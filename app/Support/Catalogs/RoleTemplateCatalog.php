@@ -207,13 +207,13 @@ final class RoleTemplateCatalog
         'sales-officer' => ['Sales Officer', 'sales', ['sales.*', 'products.view', 'inventory.view', 'reports.view']],
         'accountant' => ['Accountant', 'finance', ['finance.*', 'sales.view', 'procurement.view', 'reports.*']],
         'financial-manager' => [
-            'Financial Manager',
+            'Finance & Sales Manager',
             'finance',
             [
-                'finance.view',
-                'finance.receive_payment',
-                'finance.approve',
-                'sales.view',
+                'finance.*',
+                'sales.*',
+                'products.view',
+                'inventory.view',
                 'reports.view',
                 'reports.export',
             ],

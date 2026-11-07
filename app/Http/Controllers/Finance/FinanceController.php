@@ -38,9 +38,15 @@ class FinanceController extends Controller
                     ->whereDate('paid_on', $day)
                     ->sum('amount');
 
+                $orderCount = (int) SalesDocument::where('factory_id', $factoryId)
+                    ->where('document_type', 'customer_order')
+                    ->whereDate('document_date', $day)
+                    ->count();
+
                 return [
                     'date' => $day->format('M j'),
                     'approved' => round($schoolPaid + $directPaid, 2),
+                    'orders' => $orderCount,
                 ];
             })
             ->values();
@@ -62,6 +68,8 @@ class FinanceController extends Controller
                     ->where('status', 'pending')
                     ->count(),
                 'orders_count' => (clone $orders)->count(),
+                'pending_orders' => (clone $orders)->where('status', 'pending')->count(),
+                'delivered_orders' => (clone $orders)->where('status', 'delivered')->count(),
             ],
             'orders' => (clone $orders)
                 ->with('school:id,name')

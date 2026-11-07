@@ -17,7 +17,7 @@ const WarehouseDashboard = lazy(() => import('./warehouse/WarehouseDashboard'));
 export function homeFor(flags: RoleFlags): HomeComponent {
     if (flags.isFactoryOwner) return OwnerDashboard;
     if (flags.isExecutiveUser) return flags.hasProductionFlow ? OwnerDashboard : ExecutiveDashboard;
-    if (flags.isFinancialManager) return FinancialManagerHome;
+    if (flags.isFinancialManager || flags.isFinanceUser || flags.isSalesUser) return FinancialManagerHome;
     if (flags.isHrOfficer) return HrOfficerHome;
     if (flags.isSafetyOfficer) return SafetyOfficerHome;
     if (flags.isQualityUser || flags.isQualityManager) return QualityDashboard;
