@@ -29,6 +29,12 @@ export function TrendChart({ trend, text, format, currency }: Props) {
         metric === 'revenue' ? `${currency} ${format.whole(value)}` : format.whole(value);
     const hasData = trend.some((point) => point[metric] > 0);
 
+    const metricExplanaion = {
+        revenue: 'Blue line represents total factory revenue (RWF) generated from fulfilled orders and sales.',
+        orders: 'Blue line represents total count of school and client orders processed over time.',
+        output: 'Blue line represents total garment units completed across cutting, sewing, and finishing.',
+    };
+
     return (
         <article className="panel ow-trend">
             <div className="panel-title">
@@ -46,6 +52,31 @@ export function TrendChart({ trend, text, format, currency }: Props) {
                         </button>
                     ))}
                 </div>
+            </div>
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 14px',
+                    margin: '0 0 12px 0',
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    color: '#1e40af',
+                }}
+            >
+                <span
+                    style={{
+                        display: 'inline-block',
+                        width: '18px',
+                        height: '3px',
+                        background: '#2563eb',
+                        borderRadius: '2px',
+                    }}
+                />
+                <span>{metricExplanaion[metric]}</span>
             </div>
             <div className="ow-chart">
                 {hasData ? (

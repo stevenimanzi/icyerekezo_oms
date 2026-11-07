@@ -720,14 +720,14 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                     : `Number of items received and sent out over the last ${days} days.`}
                             </p>
                         </div>
-                        <div style={{ display: 'flex', gap: 12, fontSize: 12, fontWeight: 600 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 12, fontWeight: 500, padding: '8px 12px', background: '#f8fafc', borderRadius: 6, border: '1px solid #e2e8f0', marginTop: 8 }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <i style={{ width: 10, height: 10, borderRadius: 2, background: '#10b981', display: 'inline-block' }} />
-                                {isFr ? 'Reçu' : 'Received'}
+                                <i style={{ width: 12, height: 12, borderRadius: 3, background: '#10b981', display: 'inline-block' }} />
+                                <span><b>{isFr ? 'Barre verte (Reçu)' : 'Green bar (Received)'}:</b> {isFr ? 'Articles réceptionnés en stock magasin' : 'Stock items received and added to warehouse inventory'}</span>
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <i style={{ width: 10, height: 10, borderRadius: 2, background: '#f59e0b', display: 'inline-block' }} />
-                                {isFr ? 'Sorti' : 'Sent Out'}
+                                <i style={{ width: 12, height: 12, borderRadius: 3, background: '#f59e0b', display: 'inline-block' }} />
+                                <span><b>{isFr ? 'Barre orange (Sorti)' : 'Orange bar (Sent Out)'}:</b> {isFr ? 'Matières sorties pour la production ou expédiées' : 'Materials issued to production or dispatched to clients'}</span>
                             </span>
                         </div>
                     </div>

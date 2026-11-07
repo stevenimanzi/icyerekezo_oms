@@ -262,6 +262,16 @@ export default function SafetyOverviewPage() {
                         <p>New incidents reported versus resolved each day.</p>
                     </div>
                 </header>
+                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '14px', height: '3px', background: '#ef4444', borderRadius: '2px', display: 'inline-block' }} />
+                        <span><b>Red line (Reported):</b> Workplace incidents or safety hazards flagged</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '14px', height: '3px', background: '#10b981', borderRadius: '2px', display: 'inline-block' }} />
+                        <span><b>Green line (Resolved):</b> Safety cases investigated and corrective action completed</span>
+                    </span>
+                </div>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart

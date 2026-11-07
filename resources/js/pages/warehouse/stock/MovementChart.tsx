@@ -18,18 +18,18 @@ export function MovementChart({ movement, text, format }: Props) {
             <div className="panel-title">
                 <h2>{copy.movementTitle}</h2>
             </div>
-            <div className="ui-legend">
-                <span>
-                    <i style={{ background: '#16a34a' }} />
-                    {copy.received}: {format.money(movement.received_value)}
+            <div className="ui-legend" style={{ display: 'flex', flexWrap: 'wrap', gap: '18px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', margin: '0 0 16px 0', fontSize: '12px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <i style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#16a34a', display: 'inline-block' }} />
+                    <b>{copy.received}</b> (Green: Stock received into warehouse): {format.money(movement.received_value)}
                 </span>
-                <span>
-                    <i style={{ background: '#f59e0b' }} />
-                    {copy.issued}: {format.money(movement.issued_value)}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <i style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f59e0b', display: 'inline-block' }} />
+                    <b>{copy.issued}</b> (Orange: Materials issued to factory floor): {format.money(movement.issued_value)}
                 </span>
-                <span>
-                    <i style={{ background: '#dc2626' }} />
-                    {copy.wasted}: {format.money(movement.wasted_value)}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <i style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#dc2626', display: 'inline-block' }} />
+                    <b>{copy.wasted}</b> (Red: Damaged/scrap losses): {format.money(movement.wasted_value)}
                 </span>
             </div>
             <div className="ui-chart">

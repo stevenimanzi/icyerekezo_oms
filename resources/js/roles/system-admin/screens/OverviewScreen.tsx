@@ -73,6 +73,20 @@ export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
                         <span>Current data</span>
                     </div>
                 </header>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', padding: '6px 14px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '14px', height: '3px', background: '#1597e5', borderRadius: '2px', display: 'inline-block' }} />
+                        <span><b>Blue line:</b> Total onboarded factories</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '14px', height: '3px', background: '#8b5cf6', borderRadius: '2px', display: 'inline-block' }} />
+                        <span><b>Purple line:</b> Active registered users</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '14px', height: '3px', background: '#19b8ca', borderRadius: '2px', display: 'inline-block' }} />
+                        <span><b>Teal line:</b> Active subscriptions</span>
+                    </span>
+                </div>
                 <div className="platform-growth-chart" style={{ minHeight: 280, position: 'relative' }}>
                     {growth.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%" minHeight={260}>

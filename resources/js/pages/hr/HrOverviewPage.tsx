@@ -228,6 +228,16 @@ export default function HrOverviewPage() {
                         <p>Employees present versus absent each day.</p>
                     </div>
                 </header>
+                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10b981', display: 'inline-block' }} />
+                        <span><b>Green bar (Present):</b> Factory staff checked in on shift</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ef4444', display: 'inline-block' }} />
+                        <span><b>Red bar (Absent):</b> Staff absent, off shift, or on recorded leave</span>
+                    </span>
+                </div>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart

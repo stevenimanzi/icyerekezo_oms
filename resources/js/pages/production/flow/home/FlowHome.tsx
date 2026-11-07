@@ -511,6 +511,14 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
                                 : (locale === 'fr' ? `Pièces terminées (${rangeLabel})` : `Pieces finished (${rangeLabel})`)}
                         </h2>
                     </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 0 12px 0', fontSize: '11.5px' }}>
+                        {keys.map((key) => (
+                            <span key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: COLOURS[key], display: 'inline-block' }} />
+                                <span><b>{stageLabel(key, locale)}:</b> {locale === 'fr' ? `Pièces traitées à l'étape ${stageLabel(key, locale)}` : `Units processed at ${stageLabel(key, locale)}`}</span>
+                            </span>
+                        ))}
+                    </div>
                     <div className="ui-chart compact">
                         {hasChart ? (
                             <ResponsiveContainer width="100%" height="100%">

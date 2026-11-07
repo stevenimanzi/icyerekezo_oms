@@ -151,6 +151,16 @@ export default function QualityDashboard({ user, locale = 'en', onNavigate }: Pr
                             <p>{isFr ? 'Taux de conformité et de défauts pour chaque étape.' : 'Pass rates and defect rates across production departments.'}</p>
                         </div>
                     </header>
+                    <div style={{ display: 'flex', gap: '16px', padding: '8px 14px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#059669', display: 'inline-block' }} />
+                            <span><b>{isFr ? 'Vert' : 'Green bar'}:</b> {isFr ? 'Taux de conformité (pièces validées)' : 'Pass rate (units approved for production/dispatch)'}</span>
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#dc2626', display: 'inline-block' }} />
+                            <span><b>{isFr ? 'Rouge' : 'Red bar'}:</b> {isFr ? 'Taux de défauts (pièces rejetées)' : 'Defect rate (units rejected/rework)'}</span>
+                        </span>
+                    </div>
                     <div className="chart-wrap" style={{ height: '260px' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
@@ -209,6 +219,16 @@ export default function QualityDashboard({ user, locale = 'en', onNavigate }: Pr
                             <p>{isFr ? 'Volume quotidien de pièces inspectées et défectueuses.' : 'Daily volume of pieces passed vs rejected across the plant.'}</p>
                         </div>
                     </header>
+                    <div style={{ display: 'flex', gap: '16px', padding: '8px 14px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '14px', height: '3px', background: '#059669', borderRadius: '2px', display: 'inline-block' }} />
+                            <span><b>{isFr ? 'Ligne verte' : 'Green line'}:</b> {isFr ? 'Unités inspectées et conformes' : 'Pieces passed and approved'}</span>
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '14px', height: '3px', background: '#dc2626', borderRadius: '2px', display: 'inline-block' }} />
+                            <span><b>{isFr ? 'Ligne rouge' : 'Red line'}:</b> {isFr ? 'Unités défectueuses ou rejetées' : 'Pieces rejected with defects'}</span>
+                        </span>
+                    </div>
                     <div className="chart-wrap" style={{ height: '260px' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trend} margin={{ top: 16, right: 18, left: -18, bottom: 4 }}>

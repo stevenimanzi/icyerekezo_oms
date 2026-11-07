@@ -598,11 +598,15 @@ function LogisticsCharts({ trends, fr, money }: any) {
                         <h2>{fr ? 'Croissance des commandes' : 'Monthly order growth'}</h2>
                         <p>
                             {fr
-                                ? 'Commandes clients reÃ§ues au cours des six derniers mois'
+                                ? 'Commandes clients reçues au cours des six derniers mois'
                                 : 'Customer orders received over the last six months'}
                         </p>
                     </div>
                 </header>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe', margin: '0 16px 10px 16px', fontSize: '11.5px', color: '#1e40af' }}>
+                    <span style={{ width: '14px', height: '3px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} />
+                    <span><b>{fr ? 'Ligne bleue' : 'Blue line'}:</b> {fr ? 'Nombre de commandes clients passées par mois' : 'Volume of client orders placed per month'}</span>
+                </div>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart
@@ -649,11 +653,21 @@ function LogisticsCharts({ trends, fr, money }: any) {
                         <h2>{fr ? 'Performance des livraisons' : 'Delivery performance'}</h2>
                         <p>
                             {fr
-                                ? 'ExpÃ©ditions envoyÃ©es et livraisons terminÃ©es par mois'
+                                ? 'Expéditions envoyées et livraisons terminées par mois'
                                 : 'Shipments dispatched and completed each month'}
                         </p>
                     </div>
                 </header>
+                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#8b5cf6', display: 'inline-block' }} />
+                        <span><b>{fr ? 'Violet' : 'Purple bar'}:</b> {fr ? 'Expéditions sorties d’usine' : 'Dispatched from factory'}</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10b981', display: 'inline-block' }} />
+                        <span><b>{fr ? 'Vert' : 'Green bar'}:</b> {fr ? 'Livraisons terminées et reçues par client' : 'Confirmed delivered to destination'}</span>
+                    </span>
+                </div>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -707,11 +721,15 @@ function ProductionCharts({ trends, fr }: any) {
                         <h2>{fr ? 'Production mensuelle' : 'Monthly production'}</h2>
                         <p>
                             {fr
-                                ? 'UnitÃ©s produites au cours des six derniers mois'
+                                ? 'Unités produites au cours des six derniers mois'
                                 : 'Units produced over the last six months'}
                         </p>
                     </div>
                 </header>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#f0fdf4', borderRadius: '6px', border: '1px solid #bbf7d0', margin: '0 16px 10px 16px', fontSize: '11.5px', color: '#166534' }}>
+                    <span style={{ width: '14px', height: '3px', background: '#10b981', borderRadius: '2px', display: 'inline-block' }} />
+                    <span><b>{fr ? 'Ligne verte' : 'Green line'}:</b> {fr ? 'Nombre total d’articles finis produits chaque mois' : 'Total garment units produced per month'}</span>
+                </div>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart
@@ -752,11 +770,21 @@ function ProductionCharts({ trends, fr }: any) {
                         <h2>{fr ? 'Taux de rejet' : 'Rejection rate'}</h2>
                         <p>
                             {fr
-                                ? 'PiÃ¨ces endommagÃ©es ou rejetÃ©es par mois'
+                                ? 'Pièces endommagées ou rejetées par mois'
                                 : 'Damaged or rejected pieces each month'}
                         </p>
                     </div>
                 </header>
+                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ef4444', display: 'inline-block' }} />
+                        <span><b>{fr ? 'Rouge' : 'Red bar'}:</b> {fr ? 'Pièces rejetées/défauts de fabrication' : 'Garment units rejected or rework'}</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f59e0b', display: 'inline-block' }} />
+                        <span><b>{fr ? 'Orange' : 'Orange bar'}:</b> {fr ? 'Chutes et déchets de tissus' : 'Fabric scrap & material waste'}</span>
+                    </span>
+                </div>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -910,6 +938,16 @@ function WarehouseStockChart({ trends, fr, number }: any) {
                         </p>
                     </div>
                 </header>
+                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10b981', display: 'inline-block' }} />
+                        <span><b>{fr ? 'Vert' : 'Green bar'}:</b> {fr ? 'Stock reçu et entré en magasin' : 'Stock received and entered into warehouse'}</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ef4444', display: 'inline-block' }} />
+                        <span><b>{fr ? 'Rouge' : 'Red bar'}:</b> {fr ? 'Stock sorti pour les ateliers de production' : 'Stock issued to production floor'}</span>
+                    </span>
+                </div>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart

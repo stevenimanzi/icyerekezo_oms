@@ -189,6 +189,10 @@ export default function FinanceOverviewPage({
                         <p>Total receipt amount approved and applied to orders each day.</p>
                     </div>
                 </header>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe', margin: '0 16px 10px 16px', fontSize: '11.5px', color: '#1e40af' }}>
+                    <span style={{ width: '14px', height: '3px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} />
+                    <span><b>Blue line:</b> Total verified payment receipts (RWF) approved and applied to factory customer orders.</span>
+                </div>
                 <div className="chart-wrap">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart

@@ -307,24 +307,14 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                               : 'Production output'
                     }
                     action={
-                        <div className="chart-legend">
-                            <span className="actual-dot">
-                                {isSpecialized
-                                    ? locale === 'fr'
-                                        ? 'Livré'
-                                        : 'Delivered'
-                                    : locale === 'fr'
-                                      ? 'Réel'
-                                      : 'Actual'}
+                        <div className="chart-legend" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                                <span style={{ width: '16px', height: '3px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} />
+                                <b>{isSpecialized ? (locale === 'fr' ? 'Ligne bleue (Livré réels)' : 'Blue solid line: Actual garments delivered') : (locale === 'fr' ? 'Ligne bleue (Production réelle)' : 'Blue solid line: Actual output completed')}</b>
                             </span>
-                            <span className="target-dot">
-                                {isSpecialized
-                                    ? locale === 'fr'
-                                        ? 'Commandé'
-                                        : 'Ordered'
-                                    : locale === 'fr'
-                                      ? 'Planifié'
-                                      : 'Planned'}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
+                                <span style={{ width: '16px', height: '2px', borderTop: '2px dashed #94a3b8', display: 'inline-block' }} />
+                                <span>{isSpecialized ? (locale === 'fr' ? 'Ligne grise pointillée (Commandes attendues)' : 'Grey dashed line: Total garments ordered') : (locale === 'fr' ? 'Ligne grise pointillée (Objectif planifié)' : 'Grey dashed line: Planned production target')}</span>
                             </span>
                         </div>
                     }
