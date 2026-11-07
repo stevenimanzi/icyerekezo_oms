@@ -14,22 +14,6 @@ import { AdminTable } from '../components/AdminTable';
 import { Status } from '../components/Status';
 import type { AdminContext } from '../useAdminData';
 
-import React from 'react';
-import { Activity } from 'lucide-react';
-
-import {
-    CartesianGrid,
-    Line,
-    LineChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
-import { AdminTable } from '../components/AdminTable';
-import { Status } from '../components/Status';
-import type { AdminContext } from '../useAdminData';
-
 function formatSafeDate(raw: any): string {
     if (!raw) return '—';
     try {
