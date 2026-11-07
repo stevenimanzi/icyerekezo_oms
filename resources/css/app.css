@@ -187,15 +187,10 @@ svg.lucide {
     color: var(--brand, #2563eb) !important;
     font-weight: 600 !important;
 }
+.nav-item::before,
 .nav-item.active::before {
-    content: '';
-    position: absolute;
-    left: -8px;
-    top: 5px;
-    bottom: 5px;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--brand, #2563eb);
+    display: none !important;
+    content: none !important;
 }
 .nav-item.active svg {
     opacity: 1 !important;
@@ -10411,77 +10406,58 @@ small,
         background: var(--soft);
         font-size: 12px;
     }
-    .report-document.report-document .report-summary {
-        gap: 14px;
-        margin: 18px 0 8px;
-        padding-top: 0;
-        border-top: 0;
-    }
-    .report-document.report-document .report-summary div {
-        padding: 16px 18px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: var(--soft);
-    }
-    .report-document.report-document .report-summary span {
-        margin-bottom: 6px;
-        color: var(--text);
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0;
-        text-transform: none;
-        white-space: nowrap;
-    }
-    .report-document.report-document .report-summary b {
-        color: var(--text);
-        font-size: 22px;
-        font-weight: 800;
-        white-space: nowrap;
+    .report-document.report-document .report-summary,
+    .report-summary {
+        display: none !important;
     }
     .report-document.report-document .report-section {
-        margin-top: 26px;
+        margin-top: 20px;
+        overflow-x: auto !important;
+        width: 100%;
     }
     .report-document.report-document .report-section h2 {
         display: flex;
         align-items: center;
         gap: 10px;
-        margin: 0 0 12px;
-        font-size: 15px;
+        margin: 0 0 10px;
+        font-size: 14px;
         font-weight: 800;
         letter-spacing: 0;
         text-transform: none;
     }
     .report-document.report-document .report-section h2::before {
-        content: '';
-        width: 4px;
-        height: 16px;
-        border-radius: 2px;
-        background: var(--brand);
+        display: none !important;
+        content: none !important;
     }
-    .report-document.report-document .report-section > table {
+    .report-document.report-document .report-section > table,
+    .report-document.report-document .report-table-scroll > table {
+        width: 100% !important;
         border: 1px solid var(--line);
         border-collapse: separate;
-        border-radius: 12px;
+        border-radius: 8px;
         border-spacing: 0;
         overflow: hidden;
     }
     .report-document.report-document .report-section th {
-        padding: 12px 16px;
+        padding: 7px 12px !important;
         border: 0;
         border-bottom: 1px solid var(--line);
         background: var(--soft);
         color: var(--muted);
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.06em;
-        white-space: nowrap;
+        letter-spacing: 0.04em;
+        white-space: nowrap !important;
+        text-align: left !important;
     }
     .report-document.report-document .report-section td {
-        padding: 12px 16px;
+        padding: 7px 12px !important;
         border: 0;
         border-bottom: 1px solid var(--line);
         color: var(--text);
-        font-size: 13px;
+        font-size: 12.5px;
+        white-space: nowrap !important;
+        text-align: left !important;
     }
     .report-document.report-document .report-section tbody tr:nth-child(even) td {
         background: color-mix(in srgb, var(--brand) 3%, transparent);
@@ -10582,6 +10558,18 @@ body, button, input, select, textarea, .panel, .admin-table {
 
 .ui-kpis.eight {
     grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 1400px) {
+    .ui-kpis.eight {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .ui-kpis.eight {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
 }
 
 /* Universal KPI Card Geometry Across Whole Project */

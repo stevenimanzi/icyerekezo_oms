@@ -25,30 +25,32 @@ function Table({ title, headers, rows }: any) {
     return (
         <section className="report-section">
             <h2>{title}</h2>
-            <table>
-                <thead>
-                    <tr>
-                        {headers.map((header: string) => (
-                            <th key={header}>{header}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.length ? (
-                        rows.map((row: any[], index: number) => (
-                            <tr key={index}>
-                                {row.map((cell: any, cellIndex: number) => (
-                                    <td key={cellIndex}>{cell}</td>
-                                ))}
-                            </tr>
-                        ))
-                    ) : (
+            <div className="report-table-scroll" style={{ overflowX: 'auto', width: '100%' }}>
+                <table>
+                    <thead>
                         <tr>
-                            <td colSpan={headers.length}>No work was recorded for this period.</td>
+                            {headers.map((header: string) => (
+                                <th key={header} style={{ textAlign: 'left', whiteSpace: 'nowrap' }}>{header}</th>
+                            ))}
                         </tr>
-                    )}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {rows.length ? (
+                            rows.map((row: any[], index: number) => (
+                                <tr key={index}>
+                                    {row.map((cell: any, cellIndex: number) => (
+                                        <td key={cellIndex} style={{ textAlign: 'left', whiteSpace: 'nowrap' }}>{cell}</td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={headers.length} style={{ textAlign: 'center' }}>No work was recorded for this period.</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </section>
     );
 }
@@ -605,14 +607,6 @@ function NoguchiLogisticsDocument({ data }: any) {
                 <span>Generated: {new Date(data.report.generated_at).toLocaleString()}</span>
                 <span>Live warehouse and factory flow</span>
             </section>
-            <div className="report-summary">
-                {flowTotals.map(([label, value]: any) => (
-                    <div key={label}>
-                        <span>{label}</span>
-                        <b>{number(value)}</b>
-                    </div>
-                ))}
-            </div>
             <section className="report-section">
                 <h2>Daily movement through factory sections</h2>
                 <div className="noguchi-report-scroll">
@@ -839,23 +833,6 @@ function LogisticsDocument({ data }: any) {
                 <span>Generated: {new Date(data.report.generated_at).toLocaleString()}</span>
                 <span>Department: Logistics</span>
             </section>
-            <div className="report-summary logistics-report-summary">
-                {[
-                    ['Orders processed', summary.orders_processed],
-                    ['Items ordered', summary.items_ordered],
-                    ['Items delivered', summary.items_delivered],
-                    ['Remaining', summary.items_remaining],
-                    ['Returned / rejected', summary.items_returned],
-                    ['Order value', `RWF ${number(summary.total_value)}`],
-                    ['Shipments', summary.shipments],
-                    ['Deliveries completed', summary.deliveries_completed],
-                ].map(([label, value]) => (
-                    <div key={label}>
-                        <span>{label}</span>
-                        <b>{typeof value === 'number' ? number(value) : value}</b>
-                    </div>
-                ))}
-            </div>
             <div className="logistics-report-pair">
                 <Table
                     title="Order status"
@@ -1011,22 +988,6 @@ function Document({ data, departmentId }: any) {
                 <span>Prepared by: {data.report.generated_by}</span>
                 <span>Scope: {data.report.scope_label}</span>
             </section>
-            {data.standard.show_summary && (
-                <div className="report-summary">
-                    <div>
-                        <span>Total received</span>
-                        <b>{number(data.summary.quantity_received)}</b>
-                    </div>
-                    <div>
-                        <span>Total completed</span>
-                        <b>{number(data.summary.quantity_completed)}</b>
-                    </div>
-                    <div>
-                        <span>Damaged / rejected</span>
-                        <b>{number(data.summary.damaged_quantity)}</b>
-                    </div>
-                </div>
-            )}
 
             {data.standard.show_daily_register && (
                 <div className="noguchi-cutting-report">
@@ -1498,6 +1459,107 @@ export default function ClearReportsPage({ canExport, productionOnly = false, fo
                     </div>
                 </div>
             </div>
+
+            {/* STANDARDIZED EXTERNAL KPIS OUTSIDE REPORT SHEET */}
+            {isLogistics && !isNoguchi && data?.logistics?.summary && (
+                <div className="ui-kpis eight no-print" style={{ marginBottom: 16 }}>
+                    <article className="ui-kpi">
+                        <small>Orders processed</small>
+                        <strong>{number(data.logistics.summary.orders_processed)}</strong>
+                        <p>Total orders in period</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Items ordered</small>
+                        <strong>{number(data.logistics.summary.items_ordered)}</strong>
+                        <p>Garments & products</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Items delivered</small>
+                        <strong style={{ color: '#10b981' }}>{number(data.logistics.summary.items_delivered)}</strong>
+                        <p>Completed deliveries</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Remaining</small>
+                        <strong style={{ color: (data.logistics.summary.items_remaining || 0) > 0 ? '#b45309' : undefined }}>{number(data.logistics.summary.items_remaining)}</strong>
+                        <p>Pending fulfillment</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Returned / rejected</small>
+                        <strong style={{ color: (data.logistics.summary.items_returned || 0) > 0 ? '#b91c1c' : undefined }}>{number(data.logistics.summary.items_returned)}</strong>
+                        <p>Rejected items</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Order value</small>
+                        <strong>RWF {number(data.logistics.summary.total_value)}</strong>
+                        <p>Gross batch value</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Shipments</small>
+                        <strong>{number(data.logistics.summary.shipments)}</strong>
+                        <p>Dispatched trips</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Deliveries completed</small>
+                        <strong style={{ color: '#10b981' }}>{number(data.logistics.summary.deliveries_completed)}</strong>
+                        <p>Confirmed delivered</p>
+                    </article>
+                </div>
+            )}
+
+            {isLogistics && isNoguchi && data && (
+                <div className="ui-kpis six no-print" style={{ marginBottom: 16 }}>
+                    <article className="ui-kpi">
+                        <small>Total orders</small>
+                        <strong>{number(reportOrders.length)}</strong>
+                        <p>Scheduled school orders</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Items ordered</small>
+                        <strong>{number(reportOrders.reduce((sum: number, o: any) => sum + Number(o.total_order || o.quantity || 0), 0))}</strong>
+                        <p>Total uniform items</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Items delivered</small>
+                        <strong style={{ color: '#10b981' }}>{number(reportOrders.reduce((sum: number, o: any) => sum + Number(o.total_delivered || 0), 0))}</strong>
+                        <p>Delivered to schools</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Remaining</small>
+                        <strong style={{ color: '#b45309' }}>{number(reportOrders.reduce((sum: number, o: any) => sum + Math.max(0, Number(o.total_order || o.quantity || 0) - Number(o.total_delivered || 0)), 0))}</strong>
+                        <p>Pending uniforms</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Districts</small>
+                        <strong>{number(new Set(reportOrders.map((o: any) => o.school?.district || o.district).filter(Boolean)).size)}</strong>
+                        <p>Districts covered</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Schools</small>
+                        <strong>{number(new Set(reportOrders.map((o: any) => o.school?.name || o.school_name).filter(Boolean)).size)}</strong>
+                        <p>Active schools</p>
+                    </article>
+                </div>
+            )}
+
+            {!isLogistics && !isNoguchi && data?.summary && (
+                <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', marginBottom: 16 }}>
+                    <article className="ui-kpi">
+                        <small>Total received</small>
+                        <strong style={{ color: '#10b981' }}>{number(data.summary.quantity_received)}</strong>
+                        <p>Input to departments</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Total completed</small>
+                        <strong>{number(data.summary.quantity_completed)}</strong>
+                        <p>Finished output</p>
+                    </article>
+                    <article className="ui-kpi">
+                        <small>Damaged / rejected</small>
+                        <strong style={{ color: (data.summary.damaged_quantity || 0) > 0 ? '#b91c1c' : undefined }}>{number(data.summary.damaged_quantity)}</strong>
+                        <p>Defects and rejects</p>
+                    </article>
+                </div>
+            )}
             {noguchiOrdersOnly && data && (
                 <>
                     <style>
