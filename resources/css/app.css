@@ -10704,8 +10704,15 @@ body, button, input, select, textarea, .panel, .admin-table {
 .factory-settings-tabs,
 .nav-tabs,
 .tab-list,
-.products-tabs {
+.products-tabs,
+.inventory-tabs,
+.sales-tabs,
+.ow-tabs,
+.nc-tabs,
+.profile-tabs,
+nav[aria-label="Factory settings sections"] {
     display: flex !important;
+    flex-wrap: wrap !important;
     gap: 24px !important;
     padding: 0 !important;
     border: none !important;
@@ -10716,7 +10723,7 @@ body, button, input, select, textarea, .panel, .admin-table {
     margin-bottom: 16px !important;
     overflow: visible !important;
     overflow-x: visible !important;
-    overflow-y: visible !important;
+    overflow-y: hidden !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
 }
@@ -10728,7 +10735,18 @@ body, button, input, select, textarea, .panel, .admin-table {
 .factory-settings-tabs::-webkit-scrollbar,
 .nav-tabs::-webkit-scrollbar,
 .tab-list::-webkit-scrollbar,
-.products-tabs::-webkit-scrollbar {
+.products-tabs::-webkit-scrollbar,
+.inventory-tabs::-webkit-scrollbar,
+.sales-tabs::-webkit-scrollbar,
+.ow-tabs::-webkit-scrollbar,
+.nc-tabs::-webkit-scrollbar,
+.profile-tabs::-webkit-scrollbar,
+nav[aria-label="Factory settings sections"]::-webkit-scrollbar,
+[role="tablist"] *::-webkit-scrollbar,
+.ui-tabs *::-webkit-scrollbar,
+.module-tabs *::-webkit-scrollbar,
+.products-tabs *::-webkit-scrollbar,
+.tab-navigation *::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
@@ -10740,7 +10758,12 @@ body, button, input, select, textarea, .panel, .admin-table {
 .tab-navigation button,
 .factory-settings-tabs button,
 .nav-tabs button,
-.tab-list button {
+.tab-list button,
+.products-tabs button,
+.inventory-tabs button,
+.sales-tabs button,
+.ow-tabs button,
+.profile-tabs button {
     background: transparent !important;
     background-color: transparent !important;
     border: none !important;
@@ -10755,6 +10778,7 @@ body, button, input, select, textarea, .panel, .admin-table {
     box-shadow: none !important;
     cursor: pointer !important;
     white-space: nowrap !important;
+    scrollbar-width: none !important;
     transition: color 0.15s ease, border-color 0.15s ease !important;
 }
 
@@ -10764,7 +10788,12 @@ body, button, input, select, textarea, .panel, .admin-table {
 .tab-navigation button:hover,
 .factory-settings-tabs button:hover,
 .nav-tabs button:hover,
-.tab-list button:hover {
+.tab-list button:hover,
+.products-tabs button:hover,
+.inventory-tabs button:hover,
+.sales-tabs button:hover,
+.ow-tabs button:hover,
+.profile-tabs button:hover {
     background: transparent !important;
     color: var(--text) !important;
     border-bottom-color: var(--line) !important;
@@ -10778,7 +10807,13 @@ body, button, input, select, textarea, .panel, .admin-table {
 .tab-navigation button.active,
 .factory-settings-tabs button.active,
 .nav-tabs button.active,
-.tab-list button.active {
+.tab-list button.active,
+.products-tabs button.active,
+.products-tabs button[aria-selected="true"],
+.inventory-tabs button.active,
+.sales-tabs button.active,
+.ow-tabs button.active,
+.profile-tabs button.active {
     background: transparent !important;
     background-color: transparent !important;
     color: var(--brand, #2563eb) !important;
@@ -10790,7 +10825,12 @@ body, button, input, select, textarea, .panel, .admin-table {
 [data-theme='dark'] .ui-tabs button.active,
 [data-theme='dark'] .module-tabs button.active,
 [data-theme='dark'] .tab-navigation button.active,
-[data-theme='dark'] .factory-settings-tabs button.active {
+[data-theme='dark'] .factory-settings-tabs button.active,
+[data-theme='dark'] .products-tabs button.active,
+[data-theme='dark'] .inventory-tabs button.active,
+[data-theme='dark'] .sales-tabs button.active,
+[data-theme='dark'] .ow-tabs button.active,
+[data-theme='dark'] .profile-tabs button.active {
     background: transparent !important;
     color: var(--brand, #3b82f6) !important;
 }

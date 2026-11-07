@@ -5,8 +5,8 @@ import { Modal } from '../../components/Modal';
 import { api } from '../../core/api';
 import { useLiveData } from '../../core/liveData';
 import type { AuthUser, Locale } from '../../core/types';
-import { UserSupportChat } from '../shared/UserSupportChat';
 import { MessageThread } from './MessageThread';
+import { SupportMessageThread } from './SupportMessageThread';
 import { chatText } from './text';
 import type { ChatOverview, ConversationRow, Person, Selection } from './types';
 import './chat.css';
@@ -137,16 +137,30 @@ export default function ChatPage({ user, locale }: Props) {
 
                 <div className="tc-main">
                     {selection?.kind === 'support' && (
-                        <div className="tc-support">
-                            <button
-                                className="secondary-btn tc-back"
-                                onClick={() => setSelection(null)}
-                            >
-                                <ArrowLeft size={15} />
-                                {text.back}
-                            </button>
-                            <UserSupportChat user={user} locale={locale} />
-                        </div>
+                        <>
+                            <div className="tc-head">
+                                <button
+                                    className="secondary-btn tc-back"
+                                    onClick={() => setSelection(null)}
+                                    aria-label={text.back}
+                                >
+                                    <ArrowLeft size={15} />
+                                </button>
+                                <span className="tc-avatar support">
+                                    <Headset size={18} />
+                                </span>
+                                <div>
+                                    <b>{text.support}</b>
+                                    <small>{text.supportHint}</small>
+                                </div>
+                            </div>
+                            <SupportMessageThread
+                                user={user}
+                                locale={locale}
+                                text={text}
+                                onActivity={onActivity}
+                            />
+                        </>
                     )}
                     {selection?.kind === 'conversation' && active && (
                         <>
