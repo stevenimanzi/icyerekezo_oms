@@ -223,6 +223,7 @@
 .ow-chart {
     height: 280px;
     padding: 14px 12px 6px;
+    flex: 1;
 }
 
 .ow-chart .ow-empty {
@@ -230,16 +231,115 @@
     padding-top: 100px;
 }
 
+/* Analytics Row: Performance Trend Chart + Stage Operations Flow */
+.ow-analytics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+    .ow-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ow-trend,
+.ow-flow-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-bottom: 0 !important;
+}
+
+.ow-flow-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 3px;
+    display: block;
+}
+
+.ow-flow-badges {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line, #e2e8f0);
+    background: var(--soft, #f8fafc);
+}
+
+[data-theme='dark'] .ow-flow-badges {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ow-flow-badge {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ow-flow-badge-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ow-flow-badge-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.ow-flow-badge-val.bad {
+    color: #ef4444;
+}
+
+.ow-flow-badge-val.warn {
+    color: #f59e0b;
+}
+
+.ow-flow-table-wrap {
+    flex: 1;
+    overflow-x: auto;
+}
+
+.ow-flow-table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ow-flow-table-wrap th {
+    background: transparent !important;
+    padding: 8px 12px !important;
+}
+
+.ow-flow-table-wrap td {
+    padding: 8px 12px !important;
+    vertical-align: middle;
+}
+
 .ow-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-    align-items: start;
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 16px;
 }
 
 .ow-card {
     min-width: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-bottom: 0 !important;
 }
 
 .ow-headline {
@@ -262,6 +362,21 @@
 .ow-rows {
     margin: 0;
     padding: 6px 20px 14px;
+    flex: 1;
+}
+
+/* Bottom Tier: Safety & Incident Status + Realtime Factory Event Feed */
+.ow-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    align-items: stretch;
+}
+
+@media (max-width: 960px) {
+    .ow-bottom-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .ow-rows div {
@@ -332,10 +447,19 @@
     font-size: 11px;
 }
 
+.ow-activity {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
 .ow-activity ul {
     margin: 0;
     padding: 4px 20px 10px;
     list-style: none;
+    flex: 1;
+    max-height: 380px;
+    overflow-y: auto;
 }
 
 .ow-activity li {

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { HomeProps } from '../types';
 import { ActivityList } from './components/ActivityList';
-import { AlertsBar } from './components/AlertsBar';
 import { KpiCard } from './components/KpiCard';
 import { TrendChart } from './components/TrendChart';
 import { makeFormat } from '../../core/format';
@@ -125,13 +124,6 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
                 <div className="panel ow-empty-page">{text.loading}</div>
             ) : (
                 <>
-                    <AlertsBar
-                        alerts={data.alerts}
-                        openablePages={pages}
-                        text={text}
-                        onNavigate={onNavigate}
-                    />
-
                     <div className="ow-kpis">
                         <KpiCard
                             label={text.kpi.revenue}
@@ -175,15 +167,13 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
                         />
                     </div>
 
-                    <TrendChart
-                        trend={data.trend}
-                        text={text}
-                        format={format}
-                        currency={currency}
-                    />
-
-                    <div className="ow-grid">
-                        <CashSection data={data.cash} text={text} format={format} />
+                    <div className="ow-analytics-grid">
+                        <TrendChart
+                            trend={data.trend}
+                            text={text}
+                            format={format}
+                            currency={currency}
+                        />
                         {data.flow ? (
                             <ProductionFlowSection
                                 data={data.flow}
@@ -194,12 +184,19 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
                         ) : (
                             <ProductionSection data={data.production} text={text} format={format} />
                         )}
+                    </div>
+
+                    <div className="ow-grid">
+                        <CashSection data={data.cash} text={text} format={format} />
                         <StockSection data={data.stock} text={text} format={format} />
-                        <CustomersSection data={data.customers} text={text} format={format} />
                         <QualitySection data={data.quality} text={text} format={format} />
+                        <CustomersSection data={data.customers} text={text} format={format} />
                         <PeopleSection data={data.people} text={text} format={format} />
-                        <SafetySection data={data.safety} text={text} format={format} />
                         <EquipmentSection data={data.equipment} text={text} format={format} />
+                    </div>
+
+                    <div className="ow-bottom-grid">
+                        <SafetySection data={data.safety} text={text} format={format} />
                         <ActivityList
                             entries={data.activity}
                             text={text}
