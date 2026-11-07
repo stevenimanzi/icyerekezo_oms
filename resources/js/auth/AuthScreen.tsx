@@ -11,6 +11,7 @@ import {
     Factory,
     Globe,
     LockKeyhole,
+    LogIn,
     Mail,
     MapPin,
     Phone,
@@ -25,6 +26,7 @@ import { type AuthUser, type Locale } from '../core/types';
 import { Logo } from '../app/Logo';
 import { AuthInput } from './AuthInput';
 import { AuthShowcase } from './AuthShowcase';
+import { LanguageFlagDropdown } from './CountryFlags';
 
 export const INDUSTRY_OPTIONS: [key: string, en: string, fr: string][] = [
     ['general_manufacturing', 'General manufacturing', 'Fabrication générale'],
@@ -320,20 +322,20 @@ export function AuthScreen({
                       : {
                             title:
                                 mode === 'login'
-                                    ? 'Welcome back'
+                                    ? 'Welcome Back'
                                     : 'Create your factory workspace',
                             subtitle:
                                 mode === 'login'
-                                    ? 'Enter your credentials to access your operations dashboard.'
+                                    ? 'Enter your email and password to access your account.'
                                     : 'Set up your secure factory tenant and start managing production.',
                             name: 'Factory owner name',
                             factory: 'Factory name',
                             industry: 'Primary industry',
                             specifyIndustry: 'Specify the industry',
                             email: mode === 'login' ? 'Email or Username' : 'Work email address',
-                            password: 'Create password',
+                            password: mode === 'login' ? 'Password' : 'Create password',
                             confirm: 'Confirm password',
-                            remember: 'Keep me signed in',
+                            remember: 'Remember Me',
                             namePlaceholder: "Enter owner's full name",
                             factoryPlaceholder: 'e.g. Kigali Apparel Works Ltd',
                             industryPlaceholder: 'Describe the type of factory',
@@ -341,14 +343,17 @@ export function AuthScreen({
                                 mode === 'login'
                                     ? 'owner@company.com or username'
                                     : 'owner@company.com',
-                            passwordPlaceholder: 'Create a strong password',
+                            passwordPlaceholder:
+                                mode === 'login'
+                                    ? 'Enter your password'
+                                    : 'Create a strong password',
                             confirmPlaceholder: 'Repeat password to confirm',
-                            action: mode === 'login' ? 'Sign in to Dashboard' : 'Create Factory Workspace',
+                            action: mode === 'login' ? 'Log In' : 'Create Factory Workspace',
                             switchText:
                                 mode === 'login'
-                                    ? "Don't have a factory account?"
+                                    ? "Don't Have An Account?"
                                     : 'Already have an account?',
-                            switchAction: mode === 'login' ? 'Register factory' : 'Sign in',
+                            switchAction: mode === 'login' ? 'Register Now.' : 'Sign in',
                         }),
               }
             : {
@@ -433,17 +438,7 @@ export function AuthScreen({
                         <div className="auth-logo-wrapper">
                             <Logo />
                         </div>
-                        <button
-                            type="button"
-                            className="auth-lang-btn"
-                            onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}
-                            title={locale === 'en' ? 'Passer en Français' : 'Switch to English'}
-                        >
-                            <Globe size={15} />
-                            <span className="auth-lang-text">
-                                {locale === 'en' ? 'FR' : 'EN'}
-                            </span>
-                        </button>
+                        <LanguageFlagDropdown locale={locale} onChange={setLocale} />
                     </div>
 
                     {/* Pending OTP Verification Screen */}
@@ -708,7 +703,7 @@ export function AuthScreen({
                                                 }}
                                             >
                                                 {locale === 'en'
-                                                    ? 'Forgot password?'
+                                                    ? 'Forgot Your Password?'
                                                     : 'Mot de passe oublié ?'}
                                             </button>
                                         </div>
@@ -1233,7 +1228,11 @@ export function AuthScreen({
                                                         : 'Connexion...'
                                                     : words.action}
                                             </span>
-                                            <ChevronRight size={18} />
+                                            {mode === 'login' ? (
+                                                <LogIn size={18} />
+                                            ) : (
+                                                <ChevronRight size={18} />
+                                            )}
                                         </button>
                                     )
                                 )}
@@ -1309,22 +1308,12 @@ export function AuthScreen({
                                     )}
                                 </div>
                             </form>
-
-                            {/* Trust & Encrypted Badge */}
-                            <div className="auth-assurance-badge">
-                                <Shield size={13} className="text-blue-600" />
-                                <span>
-                                    {locale === 'en'
-                                        ? 'End-to-end encrypted & tenant isolated connection'
-                                        : 'Connexion chiffrée de bout en bout et isolée'}
-                                </span>
-                            </div>
                         </div>
                     )}
 
                     {/* Bottom Copyright */}
                     <div className="auth-bottom-copyright">
-                        <span>© 2026 ICYEREKEZO OMS. All rights reserved.</span>
+                        <span>Copyright © 2026 ICYEREKEZO OMS. All rights reserved.</span>
                     </div>
                 </div>
             </div>

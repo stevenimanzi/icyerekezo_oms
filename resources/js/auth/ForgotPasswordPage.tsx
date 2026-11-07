@@ -13,6 +13,7 @@ import { type Locale } from '../core/types';
 import { Logo } from '../app/Logo';
 import { AuthInput } from './AuthInput';
 import { AuthShowcase } from './AuthShowcase';
+import { LanguageFlagDropdown } from './CountryFlags';
 
 export function ForgotPasswordPage() {
     const [locale, setLocale] = useState<Locale>('en');
@@ -54,15 +55,7 @@ export function ForgotPasswordPage() {
                         <div className="auth-logo-wrapper">
                             <Logo />
                         </div>
-                        <button
-                            type="button"
-                            className="auth-lang-btn"
-                            onClick={() => setLocale(isFr ? 'en' : 'fr')}
-                            title={isFr ? 'Switch to English' : 'Passer en Français'}
-                        >
-                            <Globe size={15} />
-                            <span className="auth-lang-text">{isFr ? 'EN' : 'FR'}</span>
-                        </button>
+                        <LanguageFlagDropdown locale={locale} onChange={setLocale} />
                     </div>
 
                     <div className="auth-body">
@@ -149,19 +142,10 @@ export function ForgotPasswordPage() {
                                 </span>
                             </button>
                         </div>
-
-                        <div className="auth-assurance-badge">
-                            <Shield size={13} className="text-blue-600" />
-                            <span>
-                                {isFr
-                                    ? 'Votre connexion est chiffrée et protégée'
-                                    : 'Your connection is encrypted and protected'}
-                            </span>
-                        </div>
                     </div>
 
                     <div className="auth-bottom-copyright">
-                        <span>© 2026 ICYEREKEZO OMS. All rights reserved.</span>
+                        <span>Copyright © 2026 ICYEREKEZO OMS. All rights reserved.</span>
                     </div>
                 </div>
             </div>

@@ -48,13 +48,82 @@
     box-sizing: border-box;
 }
 
-/* 3.1 Header Bar */
+/* 3.1 Header Bar & Circular Country Flag */
 .auth-header-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 24px;
+}
+
+.auth-circle-flag-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.circle-flag-trigger {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.circle-flag-trigger:hover {
+    transform: scale(1.08);
+}
+
+.circle-flag-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    padding: 6px;
+    min-width: 130px;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.flag-option-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.flag-option-item:hover {
+    background: #f1f5f9;
+}
+
+.flag-option-item.selected {
+    background: #eff6ff;
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.flag-option-item .check-icon {
+    margin-left: auto;
+    color: #2563eb;
 }
 
 .auth-logo-wrapper {
