@@ -885,32 +885,38 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         </h2>
                     </div>
 
-                    {/* Category Tabs */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {/* Category Tabs - Clean underline tabs, NO background */}
+                    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', borderBottom: '1px solid var(--line)' }}>
                         {[
                             ['all', isFr ? 'Tous les articles' : 'All Items'],
                             ['raw_materials', isFr ? 'Matières 1ères' : 'Raw Materials'],
                             ['finished_goods', isFr ? 'Produits Finis' : 'Finished Goods'],
                             ['attention', isFr ? 'À réapprovisionner (Faible / 0)' : 'Needs Attention (Low / 0)'],
-                        ].map(([key, label]) => (
-                            <button
-                                key={key}
-                                type="button"
-                                onClick={() => setCategoryTab(key as any)}
-                                style={{
-                                    padding: '6px 12px',
-                                    borderRadius: 6,
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    border: '1px solid var(--line)',
-                                    background: categoryTab === key ? '#2563eb' : 'var(--panel)',
-                                    color: categoryTab === key ? '#ffffff' : 'var(--text)',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                {label}
-                            </button>
-                        ))}
+                        ].map(([key, label]) => {
+                            const active = categoryTab === key;
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => setCategoryTab(key as any)}
+                                    style={{
+                                        padding: '8px 2px',
+                                        fontSize: 13,
+                                        fontWeight: active ? 700 : 500,
+                                        border: 'none',
+                                        borderBottom: active ? '2px solid #2563eb' : '2px solid transparent',
+                                        background: 'transparent',
+                                        color: active ? '#2563eb' : 'var(--muted)',
+                                        cursor: 'pointer',
+                                        position: 'relative',
+                                        bottom: -1,
+                                        transition: 'all 0.15s ease',
+                                    }}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
                     </div>
                 </header>
 

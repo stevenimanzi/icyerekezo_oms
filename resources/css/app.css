@@ -10,7 +10,7 @@
     --line: #e7ebf2;
     --soft: #f8fafc;
     --brand: #2563eb;
-    --sidebar: 270px;
+    --sidebar: 224px;
     color-scheme: light;
 }
 :root[data-theme='dark'] {
@@ -132,7 +132,7 @@ svg.lucide {
 .sidebar nav {
     flex: 1;
     overflow-y: auto;
-    padding: 14px 12px;
+    padding: 10px 8px;
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
@@ -140,62 +140,77 @@ svg.lucide {
     display: none;
 }
 .nav-label {
-    margin: 18px 10px 6px;
+    margin: 12px 8px 4px;
     color: #b0bac8;
     font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
 }
 .nav-label:first-child {
     margin-top: 0;
 }
 .nav-item {
     width: 100%;
-    height: 40px;
+    height: 35px;
     border: 0;
-    border-radius: 8px;
-    background: transparent;
+    border-radius: 6px;
+    background: transparent !important;
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 0 10px;
+    gap: 9px;
+    padding: 0 8px;
     margin: 1px 0;
     color: var(--muted);
     cursor: pointer;
     text-align: left;
     font-size: 13px;
     font-weight: 500;
-    transition: background 0.15s ease, color 0.15s ease;
+    position: relative;
+    transition: color 0.15s ease;
 }
 .nav-item svg {
     flex-shrink: 0;
     opacity: 0.75;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.15s ease, color 0.15s ease;
 }
 .nav-item:hover {
-    background: var(--soft);
-    color: var(--text);
+    background: transparent !important;
+    color: var(--text) !important;
 }
 .nav-item:hover svg {
     opacity: 1;
 }
 .nav-item.active {
-    background: color-mix(in srgb, var(--brand) 10%, transparent);
-    color: var(--brand);
-    font-weight: 600;
+    background: transparent !important;
+    background-color: transparent !important;
+    color: var(--brand, #2563eb) !important;
+    font-weight: 600 !important;
+}
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 5px;
+    bottom: 5px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--brand, #2563eb);
 }
 .nav-item.active svg {
-    opacity: 1;
+    opacity: 1 !important;
+    color: var(--brand, #2563eb) !important;
 }
 [data-theme='dark'] .nav-item.active {
-    background: color-mix(in srgb, var(--brand) 15%, transparent);
+    background: transparent !important;
+    background-color: transparent !important;
+    color: var(--brand, #3b82f6) !important;
 }
 .nav-item i {
     margin-left: auto;
-    width: 20px;
-    height: 20px;
-    border-radius: 7px;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
     background: #fff0e6;
     color: #e36825;
     display: grid;
@@ -207,24 +222,24 @@ svg.lucide {
 
 .nav-group {
     margin: 1px 0;
-    border-radius: 8px;
+    border-radius: 6px;
 }
 .nav-group-toggle {
     width: 100%;
-    height: 40px;
+    height: 35px;
     border: 0;
-    border-radius: 8px;
-    background: transparent;
+    border-radius: 6px;
+    background: transparent !important;
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 0 10px;
+    gap: 9px;
+    padding: 0 8px;
     color: var(--muted);
     cursor: pointer;
     text-align: left;
     font-size: 13px;
     font-weight: 500;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: color 0.15s ease;
 }
 .nav-group-toggle svg:first-child {
     flex-shrink: 0;
@@ -232,14 +247,15 @@ svg.lucide {
     transition: opacity 0.15s ease;
 }
 .nav-group-toggle:hover {
-    background: var(--soft);
-    color: var(--text);
+    background: transparent !important;
+    color: var(--text) !important;
 }
 .nav-group-toggle:hover svg:first-child {
     opacity: 1;
 }
 .nav-group.has-active > .nav-group-toggle {
-    color: var(--brand);
+    background: transparent !important;
+    color: var(--brand, #2563eb) !important;
     font-weight: 600;
 }
 .nav-group.has-active > .nav-group-toggle svg:first-child {
@@ -267,8 +283,8 @@ svg.lucide {
     opacity: 1;
 }
 .nav-child {
-    padding-left: 30px !important;
-    height: 36px;
+    padding-left: 26px !important;
+    height: 32px !important;
     font-size: 12.5px;
 }
 .nav-child svg {
@@ -279,9 +295,9 @@ svg.lucide {
     color: var(--brand);
 }
 .factory-card {
-    width: calc(100% - 20px);
-    margin: 10px 10px 8px;
-    padding: 10px 12px;
+    width: calc(100% - 16px);
+    margin: 8px 8px 6px;
+    padding: 8px 10px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1572,12 +1588,15 @@ tbody tr:last-child td {
 }
 .module-tabs {
     display: flex;
-    gap: 5px;
-    padding: 5px;
-    overflow: auto;
-    border: 1px solid var(--line);
-    border-radius: 11px;
-    background: var(--panel);
+    gap: 20px;
+    padding: 0;
+    overflow-x: auto;
+    border: none !important;
+    border-bottom: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    margin-bottom: 16px;
 }
 .module-tabs button {
     white-space: nowrap;
@@ -1585,20 +1604,34 @@ tbody tr:last-child td {
     align-items: center;
     justify-content: center;
     gap: 7px;
-    flex: 1;
-    min-width: 130px;
-    padding: 10px 12px;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
+    flex: initial;
+    min-width: auto;
+    padding: 8px 4px;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
     color: var(--muted);
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
+    position: relative;
+    bottom: -1px;
+    transition: all 0.15s ease;
+}
+.module-tabs button:hover {
+    background: transparent !important;
+    color: var(--text) !important;
 }
 .module-tabs button.active {
-    background: #e9f0ff;
-    color: #2563eb;
+    background: transparent !important;
+    color: var(--brand, #2563eb) !important;
+    border-bottom: 2px solid var(--brand, #2563eb) !important;
+    font-weight: 700 !important;
+}
+[data-theme='dark'] .module-tabs button.active {
+    background: transparent !important;
+    color: var(--brand, #3b82f6) !important;
 }
 .module-grid {
     display: grid;
@@ -10484,19 +10517,39 @@ body, button, input, select, textarea, .panel, .admin-table {
     background: transparent !important;
 }
 
-/* Equal Height & Width KPI Grid - Modern Compact SaaS */
+/* Equal Height & Width KPI Grid - Modern Unified SaaS Identity */
 .kpi-grid,
-.warehouse-kpi-row {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 10px;
-    align-items: stretch;
-    margin-bottom: 14px;
+.warehouse-kpi-row,
+.ui-kpis,
+.ow-kpis,
+.school-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+    margin-bottom: 14px !important;
 }
 
+.warehouse-kpi-row,
+.ui-kpis.six {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+}
+
+.ow-kpis {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+.ui-kpis.eight {
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+}
+
+/* Universal KPI Card Geometry Across Whole Project */
 .kpi-grid > article,
 .warehouse-kpi-row > article,
-.warehouse-kpi-card {
+.warehouse-kpi-card,
+.ui-kpi,
+.ow-kpi,
+.school-kpis > * {
     height: 100% !important;
     min-height: 72px !important;
     display: flex !important;
@@ -10505,46 +10558,245 @@ body, button, input, select, textarea, .panel, .admin-table {
     border-radius: 6px !important;
     border: 1px solid var(--line, #e2e8f0) !important;
     background: #ffffff !important;
-    padding: 10px 12px !important;
+    padding: 10px 14px !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
 }
 
 [data-theme="dark"] .kpi-grid > article,
 [data-theme="dark"] .warehouse-kpi-row > article,
-[data-theme="dark"] .warehouse-kpi-card {
+[data-theme="dark"] .warehouse-kpi-card,
+[data-theme="dark"] .ui-kpi,
+[data-theme="dark"] .ow-kpi,
+[data-theme="dark"] .school-kpis > * {
     background: var(--panel, #1e293b) !important;
     border-color: var(--line, #334155) !important;
 }
 
-.warehouse-kpi-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+.kpi-grid > article:hover,
+.warehouse-kpi-card:hover,
+.ui-kpi:hover,
+.ow-kpi:hover,
+.school-kpis > *:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* No Icons inside KPI Cards */
+.kpi-icon,
+.warehouse-kpi-card svg:not(.brand-logo),
+.ui-kpi svg,
+.ow-kpi svg {
+    display: none !important;
+}
+
+/* Single-Line Titles with Micro-Tracking */
+.kpi-grid > article small,
+.warehouse-kpi-card small,
+.ui-kpi small,
+.ow-kpi small,
+.school-kpis small {
+    display: block !important;
+    color: var(--muted) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.2 !important;
+}
+
+/* Crisp Values - Never Truncated */
+.kpi-grid > article strong,
+.warehouse-kpi-card strong,
+.ui-kpi strong,
+.ow-kpi strong,
+.school-kpis strong {
+    display: block !important;
+    margin: 3px 0 0 !important;
+    font-size: 15.5px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    white-space: nowrap !important;
+    color: var(--text) !important;
+    line-height: 1.2 !important;
+}
+
+/* Compact Subtitle/Note */
+.kpi-grid > article p,
+.warehouse-kpi-card p,
+.ui-kpi p,
+.ow-kpi .ow-kpi-note,
+.school-kpis p {
+    margin: 2px 0 0 !important;
+    color: var(--muted) !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.3 !important;
 }
 
 @media (max-width: 1240px) {
-    .kpi-grid,
-    .warehouse-kpi-row {
+    .warehouse-kpi-row,
+    .ui-kpis.six,
+    .ow-kpis {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 }
 
 @media (max-width: 680px) {
-    .kpi-grid,
-    .warehouse-kpi-row {
+    .warehouse-kpi-row,
+    .ui-kpis.six,
+    .ow-kpis {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
 
+/* Universal Underline Tabs Across Whole Project - NO Background, NO Cards */
+[role="tablist"],
+.ui-tabs,
+.module-tabs,
+.tab-navigation,
+.factory-settings-tabs,
+.nav-tabs,
+.tab-list {
+    display: flex !important;
+    gap: 24px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid var(--line, #e2e8f0) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    margin-bottom: 16px !important;
+    overflow-x: auto !important;
+}
+
+[role="tablist"] button,
+.ui-tabs button,
+.module-tabs button,
+.tab-navigation button,
+.factory-settings-tabs button,
+.nav-tabs button,
+.tab-list button {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    padding: 8px 4px !important;
+    color: var(--muted) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    position: relative !important;
+    bottom: -1px !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    transition: color 0.15s ease, border-color 0.15s ease !important;
+}
+
+[role="tablist"] button:hover,
+.ui-tabs button:hover,
+.module-tabs button:hover,
+.tab-navigation button:hover,
+.factory-settings-tabs button:hover,
+.nav-tabs button:hover,
+.tab-list button:hover {
+    background: transparent !important;
+    color: var(--text) !important;
+    border-bottom-color: var(--line) !important;
+}
+
+[role="tablist"] button.active,
+[role="tablist"] button[aria-selected="true"],
+.ui-tabs button.active,
+.ui-tabs button[aria-selected="true"],
+.module-tabs button.active,
+.tab-navigation button.active,
+.factory-settings-tabs button.active,
+.nav-tabs button.active,
+.tab-list button.active {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: var(--brand, #2563eb) !important;
+    border-bottom: 2px solid var(--brand, #2563eb) !important;
+    font-weight: 700 !important;
+}
+
+[data-theme='dark'] [role="tablist"] button.active,
+[data-theme='dark'] .ui-tabs button.active,
+[data-theme='dark'] .module-tabs button.active,
+[data-theme='dark'] .tab-navigation button.active,
+[data-theme='dark'] .factory-settings-tabs button.active {
+    background: transparent !important;
+    color: var(--brand, #3b82f6) !important;
+}
+
+/* Universal Filters & Search Input Polish */
+input[type='search'],
+input[type='text'],
+input[type='date'],
+select,
+.ui-field input,
+.ui-field select,
+.ow-controls select,
+.ow-controls input,
+.ui-toolbar select,
+.ui-toolbar input {
+    height: 36px !important;
+    border-radius: 6px !important;
+    border: 1px solid var(--line, #e2e8f0) !important;
+    background: #ffffff !important;
+    color: var(--text) !important;
+    font-size: 13px !important;
+    padding: 0 10px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+[data-theme='dark'] input[type='search'],
+[data-theme='dark'] input[type='text'],
+[data-theme='dark'] input[type='date'],
+[data-theme='dark'] select,
+[data-theme='dark'] .ui-field input,
+[data-theme='dark'] .ui-field select,
+[data-theme='dark'] .ow-controls select,
+[data-theme='dark'] .ow-controls input {
+    background: var(--panel, #1e293b) !important;
+    border-color: var(--line, #334155) !important;
+}
+
+input:focus,
+select:focus {
+    outline: none !important;
+    border-color: var(--brand, #2563eb) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
 /* Premium Tables (EasyDCIM / KORU / Enterprise Hero Style) */
-.admin-table-wrap {
-    border-radius: 12px !important;
-    border: 1px solid var(--line) !important;
-    background: var(--panel) !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02) !important;
+.admin-table-wrap,
+.ui-table-wrap,
+.report-table-scroll-wrapper {
+    border-radius: 6px !important;
+    border: 1px solid var(--line, #e2e8f0) !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
     overflow: hidden !important;
 }
 
+[data-theme='dark'] .admin-table-wrap,
+[data-theme='dark'] .ui-table-wrap,
+[data-theme='dark'] .report-table-scroll-wrapper {
+    background: var(--panel, #1e293b) !important;
+    border-color: var(--line, #334155) !important;
+}
+
 .admin-table,
+.ui-table,
 .report-data-table {
     width: 100%;
     border-collapse: separate !important;
@@ -10554,23 +10806,25 @@ body, button, input, select, textarea, .panel, .admin-table {
 }
 
 .admin-table thead th,
+.ui-table thead th,
 .report-data-table thead th {
-    background: var(--soft, rgba(248, 250, 252, 0.75)) !important;
+    background: var(--soft, #f8fafc) !important;
     color: var(--muted) !important;
     font-size: 11px !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
-    padding: 12px 16px !important;
-    border-bottom: 1px solid var(--line) !important;
+    padding: 10px 14px !important;
+    border-bottom: 1px solid var(--line, #e2e8f0) !important;
     border-top: none !important;
     white-space: nowrap;
 }
 
 .admin-table tbody td,
+.ui-table tbody td,
 .report-data-table tbody td {
-    padding: 12px 16px !important;
-    border-bottom: 1px solid var(--line) !important;
+    padding: 10px 14px !important;
+    border-bottom: 1px solid var(--line, #f1f5f9) !important;
     color: var(--text) !important;
     font-size: 13px !important;
     vertical-align: middle;
@@ -10578,6 +10832,7 @@ body, button, input, select, textarea, .panel, .admin-table {
 }
 
 .admin-table tbody tr:hover td,
+.ui-table tbody tr:hover td,
 .report-data-table tbody tr:hover td {
     background: color-mix(in srgb, var(--brand) 4%, var(--panel)) !important;
 }
