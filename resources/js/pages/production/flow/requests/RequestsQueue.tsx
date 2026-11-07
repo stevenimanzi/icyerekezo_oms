@@ -174,17 +174,51 @@ export default function RequestsQueue({ locale }: Props) {
                                             </td>
                                             <td>
                                                 {canApprove && row.status === 'pending' && (
-                                                    <div className="ui-row-actions">
+                                                    <div className="ui-row-actions" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>
                                                         <button
-                                                            className="primary-btn"
+                                                            type="button"
                                                             disabled={short}
                                                             onClick={() => open(row, 'approve')}
+                                                            title={short ? words.notEnough : words.approve}
+                                                            style={{
+                                                                height: 28,
+                                                                padding: '0 12px',
+                                                                fontSize: 12,
+                                                                fontWeight: 700,
+                                                                borderRadius: 6,
+                                                                background: short ? '#cbd5e1' : '#16a34a',
+                                                                color: '#ffffff',
+                                                                border: 'none',
+                                                                cursor: short ? 'not-allowed' : 'pointer',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                whiteSpace: 'nowrap',
+                                                                boxShadow: short ? 'none' : '0 1px 2px rgba(22, 163, 74, 0.25)',
+                                                                transition: 'all 0.15s ease',
+                                                            }}
                                                         >
                                                             {words.approve}
                                                         </button>
                                                         <button
-                                                            className="ui-link"
+                                                            type="button"
                                                             onClick={() => open(row, 'reject')}
+                                                            style={{
+                                                                height: 28,
+                                                                padding: '0 12px',
+                                                                fontSize: 12,
+                                                                fontWeight: 700,
+                                                                borderRadius: 6,
+                                                                background: '#fee2e2',
+                                                                color: '#dc2626',
+                                                                border: '1px solid #fca5a5',
+                                                                cursor: 'pointer',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                whiteSpace: 'nowrap',
+                                                                transition: 'all 0.15s ease',
+                                                            }}
                                                         >
                                                             {words.decline}
                                                         </button>
@@ -221,6 +255,7 @@ export default function RequestsQueue({ locale }: Props) {
                                 className="secondary-btn"
                                 onClick={() => setDeciding(null)}
                                 disabled={busy}
+                                style={{ height: 32, fontSize: 13, borderRadius: 6 }}
                             >
                                 {text.cancel}
                             </button>
@@ -230,6 +265,14 @@ export default function RequestsQueue({ locale }: Props) {
                                 disabled={
                                     busy || (deciding.kind === 'reject' && note.trim().length < 3)
                                 }
+                                style={{
+                                    height: 32,
+                                    fontSize: 13,
+                                    borderRadius: 6,
+                                    background: deciding.kind === 'approve' ? '#16a34a' : '#dc2626',
+                                    borderColor: deciding.kind === 'approve' ? '#15803d' : '#b91c1c',
+                                    color: '#ffffff',
+                                }}
                             >
                                 {busy
                                     ? text.saving

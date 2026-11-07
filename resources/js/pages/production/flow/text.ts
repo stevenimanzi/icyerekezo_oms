@@ -256,7 +256,7 @@ const en = {
         status_: {
             pending: 'Waiting',
             approved: 'Approved',
-            rejected: 'Declined',
+            rejected: 'Rejected',
             cancelled: 'Cancelled',
         } as Record<string, string>,
         decidedBy: (name: string) => `by ${name}`,
