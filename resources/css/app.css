@@ -10541,34 +10541,34 @@ body, button, input, select, textarea, .panel, .admin-table {
 .ow-kpis,
 .school-kpis {
     display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
-    gap: 10px !important;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 12px !important;
     align-items: stretch !important;
-    margin-bottom: 14px !important;
+    margin-bottom: 20px !important;
 }
 
 .warehouse-kpi-row,
 .ui-kpis.six {
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
 }
 
 .ow-kpis {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
 }
 
 .ui-kpis.eight {
-    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1024px) {
     .ui-kpis.eight {
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 560px) {
     .ui-kpis.eight {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-template-columns: 1fr !important;
     }
 }
 
@@ -10578,17 +10578,19 @@ body, button, input, select, textarea, .panel, .admin-table {
 .warehouse-kpi-card,
 .ui-kpi,
 .ow-kpi,
+.quality-kpi,
+.department-metrics > article,
 .school-kpis > * {
     height: 100% !important;
-    min-height: 72px !important;
+    min-height: 80px !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
     border: 1px solid var(--line, #e2e8f0) !important;
     background: #ffffff !important;
-    padding: 10px 14px !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+    padding: 14px 18px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
 }
 
@@ -10597,6 +10599,8 @@ body, button, input, select, textarea, .panel, .admin-table {
 [data-theme="dark"] .warehouse-kpi-card,
 [data-theme="dark"] .ui-kpi,
 [data-theme="dark"] .ow-kpi,
+[data-theme="dark"] .quality-kpi,
+[data-theme="dark"] .department-metrics > article,
 [data-theme="dark"] .school-kpis > * {
     background: var(--panel, #1e293b) !important;
     border-color: var(--line, #334155) !important;
@@ -10606,6 +10610,8 @@ body, button, input, select, textarea, .panel, .admin-table {
 .warehouse-kpi-card:hover,
 .ui-kpi:hover,
 .ow-kpi:hover,
+.quality-kpi:hover,
+.department-metrics > article:hover,
 .school-kpis > *:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
@@ -10619,22 +10625,23 @@ body, button, input, select, textarea, .panel, .admin-table {
     display: none !important;
 }
 
-/* Single-Line Titles with Micro-Tracking */
+/* Single-Line & Clean Wrapping Titles with Micro-Tracking */
 .kpi-grid > article small,
 .warehouse-kpi-card small,
 .ui-kpi small,
 .ow-kpi small,
+.quality-kpi small,
 .school-kpis small {
     display: block !important;
-    color: var(--muted) !important;
-    font-size: 10.5px !important;
-    font-weight: 700 !important;
+    color: var(--muted, #64748b) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.04em !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    line-height: 1.2 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.3 !important;
 }
 
 /* Crisp Values - Never Truncated */
@@ -10642,14 +10649,15 @@ body, button, input, select, textarea, .panel, .admin-table {
 .warehouse-kpi-card strong,
 .ui-kpi strong,
 .ow-kpi strong,
+.quality-kpi b,
 .school-kpis strong {
     display: block !important;
-    margin: 3px 0 0 !important;
-    font-size: 15.5px !important;
-    font-weight: 800 !important;
+    margin: 4px 0 0 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
     letter-spacing: -0.02em !important;
     white-space: nowrap !important;
-    color: var(--text) !important;
+    color: var(--text, #0f172a) !important;
     line-height: 1.2 !important;
 }
 
@@ -10659,12 +10667,12 @@ body, button, input, select, textarea, .panel, .admin-table {
 .ui-kpi p,
 .ow-kpi .ow-kpi-note,
 .school-kpis p {
-    margin: 2px 0 0 !important;
-    color: var(--muted) !important;
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    margin: 3px 0 0 !important;
+    color: var(--muted, #64748b) !important;
+    font-size: 11.5px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
     line-height: 1.3 !important;
 }
 
@@ -10684,7 +10692,7 @@ body, button, input, select, textarea, .panel, .admin-table {
     }
 }
 
-/* Universal Underline Tabs Across Whole Project - NO Background, NO Cards */
+/* Universal Underline Tabs Across Whole Project - NO Background, NO Cards, NO Scrollbars */
 [role="tablist"],
 .ui-tabs,
 .module-tabs,
@@ -10711,7 +10719,7 @@ nav[aria-label="Factory settings sections"] {
     margin-bottom: 16px !important;
     overflow: visible !important;
     overflow-x: visible !important;
-    overflow-y: hidden !important;
+    overflow-y: visible !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
 }

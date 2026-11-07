@@ -183,31 +183,6 @@ export default function FlowMonitorPage({ locale }: Props) {
 
                     <article className="panel">
                         <div className="panel-title">
-                            <h2>{words.alertsTitle}</h2>
-                        </div>
-                        {alerts.length ? (
-                            <ul className="ui-alerts">
-                                {alerts.map((alert) => (
-                                    <li key={alert.key}>
-                                        <span>{alert.message}</span>
-                                        {alert.lotId !== null && (
-                                            <button
-                                                className="ui-link"
-                                                onClick={() => setOpenLot(alert.lotId)}
-                                            >
-                                                {words.open}
-                                            </button>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="ui-empty">{words.alertsNone}</div>
-                        )}
-                    </article>
-
-                    <article className="panel">
-                        <div className="panel-title">
                             <h2>{words.lotsTitle}</h2>
                         </div>
                         <div className="ui-toolbar">
