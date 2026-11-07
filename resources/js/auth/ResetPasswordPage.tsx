@@ -1,9 +1,21 @@
 import React, { useState } from 'react';
-import { ChevronRight, Eye, EyeOff, Languages, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
+import {
+    AlertCircle,
+    ArrowLeft,
+    Check,
+    ChevronRight,
+    Eye,
+    EyeOff,
+    Globe,
+    LockKeyhole,
+    Mail,
+    Shield,
+} from 'lucide-react';
 import { api } from '../core/api';
 import { type Locale } from '../core/types';
 import { Logo } from '../app/Logo';
 import { AuthInput } from './AuthInput';
+import { AuthShowcase } from './AuthShowcase';
 
 export function ResetPasswordPage() {
     const token = window.location.pathname.split('/reset-password/')[1] ?? '';
@@ -47,7 +59,7 @@ export function ResetPasswordPage() {
             setDone(true);
             setTimeout(() => {
                 window.location.href = '/';
-            }, 3000);
+            }, 2500);
         } catch (reason: any) {
             setError(
                 reason instanceof Error
@@ -59,167 +71,180 @@ export function ResetPasswordPage() {
         }
     };
 
+    const isFr = locale === 'fr';
+
     return (
-        <main
-            className="auth-page"
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '100svh',
-                background: '#fff',
-            }}
-        >
-            <section
-                className="auth-form-side"
-                style={{ width: 'min(100%, 480px)', padding: '48px 32px', background: '#fff' }}
-            >
-                <div className="auth-topbar">
-                    <div className="auth-mobile-logo">
-                        <Logo />
-                    </div>
-                    <button
-                        type="button"
-                        className="auth-language"
-                        onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}
-                    >
-                        <Languages size={18} />
-                        {locale === 'en' ? 'Francais' : 'English'}
-                    </button>
-                </div>
-                <form
-                    className="auth-card"
-                    onSubmit={submit}
-                    style={{ width: '100%', maxWidth: 400, margin: '0 auto' }}
-                >
-                    <div className="auth-heading">
-                        <h2 style={{ fontSize: 'clamp(28px,3vw,38px)' }}>
-                            {locale === 'en'
-                                ? 'Set a new password'
-                                : 'Définir un nouveau mot de passe'}
-                        </h2>
-                        <p style={{ whiteSpace: 'nowrap' }}>
-                            {locale === 'en'
-                                ? 'Choose a strong password for your account.'
-                                : 'Choisissez un mot de passe sécurisé.'}
-                        </p>
-                    </div>
-
-                    {error && <div className="form-error">{error}</div>}
-
-                    {done ? (
-                        <div
-                            style={{
-                                padding: '18px',
-                                borderRadius: '14px',
-                                background: '#f0fdf4',
-                                border: '1px solid #bbf7d0',
-                                color: '#166534',
-                                fontSize: '14px',
-                                lineHeight: '1.7',
-                                marginBottom: '20px',
-                            }}
-                        >
-                            <strong style={{ display: 'block', marginBottom: '6px' }}>
-                                {locale === 'en'
-                                    ? '✓ Password updated!'
-                                    : '✓ Mot de passe mis à jour !'}
-                            </strong>
-                            {locale === 'en'
-                                ? 'Your password has been reset. Redirecting you to sign in…'
-                                : 'Votre mot de passe a été réinitialisé. Redirection vers la connexion…'}
+        <div className="auth-viewport">
+            <div className="auth-container">
+                {/* Form Side */}
+                <div className="auth-form-panel">
+                    <div className="auth-header-bar">
+                        <div className="auth-logo-wrapper">
+                            <Logo />
                         </div>
-                    ) : (
-                        <>
-                            <AuthInput
-                                icon={<Mail />}
-                                label={locale === 'en' ? 'Email address' : 'Adresse e-mail'}
-                            >
-                                <input
-                                    placeholder="owner@company.com"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    autoComplete="email"
-                                />
-                            </AuthInput>
-                            <AuthInput
-                                icon={<LockKeyhole />}
-                                label={locale === 'en' ? 'New password' : 'Nouveau mot de passe'}
-                                action={
-                                    <button
-                                        type="button"
-                                        className="password-toggle"
-                                        onClick={() => setShowPw((v) => !v)}
-                                        aria-label="Toggle password"
-                                    >
-                                        {showPw ? <EyeOff /> : <Eye />}
-                                    </button>
-                                }
-                            >
-                                <input
-                                    placeholder={
-                                        locale === 'en'
-                                            ? 'At least 10 characters'
-                                            : 'Au moins 10 caractères'
-                                    }
-                                    type={showPw ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    minLength={10}
-                                    autoComplete="new-password"
-                                />
-                            </AuthInput>
-                            <AuthInput
-                                icon={<LockKeyhole />}
-                                label={
-                                    locale === 'en'
-                                        ? 'Confirm password'
-                                        : 'Confirmer le mot de passe'
-                                }
-                            >
-                                <input
-                                    placeholder={
-                                        locale === 'en'
-                                            ? 'Repeat your new password'
-                                            : 'Répétez le mot de passe'
-                                    }
-                                    type={showPw ? 'text' : 'password'}
-                                    value={confirm}
-                                    onChange={(e) => setConfirm(e.target.value)}
-                                    required
-                                    autoComplete="new-password"
-                                />
-                            </AuthInput>
-                            <button className="auth-submit" disabled={busy}>
-                                <span>
-                                    {busy
-                                        ? locale === 'en'
-                                            ? 'Saving...'
-                                            : 'Enregistrement...'
-                                        : locale === 'en'
-                                          ? 'Reset password'
-                                          : 'Réinitialiser'}
-                                </span>
-                                <i>
-                                    <ChevronRight size={18} />
-                                </i>
-                            </button>
-                        </>
-                    )}
-
-                    <div className="auth-switch" style={{ justifyContent: 'center' }}>
-                        <button type="button" onClick={() => (window.location.href = '/')}>
-                            {locale === 'en' ? '← Back to sign in' : '← Retour à la connexion'}
+                        <button
+                            type="button"
+                            className="auth-lang-btn"
+                            onClick={() => setLocale(isFr ? 'en' : 'fr')}
+                            title={isFr ? 'Switch to English' : 'Passer en Français'}
+                        >
+                            <Globe size={15} />
+                            <span className="auth-lang-text">{isFr ? 'EN' : 'FR'}</span>
                         </button>
                     </div>
-                    <p className="auth-assurance">
-                        <ShieldCheck /> Your connection is encrypted and protected.
-                    </p>
-                </form>
-            </section>
-        </main>
+
+                    <div className="auth-body">
+                        <div className="auth-heading">
+                            <h1 className="auth-title">
+                                {isFr ? 'Définir un nouveau mot de passe' : 'Set a new password'}
+                            </h1>
+                            <p className="auth-subtitle">
+                                {isFr
+                                    ? 'Choisissez un mot de passe sécurisé comportant au moins 10 caractères.'
+                                    : 'Create a new secure password of at least 10 characters.'}
+                            </p>
+                        </div>
+
+                        {error && (
+                            <div className="auth-alert auth-alert-error">
+                                <AlertCircle size={16} />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        {done ? (
+                            <div className="auth-alert auth-alert-success">
+                                <div className="flex gap-2.5">
+                                    <Check size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong className="block font-semibold text-emerald-900 mb-1">
+                                            {isFr ? 'Mot de passe mis à jour !' : 'Password updated successfully!'}
+                                        </strong>
+                                        <p className="text-emerald-800 text-sm leading-relaxed">
+                                            {isFr
+                                                ? 'Votre mot de passe a été réinitialisé. Redirection vers la page de connexion...'
+                                                : 'Your password has been changed. Redirecting you to sign in...'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={submit} className="auth-form">
+                                <AuthInput
+                                    icon={<Mail size={18} />}
+                                    label={isFr ? 'Adresse e-mail' : 'Email address'}
+                                >
+                                    <input
+                                        placeholder="owner@company.com"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        autoComplete="email"
+                                        className="auth-input-control"
+                                    />
+                                </AuthInput>
+
+                                <AuthInput
+                                    icon={<LockKeyhole size={18} />}
+                                    label={isFr ? 'Nouveau mot de passe' : 'New password'}
+                                    action={
+                                        <button
+                                            type="button"
+                                            className="auth-password-toggle-btn"
+                                            onClick={() => setShowPw((v) => !v)}
+                                            aria-label="Toggle password"
+                                        >
+                                            {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    }
+                                >
+                                    <input
+                                        placeholder={
+                                            isFr
+                                                ? 'Au moins 10 caractères'
+                                                : 'At least 10 characters'
+                                        }
+                                        type={showPw ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        minLength={10}
+                                        autoComplete="new-password"
+                                        autoFocus
+                                        className="auth-input-control"
+                                    />
+                                </AuthInput>
+
+                                <AuthInput
+                                    icon={<LockKeyhole size={18} />}
+                                    label={isFr ? 'Confirmer le mot de passe' : 'Confirm password'}
+                                >
+                                    <input
+                                        placeholder={
+                                            isFr
+                                                ? 'Répétez le nouveau mot de passe'
+                                                : 'Repeat new password'
+                                        }
+                                        type={showPw ? 'text' : 'password'}
+                                        value={confirm}
+                                        onChange={(e) => setConfirm(e.target.value)}
+                                        required
+                                        autoComplete="new-password"
+                                        className="auth-input-control"
+                                    />
+                                </AuthInput>
+
+                                <button
+                                    type="submit"
+                                    className="auth-btn-primary"
+                                    disabled={busy}
+                                >
+                                    <span>
+                                        {busy
+                                            ? isFr
+                                                ? 'Enregistrement...'
+                                                : 'Saving...'
+                                            : isFr
+                                              ? 'Réinitialiser le mot de passe'
+                                              : 'Save new password'}
+                                    </span>
+                                    <ChevronRight size={18} />
+                                </button>
+                            </form>
+                        )}
+
+                        <div className="auth-footer-switch">
+                            <button
+                                type="button"
+                                className="auth-link-back"
+                                onClick={() => (window.location.href = '/')}
+                            >
+                                <ArrowLeft size={15} />
+                                <span>
+                                    {isFr ? 'Retour à la connexion' : 'Back to sign in'}
+                                </span>
+                            </button>
+                        </div>
+
+                        <div className="auth-assurance-badge">
+                            <Shield size={13} className="text-blue-600" />
+                            <span>
+                                {isFr
+                                    ? 'Votre connexion est chiffrée et protégée'
+                                    : 'Your connection is encrypted and protected'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="auth-bottom-copyright">
+                        <span>© 2026 ICYEREKEZO OMS. All rights reserved.</span>
+                    </div>
+                </div>
+
+                {/* Showcase Side */}
+                <AuthShowcase locale={locale} />
+            </div>
+        </div>
     );
 }

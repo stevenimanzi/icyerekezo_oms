@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
-import { Languages, Mail, Send, ShieldCheck } from 'lucide-react';
+import {
+    AlertCircle,
+    ArrowLeft,
+    Check,
+    ChevronRight,
+    Globe,
+    Mail,
+    Shield,
+} from 'lucide-react';
 import { api } from '../core/api';
 import { type Locale } from '../core/types';
 import { Logo } from '../app/Logo';
 import { AuthInput } from './AuthInput';
+import { AuthShowcase } from './AuthShowcase';
 
 export function ForgotPasswordPage() {
     const [locale, setLocale] = useState<Locale>('en');
@@ -31,112 +40,131 @@ export function ForgotPasswordPage() {
         }
     };
 
+    const isFr = locale === 'fr';
+
     return (
-        <main
-            className="auth-page"
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '100svh',
-                background: '#fff',
-            }}
-        >
-            <section
-                className="auth-form-side"
-                style={{ width: 'min(100%, 480px)', padding: '48px 32px', background: '#fff' }}
-            >
-                <div className="auth-topbar">
-                    <div className="auth-mobile-logo">
-                        <Logo />
-                    </div>
-                    <button
-                        type="button"
-                        className="auth-language"
-                        onClick={() => setLocale(locale === 'en' ? 'fr' : 'en')}
-                    >
-                        <Languages size={18} />
-                        {locale === 'en' ? 'Francais' : 'English'}
-                    </button>
-                </div>
-                <form
-                    className="auth-card"
-                    onSubmit={submit}
-                    style={{ width: '100%', maxWidth: 400, margin: '0 auto' }}
-                >
-                    <div className="auth-heading">
-                        <h2 style={{ fontSize: 'clamp(28px,3vw,38px)' }}>
-                            {locale === 'en' ? 'Forgot your password?' : 'Mot de passe oublié ?'}
-                        </h2>
-                        <p style={{ whiteSpace: 'nowrap' }}>
-                            {locale === 'en'
-                                ? 'Enter your email to receive a reset link.'
-                                : 'Entrez votre e-mail pour recevoir un lien.'}
-                        </p>
-                    </div>
-
-                    {error && <div className="form-error">{error}</div>}
-
-                    {sent ? (
-                        <div
-                            style={{
-                                padding: '18px',
-                                borderRadius: '14px',
-                                background: '#f0fdf4',
-                                border: '1px solid #bbf7d0',
-                                color: '#166534',
-                                fontSize: '14px',
-                                lineHeight: '1.7',
-                                marginBottom: '20px',
-                            }}
-                        >
-                            <strong style={{ display: 'block', marginBottom: '6px' }}>
-                                {locale === 'en' ? '✓ Reset link sent!' : '✓ Lien envoyé !'}
-                            </strong>
-                            {locale === 'en'
-                                ? `If an account exists for ${email}, we've sent a reset link from support@icyerekezooms.com. It can take a few minutes to arrive — check your spam or junk folder if you don't see it.`
-                                : `Si un compte existe pour ${email}, nous avons envoyé un lien depuis support@icyerekezooms.com. Cela peut prendre quelques minutes — vérifiez votre dossier spam si vous ne le voyez pas.`}
+        <div className="auth-viewport">
+            <div className="auth-container">
+                {/* Form Side */}
+                <div className="auth-form-panel">
+                    <div className="auth-header-bar">
+                        <div className="auth-logo-wrapper">
+                            <Logo />
                         </div>
-                    ) : (
-                        <>
-                            <AuthInput
-                                icon={<Mail />}
-                                label={locale === 'en' ? 'Email address' : 'Adresse e-mail'}
-                            >
-                                <input
-                                    placeholder="owner@company.com"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    autoFocus
-                                    autoComplete="email"
-                                />
-                            </AuthInput>
-                            <button className="auth-submit" disabled={busy}>
-                                <span>
-                                    {busy
-                                        ? locale === 'en'
-                                            ? 'Sending...'
-                                            : 'Envoi...'
-                                        : locale === 'en'
-                                          ? 'Send reset link'
-                                          : 'Envoyer le lien'}
-                                </span>
-                            </button>
-                        </>
-                    )}
-
-                    <div className="auth-switch" style={{ justifyContent: 'center' }}>
-                        <button type="button" onClick={() => (window.location.href = '/')}>
-                            {locale === 'en' ? '← Back to sign in' : '← Retour à la connexion'}
+                        <button
+                            type="button"
+                            className="auth-lang-btn"
+                            onClick={() => setLocale(isFr ? 'en' : 'fr')}
+                            title={isFr ? 'Switch to English' : 'Passer en Français'}
+                        >
+                            <Globe size={15} />
+                            <span className="auth-lang-text">{isFr ? 'EN' : 'FR'}</span>
                         </button>
                     </div>
-                    <p className="auth-assurance">
-                        <ShieldCheck /> Your connection is encrypted and protected.
-                    </p>
-                </form>
-            </section>
-        </main>
+
+                    <div className="auth-body">
+                        <div className="auth-heading">
+                            <h1 className="auth-title">
+                                {isFr ? 'Mot de passe oublié ?' : 'Forgot your password?'}
+                            </h1>
+                            <p className="auth-subtitle">
+                                {isFr
+                                    ? 'Saisissez votre e-mail pour recevoir un lien sécurisé de réinitialisation.'
+                                    : 'Enter your registered email address to receive a password reset link.'}
+                            </p>
+                        </div>
+
+                        {error && (
+                            <div className="auth-alert auth-alert-error">
+                                <AlertCircle size={16} />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        {sent ? (
+                            <div className="auth-alert auth-alert-success">
+                                <div className="flex gap-2.5">
+                                    <Check size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong className="block font-semibold text-emerald-900 mb-1">
+                                            {isFr ? 'Lien de réinitialisation envoyé !' : 'Reset link sent!'}
+                                        </strong>
+                                        <p className="text-emerald-800 text-sm leading-relaxed">
+                                            {isFr
+                                                ? `Si un compte existe pour ${email}, nous avons envoyé les instructions de réinitialisation depuis support@icyerekezooms.com.`
+                                                : `If an account exists for ${email}, we've sent reset instructions from support@icyerekezooms.com.`}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={submit} className="auth-form">
+                                <AuthInput
+                                    icon={<Mail size={18} />}
+                                    label={isFr ? 'Adresse e-mail' : 'Email address'}
+                                >
+                                    <input
+                                        placeholder="owner@company.com"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        autoFocus
+                                        autoComplete="email"
+                                        className="auth-input-control"
+                                    />
+                                </AuthInput>
+
+                                <button
+                                    type="submit"
+                                    className="auth-btn-primary"
+                                    disabled={busy}
+                                >
+                                    <span>
+                                        {busy
+                                            ? isFr
+                                                ? 'Envoi en cours...'
+                                                : 'Sending link...'
+                                            : isFr
+                                              ? 'Envoyer le lien de réinitialisation'
+                                              : 'Send reset link'}
+                                    </span>
+                                    <ChevronRight size={18} />
+                                </button>
+                            </form>
+                        )}
+
+                        <div className="auth-footer-switch">
+                            <button
+                                type="button"
+                                className="auth-link-back"
+                                onClick={() => (window.location.href = '/')}
+                            >
+                                <ArrowLeft size={15} />
+                                <span>
+                                    {isFr ? 'Retour à la connexion' : 'Back to sign in'}
+                                </span>
+                            </button>
+                        </div>
+
+                        <div className="auth-assurance-badge">
+                            <Shield size={13} className="text-blue-600" />
+                            <span>
+                                {isFr
+                                    ? 'Votre connexion est chiffrée et protégée'
+                                    : 'Your connection is encrypted and protected'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="auth-bottom-copyright">
+                        <span>© 2026 ICYEREKEZO OMS. All rights reserved.</span>
+                    </div>
+                </div>
+
+                {/* Showcase Side */}
+                <AuthShowcase locale={locale} />
+            </div>
+        </div>
     );
 }
