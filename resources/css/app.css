@@ -11136,3 +11136,52 @@ button.secondary-btn {
     justify-content: center !important;
     border-radius: 6px !important;
 }
+
+/* Universal Sleek Compact Table System - Single-Line No-Wrap Cells & Reduced Row Heights */
+.report-data-table,
+.excel-table-container table,
+.report-print-table,
+.ui-table,
+.admin-table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+.report-data-table th,
+.report-data-table td,
+.excel-table-container th,
+.excel-table-container td,
+.report-print-table th,
+.report-print-table td,
+.ui-table th,
+.ui-table td,
+.admin-table th,
+.admin-table td {
+    padding: 5px 8px !important;
+    white-space: nowrap !important;
+    line-height: 1.25 !important;
+    font-size: 0.75rem !important;
+    vertical-align: middle !important;
+}
+
+.report-data-table th,
+.excel-table-container th,
+.report-print-table th,
+.ui-table th,
+.admin-table th {
+    font-size: 0.70rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+
+.report-table-scroll-wrapper,
+.ui-table-wrap,
+.admin-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}

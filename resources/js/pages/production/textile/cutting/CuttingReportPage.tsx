@@ -383,6 +383,39 @@ export default function CuttingReportPage({ user, locale }: Props) {
 
             {error && <div className="admin-alert error no-print" style={{ marginBottom: 16 }}>{error}</div>}
 
+            {/* 5 STANDARDIZED EXTERNAL KPIS OUTSIDE REPORT SHEET */}
+            <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
+                <article className="ui-kpi">
+                    <small>Received (Input)</small>
+                    <strong style={{ color: '#166534' }}>{num(totalFabricUsed)} m</strong>
+                    <p>Fabric material allocated</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Used Items</small>
+                    <strong>{num(totalFabricUsed)} m</strong>
+                    <p>Consumed in cutting</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Output Produced</small>
+                    <strong style={{ color: '#166534' }}>{num(totalOutputPieces)} pcs</strong>
+                    <p>Cut pieces passed to sewing</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Damaged / Waste</small>
+                    <strong style={{ color: totalDamaged > 0 ? '#b91c1c' : undefined }}>{num(totalDamaged)} pcs</strong>
+                    <p>Scraps &amp; defective cuts</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Quality Control</small>
+                    <strong style={{ color: qcPassRate >= 80 ? '#166534' : '#b45309' }}>{qcPassRate}%</strong>
+                    <p>QC inspected &amp; verified</p>
+                </article>
+            </div>
+
             {/* PAPER / EXCEL REPORT SHEET CONTAINER */}
             <article
                 className="excel-table-container"
@@ -410,35 +443,6 @@ export default function CuttingReportPage({ user, locale }: Props) {
                         <div><b>DEPARTMENT:</b> CUTTING</div>
                         <div><b>PREPARED BY:</b> {user.name} (Cutting Operator)</div>
                         <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({qcPassRate}%)</span></div>
-                    </div>
-                </div>
-
-                {/* 5-COLUMN EXCEL KPI SUMMARY MATRIX */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#ffffff', textAlign: 'center' }}>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>1. Received (Input)</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalFabricUsed)} m</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Fabric material allocated</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>2. Used Items</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalFabricUsed)} m</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Consumed in cutting</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>3. Output Produced</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalOutputPieces)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Cut pieces passed to sewing</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>4. Damaged / Waste</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: totalDamaged > 0 ? '#b91c1c' : '#000000' }}>{num(totalDamaged)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Scraps &amp; defective cuts</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>5. Quality Control</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#000000' }}>{qcPassRate}%</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>QC Inspected &amp; Verified</div>
                     </div>
                 </div>
 

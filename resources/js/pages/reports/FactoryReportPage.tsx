@@ -478,6 +478,43 @@ export default function FactoryReportPage({ user, locale }: Props) {
 
             {error && <div className="admin-alert error no-print" style={{ marginBottom: 16 }}>{error}</div>}
 
+            {/* 5 STANDARDIZED EXTERNAL KPIS OUTSIDE REPORT SHEET */}
+            <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
+                <article className="ui-kpi">
+                    <small>Received (Input)</small>
+                    <strong style={{ color: '#166534' }}>
+                        {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : `${num(grandInputPieces)} pcs`}
+                    </strong>
+                    <p>Fabric &amp; parts allocated</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Used Items</small>
+                    <strong>
+                        {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : `${num(grandInputPieces)} pcs`}
+                    </strong>
+                    <p>Consumed in production</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Output Produced</small>
+                    <strong style={{ color: '#166534' }}>{num(grandOutput)} pcs</strong>
+                    <p>Total units produced</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Damaged / Waste</small>
+                    <strong style={{ color: grandDamaged > 0 ? '#b91c1c' : undefined }}>{num(grandDamaged)} pcs</strong>
+                    <p>Scraps, rework &amp; defects</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Quality Control</small>
+                    <strong style={{ color: overallPassRate >= 80 ? '#166534' : '#b45309' }}>{overallPassRate}%</strong>
+                    <p>Factory-wide verified</p>
+                </article>
+            </div>
+
             {/* PAPER / EXCEL REPORT SHEET CONTAINER */}
             <article
                 className="excel-table-container"
@@ -507,39 +544,6 @@ export default function FactoryReportPage({ user, locale }: Props) {
                         <div><b>DEPARTMENTS:</b> {selectedDept ? selectedDept.toUpperCase() : 'ALL DEPARTMENTS'}</div>
                         <div><b>PREPARED BY:</b> {user.name} (Factory Operations Manager)</div>
                         <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({overallPassRate}%)</span></div>
-                    </div>
-                </div>
-
-                {/* 5-COLUMN EXCEL KPI SUMMARY MATRIX */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#ffffff', textAlign: 'center' }}>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>1. Received (Input)</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>
-                            {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : `${num(grandInputPieces)} pcs`}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Fabric &amp; parts allocated</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>2. Used Items</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>
-                            {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : `${num(grandInputPieces)} pcs`}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Consumed in production</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>3. Output Produced</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(grandOutput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Total units produced</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>4. Damaged / Waste</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: grandDamaged > 0 ? '#b91c1c' : '#000000' }}>{num(grandDamaged)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Scraps, rework &amp; defects</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>5. Quality Control</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#000000' }}>{overallPassRate}%</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Factory-wide Verified</div>
                     </div>
                 </div>
 

@@ -243,21 +243,23 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                     border-collapse: separate;
                     border-spacing: 0;
                     border: 1px solid var(--line);
-                    border-radius: 10px;
+                    border-radius: 8px;
                     overflow: hidden;
-                    font-size: 0.8rem;
+                    font-size: 0.75rem;
                 }
                 .report-data-table th {
                     background: var(--soft, rgba(248, 250, 252, 0.6));
                     color: var(--muted);
-                    font-size: 0.72rem;
+                    font-size: 0.69rem;
                     font-weight: 700;
                     text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    padding: 10px 12px;
+                    letter-spacing: 0.04em;
+                    padding: 5px 8px !important;
                     border-bottom: 1px solid var(--line);
                     border-right: 1px solid var(--line);
                     text-align: left;
+                    white-space: nowrap !important;
+                    line-height: 1.2 !important;
                 }
                 .report-data-table th:last-child {
                     border-right: none;
@@ -265,10 +267,13 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                 .report-data-table td {
                     background: var(--panel);
                     color: var(--text);
-                    padding: 9px 12px;
+                    padding: 5px 8px !important;
                     border-bottom: 1px solid var(--line);
                     border-right: 1px solid var(--line);
                     transition: background 0.15s ease;
+                    white-space: nowrap !important;
+                    line-height: 1.25 !important;
+                    font-size: 0.74rem !important;
                 }
                 .report-data-table td:last-child {
                     border-right: none;
@@ -283,6 +288,9 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                     background: var(--soft, rgba(248, 250, 252, 0.8));
                     font-weight: 800;
                     border-top: 2px solid var(--line);
+                    padding: 5px 8px !important;
+                    white-space: nowrap !important;
+                    font-size: 0.74rem !important;
                 }
                 .print-signatures-block {
                     display: none !important;
@@ -574,6 +582,39 @@ export default function WarehouseReportPage({ user, locale }: Props) {
 
             {error && <div className="admin-alert error no-print" style={{ marginBottom: 16 }}>{error}</div>}
 
+            {/* 5 STANDARDIZED EXTERNAL KPIS OUTSIDE REPORT SHEET */}
+            <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
+                <article className="ui-kpi">
+                    <small>{locale === 'en' ? 'Total Stock Value' : 'Valeur Totale'}</small>
+                    <strong>{money(totalStockValuation)}</strong>
+                    <p>{num(totalOnHandUnits)} {locale === 'en' ? 'total items in store' : 'articles en magasin'}</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>{locale === 'en' ? 'Items Received' : 'Articles Reçus'}</small>
+                    <strong style={{ color: '#166534' }}>+{num(periodReceivedUnits)}</strong>
+                    <p>{locale === 'en' ? 'New deliveries' : 'Livraisons reçues'}</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>{locale === 'en' ? 'Items Sent Out' : 'Articles Sortis'}</small>
+                    <strong style={{ color: '#b45309' }}>-{num(periodIssuedUnits)}</strong>
+                    <p>{locale === 'en' ? 'Sent to lines / buyers' : 'Envoyé aux lignes'}</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>{locale === 'en' ? 'Running Low' : 'Stock Bas'}</small>
+                    <strong style={{ color: lowStockCount > 0 ? '#b45309' : undefined }}>{lowStockCount}</strong>
+                    <p>{locale === 'en' ? 'Needs reordering' : 'À commander bientôt'}</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>{locale === 'en' ? 'Out of Stock' : 'Stock Épuisé'}</small>
+                    <strong style={{ color: outOfStockCount > 0 ? '#b91c1c' : undefined }}>{outOfStockCount}</strong>
+                    <p>{locale === 'en' ? 'Completely empty' : 'Stock épuisé'}</p>
+                </article>
+            </div>
+
             {/* OFFICIAL AUDIT REPORT CARD CONTAINER (SUPPORTS LIGHT & DARK MODE ON SCREEN, PURE WHITE ON PRINT) */}
             <article className="warehouse-report-card">
                 {/* OFFICIAL DOCUMENT HEADER */}
@@ -624,69 +665,6 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             <span style={{ fontWeight: 800, textDecoration: 'underline', color: Number(optimalRate) >= 80 ? '#10b981' : '#f59e0b' }}>
                                 {Number(optimalRate) >= 80 ? 'OPTIMAL' : 'ATTENTION REQUIRED'} ({optimalRate}%)
                             </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 5-COLUMN KPI SUMMARY MATRIX */}
-                <div className="report-kpi-matrix">
-                    <div className="report-kpi-cell">
-                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            1. TOTAL STOCK VALUE
-                        </div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text)', marginTop: 4 }}>
-                            {money(totalStockValuation)}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {num(totalOnHandUnits)} {locale === 'en' ? 'total items in store' : 'articles en magasin'}
-                        </div>
-                    </div>
-
-                    <div className="report-kpi-cell">
-                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            2. ITEMS RECEIVED (STOCK IN)
-                        </div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981', marginTop: 4 }}>
-                            +{num(periodReceivedUnits)}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {locale === 'en' ? 'New deliveries from suppliers' : 'Livraisons fournisseurs'}
-                        </div>
-                    </div>
-
-                    <div className="report-kpi-cell">
-                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            3. ITEMS SENT OUT (STOCK OUT)
-                        </div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>
-                            -{num(periodIssuedUnits)}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {locale === 'en' ? 'Sent to work lines or buyers' : 'Envoyé en production ou clients'}
-                        </div>
-                    </div>
-
-                    <div className="report-kpi-cell">
-                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            4. RUNNING LOW
-                        </div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: lowStockCount > 0 ? '#f59e0b' : 'var(--text)', marginTop: 4 }}>
-                            {lowStockCount}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {locale === 'en' ? 'Needs new order soon' : 'À commander bientôt'}
-                        </div>
-                    </div>
-
-                    <div className="report-kpi-cell">
-                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            5. OUT OF STOCK
-                        </div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: outOfStockCount > 0 ? '#ef4444' : 'var(--text)', marginTop: 4 }}>
-                            {outOfStockCount}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {locale === 'en' ? 'Completely empty (0 left)' : 'Stock épuisé (0)'}
                         </div>
                     </div>
                 </div>
@@ -788,13 +766,13 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colSpan={5} style={{ textTransform: 'uppercase' }}>
+                                    <td colSpan={4} style={{ textTransform: 'uppercase' }}>
                                         {locale === 'en' ? 'TOTAL STOCK VALUE & QUANTITY' : 'VALEUR TOTALE & QUANTITÉ EN STOCK'}
                                     </td>
-                                    <td style={{ textAlign: 'right' }}>{num(totalOnHandUnits)}</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 800 }}>{num(totalOnHandUnits)}</td>
                                     <td colSpan={3}></td>
-                                    <td style={{ textAlign: 'right' }}>{money(totalStockValuation)}</td>
-                                    <td style={{ textAlign: 'center', fontSize: '0.72rem', color: '#10b981' }}>
+                                    <td style={{ textAlign: 'right', fontWeight: 800 }}>{money(totalStockValuation)}</td>
+                                    <td style={{ textAlign: 'center', fontSize: '0.72rem', color: '#166534', fontWeight: 700 }}>
                                         {optimalRate}% {locale === 'en' ? 'Optimal' : 'Conforme'}
                                     </td>
                                 </tr>
@@ -902,10 +880,10 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colSpan={6} style={{ textTransform: 'uppercase' }}>
+                                    <td colSpan={5} style={{ textTransform: 'uppercase' }}>
                                         {locale === 'en' ? 'STOCK ADDED VS SENT OUT' : 'DIFFÉRENCE ENTRÉES VS SORTIES'}
                                     </td>
-                                    <td style={{ textAlign: 'right', color: periodReceivedUnits >= periodIssuedUnits ? '#10b981' : '#ef4444' }}>
+                                    <td style={{ textAlign: 'right', fontWeight: 800, color: periodReceivedUnits >= periodIssuedUnits ? '#166534' : '#b91c1c' }}>
                                         {num(periodReceivedUnits - periodIssuedUnits)}
                                     </td>
                                     <td colSpan={4} style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>

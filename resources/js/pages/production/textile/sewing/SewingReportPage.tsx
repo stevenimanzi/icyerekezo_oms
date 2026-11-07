@@ -377,6 +377,39 @@ export default function SewingReportPage({ user, locale }: Props) {
 
             {error && <div className="admin-alert error no-print" style={{ marginBottom: 16 }}>{error}</div>}
 
+            {/* 5 STANDARDIZED EXTERNAL KPIS OUTSIDE REPORT SHEET */}
+            <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
+                <article className="ui-kpi">
+                    <small>Received (Input)</small>
+                    <strong style={{ color: '#166534' }}>{num(totalInput || totalOutput)} pcs</strong>
+                    <p>Cut pieces received</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Fed to Lines</small>
+                    <strong>{num(totalOutput)} pcs</strong>
+                    <p>Active in workstations</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Output Produced</small>
+                    <strong style={{ color: '#166534' }}>{num(totalOutput)} pcs</strong>
+                    <p>Sewn garments finished</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Damaged / Rework</small>
+                    <strong style={{ color: totalDamaged > 0 ? '#b91c1c' : undefined }}>{num(totalDamaged)} pcs</strong>
+                    <p>Stitch flaws / defect rework</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Quality Control</small>
+                    <strong style={{ color: passRate >= 80 ? '#166534' : '#b45309' }}>{passRate}%</strong>
+                    <p>Inline verified passed</p>
+                </article>
+            </div>
+
             {/* EXCEL SHEET CONTAINER */}
             <article
                 className="excel-table-container"
@@ -403,35 +436,6 @@ export default function SewingReportPage({ user, locale }: Props) {
                         <div><b>DEPARTMENT:</b> SEWING</div>
                         <div><b>PREPARED BY:</b> {user.name} (Sewing Operator)</div>
                         <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({passRate}%)</span></div>
-                    </div>
-                </div>
-
-                {/* 5-COLUMN EXCEL KPI SUMMARY */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#ffffff', textAlign: 'center' }}>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>1. Received (Input)</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalInput || totalOutput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Cut pieces received</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>2. Fed to Lines</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalOutput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Active in workstations</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>3. Output Produced</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalOutput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Sewn garments finished</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>4. Damaged / Rework</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: totalDamaged > 0 ? '#b91c1c' : '#000000' }}>{num(totalDamaged)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Stitch flaws / defect rework</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>5. Quality Control</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#000000' }}>{passRate}%</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Inline verified passed</div>
                     </div>
                 </div>
 

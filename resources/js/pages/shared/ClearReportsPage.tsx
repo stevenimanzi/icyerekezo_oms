@@ -955,10 +955,9 @@ function LogisticsDocument({ data }: any) {
             />
             <Table
                 title="Warehouse stock balances"
-                headers={['Item', 'Code', 'Warehouse', 'Opening', 'Received', 'Issued', 'Closing']}
+                headers={['Item', 'Warehouse', 'Opening', 'Received', 'Issued', 'Closing']}
                 rows={(data.stock_register || []).map((row: any) => [
                     row.item,
-                    row.sku,
                     row.warehouse,
                     number(row.opening_balance),
                     number(row.quantity_in),
@@ -1040,7 +1039,6 @@ function Document({ data, departmentId }: any) {
                     title="Warehouse stock register"
                     headers={[
                         'Item',
-                        'Code',
                         'Warehouse',
                         'Opening balance',
                         'Quantity in',
@@ -1049,7 +1047,6 @@ function Document({ data, departmentId }: any) {
                     ]}
                     rows={(data.stock_register || []).map((row: any) => [
                         row.item,
-                        row.sku,
                         row.warehouse,
                         number(row.opening_balance),
                         number(row.quantity_in),

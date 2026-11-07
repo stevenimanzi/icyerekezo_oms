@@ -417,6 +417,39 @@ export default function PackingReportPage({ user, locale }: Props) {
 
             {error && <div className="admin-alert error no-print" style={{ marginBottom: 16 }}>{error}</div>}
 
+            {/* 5 STANDARDIZED EXTERNAL KPIS OUTSIDE REPORT SHEET */}
+            <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
+                <article className="ui-kpi">
+                    <small>Received (Input)</small>
+                    <strong style={{ color: '#166534' }}>{num(totalInput)} pcs</strong>
+                    <p>Finished garments received</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Used Items</small>
+                    <strong>{num(totalOutput)} pcs</strong>
+                    <p>Polybags &amp; boxes consumed</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Output Produced</small>
+                    <strong style={{ color: '#166534' }}>{num(totalOutput)} pcs</strong>
+                    <p>Packaged units ready for stock</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Damaged / Waste</small>
+                    <strong style={{ color: totalDamaged > 0 ? '#b91c1c' : undefined }}>{num(totalDamaged)} pcs</strong>
+                    <p>Packaging flaws &amp; torn bags</p>
+                </article>
+
+                <article className="ui-kpi">
+                    <small>Quality Control</small>
+                    <strong style={{ color: qcPassRate >= 80 ? '#166534' : '#b45309' }}>{qcPassRate}%</strong>
+                    <p>Final AQL verified</p>
+                </article>
+            </div>
+
             {/* PAPER / EXCEL REPORT SHEET CONTAINER */}
             <article
                 className="excel-table-container"
@@ -444,35 +477,6 @@ export default function PackingReportPage({ user, locale }: Props) {
                         <div><b>DEPARTMENT:</b> PACKING</div>
                         <div><b>PREPARED BY:</b> {user.name} (Packing Operator)</div>
                         <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({qcPassRate}%)</span></div>
-                    </div>
-                </div>
-
-                {/* 5-COLUMN EXCEL KPI SUMMARY MATRIX */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1pt solid #000000', marginBottom: 18, background: '#ffffff', textAlign: 'center' }}>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>1. Received (Input)</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalInput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Finished garments from finishing</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>2. Used Items</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalOutput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Polybags &amp; boxes consumed</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>3. Output Produced</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>{num(totalOutput)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Packaged units ready for stock</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>4. Damaged / Waste</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: totalDamaged > 0 ? '#b91c1c' : '#000000' }}>{num(totalDamaged)} pcs</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Packaging flaws &amp; torn bags</div>
-                    </div>
-                    <div style={{ padding: '10px 8px', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>5. Quality Control</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: '#000000' }}>{qcPassRate}%</div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>Final AQL Verified</div>
                     </div>
                 </div>
 
