@@ -10835,17 +10835,26 @@ nav[aria-label="Factory settings sections"]::-webkit-scrollbar,
     color: var(--brand, #3b82f6) !important;
 }
 
-/* Universal Filters & Search Input Polish */
-input[type='search'],
-input[type='text'],
-input[type='date'],
-select,
+/* Universal Filters & Search Input Polish (Excluding Auth Inputs) */
+.ui-toolbar input,
+.ui-toolbar select,
 .ui-field input,
 .ui-field select,
 .ow-controls select,
 .ow-controls input,
-.ui-toolbar select,
-.ui-toolbar input {
+.filters-bar input,
+.filters-bar select,
+.filter-row input,
+.filter-row select,
+.report-filters input,
+.report-filters select,
+.table-filter-bar input,
+.table-filter-bar select,
+.school-filter-grid input,
+.school-filter-grid select,
+input[type='search']:not(.auth-input-control),
+input[type='text']:not(.auth-input-control):not(.auth-field input),
+input[type='date'] {
     height: 36px !important;
     border-radius: 6px !important;
     border: 1px solid var(--line, #e2e8f0) !important;
@@ -10857,8 +10866,36 @@ select,
     transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
-[data-theme='dark'] input[type='search'],
-[data-theme='dark'] input[type='text'],
+/* Authentication Screen Inputs - Maintain Clean Full Height & Correct Left/Right Padding For Icons */
+.auth-input-wrapper input,
+.auth-input-control,
+input.auth-input-control {
+    height: 48px !important;
+    min-height: 48px !important;
+    border-radius: 14px !important;
+    padding: 0 44px 0 44px !important;
+    font-size: 14px !important;
+    color: #0f172a !important;
+    background: #ffffff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Hide Microsoft Edge / IE duplicate native password reveal eye and clear icon */
+input::-ms-reveal,
+input::-ms-clear,
+.auth-input-control::-ms-reveal,
+.auth-input-control::-ms-clear,
+*::-ms-reveal,
+*::-ms-clear {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
+}
+
+[data-theme='dark'] input[type='search']:not(.auth-input-control),
+[data-theme='dark'] input[type='text']:not(.auth-input-control):not(.auth-field input),
 [data-theme='dark'] input[type='date'],
 [data-theme='dark'] select,
 [data-theme='dark'] .ui-field input,
