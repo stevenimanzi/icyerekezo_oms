@@ -76,7 +76,10 @@ export function ResetPasswordPage() {
     return (
         <div className="auth-viewport">
             <div className="auth-container">
-                {/* Form Side */}
+                {/* Left Panel: Showcase Side */}
+                <AuthShowcase locale={locale} />
+
+                {/* Right Panel: Form Side */}
                 <div className="auth-form-panel">
                     <div className="auth-header-bar">
                         <div className="auth-logo-wrapper">
@@ -241,9 +244,6 @@ export function ResetPasswordPage() {
                         <span>© 2026 ICYEREKEZO OMS. All rights reserved.</span>
                     </div>
                 </div>
-
-                {/* Showcase Side */}
-                <AuthShowcase locale={locale} />
             </div>
         </div>
     );

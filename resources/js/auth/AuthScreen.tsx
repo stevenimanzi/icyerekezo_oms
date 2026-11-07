@@ -423,7 +423,10 @@ export function AuthScreen({
     return (
         <div className="auth-viewport">
             <div className="auth-container">
-                {/* Left Panel: Form Side */}
+                {/* Left Panel: Showcase Side */}
+                <AuthShowcase locale={locale} />
+
+                {/* Right Panel: Form Side */}
                 <div className="auth-form-panel">
                     {/* Header Bar: Logo & Language Toggle */}
                     <div className="auth-header-bar">
@@ -1324,9 +1327,6 @@ export function AuthScreen({
                         <span>© 2026 ICYEREKEZO OMS. All rights reserved.</span>
                     </div>
                 </div>
-
-                {/* Right Panel: Showcase Side */}
-                <AuthShowcase locale={locale} />
             </div>
         </div>
     );

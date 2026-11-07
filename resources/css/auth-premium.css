@@ -32,7 +32,7 @@
         0 25px 60px -15px rgba(15, 23, 42, 0.08),
         0 0 0 1px rgba(226, 232, 240, 0.6);
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
     overflow: hidden;
     position: relative;
     box-sizing: border-box;
