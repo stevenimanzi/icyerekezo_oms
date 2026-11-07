@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "deploy": "powershell -ExecutionPolicy Bypass -File ./deploy.ps1"
     },
     "dependencies": {
         "@prettier/plugin-php": "^0.25.0",
