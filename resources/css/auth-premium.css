@@ -652,7 +652,75 @@
     font-size: 11px;
 }
 
-/* 4. Right Panel: Showcase Side */
+/* 4. Showcase Panel: Clean White/Slate Theme (Original Design) */
+.auth-showcase-panel.white-theme {
+    background: #f8fafc;
+    border-radius: 24px;
+    margin: 12px;
+    padding: clamp(32px, 3.5vw, 44px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-showcase-panel .showcase-header {
+    text-align: center;
+    max-width: 440px;
+    margin-top: 8px;
+}
+
+.auth-showcase-panel .showcase-title {
+    font-size: clamp(22px, 2.2vw, 28px);
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.02em;
+}
+
+.auth-showcase-panel .showcase-subtitle {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.auth-showcase-panel .showcase-illustration-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 16px 0;
+    flex: 1;
+}
+
+.auth-showcase-panel .showcase-illustration-img {
+    max-width: 330px;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 16px;
+}
+
+.auth-showcase-panel .showcase-footer {
+    text-align: center;
+    padding-top: 12px;
+    margin-bottom: 8px;
+}
+
+.auth-showcase-panel .direction-motto {
+    font-size: 13px;
+    color: #64748b;
+    font-style: italic;
+    font-weight: 500;
+}
+
+/* Fallback Showcase Side */
 .auth-showcase {
     position: relative;
     margin: 12px;
@@ -1032,7 +1100,8 @@
         border-radius: 24px;
     }
 
-    .auth-showcase {
+    .auth-showcase,
+    .auth-showcase-panel {
         display: none;
     }
 
