@@ -1,5 +1,5 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Edit3, Plus, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, Pencil, Plus, RefreshCw, X } from 'lucide-react';
 import { startPolling } from '../../core/polling';
 
 const PackagePlus = Plus;
@@ -371,7 +371,7 @@ export default function ProcurementOverviewPage() {
             {success && <div className="admin-alert success">{success}</div>}
             {false && canManage && tools.items.length > 0 && (
                 <div className="warehouse-edit-strip">
-                    <Edit3 />
+                    <Pencil size={14} />
                     <span>
                         <b>Edit an existing stock item</b>
                         <small>

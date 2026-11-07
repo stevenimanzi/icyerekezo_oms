@@ -2,7 +2,7 @@ import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
     ArrowRightLeft,
     ClipboardCheck,
-    Edit3,
+    Pencil,
     Plus,
     Power,
     RefreshCw,
@@ -816,7 +816,7 @@ function Catalog({ rows, money, quantity, edit, changeStatus, busy }: any) {
                                     <td>
                                         <div className="inventory-row-actions">
                                             <button disabled={busy} onClick={() => edit(entry)}>
-                                                <Edit3 />
+                                                <Pencil size={12} />
                                                 Edit
                                             </button>
                                             <button

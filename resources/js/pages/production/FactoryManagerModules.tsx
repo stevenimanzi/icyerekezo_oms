@@ -4,15 +4,15 @@ import {
     ArrowDown,
     ArrowUp,
     Download,
-    Edit3,
     Factory,
     FileText,
+    Pencil,
     Plus,
     Printer,
     RefreshCw,
     Save,
     Settings,
-    Trash2,
+    Trash,
     UserPlus,
     X,
 } from 'lucide-react';
@@ -458,7 +458,7 @@ export function ProductionFlowPage() {
                                             String(workflow.status).slice(1)}
                                     </span>
                                     <button className="table-action" onClick={() => edit(workflow)}>
-                                        <Edit3 size={15} />
+                                        <Pencil size={12} />
                                         Configure
                                     </button>
                                 </div>
@@ -931,7 +931,7 @@ export function TeamManagementPage() {
                                                                     setSuccess('');
                                                                 }}
                                                             >
-                                                                <Edit3 size={17} />
+                                                                <Pencil size={12} />
                                                             </button>
                                                             <button
                                                                 className="table-action icon-only danger"
@@ -940,7 +940,7 @@ export function TeamManagementPage() {
                                                                 disabled={removingId === user.id}
                                                                 onClick={() => removeUser(user)}
                                                             >
-                                                                <Trash2 size={17} />
+                                                                <Trash size={12} />
                                                             </button>
                                                         </div>
                                                     )}
@@ -1101,7 +1101,7 @@ export function TeamManagementPage() {
                                                         setSuccess('');
                                                     }}
                                                 >
-                                                    <Edit3 size={17} />
+                                                    <Pencil size={12} />
                                                 </button>
                                             </td>
                                         </tr>

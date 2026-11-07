@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Edit3, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, RefreshCw, Trash, Trash2, X } from 'lucide-react';
 import { startPolling } from '../../core/polling';
 
 const csrf = () =>
@@ -356,7 +356,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                         </header>
                         <div className="products-confirm-body">
                             <span>
-                                <Trash2 />
+                                <Trash size={18} />
                             </span>
                             <div>
                                 <strong>{deleteTarget.name}</strong>
@@ -382,7 +382,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                                 disabled={busy || deleteTarget.items_count > 0}
                                 onClick={removeCategory}
                             >
-                                <Trash2 />
+                                <Trash size={14} />
                                 {busy ? 'Deleting...' : 'Delete category'}
                             </button>
                         </footer>
@@ -661,7 +661,7 @@ function Items({ rows, money, quantity, edit }: any) {
                                     </td>
                                     <td>
                                         <button className="table-action" onClick={() => edit(item)}>
-                                            <Edit3 />
+                                            <Pencil size={12} />
                                             Edit
                                         </button>
                                     </td>
@@ -708,14 +708,14 @@ function Categories({ rows, edit, remove }: any) {
                                                 className="table-action"
                                                 onClick={() => edit(item)}
                                             >
-                                                <Edit3 />
+                                                <Pencil size={12} />
                                                 Edit
                                             </button>
                                             <button
                                                 className="table-action danger"
                                                 onClick={() => remove(item)}
                                             >
-                                                <Trash2 />
+                                                <Trash size={12} />
                                                 Delete
                                             </button>
                                         </div>
@@ -849,7 +849,7 @@ function Units({ rows, conversions, edit }: any) {
                                                 className="table-action"
                                                 onClick={() => edit(unit)}
                                             >
-                                                <Edit3 />
+                                                <Pencil size={12} />
                                                 Edit
                                             </button>
                                         </td>

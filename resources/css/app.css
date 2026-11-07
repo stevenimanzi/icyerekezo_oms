@@ -10703,7 +10703,8 @@ body, button, input, select, textarea, .panel, .admin-table {
 .tab-navigation,
 .factory-settings-tabs,
 .nav-tabs,
-.tab-list {
+.tab-list,
+.products-tabs {
     display: flex !important;
     gap: 24px !important;
     padding: 0 !important;
@@ -10713,7 +10714,24 @@ body, button, input, select, textarea, .panel, .admin-table {
     background: transparent !important;
     box-shadow: none !important;
     margin-bottom: 16px !important;
-    overflow-x: auto !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+[role="tablist"]::-webkit-scrollbar,
+.ui-tabs::-webkit-scrollbar,
+.module-tabs::-webkit-scrollbar,
+.tab-navigation::-webkit-scrollbar,
+.factory-settings-tabs::-webkit-scrollbar,
+.nav-tabs::-webkit-scrollbar,
+.tab-list::-webkit-scrollbar,
+.products-tabs::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 [role="tablist"] button,
@@ -11184,4 +11202,130 @@ button.secondary-btn {
     max-width: 100% !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
+}
+
+/* Table Short Margins Framing - Data Must Not Cover 100% Flush To Card Borders */
+.products-data-panel .admin-table-wrap {
+    margin: 12px 16px 16px !important;
+    width: calc(100% - 32px) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 8px !important;
+    overflow-x: auto !important;
+}
+
+.products-data-panel .products-panel-header {
+    padding: 12px 18px !important;
+    min-height: 52px !important;
+}
+
+.products-data-panel .products-table th:first-child,
+.products-data-panel .products-table td:first-child {
+    padding-left: 14px !important;
+}
+
+.products-data-panel .products-table th:last-child,
+.products-data-panel .products-table td:last-child {
+    padding-right: 14px !important;
+}
+
+/* Universal Danger / Delete Button System - Red Background To Show Danger Project-Wide */
+.table-action.danger,
+.table-action-danger,
+button.table-action.danger,
+.danger-btn,
+button.danger-btn,
+.btn-danger,
+button.btn-danger,
+.ui-btn-danger,
+.delete-btn,
+button.delete-btn,
+.table-action.icon-only.danger {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 10px !important;
+    background: #dc2626 !important;
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    border: 1px solid #b91c1c !important;
+    border-radius: 5px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.25) !important;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important;
+}
+
+.table-action.danger:hover,
+.table-action-danger:hover,
+button.table-action.danger:hover,
+.danger-btn:hover,
+button.danger-btn:hover,
+.btn-danger:hover,
+.delete-btn:hover,
+.table-action.icon-only.danger:hover {
+    background: #b91c1c !important;
+    border-color: #991b1b !important;
+    color: #ffffff !important;
+    transform: translateY(-0.5px) !important;
+}
+
+.table-action.danger svg,
+.table-action-danger svg,
+button.table-action.danger svg,
+.delete-btn svg,
+.danger-btn svg,
+.table-action.icon-only.danger svg {
+    width: 12px !important;
+    height: 12px !important;
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+/* Universal Sleek Small Edit / Table Action Button */
+.table-action:not(.danger):not(.delete-btn):not(.icon-only),
+.table-action-edit {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 10px !important;
+    background: #ffffff !important;
+    border: 1px solid var(--line, #cbd5e1) !important;
+    border-radius: 5px !important;
+    color: #2563eb !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+    transition: all 0.15s ease !important;
+}
+
+[data-theme='dark'] .table-action:not(.danger):not(.delete-btn):not(.icon-only),
+[data-theme='dark'] .table-action-edit {
+    background: var(--panel, #1e293b) !important;
+    border-color: var(--line, #334155) !important;
+    color: #60a5fa !important;
+}
+
+.table-action:not(.danger):not(.delete-btn):not(.icon-only):hover,
+.table-action-edit:hover {
+    background: var(--soft, #f8fafc) !important;
+    border-color: #94a3b8 !important;
+    color: #1d4ed8 !important;
+}
+
+.table-action:not(.danger):not(.delete-btn) svg,
+.table-action-edit svg {
+    width: 12px !important;
+    height: 12px !important;
 }
