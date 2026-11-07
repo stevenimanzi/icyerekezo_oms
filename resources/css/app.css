@@ -10909,7 +10909,11 @@ select:focus {
     border: 1px solid var(--line, #e2e8f0) !important;
     background: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
-    overflow: hidden !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    -webkit-overflow-scrolling: touch !important;
 }
 
 [data-theme='dark'] .admin-table-wrap,
@@ -11292,7 +11296,63 @@ table td,
     width: 100% !important;
     max-width: 100% !important;
     overflow-x: auto !important;
+    overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch !important;
+}
+
+.admin-table-wrap::-webkit-scrollbar,
+.ui-table-wrap::-webkit-scrollbar,
+.report-table-scroll-wrapper::-webkit-scrollbar,
+.report-table-scroll::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar,
+.noguchi-cutting-table-wrap::-webkit-scrollbar,
+.noguchi-report-scroll::-webkit-scrollbar {
+    height: 6px !important;
+    display: block !important;
+}
+
+.admin-table-wrap::-webkit-scrollbar-track,
+.ui-table-wrap::-webkit-scrollbar-track,
+.report-table-scroll-wrapper::-webkit-scrollbar-track,
+.report-table-scroll::-webkit-scrollbar-track,
+.table-scroll::-webkit-scrollbar-track,
+.noguchi-cutting-table-wrap::-webkit-scrollbar-track,
+.noguchi-report-scroll::-webkit-scrollbar-track {
+    background: var(--soft, #f1f5f9) !important;
+    border-radius: 3px !important;
+}
+
+.admin-table-wrap::-webkit-scrollbar-thumb,
+.ui-table-wrap::-webkit-scrollbar-thumb,
+.report-table-scroll-wrapper::-webkit-scrollbar-thumb,
+.report-table-scroll::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb,
+.noguchi-cutting-table-wrap::-webkit-scrollbar-thumb,
+.noguchi-report-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1 !important;
+    border-radius: 3px !important;
+}
+
+.admin-table-wrap::-webkit-scrollbar-thumb:hover,
+.ui-table-wrap::-webkit-scrollbar-thumb:hover,
+.report-table-scroll-wrapper::-webkit-scrollbar-thumb:hover,
+.report-table-scroll::-webkit-scrollbar-thumb:hover,
+.table-scroll::-webkit-scrollbar-thumb:hover,
+.noguchi-cutting-table-wrap::-webkit-scrollbar-thumb:hover,
+.noguchi-report-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8 !important;
+}
+
+[data-theme='dark'] .admin-table-wrap::-webkit-scrollbar-track,
+[data-theme='dark'] .ui-table-wrap::-webkit-scrollbar-track,
+[data-theme='dark'] .report-table-scroll-wrapper::-webkit-scrollbar-track {
+    background: #1e293b !important;
+}
+
+[data-theme='dark'] .admin-table-wrap::-webkit-scrollbar-thumb,
+[data-theme='dark'] .ui-table-wrap::-webkit-scrollbar-thumb,
+[data-theme='dark'] .report-table-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #475569 !important;
 }
 
 /* Table Short Margins Framing - Data Must Not Cover 100% Flush To Card Borders */
