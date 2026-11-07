@@ -498,6 +498,10 @@ class ProductionFlowController extends Controller
 
     public function inspect(Request $request, ProductionFlowService $service): JsonResponse
     {
+        if (!FlowAccess::for($request->user())->canInspect()) {
+            abort(403, 'Only quality control staff can record quality checks.');
+        }
+
         $factoryId = (int) $request->user()->current_factory_id;
         $data = $request->validate([
             'lot_id' => ['required', 'integer', Rule::exists('production_lots', 'id')->where('factory_id', $factoryId)],

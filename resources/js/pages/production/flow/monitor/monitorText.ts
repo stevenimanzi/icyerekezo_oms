@@ -4,7 +4,7 @@ const en = {
     title: 'Production flow',
     subtitle:
         'Follow every lot from cutting to packing, check quality at each stage and see what is stuck.',
-    tabs: { monitor: 'Monitor', report: 'Report' },
+    tabs: { monitor: 'Live production', report: 'Report' },
     filters: {
         status: 'Show',
         all: 'All lots',
@@ -150,7 +150,7 @@ const fr: typeof en = {
     title: 'Flux de production',
     subtitle:
         'Suivez chaque lot de la coupe à l’emballage, contrôlez la qualité à chaque étape et repérez ce qui est bloqué.',
-    tabs: { monitor: 'Suivi', report: 'Rapport' },
+    tabs: { monitor: 'Production en cours', report: 'Rapport' },
     filters: {
         status: 'Afficher',
         all: 'Tous les lots',
