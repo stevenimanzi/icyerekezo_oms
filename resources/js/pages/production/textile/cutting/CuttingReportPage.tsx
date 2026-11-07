@@ -387,7 +387,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
             <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
                 <article className="ui-kpi">
                     <small>Received (Input)</small>
-                    <strong style={{ color: '#166534' }}>{num(totalFabricUsed)} m</strong>
+                    <strong style={{ color: '#10b981' }}>{num(totalFabricUsed)} m</strong>
                     <p>Fabric material allocated</p>
                 </article>
 
@@ -399,7 +399,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>Output Produced</small>
-                    <strong style={{ color: '#166534' }}>{num(totalOutputPieces)} pcs</strong>
+                    <strong style={{ color: '#10b981' }}>{num(totalOutputPieces)} pcs</strong>
                     <p>Cut pieces passed to sewing</p>
                 </article>
 
@@ -411,7 +411,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>Quality Control</small>
-                    <strong style={{ color: qcPassRate >= 80 ? '#166534' : '#b45309' }}>{qcPassRate}%</strong>
+                    <strong style={{ color: qcPassRate >= 80 ? '#10b981' : '#b45309' }}>{qcPassRate}%</strong>
                     <p>QC inspected &amp; verified</p>
                 </article>
             </div>

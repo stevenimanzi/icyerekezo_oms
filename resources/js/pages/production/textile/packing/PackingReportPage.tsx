@@ -421,7 +421,7 @@ export default function PackingReportPage({ user, locale }: Props) {
             <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
                 <article className="ui-kpi">
                     <small>Received (Input)</small>
-                    <strong style={{ color: '#166534' }}>{num(totalInput)} pcs</strong>
+                    <strong style={{ color: '#10b981' }}>{num(totalInput)} pcs</strong>
                     <p>Finished garments received</p>
                 </article>
 
@@ -433,7 +433,7 @@ export default function PackingReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>Output Produced</small>
-                    <strong style={{ color: '#166534' }}>{num(totalOutput)} pcs</strong>
+                    <strong style={{ color: '#10b981' }}>{num(totalOutput)} pcs</strong>
                     <p>Packaged units ready for stock</p>
                 </article>
 
@@ -445,7 +445,7 @@ export default function PackingReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>Quality Control</small>
-                    <strong style={{ color: qcPassRate >= 80 ? '#166534' : '#b45309' }}>{qcPassRate}%</strong>
+                    <strong style={{ color: qcPassRate >= 80 ? '#10b981' : '#b45309' }}>{qcPassRate}%</strong>
                     <p>Final AQL verified</p>
                 </article>
             </div>

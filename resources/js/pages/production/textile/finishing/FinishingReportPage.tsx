@@ -334,7 +334,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
             <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
                 <article className="ui-kpi">
                     <small>Received (Input)</small>
-                    <strong style={{ color: '#166534' }}>{num(totalInput || totalOutput)} pcs</strong>
+                    <strong style={{ color: '#10b981' }}>{num(totalInput || totalOutput)} pcs</strong>
                     <p>From sewing lines</p>
                 </article>
 
@@ -346,7 +346,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>Output Produced</small>
-                    <strong style={{ color: '#166534' }}>{num(totalOutput)} pcs</strong>
+                    <strong style={{ color: '#10b981' }}>{num(totalOutput)} pcs</strong>
                     <p>Passed to packing</p>
                 </article>
 
@@ -358,7 +358,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>Quality Control</small>
-                    <strong style={{ color: passRate >= 80 ? '#166534' : '#b45309' }}>{passRate}%</strong>
+                    <strong style={{ color: passRate >= 80 ? '#10b981' : '#b45309' }}>{passRate}%</strong>
                     <p>Verified passed</p>
                 </article>
             </div>

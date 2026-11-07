@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, LogOut, MessageCircle, Settings, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, LogOut, MessageCircle, Settings } from 'lucide-react';
 import type { Labels } from '../core/labels';
 import type { AuthUser, Locale } from '../core/types';
 import type { NavEntry } from './navigation';
@@ -113,9 +113,6 @@ export function Sidebar(props: Props) {
         <aside className={`sidebar ${open ? 'open' : ''}`}>
             <div className="sidebar-head">
                 <Logo />
-                <button className="icon-btn mobile-only" onClick={onClose} aria-label="Close menu">
-                    <X size={20} />
-                </button>
             </div>
             <nav>
                 <p className="nav-label">{labels.general}</p>

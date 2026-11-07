@@ -1025,7 +1025,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                                         className="admin-status"
                                                         style={{
                                                             background: 'transparent',
-                                                            color: '#166534',
+                                                            color: '#10b981',
                                                             fontSize: 12,
                                                             fontWeight: 700,
                                                         }}

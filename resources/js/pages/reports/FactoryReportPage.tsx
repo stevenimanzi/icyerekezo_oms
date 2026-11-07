@@ -482,7 +482,7 @@ export default function FactoryReportPage({ user, locale }: Props) {
             <div className="ui-kpis no-print" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: 16 }}>
                 <article className="ui-kpi">
                     <small>Received (Input)</small>
-                    <strong style={{ color: '#166534' }}>
+                    <strong style={{ color: '#10b981' }}>
                         {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : `${num(grandInputPieces)} pcs`}
                     </strong>
                     <p>Fabric &amp; parts allocated</p>
@@ -498,7 +498,7 @@ export default function FactoryReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>Output Produced</small>
-                    <strong style={{ color: '#166534' }}>{num(grandOutput)} pcs</strong>
+                    <strong style={{ color: '#10b981' }}>{num(grandOutput)} pcs</strong>
                     <p>Total units produced</p>
                 </article>
 
@@ -510,7 +510,7 @@ export default function FactoryReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>Quality Control</small>
-                    <strong style={{ color: overallPassRate >= 80 ? '#166534' : '#b45309' }}>{overallPassRate}%</strong>
+                    <strong style={{ color: overallPassRate >= 80 ? '#10b981' : '#b45309' }}>{overallPassRate}%</strong>
                     <p>Factory-wide verified</p>
                 </article>
             </div>

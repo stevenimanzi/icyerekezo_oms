@@ -486,7 +486,7 @@ svg.lucide {
 }
 .menu-btn,
 .mobile-only {
-    display: none;
+    display: none !important;
 }
 .page {
     width: 100%;
@@ -1323,7 +1323,7 @@ tbody tr:last-child td {
     }
     .menu-btn,
     .mobile-only {
-        display: flex;
+        display: inline-flex !important;
     }
     .backdrop {
         display: block;
@@ -10929,7 +10929,7 @@ select:focus {
     line-height: 1.4 !important;
 }
 
-/* Dark Green for All Success / Active / Approved / Good / Delivered States */
+/* Light Green for All Success / Active / Approved / Good / Delivered States */
 .status.active,
 .status.completed,
 .status.success,
@@ -10950,7 +10950,7 @@ select:focus {
 .status-pill.success {
     background: transparent !important;
     background-color: transparent !important;
-    color: #166534 !important; /* Dark Green */
+    color: #10b981 !important; /* Light Green */
 }
 
 /* Warm Amber / Orange for Pending / Waiting / Warning / Partial States */
@@ -11180,6 +11180,32 @@ button.secondary-btn {
     line-height: 1.25 !important;
     font-size: 0.75rem !important;
     vertical-align: middle !important;
+    text-align: left !important;
+}
+
+/* Universal Table Alignment: All Text Across Whole Project Starts From Left Side */
+table th,
+table td,
+.table th,
+.table td,
+.report-data-table th,
+.report-data-table td,
+.report-data-table tfoot td,
+.excel-table-container th,
+.excel-table-container td,
+.excel-table-container tfoot td,
+.report-print-table th,
+.report-print-table td,
+.report-print-table tfoot td,
+.ui-table th,
+.ui-table td,
+.ui-table tfoot td,
+.admin-table th,
+.admin-table td,
+.admin-table tfoot td,
+.products-table th,
+.products-table td {
+    text-align: left !important;
 }
 
 .report-data-table th,

@@ -592,7 +592,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
 
                 <article className="ui-kpi">
                     <small>{locale === 'en' ? 'Items Received' : 'Articles Reçus'}</small>
-                    <strong style={{ color: '#166534' }}>+{num(periodReceivedUnits)}</strong>
+                    <strong style={{ color: '#10b981' }}>+{num(periodReceivedUnits)}</strong>
                     <p>{locale === 'en' ? 'New deliveries' : 'Livraisons reçues'}</p>
                 </article>
 
@@ -702,16 +702,16 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                         <table className="report-data-table">
                             <thead>
                                 <tr>
-                                    <th style={{ width: 34, textAlign: 'center' }}>#</th>
-                                    <th>{locale === 'en' ? 'Item Name' : 'Nom de l\'article'}</th>
-                                    <th style={{ width: 120 }}>{locale === 'en' ? 'Type' : 'Type'}</th>
-                                    <th style={{ width: 130 }}>{locale === 'en' ? 'Store Room' : 'Emplacement'}</th>
-                                    <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'In Stock' : 'En stock'}</th>
-                                    <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'Ready to Use' : 'Prêt à l\'usage'}</th>
-                                    <th style={{ width: 75, textAlign: 'right' }}>{locale === 'en' ? 'Min Level' : 'Niveau min.'}</th>
-                                    <th style={{ width: 95, textAlign: 'right' }}>{locale === 'en' ? 'Cost per Item' : 'Prix unitaire'}</th>
-                                    <th style={{ width: 115, textAlign: 'right' }}>{locale === 'en' ? 'Total Value' : 'Valeur totale'}</th>
-                                    <th style={{ width: 95, textAlign: 'center' }}>{locale === 'en' ? 'Status' : 'Statut'}</th>
+                                    <th style={{ width: 34, textAlign: 'left' }}>#</th>
+                                    <th style={{ textAlign: 'left' }}>{locale === 'en' ? 'Item Name' : 'Nom de l\'article'}</th>
+                                    <th style={{ width: 120, textAlign: 'left' }}>{locale === 'en' ? 'Type' : 'Type'}</th>
+                                    <th style={{ width: 130, textAlign: 'left' }}>{locale === 'en' ? 'Store Room' : 'Emplacement'}</th>
+                                    <th style={{ width: 80, textAlign: 'left' }}>{locale === 'en' ? 'In Stock' : 'En stock'}</th>
+                                    <th style={{ width: 80, textAlign: 'left' }}>{locale === 'en' ? 'Ready to Use' : 'Prêt à l\'usage'}</th>
+                                    <th style={{ width: 75, textAlign: 'left' }}>{locale === 'en' ? 'Min Level' : 'Niveau min.'}</th>
+                                    <th style={{ width: 95, textAlign: 'left' }}>{locale === 'en' ? 'Cost per Item' : 'Prix unitaire'}</th>
+                                    <th style={{ width: 115, textAlign: 'left' }}>{locale === 'en' ? 'Total Value' : 'Valeur totale'}</th>
+                                    <th style={{ width: 95, textAlign: 'left' }}>{locale === 'en' ? 'Status' : 'Statut'}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -724,28 +724,28 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 ) : (
                                     stockItems.map((item, idx) => (
                                         <tr key={item.id}>
-                                            <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--muted)' }}>{idx + 1}</td>
+                                            <td style={{ textAlign: 'left', fontWeight: 600, color: 'var(--muted)' }}>{idx + 1}</td>
                                             <td style={{ fontWeight: 700 }}>{item.name}</td>
                                             <td style={{ textTransform: 'capitalize' }}>
                                                 {String(item.type).replace('_', ' ')}
                                             </td>
                                             <td>{item.warehouse}</td>
-                                            <td style={{ textAlign: 'right', fontWeight: 700 }}>
+                                            <td style={{ textAlign: 'left', fontWeight: 700 }}>
                                                 {num(item.onHand)} <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{item.unit}</span>
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'left' }}>
                                                 {num(item.available)}
                                             </td>
-                                            <td style={{ textAlign: 'right', color: 'var(--muted)' }}>
+                                            <td style={{ textAlign: 'left', color: 'var(--muted)' }}>
                                                 {num(item.reorderLevel)}
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'left' }}>
                                                 {money(item.unitCost)}
                                             </td>
-                                            <td style={{ textAlign: 'right', fontWeight: 700 }}>
+                                            <td style={{ textAlign: 'left', fontWeight: 700 }}>
                                                 {money(item.stockValue)}
                                             </td>
-                                            <td style={{ textAlign: 'center' }}>
+                                            <td style={{ textAlign: 'left' }}>
                                                 {item.isOutOfStock ? (
                                                     <span style={{ display: 'inline-flex', background: 'transparent', color: '#b91c1c', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
                                                         {locale === 'en' ? 'OUT OF STOCK' : 'ÉPUISÉ'}
@@ -755,7 +755,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                                         {locale === 'en' ? 'LOW STOCK' : 'STOCK FAIBLE'}
                                                     </span>
                                                 ) : (
-                                                    <span style={{ display: 'inline-flex', background: 'transparent', color: '#166534', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                                                    <span style={{ display: 'inline-flex', background: 'transparent', color: '#10b981', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
                                                         {locale === 'en' ? 'IN STOCK' : 'EN STOCK'}
                                                     </span>
                                                 )}
@@ -769,10 +769,10 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                     <td colSpan={4} style={{ textTransform: 'uppercase' }}>
                                         {locale === 'en' ? 'TOTAL STOCK VALUE & QUANTITY' : 'VALEUR TOTALE & QUANTITÉ EN STOCK'}
                                     </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 800 }}>{num(totalOnHandUnits)}</td>
+                                    <td style={{ textAlign: 'left', fontWeight: 800 }}>{num(totalOnHandUnits)}</td>
                                     <td colSpan={3}></td>
-                                    <td style={{ textAlign: 'right', fontWeight: 800 }}>{money(totalStockValuation)}</td>
-                                    <td style={{ textAlign: 'center', fontSize: '0.72rem', color: '#166534', fontWeight: 700 }}>
+                                    <td style={{ textAlign: 'left', fontWeight: 800 }}>{money(totalStockValuation)}</td>
+                                    <td style={{ textAlign: 'left', fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>
                                         {optimalRate}% {locale === 'en' ? 'Optimal' : 'Conforme'}
                                     </td>
                                 </tr>
@@ -814,16 +814,16 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                         <table className="report-data-table">
                             <thead>
                                 <tr>
-                                    <th style={{ width: 34, textAlign: 'center' }}>#</th>
-                                    <th style={{ width: 140 }}>{locale === 'en' ? 'Time' : 'Date & Heure'}</th>
-                                    <th style={{ width: 90 }}>{locale === 'en' ? 'Action' : 'Action'}</th>
-                                    <th>{locale === 'en' ? 'Item Name' : 'Article'}</th>
-                                    <th style={{ width: 125 }}>{locale === 'en' ? 'Store Room' : 'Emplacement'}</th>
-                                    <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Added / Sent Out' : 'Quantité'}</th>
-                                    <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Stock Left' : 'Stock restant'}</th>
-                                    <th style={{ width: 90, textAlign: 'right' }}>{locale === 'en' ? 'Cost per Item' : 'Prix unitaire'}</th>
-                                    <th style={{ width: 110, textAlign: 'right' }}>{locale === 'en' ? 'Total Value' : 'Valeur'}</th>
-                                    <th style={{ width: 180 }}>{locale === 'en' ? 'Note / Reason' : 'Note / Raison'}</th>
+                                    <th style={{ width: 34, textAlign: 'left' }}>#</th>
+                                    <th style={{ width: 140, textAlign: 'left' }}>{locale === 'en' ? 'Time' : 'Date & Heure'}</th>
+                                    <th style={{ width: 90, textAlign: 'left' }}>{locale === 'en' ? 'Action' : 'Action'}</th>
+                                    <th style={{ textAlign: 'left' }}>{locale === 'en' ? 'Item Name' : 'Article'}</th>
+                                    <th style={{ width: 125, textAlign: 'left' }}>{locale === 'en' ? 'Store Room' : 'Emplacement'}</th>
+                                    <th style={{ width: 85, textAlign: 'left' }}>{locale === 'en' ? 'Added / Sent Out' : 'Quantité'}</th>
+                                    <th style={{ width: 85, textAlign: 'left' }}>{locale === 'en' ? 'Stock Left' : 'Stock restant'}</th>
+                                    <th style={{ width: 90, textAlign: 'left' }}>{locale === 'en' ? 'Cost per Item' : 'Prix unitaire'}</th>
+                                    <th style={{ width: 110, textAlign: 'left' }}>{locale === 'en' ? 'Total Value' : 'Valeur'}</th>
+                                    <th style={{ width: 180, textAlign: 'left' }}>{locale === 'en' ? 'Note / Reason' : 'Note / Raison'}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -836,7 +836,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 ) : (
                                     movementRows.map((m, idx) => (
                                         <tr key={m.id}>
-                                            <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--muted)' }}>{idx + 1}</td>
+                                            <td style={{ textAlign: 'left', fontWeight: 600, color: 'var(--muted)' }}>{idx + 1}</td>
                                             <td style={{ whiteSpace: 'nowrap' }}>{m.occurredAt}</td>
                                             <td>
                                                 <span
@@ -845,7 +845,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                                         fontSize: '0.75rem',
                                                         display: 'inline-flex',
                                                         background: 'transparent',
-                                                        color: m.isPositive ? '#166534' : '#b45309',
+                                                        color: m.isPositive ? '#10b981' : '#b45309',
                                                     }}
                                                 >
                                                     {m.isPositive ? (locale === 'en' ? 'RECEIVED' : 'REÇU') : (locale === 'en' ? 'SENT OUT' : 'SORTI')}
@@ -855,20 +855,20 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                             <td>{m.warehouse}</td>
                                             <td
                                                 style={{
-                                                    textAlign: 'right',
+                                                    textAlign: 'left',
                                                     fontWeight: 800,
-                                                    color: m.quantityDelta > 0 ? '#166534' : 'var(--text)',
+                                                    color: m.quantityDelta > 0 ? '#10b981' : 'var(--text)',
                                                 }}
                                             >
                                                 {m.quantityDelta > 0 ? `+${num(m.quantityDelta)}` : num(m.quantityDelta)}
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'left' }}>
                                                 {m.balanceAfter != null ? num(m.balanceAfter) : '—'}
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'left' }}>
                                                 {money(m.unitCost)}
                                             </td>
-                                            <td style={{ textAlign: 'right', fontWeight: 700 }}>
+                                            <td style={{ textAlign: 'left', fontWeight: 700 }}>
                                                 {money(m.totalValue)}
                                             </td>
                                             <td style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
@@ -883,7 +883,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                     <td colSpan={5} style={{ textTransform: 'uppercase' }}>
                                         {locale === 'en' ? 'STOCK ADDED VS SENT OUT' : 'DIFFÉRENCE ENTRÉES VS SORTIES'}
                                     </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 800, color: periodReceivedUnits >= periodIssuedUnits ? '#166534' : '#b91c1c' }}>
+                                    <td style={{ textAlign: 'left', fontWeight: 800, color: periodReceivedUnits >= periodIssuedUnits ? '#10b981' : '#b91c1c' }}>
                                         {num(periodReceivedUnits - periodIssuedUnits)}
                                     </td>
                                     <td colSpan={4} style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
