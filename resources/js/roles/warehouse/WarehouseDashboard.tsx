@@ -976,14 +976,9 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                             : (isFr ? 'Fourniture' : 'Supplies & Other');
 
                                     return (
-                                        <tr key={item.id || item.sku}>
+                                        <tr key={item.id || item.name}>
                                             <td>
-                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                    <strong style={{ fontSize: 13, color: 'var(--text)' }}>{item.name}</strong>
-                                                    <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'monospace' }}>
-                                                        {item.sku}
-                                                    </span>
-                                                </div>
+                                                <strong style={{ fontSize: 13, color: 'var(--text)' }}>{item.name}</strong>
                                             </td>
                                             <td>
                                                 <span style={{ fontSize: 12, color: 'var(--muted)' }}>{categoryLabel}</span>
@@ -1095,9 +1090,6 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                             </td>
                                             <td>
                                                 <strong style={{ fontSize: 13 }}>{tx.item_name}</strong>
-                                                <small style={{ display: 'block', color: 'var(--muted)', fontSize: 11 }}>
-                                                    {tx.sku}
-                                                </small>
                                             </td>
                                             <td>
                                                 <span style={{ fontSize: 12, textTransform: 'capitalize' }}>

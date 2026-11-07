@@ -391,7 +391,7 @@ export default function ProcurementOverviewPage() {
                         </option>
                         {tools.items.map((item: any) => (
                             <option value={item.id} key={item.id}>
-                                {item.name} ({item.sku})
+                                {item.name}
                             </option>
                         ))}
                     </select>
@@ -599,7 +599,7 @@ export default function ProcurementOverviewPage() {
                                         <option value="">Choose item</option>
                                         {tools.items.map((item: any) => (
                                             <option value={item.id} key={item.id}>
-                                                {item.name} ({item.sku})
+                                                {item.name}
                                             </option>
                                         ))}
                                     </select>
@@ -794,7 +794,7 @@ function ProcurementForm({ kind, form, setForm, data, busy, onSubmit }: any) {
                         label="Item"
                         value={form.item_id}
                         onChange={(v: any) => set('item_id', v)}
-                        options={items.map((x: any) => [x.id, `${x.name} (${x.sku})`])}
+                        options={items.map((x: any) => [x.id, x.name])}
                     />
                     <Field label="Price for one unit">
                         <input
@@ -856,7 +856,7 @@ function ProcurementForm({ kind, form, setForm, data, busy, onSubmit }: any) {
                         label="Item needed"
                         value={form.item_id}
                         onChange={(v: any) => set('item_id', v)}
-                        options={items.map((x: any) => [x.id, `${x.name} (${x.sku})`])}
+                        options={items.map((x: any) => [x.id, x.name])}
                     />
                     <Field label="Quantity needed">
                         <input
@@ -1275,7 +1275,6 @@ function PriceTable({ suppliers }: any) {
                                     </td>
                                     <td>
                                         {row.item.name}
-                                        <small>{row.item.sku}</small>
                                     </td>
                                     <td>{row.supplier_sku || 'Not set'}</td>
                                     <td>{money(row.unit_price)}</td>

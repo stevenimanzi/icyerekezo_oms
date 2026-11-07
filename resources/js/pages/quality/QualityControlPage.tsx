@@ -364,7 +364,7 @@ function InspectionForm({
                             <option value="">Use order product / none</option>
                             {items.map((item: any) => (
                                 <option key={item.id} value={item.id}>
-                                    {item.name} — {item.sku}
+                                    {item.name}
                                 </option>
                             ))}
                         </select>

@@ -1106,11 +1106,10 @@ function StockStatusPanel({ items, fr, number }: any) {
                                 <div>
                                     <b>{item.name}</b>
                                     <span>
-                                        {item.sku}
                                         {low && (
                                             <em
                                                 className="admin-status warning"
-                                                style={{ marginLeft: 8 }}
+                                                style={{ marginLeft: 0 }}
                                             >
                                                 {fr ? 'Stock faible' : 'Low stock'}
                                             </em>

@@ -726,7 +726,6 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 <tr>
                                     <th style={{ width: 34, textAlign: 'center' }}>#</th>
                                     <th>{locale === 'en' ? 'Item Name' : 'Nom de l\'article'}</th>
-                                    <th style={{ width: 110 }}>{locale === 'en' ? 'Item Code (SKU)' : 'Code (SKU)'}</th>
                                     <th style={{ width: 120 }}>{locale === 'en' ? 'Type' : 'Type'}</th>
                                     <th style={{ width: 130 }}>{locale === 'en' ? 'Store Room' : 'Emplacement'}</th>
                                     <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'In Stock' : 'En stock'}</th>
@@ -740,7 +739,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             <tbody>
                                 {stockItems.length === 0 ? (
                                     <tr>
-                                        <td colSpan={11} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
+                                        <td colSpan={10} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
                                             {locale === 'en' ? 'No stock records found matching filter.' : 'Aucun article trouvé dans le stock.'}
                                         </td>
                                     </tr>
@@ -749,7 +748,6 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                         <tr key={item.id}>
                                             <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--muted)' }}>{idx + 1}</td>
                                             <td style={{ fontWeight: 700 }}>{item.name}</td>
-                                            <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--muted)' }}>{item.sku}</td>
                                             <td style={{ textTransform: 'capitalize' }}>
                                                 {String(item.type).replace('_', ' ')}
                                             </td>
@@ -842,7 +840,6 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                     <th style={{ width: 140 }}>{locale === 'en' ? 'Time' : 'Date & Heure'}</th>
                                     <th style={{ width: 90 }}>{locale === 'en' ? 'Action' : 'Action'}</th>
                                     <th>{locale === 'en' ? 'Item Name' : 'Article'}</th>
-                                    <th style={{ width: 95 }}>{locale === 'en' ? 'Item Code (SKU)' : 'Code (SKU)'}</th>
                                     <th style={{ width: 125 }}>{locale === 'en' ? 'Store Room' : 'Emplacement'}</th>
                                     <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Added / Sent Out' : 'Quantité'}</th>
                                     <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Stock Left' : 'Stock restant'}</th>
@@ -854,7 +851,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             <tbody>
                                 {movementRows.length === 0 ? (
                                     <tr>
-                                        <td colSpan={11} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
+                                        <td colSpan={10} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
                                             {locale === 'en' ? 'No stock movement entries recorded in this period.' : 'Aucun mouvement de stock enregistré durant cette période.'}
                                         </td>
                                     </tr>
@@ -879,7 +876,6 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                                 </span>
                                             </td>
                                             <td style={{ fontWeight: 700 }}>{m.itemName}</td>
-                                            <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--muted)' }}>{m.sku}</td>
                                             <td>{m.warehouse}</td>
                                             <td
                                                 style={{
