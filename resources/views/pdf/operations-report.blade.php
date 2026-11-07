@@ -201,8 +201,8 @@
                         <td class="meta-value">{{ $user?->name ?? 'Cutting Manager' }} ({{ $userRole ?? 'Operator' }})</td>
                     </tr>
                     <tr>
-                        <td class="meta-label">QUALITY STATUS:</td>
-                        <td class="meta-value"><strong><u>PASSED (100.0%)</u></strong></td>
+                        <td class="meta-label">QUALITY PASS RATE:</td>
+                        <td class="meta-value"><strong>100.0%</strong></td>
                     </tr>
                 </table>
             </td>
@@ -214,23 +214,22 @@
     <table class="excel-table">
         <thead>
             <tr>
-                <th rowspan="2" style="width: 14%;">STAGE / PHASE</th>
+                <th rowspan="2" style="width: 15%;">STAGE / PHASE</th>
                 <th colspan="2" class="group-head">1. INPUT</th>
                 <th colspan="2" class="group-head">2. OUTPUT</th>
                 <th colspan="2" class="group-head">3. DAMAGED / WASTE</th>
-                <th colspan="4" class="group-head">4. QUALITY CONTROL</th>
+                <th colspan="3" class="group-head">4. QUALITY CONTROL</th>
             </tr>
             <tr>
-                <th class="num" style="width: 9%;">QTY / METERS</th>
-                <th style="width: 11%;">DETAILS</th>
-                <th class="num" style="width: 9%;">GOOD PCS</th>
-                <th style="width: 10%;">STATUS</th>
-                <th class="num" style="width: 8%;">DAMAGED</th>
-                <th class="num" style="width: 8%;">WASTE %</th>
-                <th class="num" style="width: 7%;">INSP</th>
-                <th class="num" style="width: 7%;">PASS</th>
-                <th class="num" style="width: 7%;">REJ</th>
-                <th style="width: 10%;">QC STATUS</th>
+                <th class="num" style="width: 10%;">QTY / METERS</th>
+                <th style="width: 12%;">DETAILS</th>
+                <th class="num" style="width: 10%;">GOOD PCS</th>
+                <th style="width: 11%;">STATUS</th>
+                <th class="num" style="width: 9%;">DAMAGED</th>
+                <th class="num" style="width: 9%;">WASTE %</th>
+                <th class="num" style="width: 8%;">INSP</th>
+                <th class="num" style="width: 8%;">PASS</th>
+                <th class="num" style="width: 8%;">REJ</th>
             </tr>
         </thead>
         <tbody>
@@ -259,7 +258,6 @@
                     $totRejected += $rejected;
 
                     $wasteRate = ($good + $damaged > 0) ? round(($damaged / ($good + $damaged)) * 100, 1) : 0;
-                    $qcStatus = $inspected === 0 ? 'PENDING' : ($rejected === 0 ? 'PASSED' : ($passed === 0 ? 'FAILED' : 'CONDITIONAL'));
                 @endphp
                 <tr>
                     <td class="bold">{{ strtoupper($st['name'] ?? $st['key'] ?? 'Stage') }}</td>
@@ -272,11 +270,10 @@
                     <td class="num">{{ number_format($inspected) }}</td>
                     <td class="num bold">{{ number_format($passed) }}</td>
                     <td class="num">{{ number_format($rejected) }}</td>
-                    <td class="center bold">{{ $qcStatus }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="11" class="empty-cell">No operational stages recorded for the selected period.</td>
+                    <td colspan="10" class="empty-cell">No operational stages recorded for the selected period.</td>
                 </tr>
             @endforelse
             @if(!empty($summaryStages))
@@ -291,7 +288,6 @@
                     <td class="num">{{ number_format($totInspected) }}</td>
                     <td class="num">{{ number_format($totPassed) }}</td>
                     <td class="num">{{ number_format($totRejected) }}</td>
-                    <td class="center bold">{{ $totRejected === 0 && $totInspected > 0 ? 'PASSED' : ($totInspected === 0 ? 'PENDING' : 'CONDITIONAL') }}</td>
                 </tr>
             @endif
         </tbody>

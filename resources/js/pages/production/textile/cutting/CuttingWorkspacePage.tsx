@@ -1113,7 +1113,7 @@ export default function CuttingWorkspacePage({
                                         <th colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>1. INPUT (FABRIC USED)</th>
                                         <th colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>2. OUTPUT (CUT PIECES)</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>3. DAMAGED</th>
-                                        <th colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>4. QUALITY CONTROL</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>4. QUALITY</th>
                                     </tr>
                                     <tr style={{ background: '#f2f2f2' }}>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px' }}>FABRIC MATERIAL</th>
@@ -1125,7 +1125,6 @@ export default function CuttingWorkspacePage({
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>GOOD PCS</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>DAMAGED</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>QC PASS</th>
-                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>QC STATUS</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1154,17 +1153,12 @@ export default function CuttingWorkspacePage({
                                                     <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'right', fontWeight: 600 }}>
                                                         {goodQty > 0 ? num(goodQty) : '—'}
                                                     </td>
-                                                    <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center', fontWeight: 'bold' }}>
-                                                        <span style={{ border: '1px solid #000', padding: '2px 6px', fontSize: '0.75rem' }}>
-                                                            {goodQty > 0 ? 'PASSED' : 'PENDING'}
-                                                        </span>
-                                                    </td>
                                                 </tr>
                                             );
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan={11} style={{ border: '1px solid #000', padding: 18, textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
+                                            <td colSpan={10} style={{ border: '1px solid #000', padding: 18, textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
                                                 {locale === 'en'
                                                     ? 'No cutting operations match the selected dates.'
                                                     : 'Aucun enregistrement de coupe pour la période sélectionnée.'}
@@ -1183,7 +1177,6 @@ export default function CuttingWorkspacePage({
                                             <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>{num(totalCutQty)} pcs</td>
                                             <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>{num(totalDamagedQty)}</td>
                                             <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>{num(totalCutQty)}</td>
-                                            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>PASSED</td>
                                         </tr>
                                     </tfoot>
                                 )}

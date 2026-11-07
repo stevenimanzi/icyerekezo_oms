@@ -104,7 +104,6 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                                                     <th className="num">{t.checks}</th>
                                                     <th className="num">{t.passed}</th>
                                                     <th className="num">{t.rejected}</th>
-                                                    <th style={{ textAlign: 'center' }}>{locale === 'en' ? 'QC Status' : 'Statut CQ'}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -129,11 +128,6 @@ export function FlowReportView({ locale, text, format, highlight }: Props) {
                                                         <td className="num">{format.whole(row.checks)}</td>
                                                         <td className="num bold">{format.whole(row.passed)}</td>
                                                         <td className="num">{format.whole(row.rejected)}</td>
-                                                        <td style={{ textAlign: 'center' }}>
-                                                            <span className={`ui-chip ${(row as any).rejected > 0 ? 'bad' : 'good'}`}>
-                                                                {(row as any).qc_status ? (row as any).qc_status.toUpperCase() : 'PASSED'}
-                                                            </span>
-                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>

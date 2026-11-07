@@ -543,41 +543,40 @@ export default function FactoryReportPage({ user, locale }: Props) {
                         <div><b>PERIOD:</b> {fromDate === toDate ? fromDate : `${fromDate} to ${toDate}`}</div>
                         <div><b>DEPARTMENTS:</b> {selectedDept ? selectedDept.toUpperCase() : 'ALL DEPARTMENTS'}</div>
                         <div><b>PREPARED BY:</b> {user.name} (Factory Operations Manager)</div>
-                        <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({overallPassRate}%)</span></div>
+                        <div><b>QUALITY PASS RATE:</b> <span style={{ fontWeight: 800 }}>{overallPassRate}%</span></div>
                     </div>
                 </div>
 
                 {/* SINGLE UNIFIED EXCEL DATA TABLE WITH VERTICAL DEPARTMENTS & ROW SPAN */}
                 <div className="report-table-scroll-wrapper" style={{ overflowX: 'auto', marginBottom: 20 }}>
-                    <table className="report-print-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.80rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff', tableLayout: 'fixed' }}>
+                    <table className="report-print-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.74rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff', tableLayout: 'fixed' }}>
                         <thead>
                             <tr style={{ background: '#ffffff' }}>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '3%', background: '#ffffff' }}>#</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '9%', background: '#ffffff' }}>DATE</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '9%', background: '#ffffff' }}>DEPARTMENT</th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff' }}>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', width: '3%', background: '#ffffff', color: '#000000', fontWeight: 800 }}>#</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800 }}>DATE</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800 }}>DEPARTMENT</th>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
                                     1. RECEIVED &amp; USED
                                 </th>
-                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff' }}>
+                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
                                     2. OUTPUT PRODUCED
                                 </th>
-                                <th style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff', width: '8%' }}>
+                                <th style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', width: '8%', color: '#000000', fontWeight: 800 }}>
                                     3. DAMAGED
                                 </th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff', width: '16%' }}>
-                                    4. QUALITY CONTROL
+                                <th style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', width: '8%', color: '#000000', fontWeight: 800 }}>
+                                    4. QUALITY
                                 </th>
                             </tr>
                             <tr style={{ background: '#ffffff' }}>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '15%', background: '#ffffff' }}>MATERIAL / ITEM</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '7%', background: '#ffffff' }}>QTY USED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '14%', background: '#ffffff' }}>GARMENT STYLE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff' }}>COLOR</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '5%', background: '#ffffff' }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>GOOD PCS</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>SCRAP/DEF</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>PASSED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '8%', background: '#ffffff' }}>QC STATUS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>MATERIAL / ITEM</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '10%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>QTY USED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '17%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>GARMENT STYLE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>COLOR</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '5%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SIZE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>GOOD PCS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SCRAP/DEF</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>PASSED</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -589,12 +588,12 @@ export default function FactoryReportPage({ user, locale }: Props) {
                                 return (
                                     <React.Fragment key={deptBlock.key}>
                                         {rows.length > 0 ? (
-                                            rows.map((row: any, rIdx: number) => {
+                                             rows.map((row: any, rIdx: number) => {
                                                 runningIndex += 1;
                                                 return (
                                                     <tr key={row.id || rIdx} style={{ background: '#ffffff' }}>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{runningIndex}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.date}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{runningIndex}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.date}</td>
                                                         {rIdx === 0 && (
                                                             <td
                                                                 rowSpan={rows.length}
@@ -606,31 +605,27 @@ export default function FactoryReportPage({ user, locale }: Props) {
                                                                     background: '#ffffff',
                                                                     verticalAlign: 'middle',
                                                                     letterSpacing: '0.04em',
+                                                                    color: '#000000',
                                                                 }}
                                                             >
                                                                 {deptName}
                                                             </td>
                                                         )}
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px' }}>{row.materialItem}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 600 }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.materialItem}>{row.materialItem}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                             {num(row.qtyUsed)} {deptBlock.unit}
                                                         </td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px' }}>{row.style}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.color}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.size}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 800 }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.style}>{row.style}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.color}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.size}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                                             {num(row.good)}
                                                         </td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000' }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                                             {num(row.damaged)}
                                                         </td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 700 }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 700, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                                             {num(row.qcPassed)}
-                                                        </td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', fontWeight: 700 }}>
-                                                            <span style={{ border: '1pt solid #000000', padding: '1px 3px', fontSize: '0.7rem', background: '#ffffff', display: 'inline-block' }}>
-                                                                {row.qcStatus}
-                                                            </span>
                                                         </td>
                                                     </tr>
                                                 );
@@ -639,10 +634,10 @@ export default function FactoryReportPage({ user, locale }: Props) {
                                             <tr style={{ background: '#ffffff' }}>
                                                 <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>—</td>
                                                 <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{fromDate}</td>
-                                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', fontWeight: 800, background: '#ffffff' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', fontWeight: 800, background: '#ffffff', color: '#000000' }}>
                                                     {deptName}
                                                 </td>
-                                                <td colSpan={9} style={{ border: '1pt solid #000000', padding: 12, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
+                                                <td colSpan={8} style={{ border: '1pt solid #000000', padding: 12, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
                                                     {locale === 'en' ? `No ${deptName} operations recorded for this period.` : `Aucune opération enregistrée pour ${deptName}.`}
                                                 </td>
                                             </tr>
@@ -651,24 +646,21 @@ export default function FactoryReportPage({ user, locale }: Props) {
                                         {/* DEPARTMENT SUBTOTAL / DIVIDER LINE */}
                                         {rows.length > 0 && (
                                             <tr style={{ background: '#ffffff', fontWeight: 800, borderTop: '1pt solid #000000', borderBottom: '1.5pt solid #000000' }}>
-                                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff' }}>
+                                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
                                                     SUBTOTAL {deptName}:
                                                 </td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                                     {num(deptBlock.totalUsed)} {deptBlock.unit}
                                                 </td>
                                                 <td colSpan={3} style={{ border: '1pt solid #000000', padding: '5px 4px', background: '#ffffff' }}></td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                                     {num(deptBlock.totalGood)} pcs
                                                 </td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', color: deptBlock.totalDamaged > 0 ? '#b91c1c' : '#000000', background: '#ffffff' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', color: deptBlock.totalDamaged > 0 ? '#b91c1c' : '#000000', background: '#ffffff', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                                     {num(deptBlock.totalDamaged)}
                                                 </td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                                     {num(deptBlock.totalQc)}
-                                                </td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', background: '#ffffff', fontSize: '0.72rem' }}>
-                                                    {deptBlock.passRate}%
                                                 </td>
                                             </tr>
                                         )}
@@ -678,24 +670,21 @@ export default function FactoryReportPage({ user, locale }: Props) {
                         </tbody>
                         <tfoot>
                             <tr style={{ background: '#ffffff', fontWeight: 900, borderTop: '2pt solid #000000' }}>
-                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.80rem' }}>
+                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.76rem', color: '#000000', fontWeight: 900 }}>
                                     TOTAL FACTORY OPERATIONS:
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'right', background: '#ffffff', fontSize: '0.80rem' }}>
-                                    {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : ''} {grandInputPieces > 0 ? `+ ${num(grandInputPieces)} pcs` : ''}
+                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.70rem', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                    {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : ''}{grandInputMeters > 0 && grandInputPieces > 0 ? ' + ' : ''}{grandInputPieces > 0 ? `${num(grandInputPieces)} pcs` : ''}
                                 </td>
                                 <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 4px', background: '#ffffff' }}></td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'right', background: '#ffffff', fontSize: '0.80rem' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.74rem', fontWeight: 900, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {num(grandOutput)} pcs
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'right', background: '#ffffff', color: grandDamaged > 0 ? '#b91c1c' : '#000000', fontSize: '0.80rem' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', color: grandDamaged > 0 ? '#b91c1c' : '#000000', fontSize: '0.74rem', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {num(grandDamaged)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'right', background: '#ffffff', fontSize: '0.80rem' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.74rem', fontWeight: 900, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {num(grandQcPassed)}
-                                </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', fontSize: '0.75rem' }}>
-                                    {overallPassRate}%
                                 </td>
                             </tr>
                         </tfoot>

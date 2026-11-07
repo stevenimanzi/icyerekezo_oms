@@ -476,74 +476,68 @@ export default function PackingReportPage({ user, locale }: Props) {
                         <div><b>PERIOD:</b> {fromDate === toDate ? fromDate : `${fromDate} to ${toDate}`}</div>
                         <div><b>DEPARTMENT:</b> PACKING</div>
                         <div><b>PREPARED BY:</b> {user.name} (Packing Operator)</div>
-                        <div><b>QUALITY STATUS:</b> <span style={{ fontWeight: 800, textDecoration: 'underline' }}>PASSED ({qcPassRate}%)</span></div>
+                        <div><b>QUALITY PASS RATE:</b> <span style={{ fontWeight: 800 }}>{qcPassRate}%</span></div>
                     </div>
                 </div>
 
                 {/* SINGLE EXCEL DATA TABLE */}
                 <div className="report-table-scroll-wrapper" style={{ overflowX: 'auto', marginBottom: 20 }}>
-                    <table className="report-print-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.82rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff', tableLayout: 'fixed' }}>
+                    <table className="report-print-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.74rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff', tableLayout: 'fixed' }}>
                         <thead>
                             <tr style={{ background: '#ffffff' }}>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '4%', background: '#ffffff' }}>#</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', width: '11%', background: '#ffffff' }}>DATE</th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff' }}>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', width: '4%', background: '#ffffff', color: '#000000', fontWeight: 800 }}>#</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', width: '11%', background: '#ffffff', color: '#000000', fontWeight: 800 }}>DATE</th>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
                                     1. RECEIVED (INPUT) &amp; USED
                                 </th>
-                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff' }}>
+                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
                                     2. OUTPUT PRODUCED (PACKAGED GOODS)
                                 </th>
-                                <th style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff', width: '8%' }}>
+                                <th style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', width: '8%', color: '#000000', fontWeight: 800 }}>
                                     3. DAMAGED
                                 </th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', background: '#ffffff', width: '17%' }}>
-                                    4. QUALITY CONTROL
+                                <th style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', width: '9%', color: '#000000', fontWeight: 800 }}>
+                                    4. QUALITY
                                 </th>
                             </tr>
                             <tr style={{ background: '#ffffff' }}>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '15%', background: '#ffffff' }}>RECEIVED ITEM</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>INPUT (PCS)</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '13%', background: '#ffffff' }}>PRODUCT STYLE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff' }}>COLOR</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff' }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>PACKED (PCS)</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>PACK FLAW</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff' }}>PASSED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '9%', background: '#ffffff' }}>QC STATUS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>RECEIVED ITEM</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>INPUT (PCS)</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '17%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PRODUCT STYLE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>COLOR</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>SIZE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PACKED (PCS)</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PACK FLAW</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '11%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PASSED</th>
                             </tr>
                         </thead>
                         <tbody>
                             {packingRows.length > 0 ? (
                                 packingRows.map((row: any, index: number) => (
                                     <tr key={row.id || index} style={{ background: '#ffffff' }}>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{index + 1}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.date}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px' }}>{row.receivedItem}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 600 }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{index + 1}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{row.receivedItem}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 700, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                             {num(row.inputReceived)}
                                         </td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px' }}>{row.style}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.color}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{row.size}</td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 800 }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{row.style}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.color}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.size}</td>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                             {num(row.outputPacked)}
                                         </td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000' }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                             {num(row.damaged)}
                                         </td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', fontWeight: 700 }}>
+                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                             {num(row.qcPassed)}
-                                        </td>
-                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', fontWeight: 700 }}>
-                                            <span style={{ border: '1pt solid #000000', padding: '1px 3px', fontSize: '0.7rem', background: '#ffffff', display: 'inline-block' }}>
-                                                {row.qcStatus}
-                                            </span>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={11} style={{ border: '1pt solid #000000', padding: 24, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
+                                    <td colSpan={10} style={{ border: '1pt solid #000000', padding: 24, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
                                         {locale === 'en'
                                             ? 'No packing operations match the selected date or date range.'
                                             : "Aucune opération d'emballage enregistrée pour la date ou période sélectionnée."}
@@ -553,24 +547,21 @@ export default function PackingReportPage({ user, locale }: Props) {
                         </tbody>
                         <tfoot>
                             <tr style={{ background: '#ffffff', fontWeight: 800, borderTop: '2pt solid #000000' }}>
-                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff' }}>
+                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
                                     TOTAL:
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {num(totalInput)}
                                 </td>
                                 <td colSpan={3} style={{ border: '1pt solid #000000', padding: '5px 4px', background: '#ffffff' }}></td>
-                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {num(totalOutput)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', color: totalDamaged > 0 ? '#b91c1c' : '#000000', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {num(totalDamaged)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'right', background: '#ffffff' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {num(totalQcPassed)}
-                                </td>
-                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', background: '#ffffff', fontSize: '0.72rem' }}>
-                                    {qcPassRate}%
                                 </td>
                             </tr>
                         </tfoot>

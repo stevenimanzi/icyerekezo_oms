@@ -151,7 +151,6 @@ export function StageSection({ block, text, format, locale }: Common & { block: 
                                     <th className="num">{t.good}</th>
                                     <th className="num">{t.damaged}</th>
                                     <th className="num">{locale === 'en' ? 'QC Pass' : 'CQ Conforme'}</th>
-                                    <th>{locale === 'en' ? 'QC Status' : 'Statut CQ'}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -174,16 +173,11 @@ export function StageSection({ block, text, format, locale }: Common & { block: 
                                             <td className="num">{format.whole(lot.good)}</td>
                                             <td className="num">{format.whole(lot.damaged)}</td>
                                             <td className="num bold">{format.whole(lot.qc_passed ?? lot.good)}</td>
-                                            <td>
-                                                <span className={`ui-chip ${lot.qc_rejected ? 'bad' : 'good'}`}>
-                                                    {lot.qc_status ? lot.qc_status.toUpperCase() : (lot.good > 0 ? 'PASSED' : 'PENDING')}
-                                                </span>
-                                            </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={8} className="empty">
+                                        <td colSpan={7} className="empty">
                                             {t.empty}
                                         </td>
                                     </tr>
