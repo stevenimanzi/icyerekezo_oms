@@ -1,1023 +1,1472 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    AlertTriangle,
+    AlertCircle,
+    Calendar,
     CheckCircle2,
-    PackageCheck,
-    Play,
+    Clock,
+    Edit3,
+    Filter,
+    Layers,
     Plus,
     RefreshCw,
-    Save,
+    Scissors,
+    Sparkles,
+    Target,
     Trash2,
+    TrendingUp,
+    X,
 } from 'lucide-react';
-import { startPolling } from '../../core/polling';
 
-async function api(url: string, options: RequestInit = {}) {
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-    });
-    const text = await response.text();
-    let data: any;
-    try {
-        data = JSON.parse(text);
-    } catch {
-        throw new Error('The server returned an unreadable response. Please try again.');
-    }
-    if (!response.ok) {
-        const details = Object.values(data.errors || {})
-            .flat()
-            .join(' ');
-        throw new Error(details || data.message || 'The action could not be completed.');
-    }
-    return data;
+interface ProductionTargetItem {
+    id: number;
+    title: string;
+    product_name: string;
+    stage: 'cutting' | 'sewing' | 'finishing' | 'packing' | 'finished';
+    target_quantity: number;
+    actual_quantity: number;
+    remaining_quantity: number;
+    progress_percent: number;
+    is_completed: boolean;
+    start_date: string | null;
+    end_date: string | null;
+    days_left: number | null;
+    daily_pace_needed: number;
+    period_type: string;
+    status: string;
+    notes: string | null;
+    created_at: string;
 }
 
-const blank = () => ({
-    order_number:
-        'PO-' +
-        new Date().toISOString().slice(2, 10).replaceAll('-', '') +
-        '-' +
-        String(Date.now()).slice(-4),
-    bill_of_material_id: '',
-    workflow_template_id: '',
-    warehouse_id: '',
-    planned_quantity: '',
-    planned_start: new Date().toISOString().slice(0, 10),
-    planned_end: '',
-});
-const blankComponent = () => ({
-    item_id: '',
-    quantity: '',
-    waste_percent: '0',
-    is_optional: false,
-});
-const blankBom = () => ({
-    item_id: '',
-    name: '',
-    version: '1.0',
-    output_quantity: '',
-    expected_waste_percent: '0',
-    components: [blankComponent()],
-});
-const statusLabel: Record<string, string> = {
-    draft: 'Needs approval',
-    approved: 'Ready to produce',
-    in_progress: 'In production',
-    paused: 'Paused',
-    completed: 'Completed',
-    cancelled: 'Cancelled',
-    not_started: 'Waiting for previous step',
-    ready: 'Ready to start',
-    blocked: 'Blocked',
-    failed: 'Failed',
-    rework: 'Needs rework',
+interface SummaryData {
+    total_target_units: number;
+    total_actual_units: number;
+    total_remaining_units: number;
+    overall_progress_percent: number;
+    active_targets_count: number;
+    completed_targets_count: number;
+    total_targets_count: number;
+}
+
+interface ProductItem {
+    id: number;
+    name: string;
+    type: string;
+    color?: string;
+}
+
+const STAGE_LABELS: Record<string, { label: string; labelFr: string; color: string; bg: string }> = {
+    cutting: { label: 'Cutting Stage', labelFr: 'Atelier Coupe', color: '#2563eb', bg: '#eff6ff' },
+    sewing: { label: 'Sewing Stage', labelFr: 'Atelier Couture', color: '#7c3aed', bg: '#f5f3ff' },
+    finishing: { label: 'Finishing Stage', labelFr: 'Atelier Finition', color: '#d97706', bg: '#fffbeb' },
+    packing: { label: 'Packing Stage', labelFr: 'Atelier Emballage', color: '#0891b2', bg: '#ecfeff' },
+    finished: { label: 'Finished Output', labelFr: 'Produits Finis', color: '#16a34a', bg: '#f0fdf4' },
 };
-const number = (value: any) => Number(value || 0).toLocaleString();
 
-export default function ProductionOperations({ can }: any) {
-    const [data, setData] = useState<any>(null);
-    const [catalog, setCatalog] = useState<any>(null);
-    const [form, setForm] = useState<any>(blank());
-    const [bomForm, setBomForm] = useState<any>(blankBom());
-    const [open, setOpen] = useState(false);
-    const [bomOpen, setBomOpen] = useState(false);
-    const [busy, setBusy] = useState(false);
+const PERIOD_LABELS: Record<string, { en: string; fr: string }> = {
+    daily: { en: 'Daily Target', fr: 'Objectif Journalier' },
+    weekly: { en: 'Weekly Target', fr: 'Objectif Hebdomadaire' },
+    monthly: { en: 'Monthly Target', fr: 'Objectif Mensuel' },
+    batch: { en: 'Batch Target', fr: 'Objectif par Lot' },
+};
+
+export default function ProductionOperations({ locale = 'en' }: { can?: any; user?: any; locale?: string }) {
+    const isFr = locale === 'fr';
+
+    const [summary, setSummary] = useState<SummaryData>({
+        total_target_units: 0,
+        total_actual_units: 0,
+        total_remaining_units: 0,
+        overall_progress_percent: 0,
+        active_targets_count: 0,
+        completed_targets_count: 0,
+        total_targets_count: 0,
+    });
+    const [targets, setTargets] = useState<ProductionTargetItem[]>([]);
+    const [products, setProducts] = useState<ProductItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const [stageEdits, setStageEdits] = useState<Record<number, any>>({});
-    const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    const canPlan = can('production.plan');
-    const canApprove = can('production.approve');
-    const canExecute = can('production.execute');
-    const readOnly = !canPlan && !canApprove && !canExecute;
+    // Filters
+    const [selectedTab, setSelectedTab] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
-    const load = async (silent = false) => {
-        if (!silent) setLoading(true);
-        try {
-            const [overview, products] = await Promise.all([
-                api('/api/manufacturing/overview'),
-                canPlan ? api('/api/products/overview') : Promise.resolve(null),
-            ]);
-            setData(overview);
-            if (products) setCatalog(products);
-            setUpdatedAt(new Date());
-            setError('');
-        } catch (reason: any) {
-            if (!silent) setError(reason.message);
-        } finally {
-            if (!silent) setLoading(false);
-        }
-    };
-    useEffect(() => {
-        load();
-        const timer = startPolling(() => load(true), 15000);
-        return () => window.clearInterval(timer);
-    }, []);
-    useEffect(() => {
-        if (!success) return;
-        const timer = window.setTimeout(() => setSuccess(''), 5000);
-        return () => window.clearTimeout(timer);
-    }, [success]);
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingTarget, setEditingTarget] = useState<ProductionTargetItem | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
 
-    const orders = data?.orders?.data || [];
-    const summary = data?.summary || {};
-    const recipes = data?.boms || [];
-    const processes = (data?.workflows || []).filter((item: any) => item.status === 'active');
-    const warehouses = data?.warehouses || [];
-    const items = catalog?.items || [];
-    const stages = orders.flatMap((order: any) =>
-        (order.executions || []).map((stage: any) => ({
-            ...stage,
-            order_number: order.order_number,
-            product: order.item?.name || 'Product',
-        })),
+    // Form inputs
+    const [title, setTitle] = useState('');
+    const [productName, setProductName] = useState('');
+    const [stage, setStage] = useState<'cutting' | 'sewing' | 'finishing' | 'packing' | 'finished'>('finished');
+    const [targetQuantity, setTargetQuantity] = useState<number | string>(100);
+    const [periodType, setPeriodType] = useState('weekly');
+    const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+    const [endDate, setEndDate] = useState(
+        new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
     );
+    const [notes, setNotes] = useState('');
 
-    const editBomField = (field: string, value: any) =>
-        setBomForm((current: any) => ({ ...current, [field]: value }));
-    const editComponent = (index: number, field: string, value: any) =>
-        setBomForm((current: any) => ({
-            ...current,
-            components: current.components.map((component: any, position: number) =>
-                position === index ? { ...component, [field]: value } : component,
-            ),
-        }));
-    const addComponent = () =>
-        setBomForm((current: any) => ({
-            ...current,
-            components: [...current.components, blankComponent()],
-        }));
-    const removeComponent = (index: number) =>
-        setBomForm((current: any) => ({
-            ...current,
-            components: current.components.filter((_: any, position: number) => position !== index),
-        }));
+    const fetchTargets = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
+        else setRefreshing(true);
+        setError(null);
 
-    const createBom = async (event: React.FormEvent) => {
-        event.preventDefault();
-        setBusy(true);
-        setError('');
-        setSuccess('');
         try {
-            const components = bomForm.components.map((component: any) => {
-                const material = items.find(
-                    (item: any) => String(item.id) === String(component.item_id),
-                );
-                if (!material) throw new Error('Choose a material for every ingredient row.');
-                return {
-                    item_id: Number(component.item_id),
-                    unit_id: material.unit_id,
-                    quantity: Number(component.quantity),
-                    waste_percent: Number(component.waste_percent || 0),
-                    is_optional: Boolean(component.is_optional),
-                };
+            const res = await fetch('/api/production/targets', {
+                headers: { Accept: 'application/json' },
             });
-            await api('/api/manufacturing/boms', {
-                method: 'POST',
-                body: JSON.stringify({
-                    item_id: Number(bomForm.item_id),
-                    name: bomForm.name,
-                    version: bomForm.version,
-                    output_quantity: Number(bomForm.output_quantity),
-                    expected_waste_percent: Number(bomForm.expected_waste_percent || 0),
-                    components,
-                }),
-            });
-            setBomForm(blankBom());
-            setBomOpen(false);
-            setSuccess('Product recipe created successfully.');
-            await load();
-        } catch (reason: any) {
-            setError(reason.message);
+            if (!res.ok) {
+                throw new Error('Failed to load production targets.');
+            }
+            const data = await res.json();
+            setSummary(data.summary || {});
+            setTargets(data.targets || []);
+            setProducts(data.products || []);
+        } catch (err: any) {
+            setError(err.message || 'Error loading targets');
         } finally {
-            setBusy(false);
+            setLoading(false);
+            setRefreshing(false);
         }
     };
 
-    const create = async (event: React.FormEvent) => {
-        event.preventDefault();
-        setBusy(true);
-        setError('');
-        setSuccess('');
+    useEffect(() => {
+        fetchTargets();
+    }, []);
+
+    const openCreateModal = () => {
+        setEditingTarget(null);
+        setTitle('');
+        setProductName('');
+        setStage('finished');
+        setTargetQuantity(100);
+        setPeriodType('weekly');
+        setStartDate(new Date().toISOString().slice(0, 10));
+        setEndDate(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+        setNotes('');
+        setFormError(null);
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (target: ProductionTargetItem) => {
+        setEditingTarget(target);
+        setTitle(target.title);
+        setProductName(target.product_name === 'All Products' ? '' : target.product_name);
+        setStage(target.stage);
+        setTargetQuantity(target.target_quantity);
+        setPeriodType(target.period_type || 'weekly');
+        setStartDate(target.start_date || new Date().toISOString().slice(0, 10));
+        setEndDate(target.end_date || new Date().toISOString().slice(0, 10));
+        setNotes(target.notes || '');
+        setFormError(null);
+        setIsModalOpen(true);
+    };
+
+    const handleFormSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setFormError(null);
+
+        if (!title.trim()) {
+            setFormError(isFr ? 'Veuillez saisir un titre pour cet objectif.' : 'Please enter a target title.');
+            return;
+        }
+
+        const qty = Number(targetQuantity);
+        if (isNaN(qty) || qty <= 0) {
+            setFormError(isFr ? 'La quantité cible doit être supérieure à 0.' : 'Target quantity must be greater than 0.');
+            return;
+        }
+
+        setIsSubmitting(true);
         try {
-            const recipe = recipes.find(
-                (item: any) => String(item.id) === String(form.bill_of_material_id),
+            const payload = {
+                title: title.trim(),
+                product_name: productName.trim() || null,
+                stage,
+                target_quantity: qty,
+                period_type: periodType,
+                start_date: startDate || null,
+                end_date: endDate || null,
+                notes: notes.trim() || null,
+            };
+
+            const url = editingTarget
+                ? `/api/production/targets/${editingTarget.id}`
+                : '/api/production/targets';
+            const method = editingTarget ? 'PUT' : 'POST';
+
+            const csrfToken =
+                (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'Failed to save target.');
+            }
+
+            setSuccessMessage(
+                editingTarget
+                    ? (isFr ? 'Objectif mis à jour avec succès.' : 'Target updated successfully.')
+                    : (isFr ? 'Nouvel objectif de production défini avec succès.' : 'Production target set successfully.')
             );
-            if (!recipe) throw new Error('Choose a product recipe.');
-            await api('/api/manufacturing/orders', {
-                method: 'POST',
-                body: JSON.stringify({
-                    ...form,
-                    item_id: recipe.item_id,
-                    planned_quantity: Number(form.planned_quantity),
-                    planned_end: form.planned_end || null,
-                }),
-            });
-            setForm(blank());
-            setOpen(false);
-            setSuccess('Production order created successfully.');
-            await load();
-        } catch (reason: any) {
-            setError(reason.message);
+            setTimeout(() => setSuccessMessage(null), 4000);
+            setIsModalOpen(false);
+            fetchTargets(true);
+        } catch (err: any) {
+            setFormError(err.message || 'An error occurred while saving the target.');
         } finally {
-            setBusy(false);
+            setIsSubmitting(false);
         }
     };
 
-    const approve = async (id: number) => {
-        setBusy(true);
-        setError('');
+    const handleDeleteTarget = async (id: number) => {
+        const confirmMsg = isFr
+            ? 'Voulez-vous vraiment supprimer cet objectif de production ?'
+            : 'Are you sure you want to delete this production target?';
+        if (!window.confirm(confirmMsg)) return;
+
         try {
-            await api('/api/manufacturing/orders/' + id + '/approve', { method: 'POST' });
-            setSuccess('Order approved. The first production step is ready.');
-            await load();
-        } catch (reason: any) {
-            setError(reason.message);
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    const editStage = (id: number, field: string, value: any) =>
-        setStageEdits((current) => ({
-            ...current,
-            [id]: { ...(current[id] || {}), [field]: value },
-        }));
-
-    const saveStage = async (stage: any, nextStatus: string) => {
-        const values = stageEdits[stage.id] || {};
-        setBusy(true);
-        setError('');
-        try {
-            await api('/api/manufacturing/stages/' + stage.id, {
-                method: 'PATCH',
-                body: JSON.stringify({
-                    status: nextStatus,
-                    input_quantity: Number(values.input_quantity ?? stage.input_quantity ?? 0),
-                    output_quantity: Number(values.output_quantity ?? stage.output_quantity ?? 0),
-                    rejected_quantity: Number(
-                        values.rejected_quantity ?? stage.rejected_quantity ?? 0,
-                    ),
-                    waste_quantity: Number(values.waste_quantity ?? stage.waste_quantity ?? 0),
-                    downtime_minutes: Number(
-                        values.downtime_minutes ?? stage.downtime_minutes ?? 0,
-                    ),
-                }),
+            const csrfToken =
+                (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const res = await fetch(`/api/production/targets/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
             });
-            setSuccess(
-                nextStatus === 'completed'
-                    ? 'Production step completed.'
-                    : 'Production step updated.',
-            );
-            await load();
-        } catch (reason: any) {
-            setError(reason.message);
-        } finally {
-            setBusy(false);
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.message || 'Failed to delete target.');
+            }
+
+            setSuccessMessage(isFr ? 'Objectif supprimé.' : 'Target removed successfully.');
+            setTimeout(() => setSuccessMessage(null), 4000);
+            fetchTargets(true);
+        } catch (err: any) {
+            alert(err.message || 'Failed to delete target.');
         }
     };
+
+    const filteredTargets = useMemo(() => {
+        return targets.filter((target) => {
+            // Stage / Completion tab filter
+            if (selectedTab === 'completed' && !target.is_completed) return false;
+            if (selectedTab !== 'all' && selectedTab !== 'completed' && target.stage !== selectedTab) {
+                return false;
+            }
+            // Search query filter
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase();
+                const matchesTitle = target.title.toLowerCase().includes(q);
+                const matchesProduct = (target.product_name || '').toLowerCase().includes(q);
+                const matchesStage = target.stage.toLowerCase().includes(q);
+                if (!matchesTitle && !matchesProduct && !matchesStage) return false;
+            }
+            return true;
+        });
+    }, [targets, selectedTab, searchQuery]);
 
     return (
-        <section className="module-page production-operations">
-            <div className="module-hero production-hero">
-                <div className="module-title">
-                    <div>
-                        <div className="eyebrow">
-                            <i></i>
-                            {readOnly ? 'FACTORY DATA' : 'PRODUCTION'}
-                        </div>
-                        <h1>{readOnly ? 'Production performance' : 'Production orders'}</h1>
-                        <p>
-                            {readOnly
-                                ? 'Monitor orders, output, losses and progress using records entered by your factory team.'
-                                : 'Create production work, check progress and record results for each step.'}
-                        </p>
-                        {updatedAt && (
-                            <small className="production-updated">
-                                Last updated{' '}
-                                {updatedAt.toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                            </small>
-                        )}
-                    </div>
+        <div style={{ padding: '24px 28px', maxWidth: '1440px', margin: '0 auto', color: '#1e293b' }}>
+            {/* Header */}
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '24px',
+                    gap: '16px',
+                    flexWrap: 'wrap',
+                }}
+            >
+                <div>
+                    <h1
+                        style={{
+                            fontSize: '26px',
+                            fontWeight: 700,
+                            color: '#0f172a',
+                            margin: '0 0 6px 0',
+                            letterSpacing: '-0.02em',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                        }}
+                    >
+                        <Target size={26} color="#2563eb" />
+                        {isFr ? 'Planification & Objectifs de Production' : 'Production Planning & Targets'}
+                    </h1>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '14px', maxWidth: '720px' }}>
+                        {isFr
+                            ? 'Définissez vos objectifs de production par produit et atelier, suivez l’avancement en temps réel et mesurez le pourcentage d’atteinte.'
+                            : 'Set production output targets by product and stage, monitor live factory progress, and track % achievement towards your goals in real-time.'}
+                    </p>
                 </div>
-                <div className="workflow-actions">
-                    <button className="secondary-btn" disabled={loading} onClick={() => load()}>
-                        <RefreshCw className={loading ? 'spin' : ''} size={16} />
-                        {loading ? 'Refreshing…' : 'Refresh data'}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button
+                        onClick={() => fetchTargets(true)}
+                        disabled={refreshing || loading}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '9px 16px',
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            color: '#475569',
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                        }}
+                    >
+                        <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+                        {isFr ? 'Actualiser' : 'Refresh'}
                     </button>
-                    {canPlan && (
-                        <button
-                            className="secondary-btn"
-                            onClick={() =>
-                                items.length
-                                    ? setBomOpen(!bomOpen)
-                                    : setError(
-                                          'You must add at least one product in the Materials section first.',
-                                      )
-                            }
-                        >
-                            <Plus size={16} />
-                            {bomOpen ? 'Close recipe form' : 'Create product recipe'}
-                        </button>
-                    )}
-                    {canPlan && (
-                        <button
-                            className="primary-btn"
-                            onClick={() => {
-                                if (!recipes.length)
-                                    setError('Please create a product recipe first.');
-                                else if (!processes.length)
-                                    setError(
-                                        'The Factory Manager must activate a production process first.',
-                                    );
-                                else if (!warehouses.length) setError('No warehouse is available.');
-                                else setOpen(!open);
-                            }}
-                        >
-                            <Plus size={16} />
-                            {open ? 'Close form' : 'Create production order'}
-                        </button>
-                    )}
+
+                    <button
+                        onClick={openCreateModal}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '9px 18px',
+                            background: '#2563eb',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: '#ffffff',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)',
+                        }}
+                    >
+                        <Plus size={16} />
+                        {isFr ? '+ Définir un Objectif' : '+ Set Production Target'}
+                    </button>
                 </div>
             </div>
 
-            {error && (
-                <div className="admin-alert error">
-                    <AlertTriangle size={18} />
-                    <span>{error}</span>
-                </div>
-            )}
-            {success && (
-                <div className="admin-alert success">
+            {/* Notifications */}
+            {successMessage && (
+                <div
+                    style={{
+                        padding: '12px 18px',
+                        borderRadius: '8px',
+                        backgroundColor: '#f0fdf4',
+                        border: '1px solid #86efac',
+                        color: '#166534',
+                        marginBottom: '20px',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                    }}
+                >
                     <CheckCircle2 size={18} />
-                    <span>{success}</span>
+                    {successMessage}
                 </div>
             )}
 
-            {(!recipes.length || !processes.length || !warehouses.length || !items.length) &&
-                !loading &&
-                !readOnly && (
-                    <div className="production-setup-warning">
-                        <AlertTriangle />
-                        <div>
-                            <b>Production setup is incomplete</b>
-                            <p>
-                                {!items.length
-                                    ? 'You need to add products in the Materials section. '
-                                    : ''}
-                                {items.length && !recipes.length
-                                    ? 'Create a product recipe before adding an order. '
-                                    : ''}
-                                {!processes.length
-                                    ? 'The Factory Manager must activate a production process. '
-                                    : ''}
-                                {!warehouses.length
-                                    ? 'No warehouse is available to receive output.'
-                                    : ''}
-                            </p>
-                        </div>
-                    </div>
-                )}
+            {error && (
+                <div
+                    style={{
+                        padding: '12px 18px',
+                        borderRadius: '8px',
+                        backgroundColor: '#fef2f2',
+                        border: '1px solid #fca5a5',
+                        color: '#991b1b',
+                        marginBottom: '20px',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                    }}
+                >
+                    <AlertCircle size={18} />
+                    {error}
+                </div>
+            )}
 
-            {bomOpen && canPlan && (
-                <form className="panel admin-form production-order-form" onSubmit={createBom}>
-                    <header>
-                        <div>
-                            <h2>Create a product recipe</h2>
-                            <p>
-                                Define the finished product, its raw materials and how much of each
-                                is needed.
-                            </p>
+            {/* Row 1: KPI Summary Cards */}
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: '16px',
+                    marginBottom: '28px',
+                }}
+            >
+                {/* Total Target */}
+                <div
+                    style={{
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '18px 20px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                            {isFr ? 'Objectif Total' : 'Total Target Units'}
+                        </span>
+                        <div
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                background: '#eff6ff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#2563eb',
+                            }}
+                        >
+                            <Target size={18} />
                         </div>
-                    </header>
-                    <div className="form-grid">
-                        <label>
-                            Finished product
-                            <select
-                                required
-                                value={bomForm.item_id}
-                                onChange={(event) => editBomField('item_id', event.target.value)}
-                            >
-                                <option value="">Choose the item this recipe produces</option>
-                                {items.map((item: any) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label>
-                            Recipe name
-                            <input
-                                required
-                                value={bomForm.name}
-                                onChange={(event) => editBomField('name', event.target.value)}
-                                placeholder="Example: Standard maize flour"
-                            />
-                        </label>
-                        <label>
-                            Version
-                            <input
-                                required
-                                value={bomForm.version}
-                                onChange={(event) => editBomField('version', event.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Output quantity per batch
-                            <input
-                                required
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                value={bomForm.output_quantity}
-                                onChange={(event) =>
-                                    editBomField('output_quantity', event.target.value)
-                                }
-                                placeholder="Example: 10"
-                            />
-                        </label>
-                        <label>
-                            Expected waste (%)
-                            <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                value={bomForm.expected_waste_percent}
-                                onChange={(event) =>
-                                    editBomField('expected_waste_percent', event.target.value)
-                                }
-                            />
-                        </label>
                     </div>
-                    <div className="bom-components">
-                        <p>
-                            <b>Raw materials needed per batch</b>
-                        </p>
-                        {bomForm.components.map((component: any, index: number) => (
-                            <div className="form-grid bom-component-row" key={index}>
-                                <label>
-                                    Material
-                                    <select
-                                        required
-                                        value={component.item_id}
-                                        onChange={(event) =>
-                                            editComponent(index, 'item_id', event.target.value)
-                                        }
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', margin: '8px 0 4px 0' }}>
+                        {summary.total_target_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>pcs</span>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {summary.total_targets_count} {isFr ? 'objectifs au total' : 'planned target goals'}
+                    </span>
+                </div>
+
+                {/* Actual Output Reached */}
+                <div
+                    style={{
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '18px 20px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                            {isFr ? 'Production Réalisée' : 'Actual Output Reached'}
+                        </span>
+                        <div
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                background: '#f0fdf4',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#16a34a',
+                            }}
+                        >
+                            <TrendingUp size={18} />
+                        </div>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a', margin: '8px 0 4px 0' }}>
+                        {summary.total_actual_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>pcs</span>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {isFr ? 'Produits fabriqués validés' : 'Completed pieces recorded'}
+                    </span>
+                </div>
+
+                {/* Remaining Needed */}
+                <div
+                    style={{
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '18px 20px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                            {isFr ? 'Reste à Produire' : 'Remaining Needed'}
+                        </span>
+                        <div
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                background: '#fffbeb',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#d97706',
+                            }}
+                        >
+                            <Clock size={18} />
+                        </div>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#d97706', margin: '8px 0 4px 0' }}>
+                        {summary.total_remaining_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>pcs</span>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {isFr ? 'Pour compléter tous les objectifs' : 'Units needed to reach goals'}
+                    </span>
+                </div>
+
+                {/* Overall Achievement Rate */}
+                <div
+                    style={{
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '18px 20px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                            {isFr ? 'Taux d’Atteinte' : 'Overall Progress'}
+                        </span>
+                        <div
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                background: '#f5f3ff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#7c3aed',
+                            }}
+                        >
+                            <Sparkles size={18} />
+                        </div>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', margin: '8px 0 4px 0' }}>
+                        {summary.overall_progress_percent}%
+                    </div>
+                    {/* Visual Progress Bar */}
+                    <div
+                        style={{
+                            width: '100%',
+                            height: '6px',
+                            borderRadius: '999px',
+                            background: '#e2e8f0',
+                            overflow: 'hidden',
+                            marginTop: '8px',
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: `${Math.min(100, summary.overall_progress_percent)}%`,
+                                height: '100%',
+                                background:
+                                    summary.overall_progress_percent >= 80
+                                        ? '#16a34a'
+                                        : summary.overall_progress_percent >= 40
+                                        ? '#2563eb'
+                                        : '#f59e0b',
+                                transition: 'width 0.4s ease',
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Filter Tabs & Search Bar */}
+            <div
+                style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '14px 18px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                }}
+            >
+                {/* Tabs */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {[
+                        { key: 'all', label: isFr ? 'Tous les Objectifs' : 'All Targets' },
+                        { key: 'finished', label: isFr ? 'Produits Finis' : 'Finished Goods' },
+                        { key: 'cutting', label: isFr ? 'Coupe' : 'Cutting' },
+                        { key: 'sewing', label: isFr ? 'Couture' : 'Sewing' },
+                        { key: 'finishing', label: isFr ? 'Finition' : 'Finishing' },
+                        { key: 'packing', label: isFr ? 'Emballage' : 'Packing' },
+                        { key: 'completed', label: isFr ? 'Atteints (100%)' : 'Achieved (100%)' },
+                    ].map((tab) => {
+                        const isActive = selectedTab === tab.key;
+                        return (
+                            <button
+                                key={tab.key}
+                                onClick={() => setSelectedTab(tab.key)}
+                                style={{
+                                    padding: '6px 14px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    background: isActive ? '#2563eb' : '#f1f5f9',
+                                    color: isActive ? '#ffffff' : '#475569',
+                                    fontSize: '13px',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                }}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Search */}
+                <div style={{ minWidth: '220px', maxWidth: '320px', width: '100%' }}>
+                    <input
+                        type="text"
+                        placeholder={isFr ? 'Filtrer par titre ou produit...' : 'Filter targets or product...'}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            fontSize: '13px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            outline: 'none',
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* Target Cards Grid */}
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                    gap: '18px',
+                    marginBottom: '32px',
+                }}
+            >
+                {filteredTargets.map((target) => {
+                    const stageMeta = STAGE_LABELS[target.stage] || STAGE_LABELS.finished;
+                    const periodMeta = PERIOD_LABELS[target.period_type] || { en: 'Target', fr: 'Objectif' };
+                    const isPassed = target.is_completed;
+
+                    return (
+                        <div
+                            key={target.id}
+                            style={{
+                                background: '#ffffff',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '20px',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            {/* Card Top */}
+                            <div>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'flex-start',
+                                        marginBottom: '10px',
+                                        gap: '8px',
+                                    }}
+                                >
+                                    <div>
+                                        <h3
+                                            style={{
+                                                fontSize: '16px',
+                                                fontWeight: 700,
+                                                color: '#0f172a',
+                                                margin: '0 0 4px 0',
+                                            }}
+                                        >
+                                            {target.title}
+                                        </h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                            <span
+                                                style={{
+                                                    fontSize: '11px',
+                                                    fontWeight: 600,
+                                                    padding: '2px 8px',
+                                                    borderRadius: '4px',
+                                                    background: stageMeta.bg,
+                                                    color: stageMeta.color,
+                                                }}
+                                            >
+                                                {isFr ? stageMeta.labelFr : stageMeta.label}
+                                            </span>
+                                            <span
+                                                style={{
+                                                    fontSize: '11px',
+                                                    fontWeight: 500,
+                                                    padding: '2px 8px',
+                                                    borderRadius: '4px',
+                                                    background: '#f1f5f9',
+                                                    color: '#334155',
+                                                }}
+                                            >
+                                                {target.product_name || (isFr ? 'Tous les produits' : 'All Products')}
+                                            </span>
+                                            <span
+                                                style={{
+                                                    fontSize: '11px',
+                                                    fontWeight: 500,
+                                                    padding: '2px 8px',
+                                                    borderRadius: '4px',
+                                                    background: '#f8fafc',
+                                                    color: '#64748b',
+                                                    border: '1px solid #e2e8f0',
+                                                }}
+                                            >
+                                                {isFr ? periodMeta.fr : periodMeta.en}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Status Badge */}
+                                    {isPassed ? (
+                                        <span
+                                            style={{
+                                                fontSize: '11px',
+                                                fontWeight: 700,
+                                                padding: '3px 8px',
+                                                borderRadius: '6px',
+                                                background: '#dcfce7',
+                                                color: '#15803d',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            <CheckCircle2 size={12} />
+                                            {isFr ? 'Atteint' : 'Achieved'}
+                                        </span>
+                                    ) : (
+                                        <span
+                                            style={{
+                                                fontSize: '11px',
+                                                fontWeight: 600,
+                                                padding: '3px 8px',
+                                                borderRadius: '6px',
+                                                background: '#eff6ff',
+                                                color: '#2563eb',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {isFr ? 'En cours' : 'In Progress'}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {target.notes && (
+                                    <p
+                                        style={{
+                                            fontSize: '12px',
+                                            color: '#64748b',
+                                            margin: '0 0 14px 0',
+                                            lineHeight: '1.4',
+                                        }}
                                     >
-                                        <option value="">Choose a material</option>
-                                        {items.map((item: any) => (
-                                            <option key={item.id} value={item.id}>
-                                                {item.name}
+                                        {target.notes}
+                                    </p>
+                                )}
+
+                                {/* Progress Metrics */}
+                                <div style={{ margin: '16px 0 12px 0' }}>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'baseline',
+                                            marginBottom: '6px',
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                                            {isFr ? 'Avancement vers l’objectif' : 'Progress Towards Target'}
+                                        </span>
+                                        <span
+                                            style={{
+                                                fontSize: '16px',
+                                                fontWeight: 700,
+                                                color: isPassed ? '#16a34a' : '#2563eb',
+                                            }}
+                                        >
+                                            {target.progress_percent}%
+                                        </span>
+                                    </div>
+
+                                    {/* Progress Meter Bar */}
+                                    <div
+                                        style={{
+                                            width: '100%',
+                                            height: '8px',
+                                            borderRadius: '999px',
+                                            background: '#f1f5f9',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                width: `${target.progress_percent}%`,
+                                                height: '100%',
+                                                background:
+                                                    isPassed
+                                                        ? '#16a34a'
+                                                        : target.progress_percent >= 50
+                                                        ? '#2563eb'
+                                                        : '#f59e0b',
+                                                borderRadius: '999px',
+                                                transition: 'width 0.3s ease',
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Breakdown: Output vs Target */}
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            fontSize: '12px',
+                                            color: '#64748b',
+                                            marginTop: '8px',
+                                        }}
+                                    >
+                                        <span>
+                                            <b>{target.actual_quantity.toLocaleString()}</b> / {target.target_quantity.toLocaleString()} pcs
+                                        </span>
+                                        <span>
+                                            {isPassed ? (
+                                                <span style={{ color: '#16a34a', fontWeight: 600 }}>
+                                                    {isFr ? 'Objectif atteint !' : 'Goal reached!'}
+                                                </span>
+                                            ) : (
+                                                <span>
+                                                    <b>{target.remaining_quantity.toLocaleString()}</b> {isFr ? 'restants' : 'remaining'}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card Footer: Deadlines and Actions */}
+                            <div
+                                style={{
+                                    borderTop: '1px solid #f1f5f9',
+                                    paddingTop: '12px',
+                                    marginTop: '8px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    fontSize: '12px',
+                                }}
+                            >
+                                <div style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Calendar size={14} />
+                                    {target.end_date ? (
+                                        <span>
+                                            {isFr ? 'Échéance: ' : 'Due: '}
+                                            <b>{target.end_date}</b>
+                                            {target.days_left !== null && !isPassed && (
+                                                <span style={{ marginLeft: '4px', color: target.days_left <= 2 ? '#dc2626' : '#64748b' }}>
+                                                    ({target.days_left} {isFr ? 'j restants' : 'd left'})
+                                                </span>
+                                            )}
+                                        </span>
+                                    ) : (
+                                        <span>{isFr ? 'Continu' : 'Ongoing target'}</span>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <button
+                                        onClick={() => openEditModal(target)}
+                                        title={isFr ? 'Modifier' : 'Edit target'}
+                                        style={{
+                                            padding: '5px 8px',
+                                            background: '#f8fafc',
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '6px',
+                                            color: '#475569',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        <Edit3 size={13} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteTarget(target.id)}
+                                        title={isFr ? 'Supprimer' : 'Delete target'}
+                                        style={{
+                                            padding: '5px 8px',
+                                            background: '#fef2f2',
+                                            border: '1px solid #fecaca',
+                                            borderRadius: '6px',
+                                            color: '#dc2626',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Empty State */}
+            {filteredTargets.length === 0 && !loading && (
+                <div
+                    style={{
+                        background: '#ffffff',
+                        border: '1px dashed #cbd5e1',
+                        borderRadius: '12px',
+                        padding: '48px 24px',
+                        textAlign: 'center',
+                        color: '#64748b',
+                    }}
+                >
+                    <Target size={40} color="#94a3b8" style={{ margin: '0 auto 12px auto' }} />
+                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#334155', margin: '0 0 6px 0' }}>
+                        {isFr ? 'Aucun objectif trouvé' : 'No production targets found'}
+                    </h3>
+                    <p style={{ fontSize: '13px', margin: '0 0 16px 0' }}>
+                        {isFr
+                            ? 'Définissez votre premier objectif de production pour suivre les performances de l’usine.'
+                            : 'Set your first production target to begin tracking output and reaching goals.'}
+                    </p>
+                    <button
+                        onClick={openCreateModal}
+                        style={{
+                            padding: '8px 16px',
+                            background: '#2563eb',
+                            color: '#ffffff',
+                            borderRadius: '8px',
+                            border: 'none',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        {isFr ? '+ Définir un Objectif' : '+ Set Production Target'}
+                    </button>
+                </div>
+            )}
+
+            {/* Detailed Planning Table */}
+            {targets.length > 0 && (
+                <div
+                    style={{
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                    }}
+                >
+                    <div
+                        style={{
+                            padding: '16px 20px',
+                            borderBottom: '1px solid #e2e8f0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
+                            {isFr ? 'Tableau Récapitulatif des Objectifs' : 'Production Targets Overview'}
+                        </h2>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>
+                            {targets.length} {isFr ? 'objectifs au total' : 'total goals'}
+                        </span>
+                    </div>
+
+                    <div style={{ overflowX: 'auto', width: '100%' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                            <thead>
+                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                        {isFr ? 'Objectif' : 'Target Goal'}
+                                    </th>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                        {isFr ? 'Produit & Atelier' : 'Product & Stage'}
+                                    </th>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                        {isFr ? 'Quantité Cible' : 'Target Qty'}
+                                    </th>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                        {isFr ? 'Réalisé' : 'Actual Reached'}
+                                    </th>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                        {isFr ? 'Reste à faire' : 'Remaining'}
+                                    </th>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                        {isFr ? '% d’Atteinte' : '% Progress'}
+                                    </th>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                        {isFr ? 'Échéance' : 'Deadline'}
+                                    </th>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                        {isFr ? 'Actions' : 'Actions'}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {targets.map((t) => {
+                                    const stageMeta = STAGE_LABELS[t.stage] || STAGE_LABELS.finished;
+                                    const isPassed = t.is_completed;
+                                    return (
+                                        <tr
+                                            key={t.id}
+                                            style={{
+                                                borderBottom: '1px solid #f1f5f9',
+                                                transition: 'background 0.15s ease',
+                                            }}
+                                        >
+                                            <td style={{ textAlign: 'left', padding: '12px 18px' }}>
+                                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{t.title}</div>
+                                                {t.notes && (
+                                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                                        {t.notes}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px' }}>
+                                                <div style={{ fontWeight: 500, color: '#334155' }}>
+                                                    {t.product_name || (isFr ? 'Tous les produits' : 'All Products')}
+                                                </div>
+                                                <span
+                                                    style={{
+                                                        fontSize: '11px',
+                                                        fontWeight: 600,
+                                                        padding: '1px 6px',
+                                                        borderRadius: '4px',
+                                                        background: stageMeta.bg,
+                                                        color: stageMeta.color,
+                                                        display: 'inline-block',
+                                                        marginTop: '3px',
+                                                    }}
+                                                >
+                                                    {isFr ? stageMeta.labelFr : stageMeta.label}
+                                                </span>
+                                            </td>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#0f172a' }}>
+                                                {t.target_quantity.toLocaleString()} pcs
+                                            </td>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#16a34a' }}>
+                                                {t.actual_quantity.toLocaleString()} pcs
+                                            </td>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px', color: isPassed ? '#16a34a' : '#d97706', fontWeight: 500 }}>
+                                                {isPassed ? (isFr ? '0 (Atteint)' : '0 (Reached)') : `${t.remaining_quantity.toLocaleString()} pcs`}
+                                            </td>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <div
+                                                        style={{
+                                                            width: '60px',
+                                                            height: '6px',
+                                                            borderRadius: '999px',
+                                                            background: '#e2e8f0',
+                                                            overflow: 'hidden',
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                width: `${t.progress_percent}%`,
+                                                                height: '100%',
+                                                                background: isPassed ? '#16a34a' : '#2563eb',
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <span
+                                                        style={{
+                                                            fontWeight: 700,
+                                                            color: isPassed ? '#16a34a' : '#2563eb',
+                                                            fontSize: '12px',
+                                                        }}
+                                                    >
+                                                        {t.progress_percent}%
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px', color: '#64748b' }}>
+                                                {t.end_date || '—'}
+                                            </td>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <button
+                                                        onClick={() => openEditModal(t)}
+                                                        title="Edit"
+                                                        style={{
+                                                            padding: '4px 6px',
+                                                            background: '#f8fafc',
+                                                            border: '1px solid #cbd5e1',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            color: '#475569',
+                                                        }}
+                                                    >
+                                                        <Edit3 size={13} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteTarget(t.id)}
+                                                        title="Delete"
+                                                        style={{
+                                                            padding: '4px 6px',
+                                                            background: '#fef2f2',
+                                                            border: '1px solid #fecaca',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            color: '#dc2626',
+                                                        }}
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Target Modal (Create or Edit) */}
+            {isModalOpen && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        backgroundColor: 'rgba(15, 23, 42, 0.55)',
+                        backdropFilter: 'blur(3px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 99999,
+                        padding: '16px',
+                    }}
+                >
+                    <div
+                        style={{
+                            background: '#ffffff',
+                            borderRadius: '16px',
+                            maxWidth: '560px',
+                            width: '100%',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        {/* Modal Header */}
+                        <div
+                            style={{
+                                padding: '18px 24px',
+                                borderBottom: '1px solid #e2e8f0',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+                                {editingTarget
+                                    ? (isFr ? 'Modifier l’Objectif' : 'Edit Production Target')
+                                    : (isFr ? 'Définir un Nouvel Objectif' : 'Set New Production Target')}
+                            </h3>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#94a3b8',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleFormSubmit} style={{ padding: '24px' }}>
+                            {formError && (
+                                <div
+                                    style={{
+                                        padding: '10px 14px',
+                                        background: '#fef2f2',
+                                        border: '1px solid #fecaca',
+                                        borderRadius: '8px',
+                                        color: '#991b1b',
+                                        fontSize: '13px',
+                                        marginBottom: '16px',
+                                    }}
+                                >
+                                    {formError}
+                                </div>
+                            )}
+
+                            {/* Title */}
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                    {isFr ? 'Titre de l’Objectif *' : 'Target Title *'}
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder={isFr ? 'Ex: Objectif Chemises Semaine 45' : 'e.g. Weekly Shirts Target'}
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '9px 12px',
+                                        border: '1px solid #cbd5e1',
+                                        borderRadius: '8px',
+                                        fontSize: '14px',
+                                        outline: 'none',
+                                        boxSizing: 'border-box',
+                                    }}
+                                />
+                            </div>
+
+                            {/* Product and Stage */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                        {isFr ? 'Produit Cible' : 'Target Product'}
+                                    </label>
+                                    <select
+                                        value={productName}
+                                        onChange={(e) => setProductName(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '9px 12px',
+                                            border: '1px solid #cbd5e1',
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            background: '#ffffff',
+                                            outline: 'none',
+                                            boxSizing: 'border-box',
+                                        }}
+                                    >
+                                        <option value="">{isFr ? 'Tous les produits' : 'All Products'}</option>
+                                        {products.map((p) => (
+                                            <option key={p.id} value={p.name}>
+                                                {p.name}
                                             </option>
                                         ))}
                                     </select>
-                                </label>
-                                <label>
-                                    Quantity needed
-                                    <input
-                                        required
-                                        type="number"
-                                        min="0.000001"
-                                        step="any"
-                                        value={component.quantity}
-                                        onChange={(event) =>
-                                            editComponent(index, 'quantity', event.target.value)
-                                        }
-                                    />
-                                </label>
-                                <label>
-                                    Waste (%)
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
-                                        value={component.waste_percent}
-                                        onChange={(event) =>
-                                            editComponent(
-                                                index,
-                                                'waste_percent',
-                                                event.target.value,
-                                            )
-                                        }
-                                    />
-                                </label>
-                                <label className="check-row">
-                                    <input
-                                        type="checkbox"
-                                        checked={component.is_optional}
-                                        onChange={(event) =>
-                                            editComponent(
-                                                index,
-                                                'is_optional',
-                                                event.target.checked,
-                                            )
-                                        }
-                                    />
-                                    <span>Optional</span>
-                                </label>
-                                {bomForm.components.length > 1 && (
-                                    <button
-                                        type="button"
-                                        className="icon-btn"
-                                        onClick={() => removeComponent(index)}
-                                        aria-label="Remove material"
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                        {isFr ? 'Atelier / Étape *' : 'Target Stage *'}
+                                    </label>
+                                    <select
+                                        value={stage}
+                                        onChange={(e) => setStage(e.target.value as any)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '9px 12px',
+                                            border: '1px solid #cbd5e1',
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            background: '#ffffff',
+                                            outline: 'none',
+                                            boxSizing: 'border-box',
+                                        }}
                                     >
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
+                                        <option value="finished">{isFr ? 'Produits Finis (Sortie Finale)' : 'Finished Output (Final)'}</option>
+                                        <option value="cutting">{isFr ? 'Coupe (Pièces coupées)' : 'Cutting Stage'}</option>
+                                        <option value="sewing">{isFr ? 'Couture (Pièces cousues)' : 'Sewing Stage'}</option>
+                                        <option value="finishing">{isFr ? 'Finition (Pièces finies)' : 'Finishing Stage'}</option>
+                                        <option value="packing">{isFr ? 'Emballage (Pièces emballées)' : 'Packing Stage'}</option>
+                                    </select>
+                                </div>
                             </div>
-                        ))}
-                        <button type="button" className="secondary-btn" onClick={addComponent}>
-                            <Plus size={15} />
-                            Add another material
-                        </button>
-                    </div>
-                    <button className="primary-btn" disabled={busy}>
-                        <Save size={16} />
-                        {busy ? 'Creating…' : 'Create recipe'}
-                    </button>
-                </form>
-            )}
 
-            <section className="production-summary">
-                {readOnly ? (
-                    <>
-                        <Summary label="Active orders" value={summary.active_orders} />
-                        <Summary label="Planned quantity" value={summary.planned_quantity} />
-                        <Summary label="Completed output" value={summary.completed_quantity} />
-                        <Summary
-                            label="Rejected or wasted"
-                            value={
-                                Number(summary.rejected_quantity || 0) +
-                                Number(summary.waste_quantity || 0)
-                            }
-                            danger={
-                                Number(summary.rejected_quantity || 0) +
-                                    Number(summary.waste_quantity || 0) >
-                                0
-                            }
-                        />
-                    </>
-                ) : (
-                    <>
-                        <Summary label="Needs approval" value={summary.needs_approval} />
-                        <Summary label="Active orders" value={summary.active_orders} />
-                        <Summary label="Completed orders" value={summary.completed_orders} />
-                        <Summary
-                            label="Past due"
-                            value={summary.past_due}
-                            danger={summary.past_due > 0}
-                        />
-                    </>
-                )}
-            </section>
-
-            {open && canPlan && (
-                <form className="panel admin-form production-order-form" onSubmit={create}>
-                    <header>
-                        <div>
-                            <h2>Create a production order</h2>
-                            <p>Choose the product, quantity, process and finish date.</p>
-                        </div>
-                    </header>
-                    <div className="form-grid">
-                        <label>
-                            Order number
-                            <input
-                                required
-                                value={form.order_number}
-                                onChange={(event) =>
-                                    setForm({ ...form, order_number: event.target.value })
-                                }
-                            />
-                        </label>
-                        <label>
-                            Product recipe
-                            <select
-                                required
-                                value={form.bill_of_material_id}
-                                onChange={(event) =>
-                                    setForm({ ...form, bill_of_material_id: event.target.value })
-                                }
-                            >
-                                <option value="">Choose what to produce</option>
-                                {recipes.map((item: any) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.item?.name || item.name} — Recipe {item.version}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label>
-                            Production process
-                            <select
-                                required
-                                value={form.workflow_template_id}
-                                onChange={(event) =>
-                                    setForm({ ...form, workflow_template_id: event.target.value })
-                                }
-                            >
-                                <option value="">Choose the production steps</option>
-                                {processes.map((item: any) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label>
-                            Warehouse
-                            <select
-                                required
-                                value={form.warehouse_id}
-                                onChange={(event) =>
-                                    setForm({ ...form, warehouse_id: event.target.value })
-                                }
-                            >
-                                <option value="">
-                                    Choose where materials come from and output goes to
-                                </option>
-                                {warehouses.map((item: any) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label>
-                            Quantity to produce
-                            <input
-                                required
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                value={form.planned_quantity}
-                                onChange={(event) =>
-                                    setForm({ ...form, planned_quantity: event.target.value })
-                                }
-                            />
-                        </label>
-                        <label>
-                            Start date
-                            <input
-                                type="date"
-                                value={form.planned_start}
-                                onChange={(event) =>
-                                    setForm({ ...form, planned_start: event.target.value })
-                                }
-                            />
-                        </label>
-                        <label>
-                            Finish date
-                            <input
-                                type="date"
-                                min={form.planned_start}
-                                value={form.planned_end}
-                                onChange={(event) =>
-                                    setForm({ ...form, planned_end: event.target.value })
-                                }
-                            />
-                        </label>
-                    </div>
-                    <button className="primary-btn" disabled={busy}>
-                        <Save size={16} />
-                        {busy ? 'Creating…' : 'Create order'}
-                    </button>
-                </form>
-            )}
-
-            <section className="panel production-section">
-                <header className="production-section-head">
-                    <div>
-                        <h2>{readOnly ? 'Production order progress' : 'Production orders'}</h2>
-                        <p>
-                            {readOnly
-                                ? 'Current quantities, progress and deadlines recorded by the production team.'
-                                : 'Approve new orders and check how much work is complete.'}
-                        </p>
-                    </div>
-                </header>
-                <div className="admin-table-wrap borderless">
-                    <table className="admin-table production-orders-table">
-                        <thead>
-                            <tr>
-                                <th>Order</th>
-                                <th>Product</th>
-                                {readOnly && <th>Planned</th>}
-                                <th>Progress</th>
-                                <th>Status</th>
-                                <th>Steps</th>
-                                <th>Finish date</th>
-                                {!readOnly && <th>Action</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {orders.length ? (
-                                orders.map((item: any) => {
-                                    const progress =
-                                        Number(item.planned_quantity) > 0
-                                            ? Math.min(
-                                                  100,
-                                                  Math.round(
-                                                      (Number(item.completed_quantity || 0) /
-                                                          Number(item.planned_quantity)) *
-                                                          100,
-                                                  ),
-                                              )
-                                            : 0;
-                                    return (
-                                        <tr key={item.id}>
-                                            <td>
-                                                <b>{item.order_number}</b>
-                                            </td>
-                                            <td>{item.item?.name || 'Product'}</td>
-                                            {readOnly && <td>{number(item.planned_quantity)}</td>}
-                                            <td>
-                                                <div className="simple-progress">
-                                                    <span style={{ width: progress + '%' }}></span>
-                                                </div>
-                                                <small>
-                                                    {number(item.completed_quantity)} of{' '}
-                                                    {number(item.planned_quantity)} ({progress}%)
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <span className={'admin-status ' + item.status}>
-                                                    {statusLabel[item.status] || item.status}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                {item.executions?.filter(
-                                                    (step: any) => step.status === 'completed',
-                                                ).length || 0}{' '}
-                                                of {item.executions?.length || 0}
-                                            </td>
-                                            <td>
-                                                {item.planned_end
-                                                    ? new Date(
-                                                          item.planned_end + 'T12:00:00',
-                                                      ).toLocaleDateString()
-                                                    : 'Not set'}
-                                            </td>
-                                            {!readOnly && (
-                                                <td>
-                                                    {item.status === 'draft' && canApprove ? (
-                                                        <button
-                                                            className="table-action"
-                                                            disabled={busy}
-                                                            onClick={() => approve(item.id)}
-                                                        >
-                                                            <CheckCircle2 size={15} />
-                                                            Approve order
-                                                        </button>
-                                                    ) : (
-                                                        <span className="muted-action">
-                                                            {item.status === 'completed'
-                                                                ? 'Finished'
-                                                                : 'No action needed'}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            )}
-                                        </tr>
-                                    );
-                                })
-                            ) : (
-                                <tr>
-                                    <td colSpan={8}>
-                                        <Empty
-                                            title="No production records yet"
-                                            text={
-                                                readOnly
-                                                    ? 'Production orders will appear when the production team records them.'
-                                                    : 'Create the first production order to begin tracking work.'
-                                            }
-                                        />
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            {readOnly ? (
-                <OwnerStageResults stages={stages} />
-            ) : (
-                <section className="panel production-section">
-                    <header className="production-section-head">
-                        <div>
-                            <h2>Production steps</h2>
-                            <p>Start ready work, record quantities and complete steps in order.</p>
-                        </div>
-                    </header>
-                    {stages.length ? (
-                        <div className="production-step-list">
-                            {stages.map((stage: any) => (
-                                <EditableStage
-                                    key={stage.id}
-                                    stage={stage}
-                                    edit={stageEdits[stage.id] || {}}
-                                    editStage={editStage}
-                                    saveStage={saveStage}
-                                    busy={busy}
-                                    canExecute={canExecute}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <Empty
-                            title="No production steps are active"
-                            text="Approve a production order to create its production steps."
-                        />
-                    )}
-                </section>
-            )}
-        </section>
-    );
-}
-
-function EditableStage({ stage, edit, editStage, saveStage, busy, canExecute }: any) {
-    const canRecord =
-        canExecute && ['ready', 'in_progress', 'blocked', 'rework'].includes(stage.status);
-    const resultFields: [string, string][] = [
-        ['input_quantity', 'Material received into this step'],
-        ['output_quantity', 'Units produced'],
-        ['rejected_quantity', 'Units rejected'],
-        ['waste_quantity', 'Waste'],
-        ['downtime_minutes', 'Stopped time (minutes)'],
-    ];
-
-    return (
-        <article className="production-step">
-            <div className="production-step-title">
-                <span className={'step-dot ' + stage.status}></span>
-                <div>
-                    <b>{stage.stage?.name || 'Production step'}</b>
-                    <small>
-                        {stage.order_number} · {stage.product}
-                    </small>
-                </div>
-                <em className={'admin-status ' + stage.status}>
-                    {statusLabel[stage.status] || stage.status.replaceAll('_', ' ')}
-                </em>
-            </div>
-            {canRecord && (
-                <div className="production-result-fields">
-                    {resultFields.map(([field, label]) => (
-                        <label key={field}>
-                            {label}
-                            <input
-                                type="number"
-                                min="0"
-                                value={edit[field] ?? stage[field] ?? 0}
-                                onChange={(event) => editStage(stage.id, field, event.target.value)}
-                            />
-                        </label>
-                    ))}
-                </div>
-            )}
-            {canExecute && (
-                <div className="production-step-actions">
-                    {stage.status === 'ready' && (
-                        <button
-                            className="primary-btn"
-                            disabled={busy}
-                            onClick={() => saveStage(stage, 'in_progress')}
-                        >
-                            <Play size={15} />
-                            Start step
-                        </button>
-                    )}
-                    {stage.status === 'in_progress' && (
-                        <>
-                            <button
-                                className="secondary-btn"
-                                disabled={busy}
-                                onClick={() => saveStage(stage, 'blocked')}
-                            >
-                                Mark blocked
-                            </button>
-                            <button
-                                className="primary-btn"
-                                disabled={busy}
-                                onClick={() => saveStage(stage, 'completed')}
-                            >
-                                <CheckCircle2 size={15} />
-                                Complete step
-                            </button>
-                        </>
-                    )}
-                    {['blocked', 'rework'].includes(stage.status) && (
-                        <button
-                            className="primary-btn"
-                            disabled={busy}
-                            onClick={() => saveStage(stage, 'in_progress')}
-                        >
-                            <Play size={15} />
-                            Resume work
-                        </button>
-                    )}
-                    {stage.status === 'not_started' && (
-                        <span>Complete the previous step first.</span>
-                    )}
-                    {stage.status === 'completed' && (
-                        <span className="completed-label">
-                            <CheckCircle2 size={16} />
-                            Step completed
-                        </span>
-                    )}
-                </div>
-            )}
-        </article>
-    );
-}
-
-function OwnerStageResults({ stages }: any) {
-    return (
-        <section className="panel production-section">
-            <header className="production-section-head">
-                <div>
-                    <h2>Production step results</h2>
-                    <p>Output and losses recorded at each stage of production.</p>
-                </div>
-            </header>
-            <div className="admin-table-wrap borderless">
-                <table className="admin-table production-results-table">
-                    <thead>
-                        <tr>
-                            <th>Order</th>
-                            <th>Production step</th>
-                            <th>Status</th>
-                            <th>Input</th>
-                            <th>Output</th>
-                            <th>Rejected</th>
-                            <th>Waste</th>
-                            <th>Stopped time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {stages.length ? (
-                            stages.map((stage: any) => (
-                                <tr key={stage.id}>
-                                    <td>
-                                        <b>{stage.order_number}</b>
-                                    </td>
-                                    <td>{stage.stage?.name || 'Production step'}</td>
-                                    <td>
-                                        <span className={'admin-status ' + stage.status}>
-                                            {statusLabel[stage.status] ||
-                                                stage.status.replaceAll('_', ' ')}
-                                        </span>
-                                    </td>
-                                    <td>{number(stage.input_quantity)}</td>
-                                    <td>{number(stage.output_quantity)}</td>
-                                    <td>{number(stage.rejected_quantity)}</td>
-                                    <td>{number(stage.waste_quantity)}</td>
-                                    <td>{number(stage.downtime_minutes)} min</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={8}>
-                                    <Empty
-                                        title="No production step results yet"
-                                        text="Results will appear when the production team starts recording work."
+                            {/* Quantity and Period */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                        {isFr ? 'Quantité Cible (pcs) *' : 'Target Quantity (pcs) *'}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        required
+                                        min="1"
+                                        value={targetQuantity}
+                                        onChange={(e) => setTargetQuantity(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '9px 12px',
+                                            border: '1px solid #cbd5e1',
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            outline: 'none',
+                                            boxSizing: 'border-box',
+                                        }}
                                     />
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    );
-}
-function Summary({ label, value, danger = false }: any) {
-    return (
-        <article className={'panel production-summary-card ' + (danger ? 'danger' : '')}>
-            <small>{label}</small>
-            <b>{number(value)}</b>
-        </article>
-    );
-}
-function Empty({ title, text }: any) {
-    return (
-        <div className="production-empty">
-            <b>{title}</b>
-            <span>{text}</span>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                        {isFr ? 'Période' : 'Period Type'}
+                                    </label>
+                                    <select
+                                        value={periodType}
+                                        onChange={(e) => setPeriodType(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '9px 12px',
+                                            border: '1px solid #cbd5e1',
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            background: '#ffffff',
+                                            outline: 'none',
+                                            boxSizing: 'border-box',
+                                        }}
+                                    >
+                                        <option value="daily">{isFr ? 'Journalier' : 'Daily'}</option>
+                                        <option value="weekly">{isFr ? 'Hebdomadaire' : 'Weekly'}</option>
+                                        <option value="monthly">{isFr ? 'Mensuel' : 'Monthly'}</option>
+                                        <option value="batch">{isFr ? 'Par Lot Spécifique' : 'Batch Specific'}</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Dates */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                        {isFr ? 'Date de Début' : 'Start Date'}
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '9px 12px',
+                                            border: '1px solid #cbd5e1',
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            outline: 'none',
+                                            boxSizing: 'border-box',
+                                        }}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                        {isFr ? 'Date d’Échéance Cible' : 'Target Deadline'}
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '9px 12px',
+                                            border: '1px solid #cbd5e1',
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            outline: 'none',
+                                            boxSizing: 'border-box',
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                    {isFr ? 'Instructions / Notes' : 'Notes / Floor Instructions'}
+                                </label>
+                                <textarea
+                                    rows={2}
+                                    placeholder={isFr ? 'Notes ou directives pour les chefs d’ateliers...' : 'Optional floor notes or specifications...'}
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '9px 12px',
+                                        border: '1px solid #cbd5e1',
+                                        borderRadius: '8px',
+                                        fontSize: '14px',
+                                        outline: 'none',
+                                        boxSizing: 'border-box',
+                                        resize: 'vertical',
+                                    }}
+                                />
+                            </div>
+
+                            {/* Modal Footer Actions */}
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(false)}
+                                    style={{
+                                        padding: '9px 16px',
+                                        background: '#f1f5f9',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        color: '#475569',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    {isFr ? 'Annuler' : 'Cancel'}
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    style={{
+                                        padding: '9px 20px',
+                                        background: '#2563eb',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        color: '#ffffff',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    {isSubmitting
+                                        ? (isFr ? 'Enregistrement...' : 'Saving...')
+                                        : editingTarget
+                                        ? (isFr ? 'Enregistrer les Modifications' : 'Update Target')
+                                        : (isFr ? 'Enregistrer l’Objectif' : 'Save Target')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

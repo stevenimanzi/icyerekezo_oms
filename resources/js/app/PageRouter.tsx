@@ -374,15 +374,11 @@ function CurrentPage({
                 />
             );
         case 'quality':
-            return <QualityControlPage can={can} />;
+            return <QualityControlPage can={can} user={user} flags={flags} />;
         case 'machines':
             return <MachinesPage can={can} />;
         case 'production':
-            return can('factory.manage') ? (
-                <ProductionFlowPage />
-            ) : (
-                <ProductionOperations can={can} />
-            );
+            return <ProductionOperations can={can} user={user} locale={locale} />;
     }
 
     return <PageNotFound locale={locale} onNavigate={onNavigate} />;

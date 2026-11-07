@@ -2,7 +2,17 @@
 
 use App\Http\Controllers\Production\ManufacturingController;
 use App\Http\Controllers\Production\ProductionFlowController;
+use App\Http\Controllers\Production\ProductionTargetController;
 use Illuminate\Support\Facades\Route;
+
+Route::controller(ProductionTargetController::class)
+    ->prefix('production/targets')
+    ->group(function () {
+        Route::get('/', 'index')->middleware('permission:production.view|production.plan|factory.manage');
+        Route::post('/', 'store')->middleware('permission:production.view|production.plan|factory.manage');
+        Route::put('/{target}', 'update')->middleware('permission:production.view|production.plan|factory.manage');
+        Route::delete('/{target}', 'destroy')->middleware('permission:production.view|production.plan|factory.manage');
+    });
 
 Route::controller(ManufacturingController::class)
     ->prefix('manufacturing')

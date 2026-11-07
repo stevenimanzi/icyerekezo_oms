@@ -45,13 +45,30 @@ const emptyForm = {
     notes: '',
 };
 
-export default function QualityControlPage({ can }: any) {
+export default function QualityControlPage({ can, user, flags }: any) {
     const [data, setData] = useState<any>(null);
     const [form, setForm] = useState<any>(emptyForm);
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const isQualityUser = Boolean(
+        flags?.isQualityUser ||
+        flags?.isQualityManager ||
+        user?.roles?.some(
+            (r: any) =>
+                r.slug === 'quality-manager' ||
+                r.slug === 'quality-controller' ||
+                r.slug === 'quality-officer' ||
+                r.slug === 'quality-control' ||
+                r.name?.toLowerCase().includes('quality'),
+        ) ||
+        user?.workspace === 'quality'
+    );
+
+    const canRecord = isQualityUser && can('quality.inspect');
+    const canApprove = isQualityUser && can('quality.approve');
 
     const load = () =>
         api('/api/quality/overview')
@@ -156,7 +173,7 @@ export default function QualityControlPage({ can }: any) {
                         <RefreshCw size={16} />
                         Refresh
                     </button>
-                    {can('quality.inspect') && (
+                    {canRecord && (
                         <button
                             className="primary-btn"
                             onClick={() => (open ? setOpen(false) : startNewInspection())}
@@ -186,11 +203,13 @@ export default function QualityControlPage({ can }: any) {
                 />
             </div>
 
-            {can('quality.inspect') && (
-                <PackedBatchQueue batches={packedBatches} onInspect={inspectBatch} />
-            )}
+            <PackedBatchQueue
+                batches={packedBatches}
+                onInspect={inspectBatch}
+                canRecord={canRecord}
+            />
 
-            {open && (
+            {open && canRecord && (
                 <InspectionForm
                     form={form}
                     setForm={setForm}
@@ -204,43 +223,52 @@ export default function QualityControlPage({ can }: any) {
                 />
             )}
 
-            <InspectionsTable inspections={inspections} busy={busy} can={can} onApprove={approve} />
+            <InspectionsTable
+                inspections={inspections}
+                busy={busy}
+                canApprove={canApprove}
+                onApprove={approve}
+            />
         </section>
     );
 }
 
-function PackedBatchQueue({ batches, onInspect }: any) {
+function PackedBatchQueue({ batches, onInspect, canRecord }: any) {
     return (
         <div className="admin-table-wrap">
             <table className="admin-table">
                 <thead>
                     <tr>
-                        <th>Packed batch awaiting inspection</th>
-                        <th>Quantity</th>
-                        <th>Action</th>
+                        <th style={{ textAlign: 'left' }}>Packed batch awaiting inspection</th>
+                        <th style={{ textAlign: 'left' }}>Quantity</th>
+                        <th style={{ textAlign: 'left' }}>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {batches.length ? (
                         batches.map((batch: any) => (
                             <tr key={batch.id}>
-                                <td>
+                                <td style={{ textAlign: 'left' }}>
                                     <b>{batch.name}</b>
                                 </td>
-                                <td>{Number(batch.available_qty).toLocaleString()}</td>
-                                <td>
-                                    <button
-                                        className="table-action"
-                                        onClick={() => onInspect(batch)}
-                                    >
-                                        Inspect
-                                    </button>
+                                <td style={{ textAlign: 'left' }}>{Number(batch.available_qty).toLocaleString()}</td>
+                                <td style={{ textAlign: 'left' }}>
+                                    {canRecord ? (
+                                        <button
+                                            className="table-action"
+                                            onClick={() => onInspect(batch)}
+                                        >
+                                            Inspect
+                                        </button>
+                                    ) : (
+                                        <span style={{ fontSize: '12px', color: '#64748b' }}>Awaiting QC inspection</span>
+                                    )}
                                 </td>
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan={3}>No packed batches are waiting on quality control.</td>
+                            <td colSpan={3} style={{ textAlign: 'left' }}>No packed batches are waiting on quality control.</td>
                         </tr>
                     )}
                 </tbody>
@@ -453,26 +481,26 @@ function InspectionForm({
     );
 }
 
-function InspectionsTable({ inspections, busy, can, onApprove }: any) {
+function InspectionsTable({ inspections, busy, canApprove, onApprove }: any) {
     return (
         <div className="admin-table-wrap">
             <table className="admin-table">
                 <thead>
                     <tr>
-                        <th>Inspection</th>
-                        <th>Order / item</th>
-                        <th>Type</th>
-                        <th>Quantities</th>
-                        <th>Result</th>
-                        <th>Inspector</th>
-                        <th>Approval</th>
+                        <th style={{ textAlign: 'left' }}>Inspection</th>
+                        <th style={{ textAlign: 'left' }}>Order / item</th>
+                        <th style={{ textAlign: 'left' }}>Type</th>
+                        <th style={{ textAlign: 'left' }}>Quantities</th>
+                        <th style={{ textAlign: 'left' }}>Result</th>
+                        <th style={{ textAlign: 'left' }}>Inspector</th>
+                        <th style={{ textAlign: 'left' }}>Approval</th>
                     </tr>
                 </thead>
                 <tbody>
                     {inspections.length ? (
                         inspections.map((inspection: any) => (
                             <tr key={inspection.id}>
-                                <td>
+                                <td style={{ textAlign: 'left' }}>
                                     <b>{inspection.inspection_number}</b>
                                     <br />
                                     <small>
@@ -481,7 +509,7 @@ function InspectionsTable({ inspections, busy, can, onApprove }: any) {
                                             : 'Pending'}
                                     </small>
                                 </td>
-                                <td>
+                                <td style={{ textAlign: 'left' }}>
                                     {inspection.order?.order_number ||
                                         inspection.batch?.batch_number ||
                                         '—'}
@@ -492,23 +520,23 @@ function InspectionsTable({ inspections, busy, can, onApprove }: any) {
                                             'General inspection'}
                                     </small>
                                 </td>
-                                <td>{inspection.inspection_type.replaceAll('_', ' ')}</td>
-                                <td>
+                                <td style={{ textAlign: 'left' }}>{inspection.inspection_type.replaceAll('_', ' ')}</td>
+                                <td style={{ textAlign: 'left' }}>
                                     {Number(inspection.passed_quantity)} passed
                                     <br />
                                     <small>{Number(inspection.rejected_quantity)} rejected</small>
                                 </td>
-                                <td>
+                                <td style={{ textAlign: 'left' }}>
                                     <span className={'admin-status ' + inspection.result}>
                                         {inspection.result}
                                     </span>
                                 </td>
-                                <td>{inspection.inspector?.name}</td>
-                                <td>
+                                <td style={{ textAlign: 'left' }}>{inspection.inspector?.name}</td>
+                                <td style={{ textAlign: 'left' }}>
                                     {inspection.approved_at ? (
                                         <span>Approved by {inspection.approver?.name}</span>
                                     ) : inspection.result !== 'pending' &&
-                                      can('quality.approve') ? (
+                                      canApprove ? (
                                         <button
                                             className="table-action"
                                             disabled={busy}
@@ -517,14 +545,14 @@ function InspectionsTable({ inspections, busy, can, onApprove }: any) {
                                             Approve
                                         </button>
                                     ) : (
-                                        <span>Awaiting approval</span>
+                                        <span style={{ fontSize: '12px', color: '#64748b' }}>Awaiting approval</span>
                                     )}
                                 </td>
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan={7}>No inspections recorded yet.</td>
+                            <td colSpan={7} style={{ textAlign: 'left' }}>No inspections recorded yet.</td>
                         </tr>
                     )}
                 </tbody>
