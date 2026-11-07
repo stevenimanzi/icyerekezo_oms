@@ -1313,7 +1313,9 @@ export function AuthScreen({
 
                     {/* Bottom Copyright */}
                     <div className="auth-bottom-copyright">
-                        <span>Copyright © 2026 ICYEREKEZO OMS. All rights reserved.</span>
+                        <span>
+                            Copyright © 2026 ICYEREKEZO OMS. All rights reserved. Powered by ICYEREKEZO DIGITAL INNOVATION Ltd
+                        </span>
                     </div>
                 </div>
             </div>

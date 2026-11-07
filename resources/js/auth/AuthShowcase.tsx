@@ -27,7 +27,7 @@ export function AuthShowcase({ locale = 'en' }: { locale?: Locale }) {
             </div>
             <div className="showcase-footer">
                 <span className="direction-motto">
-                    {isFr ? 'ICYEREKEZO signifie Direction.' : 'ICYEREKEZO means Direction.'}
+                    {isFr ? 'Nous automatisons le flux de données de votre usine' : 'We Automate your Factory Data Flow'}
                 </span>
             </div>
         </section>
