@@ -14,10 +14,36 @@ import { AdminTable } from '../components/AdminTable';
 import { Status } from '../components/Status';
 import type { AdminContext } from '../useAdminData';
 
+import React from 'react';
+import { Activity } from 'lucide-react';
+
+import {
+    CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
+import { AdminTable } from '../components/AdminTable';
+import { Status } from '../components/Status';
+import type { AdminContext } from '../useAdminData';
+
+function formatSafeDate(raw: any): string {
+    if (!raw) return '—';
+    try {
+        const d = new Date(raw);
+        return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+    } catch {
+        return '—';
+    }
+}
+
 export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
     const { data } = ctx;
     const s = data?.statistics || {};
-    const growth = data?.growth || [];
+    const growth = Array.isArray(data?.growth) ? data.growth : [];
     const cards: [string, string | number][] = [
         ['Factories', s.factories || 0],
         [
@@ -27,6 +53,15 @@ export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
         ['Platform users', s.users || 0],
         ['Open support tickets', s.open_tickets || 0],
     ];
+
+    const factories = Array.isArray(data?.factories) ? data.factories : [];
+    const factoryRows = factories.filter(Boolean).map((f: any) => [
+        f?.name || '—',
+        f?.users_count ?? 0,
+        <Status value={f?.status || 'active'} />,
+    ]);
+
+    const activities = Array.isArray(data?.activities) ? data.activities : [];
 
     return (
         <>
@@ -54,9 +89,9 @@ export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
                         <span>Current data</span>
                     </div>
                 </header>
-                <div className="platform-growth-chart">
-                    {growth.length ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                <div className="platform-growth-chart" style={{ minHeight: 280, position: 'relative' }}>
+                    {growth.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%" minHeight={260}>
                             <LineChart
                                 data={growth}
                                 margin={{ top: 14, right: 18, left: -12, bottom: 4 }}
@@ -118,7 +153,17 @@ export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
                             </LineChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div className="executive-empty">Waiting for growth data…</div>
+                        <div
+                            className="executive-empty"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '100%',
+                            }}
+                        >
+                            Waiting for growth data…
+                        </div>
                     )}
                 </div>
                 <div className="growth-legend">
@@ -132,30 +177,32 @@ export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
                     <h2>Recent factories</h2>
                     <AdminTable
                         headers={['Factory', 'Users', 'Status']}
-                        rows={(data?.factories || []).map((f: any) => [
-                            f.name,
-                            f.users_count,
-                            <Status value={f.status} />,
-                        ])}
+                        rows={factoryRows}
                     />
                 </article>
                 <article className="panel">
                     <h2>Real system activity</h2>
                     <div className="activity-feed">
-                        {(data?.activities || []).map((a: any) => (
-                            <div key={a.id}>
-                                <span>
-                                    <Activity size={14} />
-                                </span>
-                                <div>
-                                    <b>{a.description}</b>
-                                    <small>
-                                        {a.user?.name || 'System'} ·{' '}
-                                        {new Date(a.created_at).toLocaleString()}
-                                    </small>
+                        {activities.length > 0 ? (
+                            activities.filter(Boolean).map((a: any, idx: number) => (
+                                <div key={a?.id ?? idx}>
+                                    <span>
+                                        <Activity size={14} />
+                                    </span>
+                                    <div>
+                                        <b>{a?.description || 'System event'}</b>
+                                        <small>
+                                            {a?.user?.name || 'System'} ·{' '}
+                                            {formatSafeDate(a?.created_at)}
+                                        </small>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <p style={{ color: 'var(--muted)', padding: '16px 0', textAlign: 'center' }}>
+                                No recent activity.
+                            </p>
+                        )}
                     </div>
                 </article>
             </div>

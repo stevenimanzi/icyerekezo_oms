@@ -5,6 +5,7 @@ const adminPagePaths: Record<string, string> = {
     factories: '/admin/factories',
     'platform-users': '/admin/users',
     subscriptions: '/admin/subscriptions',
+    'audit-logs': '/admin/audit-logs',
     announcements: '/admin/announcements',
     notifications: '/admin/notifications',
     'support-center': '/admin/support',

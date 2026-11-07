@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import type { AuthUser, Locale } from '../core/types';
 import type { RoleFlags } from '../roles/flags';
 import { homeFor } from '../roles/home';
@@ -9,6 +9,31 @@ import { PageBoundary } from './PageBoundary';
 import { pageKeyFromPath } from './routing';
 import type { Tab as FlowTab } from '../pages/production/flow/StageWorkspace';
 import type { StageKey } from '../pages/production/flow/types';
+
+function lazyWithRetry<T extends React.ComponentType<any>>(
+    factory: () => Promise<{ default: T }>,
+) {
+    return lazy(async () => {
+        try {
+            return await factory();
+        } catch (error: any) {
+            const msg = String(error?.message || '');
+            const isChunkError =
+                msg.includes('dynamically imported module') ||
+                msg.includes('Loading chunk') ||
+                msg.includes('Failed to fetch') ||
+                error?.name === 'ChunkLoadError';
+
+            const refreshed = sessionStorage.getItem('chunk_refreshed');
+            if (isChunkError && !refreshed) {
+                sessionStorage.setItem('chunk_refreshed', '1');
+                window.location.reload();
+                return new Promise<{ default: T }>(() => {});
+            }
+            throw error;
+        }
+    });
+}
 
 const AgreementWorkspacePage = lazy(() => import('../pages/logistics/AgreementWorkspacePage'));
 const CuttingWorkspacePage = lazy(
@@ -73,7 +98,7 @@ const MaterialRequestsPage = lazy(
 );
 const FactoryReportPage = lazy(() => import('../pages/reports/FactoryReportPage'));
 const StageWorkspace = lazy(() => import('../pages/production/flow/StageWorkspace'));
-const SystemAdminPage = lazy(() => import('../roles/system-admin/SystemAdminPage'));
+const SystemAdminPage = lazyWithRetry(() => import('../roles/system-admin/SystemAdminPage'));
 const TeamManagementPage = lazy(() =>
     import('../pages/production/FactoryManagerModules').then((module) => ({
         default: module.TeamManagementPage,

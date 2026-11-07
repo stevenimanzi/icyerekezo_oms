@@ -14,10 +14,25 @@ export class PageBoundary extends React.Component<
 
     componentDidCatch(error: Error) {
         console.error('Page render failed', error);
+
+        // Check if error is due to a stale Vite bundle / missing chunk after deployment
+        const msg = String(error?.message || '');
+        const isChunkError =
+            msg.includes('dynamically imported module') ||
+            msg.includes('Loading chunk') ||
+            msg.includes('Failed to fetch') ||
+            error?.name === 'ChunkLoadError';
+
+        if (isChunkError && !sessionStorage.getItem('chunk_reload_lock')) {
+            sessionStorage.setItem('chunk_reload_lock', '1');
+            window.location.reload();
+            return;
+        }
+
         if (this.state.attempts < 2) {
             this.recoveryTimer = window.setTimeout(
                 () => this.setState((state) => ({ failed: false, attempts: state.attempts + 1 })),
-                350,
+                400,
             );
         }
     }
@@ -36,7 +51,15 @@ export class PageBoundary extends React.Component<
 
     retry = () => {
         window.clearTimeout(this.recoveryTimer);
-        this.setState((state) => ({ failed: false, attempts: state.attempts + 1, error: '' }));
+        sessionStorage.removeItem('chunk_reload_lock');
+
+        // If it failed multiple times, do a full browser refresh to ensure fresh assets & auth state
+        if (this.state.attempts >= 2) {
+            window.location.reload();
+            return;
+        }
+
+        this.setState({ failed: false, attempts: 0, error: '' });
     };
 
     render() {
@@ -44,7 +67,7 @@ export class PageBoundary extends React.Component<
         if (this.state.attempts < 2) {
             return (
                 <div className="panel page-recovery page-reconnecting" role="status">
-                    <RefreshCw size={30} />
+                    <RefreshCw size={30} className="spin" />
                     <h2>Loading your page</h2>
                     <p>Connecting to the latest factory data…</p>
                 </div>
