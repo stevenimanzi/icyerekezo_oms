@@ -6285,13 +6285,22 @@ td,
 .products-metrics {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 14px;
+    gap: 10px;
+    margin-bottom: 14px;
 }
 .products-metrics article {
-    padding: 19px 21px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--panel);
+    min-height: 72px;
+    padding: 10px 14px;
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 6px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+[data-theme="dark"] .products-metrics article {
+    background: var(--panel, #1e293b);
+    border-color: var(--line, #334155);
 }
 .products-metrics span,
 .products-metrics strong {
@@ -6299,45 +6308,77 @@ td,
 }
 .products-metrics span {
     color: var(--muted);
-    font-size: 12px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .products-metrics strong {
-    margin-top: 8px;
-    font-size: 25px;
+    margin-top: 3px;
+    font-size: 15.5px;
+    font-weight: 800;
+    color: var(--text, #0f172a);
 }
 .products-tabs {
     display: flex;
-    padding: 7px;
-    gap: 6px;
+    gap: 24px;
+    padding: 0;
+    border: none;
+    border-bottom: 1px solid var(--line, #e2e8f0);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    margin-bottom: 16px;
 }
 .products-tabs button {
-    display: flex;
-    flex: 1;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 9px;
-    min-height: 49px;
+    gap: 8px;
+    min-height: 38px;
+    height: 38px;
+    padding: 0 4px;
     border: 0;
-    border-radius: 10px;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
     color: var(--muted);
     background: transparent;
     font: inherit;
     font-size: 13px;
-    font-weight: 750;
+    font-weight: 600;
     cursor: pointer;
+    position: relative;
+    bottom: -1px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.products-tabs button:hover {
+    color: var(--text);
+    border-bottom-color: var(--line);
 }
 .products-tabs button.active {
-    color: var(--brand);
-    background: #eaf2ff;
+    color: var(--brand, #2563eb);
+    background: transparent;
+    border-bottom: 2px solid var(--brand, #2563eb);
+    font-weight: 700;
 }
 .products-tabs span {
-    display: grid;
-    min-width: 23px;
-    height: 23px;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--soft);
-    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--soft, #f1f5f9);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+.products-tabs button.active span {
+    background: color-mix(in srgb, var(--brand, #2563eb) 14%, transparent);
+    color: var(--brand, #2563eb);
 }
 .products-data-panel {
     overflow: hidden;
@@ -10931,4 +10972,61 @@ select:focus {
     background: rgba(255, 255, 255, 0.02) !important;
     border-color: var(--line) !important;
     color: var(--text) !important;
+}
+
+/* Universal Compact Buttons Across Whole Project */
+.primary-btn,
+.secondary-btn,
+.btn-primary,
+.btn-secondary,
+.products-heading-actions button,
+.products-heading .secondary-btn,
+.products-heading .primary-btn,
+.ui-actions button,
+.page-heading .secondary-btn,
+.page-heading .primary-btn,
+.module-header button:not(.icon-btn),
+.module-header .primary-btn,
+.module-header .secondary-btn,
+.sales-heading button,
+.cutting-actions button,
+.cutting-header-actions button,
+.flow-step-actions button,
+button.primary-btn,
+button.secondary-btn {
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 13px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+.primary-btn svg,
+.secondary-btn svg,
+.products-heading-actions button svg,
+.ui-actions button svg,
+.page-heading button svg {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+.icon-btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
 }

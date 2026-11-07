@@ -179,7 +179,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
     }
 
     const tabs: [string, string][] = [
-        ['items', 'Products and item codes'],
+        ['items', 'Products and materials'],
         ['categories', 'Categories'],
         ['boms', 'Materials needed'],
         ['units', 'Units and conversions'],
@@ -224,17 +224,19 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
 
             {data && (
                 <>
-                    <div className="products-metrics">
+                    <div className="products-metrics ui-kpis">
                         <Metric label="All items" value={data.summary.items} />
                         <Metric label="Active items" value={data.summary.active_items} />
                         <Metric label="Finished products" value={data.summary.finished_products} />
                         <Metric label="Raw materials" value={data.summary.raw_materials} />
                         <Metric label="Product recipes" value={data.summary.recipes} />
                     </div>
-                    <nav className="panel products-tabs">
+                    <nav className="products-tabs" role="tablist">
                         {tabs.map(([key, label]) => (
                             <button
                                 key={key}
+                                role="tab"
+                                aria-selected={tab === key}
                                 className={tab === key ? 'active' : ''}
                                 onClick={() => setTab(key)}
                             >
@@ -582,8 +584,8 @@ function UnitForm({ form, setForm }: any) {
 }
 function Metric({ label, value }: any) {
     return (
-        <article>
-            <span>{label}</span>
+        <article className="ui-kpi">
+            <small>{label}</small>
             <strong>{Number(value || 0).toLocaleString()}</strong>
         </article>
     );
@@ -613,14 +615,13 @@ function Empty({ columns, text }: any) {
 function Items({ rows, money, quantity, edit }: any) {
     return (
         <>
-            <PanelHeader title="Products and item codes" count={rows.length} />
+            <PanelHeader title="Products and materials" count={rows.length} />
             <div className="admin-table-wrap">
                 <table className="admin-table products-table">
                     <thead>
                         <tr>
                             <th>Item</th>
                             <th>Colour</th>
-                            <th>Code</th>
                             <th>Type</th>
                             <th>Category</th>
                             <th>Unit</th>
@@ -645,7 +646,6 @@ function Items({ rows, money, quantity, edit }: any) {
                                             '—'
                                         )}
                                     </td>
-                                    <td>{item.sku}</td>
                                     <td>{String(item.type).replaceAll('_', ' ')}</td>
                                     <td>{item.category_name || 'Not categorized'}</td>
                                     <td>{item.unit?.symbol || '—'}</td>
@@ -773,7 +773,6 @@ function Boms({ rows, units, quantity }: any) {
                                 <thead>
                                     <tr>
                                         <th>Material</th>
-                                        <th>Code</th>
                                         <th>Quantity needed</th>
                                         <th>Waste</th>
                                         <th>Required</th>
@@ -787,7 +786,6 @@ function Boms({ rows, units, quantity }: any) {
                                                 <td>
                                                     <b>{component.item?.name || 'Unknown item'}</b>
                                                 </td>
-                                                <td>{component.item?.sku || '—'}</td>
                                                 <td>
                                                     {quantity(component.quantity, unit?.symbol)}
                                                 </td>
