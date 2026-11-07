@@ -10484,33 +10484,41 @@ body, button, input, select, textarea, .panel, .admin-table {
     background: transparent !important;
 }
 
-/* Equal Height & Width KPI Grid */
+/* Equal Height & Width KPI Grid - Modern Compact SaaS */
 .kpi-grid,
 .warehouse-kpi-row {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
     align-items: stretch;
-    margin-bottom: 22px;
+    margin-bottom: 14px;
 }
 
 .kpi-grid > article,
 .warehouse-kpi-row > article,
 .warehouse-kpi-card {
     height: 100% !important;
-    min-height: 124px !important;
+    min-height: 72px !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--line) !important;
-    background: var(--panel) !important;
-    padding: 16px 14px !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+    border: 1px solid var(--line, #e2e8f0) !important;
+    background: #ffffff !important;
+    padding: 10px 12px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+[data-theme="dark"] .kpi-grid > article,
+[data-theme="dark"] .warehouse-kpi-row > article,
+[data-theme="dark"] .warehouse-kpi-card {
+    background: var(--panel, #1e293b) !important;
+    border-color: var(--line, #334155) !important;
 }
 
 .warehouse-kpi-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 1240px) {

@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     AlertTriangle,
-    ArrowDownRight,
     ArrowUpRight,
-    Boxes,
     CheckCircle2,
-    Clock,
     FileText,
     Layers,
     Package,
@@ -13,7 +10,6 @@ import {
     PackagePlus,
     RefreshCw,
     Search,
-    ShieldAlert,
     Warehouse,
 } from 'lucide-react';
 import {
@@ -157,17 +153,27 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 .warehouse-kpi-row {
                     display: grid !important;
                     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-                    gap: 12px !important;
+                    gap: 10px !important;
+                    margin-bottom: 14px !important;
                     align-items: stretch !important;
                 }
                 .warehouse-kpi-card {
                     height: 100% !important;
-                    min-height: 124px !important;
-                    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+                    min-height: 72px !important;
+                    padding: 10px 12px !important;
+                    border-radius: 6px !important;
+                    border: 1px solid var(--line, #e2e8f0) !important;
+                    background: #ffffff !important;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+                    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+                }
+                [data-theme="dark"] .warehouse-kpi-card {
+                    background: var(--panel, #1e293b) !important;
+                    border-color: var(--line, #334155) !important;
                 }
                 .warehouse-kpi-card:hover {
-                    transform: translateY(-2px) !important;
-                    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06) !important;
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
                 }
                 @media (max-width: 1240px) {
                     .warehouse-kpi-row {
@@ -340,204 +346,351 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 </button>
             </div>
 
-            {/* 6 Key KPIs - ALL ON FIRST ROW WITH IDENTICAL WIDTH & HEIGHT */}
+            {/* 6 Key KPIs - Compact, real white, single-line titles, no icons */}
             <div
                 className="warehouse-kpi-row"
                 style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
-                    gap: 12,
-                    marginBottom: 22,
+                    gap: 10,
+                    marginBottom: 14,
                     alignItems: 'stretch',
                 }}
             >
                 {/* Total Value */}
                 <article
-                    className="panel warehouse-kpi-card"
+                    className="warehouse-kpi-card"
                     style={{
-                        padding: '16px 14px',
+                        padding: '10px 12px',
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        height: '100%',
-                        minHeight: 124,
-                        borderRadius: 12,
-                        border: '1px solid var(--line)',
-                        background: 'var(--panel)',
-                        position: 'relative',
-                        transition: 'all 0.2s ease',
+                        justifyContent: 'center',
+                        borderRadius: 6,
+                        border: '1px solid var(--line, #e2e8f0)',
+                        background: '#ffffff',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Valeur stock' : 'Total Stock Value'}
-                        </small>
-                        <span style={{ color: '#2563eb' }}><Boxes size={18} /></span>
-                    </div>
-                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <small
+                        style={{
+                            color: 'var(--muted)',
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: 'block',
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        {isFr ? 'Valeur stock' : 'Stock Value'}
+                    </small>
+                    <strong
+                        style={{
+                            display: 'block',
+                            fontSize: 15.5,
+                            marginTop: 3,
+                            fontWeight: 800,
+                            color: 'var(--text)',
+                            whiteSpace: 'nowrap',
+                            letterSpacing: '-0.02em',
+                        }}
+                    >
                         {format.money(totalValue)}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <p
+                        style={{
+                            margin: '2px 0 0',
+                            fontSize: 11,
+                            color: 'var(--muted)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
                         {isFr ? `${itemsInStock} articles actifs` : `${itemsInStock} items in store`}
                     </p>
                 </article>
 
                 {/* Received in period */}
                 <article
-                    className="panel warehouse-kpi-card"
+                    className="warehouse-kpi-card"
                     style={{
-                        padding: '16px 14px',
+                        padding: '10px 12px',
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        height: '100%',
-                        minHeight: 124,
-                        borderRadius: 12,
-                        border: '1px solid var(--line)',
-                        background: 'var(--panel)',
-                        position: 'relative',
-                        transition: 'all 0.2s ease',
+                        justifyContent: 'center',
+                        borderRadius: 6,
+                        border: '1px solid var(--line, #e2e8f0)',
+                        background: '#ffffff',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Entrées (Période)' : 'Items Received'}
-                        </small>
-                        <span style={{ color: '#10b981' }}><ArrowDownRight size={18} /></span>
-                    </div>
-                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: '#10b981', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <small
+                        style={{
+                            color: 'var(--muted)',
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: 'block',
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        {isFr ? 'Articles reçus' : 'Items Received'}
+                    </small>
+                    <strong
+                        style={{
+                            display: 'block',
+                            fontSize: 15.5,
+                            marginTop: 3,
+                            fontWeight: 800,
+                            color: '#10b981',
+                            whiteSpace: 'nowrap',
+                            letterSpacing: '-0.02em',
+                        }}
+                    >
                         +{format.moneyShort(receivedValue)}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isFr ? 'Marchandises reçues' : 'Added in this period'}
+                    <p
+                        style={{
+                            margin: '2px 0 0',
+                            fontSize: 11,
+                            color: 'var(--muted)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
+                        {isFr ? 'Marchandises reçues' : 'Added this period'}
                     </p>
                 </article>
 
                 {/* Issued in period */}
                 <article
-                    className="panel warehouse-kpi-card"
+                    className="warehouse-kpi-card"
                     style={{
-                        padding: '16px 14px',
+                        padding: '10px 12px',
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        height: '100%',
-                        minHeight: 124,
-                        borderRadius: 12,
-                        border: '1px solid var(--line)',
-                        background: 'var(--panel)',
-                        position: 'relative',
-                        transition: 'all 0.2s ease',
+                        justifyContent: 'center',
+                        borderRadius: 6,
+                        border: '1px solid var(--line, #e2e8f0)',
+                        background: '#ffffff',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Sorties (Période)' : 'Items Sent Out'}
-                        </small>
-                        <span style={{ color: '#f59e0b' }}><ArrowUpRight size={18} /></span>
-                    </div>
-                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: '#f59e0b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <small
+                        style={{
+                            color: 'var(--muted)',
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: 'block',
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        {isFr ? 'Articles sortis' : 'Items Sent Out'}
+                    </small>
+                    <strong
+                        style={{
+                            display: 'block',
+                            fontSize: 15.5,
+                            marginTop: 3,
+                            fontWeight: 800,
+                            color: '#f59e0b',
+                            whiteSpace: 'nowrap',
+                            letterSpacing: '-0.02em',
+                        }}
+                    >
                         -{format.moneyShort(issuedValue)}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isFr ? 'Distribué en production' : 'Sent out in this period'}
+                    <p
+                        style={{
+                            margin: '2px 0 0',
+                            fontSize: 11,
+                            color: 'var(--muted)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
+                        {isFr ? 'Distribué' : 'Sent out this period'}
                     </p>
                 </article>
 
                 {/* Items to reorder */}
                 <article
-                    className="panel warehouse-kpi-card"
+                    className="warehouse-kpi-card"
                     style={{
-                        padding: '16px 14px',
+                        padding: '10px 12px',
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        height: '100%',
-                        minHeight: 124,
-                        borderRadius: 12,
-                        border: '1px solid var(--line)',
-                        background: 'var(--panel)',
-                        position: 'relative',
-                        transition: 'all 0.2s ease',
+                        justifyContent: 'center',
+                        borderRadius: 6,
+                        border: '1px solid var(--line, #e2e8f0)',
+                        background: '#ffffff',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'À réapprovisionner' : 'Running Low'}
-                        </small>
-                        <span style={{ color: '#f59e0b' }}><AlertTriangle size={18} /></span>
-                    </div>
-                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: lowStockCount > 0 ? '#d97706' : 'var(--text)', whiteSpace: 'nowrap' }}>
+                    <small
+                        style={{
+                            color: 'var(--muted)',
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: 'block',
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        {isFr ? 'Stock faible' : 'Running Low'}
+                    </small>
+                    <strong
+                        style={{
+                            display: 'block',
+                            fontSize: 15.5,
+                            marginTop: 3,
+                            fontWeight: 800,
+                            color: lowStockCount > 0 ? '#d97706' : 'var(--text)',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
                         {lowStockCount}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <p
+                        style={{
+                            margin: '2px 0 0',
+                            fontSize: 11,
+                            color: 'var(--muted)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
                         {lowStockCount > 0
-                            ? (isFr ? 'Stock sous le seuil' : 'Needs new order soon')
+                            ? (isFr ? 'Sous le seuil' : 'Needs new order')
                             : (isFr ? 'Niveaux corrects' : 'All stock is good')}
                     </p>
                 </article>
 
                 {/* Out of stock */}
                 <article
-                    className="panel warehouse-kpi-card"
+                    className="warehouse-kpi-card"
                     style={{
-                        padding: '16px 14px',
+                        padding: '10px 12px',
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        height: '100%',
-                        minHeight: 124,
-                        borderRadius: 12,
-                        border: '1px solid var(--line)',
-                        background: 'var(--panel)',
-                        position: 'relative',
-                        transition: 'all 0.2s ease',
+                        justifyContent: 'center',
+                        borderRadius: 6,
+                        border: '1px solid var(--line, #e2e8f0)',
+                        background: '#ffffff',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Rupture stock' : 'Out of Stock'}
-                        </small>
-                        <span style={{ color: '#ef4444' }}><ShieldAlert size={18} /></span>
-                    </div>
-                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: outOfStockCount > 0 ? '#dc2626' : 'var(--text)', whiteSpace: 'nowrap' }}>
+                    <small
+                        style={{
+                            color: 'var(--muted)',
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: 'block',
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        {isFr ? 'Rupture stock' : 'Out of Stock'}
+                    </small>
+                    <strong
+                        style={{
+                            display: 'block',
+                            fontSize: 15.5,
+                            marginTop: 3,
+                            fontWeight: 800,
+                            color: outOfStockCount > 0 ? '#dc2626' : 'var(--text)',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
                         {outOfStockCount}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <p
+                        style={{
+                            margin: '2px 0 0',
+                            fontSize: 11,
+                            color: 'var(--muted)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
                         {outOfStockCount > 0
-                            ? (isFr ? 'Quantité nulle (0)' : 'Empty items (0 left)')
-                            : (isFr ? 'Aucune rupture' : 'No items are empty')}
+                            ? (isFr ? 'Quantité 0' : '0 items left')
+                            : (isFr ? 'Aucune rupture' : 'No items empty')}
                     </p>
                 </article>
 
                 {/* Quality / Quarantine */}
                 <article
-                    className="panel warehouse-kpi-card"
+                    className="warehouse-kpi-card"
                     style={{
-                        padding: '16px 14px',
+                        padding: '10px 12px',
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        height: '100%',
-                        minHeight: 124,
-                        borderRadius: 12,
-                        border: '1px solid var(--line)',
-                        background: 'var(--panel)',
-                        position: 'relative',
-                        transition: 'all 0.2s ease',
+                        justifyContent: 'center',
+                        borderRadius: 6,
+                        border: '1px solid var(--line, #e2e8f0)',
+                        background: '#ffffff',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Contrôle qualité' : 'Quality Check'}
-                        </small>
-                        <span style={{ color: '#8b5cf6' }}><Clock size={18} /></span>
-                    </div>
-                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                    <small
+                        style={{
+                            color: 'var(--muted)',
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: 'block',
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        {isFr ? 'Contrôle qualité' : 'Quality Check'}
+                    </small>
+                    <strong
+                        style={{
+                            display: 'block',
+                            fontSize: 15.5,
+                            marginTop: 3,
+                            fontWeight: 800,
+                            color: 'var(--text)',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
                         {heldQuality}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isFr ? 'Lots en inspection' : 'Waiting for check'}
+                    <p
+                        style={{
+                            margin: '2px 0 0',
+                            fontSize: 11,
+                            color: 'var(--muted)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
+                        {isFr ? 'Lots en attente' : 'Waiting for check'}
                     </p>
                 </article>
             </div>
