@@ -185,13 +185,13 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 <div>
                     <div className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <Warehouse size={14} />
-                        <span>{isFr ? 'Gestion des stocks & Entrepôt' : 'Warehouse & Stock Operations'}</span>
+                        <span>{isFr ? 'Gestion des stocks & Entrepôt' : 'Warehouse & Stock'}</span>
                     </div>
                     <h1>{user.current_factory?.name || (isFr ? 'Entrepôt' : 'Factory Warehouse')}</h1>
                     <p>
                         {isFr
                             ? `Bonjour, ${user.name}. Voici l'état actuel du stock et des mouvements de votre usine.`
-                            : `Welcome, ${user.name}. Here is an overview of your factory stock and movements.`}
+                            : `Welcome, ${user.name}. Here is what is in stock and your recent item movements.`}
                     </p>
                 </div>
                 <div className="ow-controls" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -253,7 +253,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                     <div>
                         <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Entrée de stock' : 'Stock In'}</strong>
                         <small style={{ color: 'var(--muted)', fontSize: 12 }}>
-                            {isFr ? 'Réceptionner des matières' : 'Receive materials & goods'}
+                            {isFr ? 'Réceptionner des matières' : 'Receive new items'}
                         </small>
                     </div>
                 </button>
@@ -280,7 +280,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                     <div>
                         <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Sortie de stock' : 'Stock Out'}</strong>
                         <small style={{ color: 'var(--muted)', fontSize: 12 }}>
-                            {isFr ? 'Sortir ou expédier des articles' : 'Issue to lines & dispatch'}
+                            {isFr ? 'Sortir ou expédier des articles' : 'Send items to work lines'}
                         </small>
                     </div>
                 </button>
@@ -305,9 +305,9 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         <Package size={24} />
                     </div>
                     <div>
-                        <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Catalogue Produits' : 'Product Catalog'}</strong>
+                        <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Catalogue Produits' : 'Product List'}</strong>
                         <small style={{ color: 'var(--muted)', fontSize: 12 }}>
-                            {isFr ? 'Voir tous les articles enregistrés' : 'View registered items & SKUs'}
+                            {isFr ? 'Voir tous les articles enregistrés' : 'See all saved items'}
                         </small>
                     </div>
                 </button>
@@ -334,7 +334,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                     <div>
                         <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Rapports de stock' : 'Stock Reports'}</strong>
                         <small style={{ color: 'var(--muted)', fontSize: 12 }}>
-                            {isFr ? 'Analyses détaillées et historique' : 'Detailed analytics & logs'}
+                            {isFr ? 'Analyses détaillées et historique' : 'View stock & movement reports'}
                         </small>
                     </div>
                 </button>
@@ -370,7 +370,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Valeur stock' : 'Stock Value'}
+                            {isFr ? 'Valeur stock' : 'Total Stock Value'}
                         </small>
                         <span style={{ color: '#2563eb' }}><Boxes size={18} /></span>
                     </div>
@@ -378,7 +378,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         {format.money(totalValue)}
                     </strong>
                     <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isFr ? `${itemsInStock} articles actifs` : `${itemsInStock} active items`}
+                        {isFr ? `${itemsInStock} articles actifs` : `${itemsInStock} items in store`}
                     </p>
                 </article>
 
@@ -401,7 +401,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Entrées (Période)' : 'Stock In (Period)'}
+                            {isFr ? 'Entrées (Période)' : 'Items Received'}
                         </small>
                         <span style={{ color: '#10b981' }}><ArrowDownRight size={18} /></span>
                     </div>
@@ -409,7 +409,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         +{format.moneyShort(receivedValue)}
                     </strong>
                     <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isFr ? 'Marchandises reçues' : 'Total incoming value'}
+                        {isFr ? 'Marchandises reçues' : 'Added in this period'}
                     </p>
                 </article>
 
@@ -432,7 +432,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Sorties (Période)' : 'Stock Out (Period)'}
+                            {isFr ? 'Sorties (Période)' : 'Items Sent Out'}
                         </small>
                         <span style={{ color: '#f59e0b' }}><ArrowUpRight size={18} /></span>
                     </div>
@@ -440,7 +440,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         -{format.moneyShort(issuedValue)}
                     </strong>
                     <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isFr ? 'Distribué en production' : 'Total issued to lines'}
+                        {isFr ? 'Distribué en production' : 'Sent out in this period'}
                     </p>
                 </article>
 
@@ -463,7 +463,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'À réapprovisionner' : 'Items to Reorder'}
+                            {isFr ? 'À réapprovisionner' : 'Running Low'}
                         </small>
                         <span style={{ color: '#f59e0b' }}><AlertTriangle size={18} /></span>
                     </div>
@@ -472,8 +472,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                     </strong>
                     <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {lowStockCount > 0
-                            ? (isFr ? 'Stock sous le seuil' : 'Below safety threshold')
-                            : (isFr ? 'Niveaux corrects' : 'All levels adequate')}
+                            ? (isFr ? 'Stock sous le seuil' : 'Needs new order soon')
+                            : (isFr ? 'Niveaux corrects' : 'All stock is good')}
                     </p>
                 </article>
 
@@ -505,8 +505,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                     </strong>
                     <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {outOfStockCount > 0
-                            ? (isFr ? 'Quantité nulle (0)' : 'Zero balance items')
-                            : (isFr ? 'Aucune rupture' : 'No stockouts')}
+                            ? (isFr ? 'Quantité nulle (0)' : 'Empty items (0 left)')
+                            : (isFr ? 'Aucune rupture' : 'No items are empty')}
                     </p>
                 </article>
 
@@ -529,7 +529,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'Contrôle qualité' : 'Held for Quality'}
+                            {isFr ? 'Contrôle qualité' : 'Quality Check'}
                         </small>
                         <span style={{ color: '#8b5cf6' }}><Clock size={18} /></span>
                     </div>
@@ -537,7 +537,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         {heldQuality}
                     </strong>
                     <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isFr ? 'Lots en inspection' : 'Batches in QA / quarantine'}
+                        {isFr ? 'Lots en inspection' : 'Waiting for check'}
                     </p>
                 </article>
             </div>
@@ -559,12 +559,12 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                 {isFr ? 'FLUX QUOTIDIEN' : 'DAILY STOCK MOVEMENTS'}
                             </span>
                             <h2 style={{ fontSize: 17, margin: '2px 0 4px', fontWeight: 700 }}>
-                                {isFr ? 'Entrées vs Sorties' : 'Stock In vs Stock Out Trend'}
+                                {isFr ? 'Articles reçus vs Articles sortis' : 'Items Received vs Items Sent Out'}
                             </h2>
                             <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
                                 {isFr
-                                    ? `Volumes reçus et distribués sur les ${days} derniers jours.`
-                                    : `Quantities received and issued over the last ${days} days.`}
+                                    ? `Nombre d'articles reçus et sortis sur les ${days} derniers jours.`
+                                    : `Number of items received and sent out over the last ${days} days.`}
                             </p>
                         </div>
                         <div style={{ display: 'flex', gap: 12, fontSize: 12, fontWeight: 600 }}>
@@ -574,7 +574,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <i style={{ width: 10, height: 10, borderRadius: 2, background: '#f59e0b', display: 'inline-block' }} />
-                                {isFr ? 'Sorti' : 'Issued'}
+                                {isFr ? 'Sorti' : 'Sent Out'}
                             </span>
                         </div>
                     </div>
@@ -621,13 +621,13 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 <article className="panel" style={{ padding: 20 }}>
                     <div style={{ marginBottom: 16 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'RÉPARTITION DU STOCK' : 'CATEGORY BREAKDOWN'}
+                            {isFr ? 'RÉPARTITION DU STOCK' : 'ITEMS BY CATEGORY'}
                         </span>
                         <h2 style={{ fontSize: 17, margin: '2px 0 4px', fontWeight: 700 }}>
-                            {isFr ? 'Valeur par Catégorie' : 'Stock Value by Category'}
+                            {isFr ? 'Valeur par Catégorie' : 'Money Value by Category'}
                         </h2>
                         <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
-                            {isFr ? 'Distribution de la valeur d’inventaire en magasin.' : 'Inventory valuation by material group.'}
+                            {isFr ? 'Distribution de la valeur en magasin.' : 'Total money value in each group of items.'}
                         </p>
                     </div>
 
@@ -639,10 +639,10 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         ]).map((group) => {
                             const label =
                                 group.key === 'raw_materials'
-                                    ? (isFr ? 'Matières Premières' : 'Raw Materials')
+                                    ? (isFr ? 'Matières Premières' : 'Raw Materials (Fabrics & Parts)')
                                     : group.key === 'finished_goods'
-                                    ? (isFr ? 'Produits Finis' : 'Finished Goods')
-                                    : (isFr ? 'Fournitures & Autres' : 'Trims & Other');
+                                    ? (isFr ? 'Produits Finis' : 'Finished Items')
+                                    : (isFr ? 'Fournitures & Autres' : 'Supplies & Other');
                             const barColor =
                                 group.key === 'raw_materials'
                                     ? '#2563eb'
@@ -699,12 +699,12 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#d97706', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
                                 <AlertTriangle size={15} />
-                                <span>{isFr ? 'Articles nécessitant une attention' : 'Items Requiring Attention'}</span>
+                                <span>{isFr ? 'Articles nécessitant une attention' : 'Items that Need Attention'}</span>
                             </div>
                             <small style={{ color: 'var(--muted)', fontSize: 12 }}>
                                 {isFr
                                     ? `${analytics?.attention?.length} articles sont en rupture ou sous le seuil d'alerte.`
-                                    : `${analytics?.attention?.length} items are currently at or below their reorder threshold.`}
+                                    : `${analytics?.attention?.length} items are running out or have reached 0.`}
                             </small>
                         </div>
                     )}
@@ -725,10 +725,10 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 >
                     <div>
                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'INVENTAIRE COMPLET' : 'CURRENT INVENTORY'}
+                            {isFr ? 'STOCK ACTUEL' : 'CURRENT STOCK'}
                         </span>
                         <h2 style={{ fontSize: 18, margin: '2px 0 0', fontWeight: 700 }}>
-                            {isFr ? 'Aperçu du stock' : 'Stock Overview Table'}
+                            {isFr ? 'Tous les articles en stock' : 'All Items in Stock'}
                         </h2>
                     </div>
 
@@ -738,7 +738,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                             ['all', isFr ? 'Tous les articles' : 'All Items'],
                             ['raw_materials', isFr ? 'Matières 1ères' : 'Raw Materials'],
                             ['finished_goods', isFr ? 'Produits Finis' : 'Finished Goods'],
-                            ['attention', isFr ? 'Stock Faible / Rupture' : 'Low / Out of Stock'],
+                            ['attention', isFr ? 'À réapprovisionner (Faible / 0)' : 'Needs Attention (Low / 0)'],
                         ].map(([key, label]) => (
                             <button
                                 key={key}
@@ -775,7 +775,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                     />
                     <input
                         type="text"
-                        placeholder={isFr ? 'Rechercher par nom d’article ou référence SKU…' : 'Search stock by item name or SKU…'}
+                        placeholder={isFr ? 'Rechercher par nom d’article ou code…' : 'Search by item name or code…'}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         style={{
@@ -795,12 +795,12 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                     <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr>
-                                <th>{isFr ? 'Article & SKU' : 'Item & SKU'}</th>
-                                <th>{isFr ? 'Catégorie' : 'Category'}</th>
-                                <th style={{ textAlign: 'right' }}>{isFr ? 'Stock disponible' : 'Available'}</th>
-                                <th style={{ textAlign: 'right' }}>{isFr ? 'Qté en main' : 'On Hand'}</th>
-                                <th style={{ textAlign: 'right' }}>{isFr ? 'Seuil d’alerte' : 'Reorder Level'}</th>
-                                <th style={{ textAlign: 'right' }}>{isFr ? 'Valeur estimée' : 'Stock Value'}</th>
+                                <th>{isFr ? 'Article & Code' : 'Item & Code'}</th>
+                                <th>{isFr ? 'Type' : 'Type'}</th>
+                                <th style={{ textAlign: 'right' }}>{isFr ? 'Prêt à l\'usage' : 'Ready to Use'}</th>
+                                <th style={{ textAlign: 'right' }}>{isFr ? 'En stock' : 'In Stock'}</th>
+                                <th style={{ textAlign: 'right' }}>{isFr ? 'Niveau minimum' : 'Minimum Level'}</th>
+                                <th style={{ textAlign: 'right' }}>{isFr ? 'Valeur totale' : 'Total Value'}</th>
                                 <th style={{ textAlign: 'center' }}>{isFr ? 'Statut' : 'Status'}</th>
                             </tr>
                         </thead>
@@ -814,7 +814,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                             ? (isFr ? 'Matière première' : 'Raw Material')
                                             : item.type === 'finished_goods' || item.type === 'finished_good'
                                             ? (isFr ? 'Produit fini' : 'Finished Good')
-                                            : (isFr ? 'Fourniture' : 'Trim / Other');
+                                            : (isFr ? 'Fourniture' : 'Supplies & Other');
 
                                     return (
                                         <tr key={item.id || item.sku}>
@@ -906,10 +906,10 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 <article className="panel" style={{ padding: 20 }}>
                     <div style={{ marginBottom: 14 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isFr ? 'HISTORIQUE RÉCENT' : 'RECENT ACTIVITY'}
+                            {isFr ? 'ACTIVITÉ RÉCENTE' : 'RECENT ACTIVITY'}
                         </span>
                         <h2 style={{ fontSize: 17, margin: '2px 0 0', fontWeight: 700 }}>
-                            {isFr ? 'Dernières Transactions de Stock' : 'Latest Stock Transactions'}
+                            {isFr ? 'Activité récente des stocks' : 'Recent Stock Activity'}
                         </h2>
                     </div>
 
@@ -919,10 +919,10 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                 <tr>
                                     <th>{isFr ? 'Date' : 'Time'}</th>
                                     <th>{isFr ? 'Article' : 'Item'}</th>
-                                    <th>{isFr ? 'Opération' : 'Type'}</th>
-                                    <th style={{ textAlign: 'right' }}>{isFr ? 'Variation' : 'Quantity Delta'}</th>
-                                    <th style={{ textAlign: 'right' }}>{isFr ? 'Nouveau Solde' : 'Balance After'}</th>
-                                    <th>{isFr ? 'Entrepôt' : 'Warehouse'}</th>
+                                    <th>{isFr ? 'Action' : 'Action'}</th>
+                                    <th style={{ textAlign: 'right' }}>{isFr ? 'Quantité (+/-)' : 'Quantity (+/-)'}</th>
+                                    <th style={{ textAlign: 'right' }}>{isFr ? 'Stock restant' : 'Remaining Stock'}</th>
+                                    <th>{isFr ? 'Emplacement' : 'Store Room'}</th>
                                 </tr>
                             </thead>
                             <tbody>

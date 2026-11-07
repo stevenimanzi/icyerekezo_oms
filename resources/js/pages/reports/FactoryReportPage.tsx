@@ -346,8 +346,8 @@ export default function FactoryReportPage({ user, locale }: Props) {
                     </div>
                     <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
                         {locale === 'en'
-                            ? 'Executive multi-department ledger: cutting, sewing, finishing, packing inputs, outputs, defect tracking, and quality audit.'
-                            : 'Registre général des opérations multi-départements : coupe, couture, finition, emballage, pertes et contrôle qualité.'}
+                            ? 'Daily factory operations report: items received, items produced, damaged items, and quality check across all departments.'
+                            : 'Rapport général des opérations : matières reçues, articles produits, pertes et contrôle qualité par atelier.'}
                     </p>
                 </div>
 

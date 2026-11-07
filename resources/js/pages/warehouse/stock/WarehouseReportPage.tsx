@@ -397,12 +397,12 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                         }}
                     >
                         <Warehouse size={24} style={{ color: '#2563eb' }} />
-                        {locale === 'en' ? 'Warehouse & Stock Inventory Report' : "Rapport d'Inventaire et du Stock"}
+                        {locale === 'en' ? 'Warehouse Stock Report' : "Rapport de Stock de l'Entrepôt"}
                     </h1>
                     <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--muted)' }}>
                         {locale === 'en'
-                            ? 'Comprehensive warehouse ledger: stock in (receipts), stock out (issues/dispatch), inventory valuation, adjustments, and reorder status.'
-                            : "Grand livre du magasin : entrées en stock (réceptions), sorties (distributions), valorisation, ajustements et seuils de réapprovisionnement."}
+                            ? 'Complete report of items in stock, items received, items sent out, and total value.'
+                            : "Rapport complet des articles en stock, reçus, sortis et valeur totale."}
                     </p>
                 </div>
 
@@ -553,16 +553,16 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: '0.8rem', fontWeight: 600 }}
                             >
                                 <option value="all">{locale === 'en' ? 'All Stock Items' : 'Tous les articles'}</option>
-                                <option value="raw_material">{locale === 'en' ? 'Raw Materials (Fabric)' : 'Matières premières'}</option>
+                                <option value="raw_material">{locale === 'en' ? 'Raw Materials (Fabrics & Parts)' : 'Matières premières'}</option>
                                 <option value="finished_good">{locale === 'en' ? 'Finished Goods' : 'Produits finis'}</option>
-                                <option value="low_stock">{locale === 'en' ? 'Reorder Needed' : 'À réapprovisionner'}</option>
+                                <option value="low_stock">{locale === 'en' ? 'Running Low (Needs Order)' : 'Stock faible'}</option>
                             </select>
                         </label>
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                             <Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
                             <input
                                 type="text"
-                                placeholder={locale === 'en' ? 'Search SKU / Item...' : 'Rechercher article/SKU...'}
+                                placeholder={locale === 'en' ? 'Search by item name or code...' : 'Rechercher article/code...'}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{ padding: '6px 10px 6px 30px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: '0.8rem', width: 180 }}
@@ -612,12 +612,12 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 color: 'var(--muted)',
                             }}
                         >
-                            {locale === 'en' ? 'WAREHOUSE & STOCK INVENTORY AUDIT REPORT' : "RAPPORT D'AUDIT D'INVENTAIRE ET DU STOCK"}
+                            {locale === 'en' ? 'WAREHOUSE STOCK REPORT' : "RAPPORT DE STOCK DU MAGASIN"}
                         </div>
                     </div>
                     <div style={{ textAlign: 'left', fontSize: '0.82rem', lineHeight: 1.6, borderLeft: '2px solid var(--line)', paddingLeft: 16 }}>
                         <div><b>PERIOD:</b> {fromDate === toDate ? fromDate : `${fromDate} to ${toDate}`}</div>
-                        <div><b>SCOPE:</b> WAREHOUSE &amp; INVENTORY ONLY</div>
+                        <div><b>SCOPE:</b> WAREHOUSE STOCK ONLY</div>
                         <div><b>PREPARED BY:</b> {user.name} ({user.roles?.[0]?.name || 'Warehouse Keeper'})</div>
                         <div>
                             <b>STOCK HEALTH:</b>{' '}
@@ -632,49 +632,49 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                 <div className="report-kpi-matrix">
                     <div className="report-kpi-cell">
                         <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            1. TOTAL STOCK VALUATION
+                            1. TOTAL STOCK VALUE
                         </div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text)', marginTop: 4 }}>
                             {money(totalStockValuation)}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {num(totalOnHandUnits)} {locale === 'en' ? 'units on hand' : 'unités en stock'}
+                            {num(totalOnHandUnits)} {locale === 'en' ? 'total items in store' : 'articles en magasin'}
                         </div>
                     </div>
 
                     <div className="report-kpi-cell">
                         <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            2. RECEIVED (STOCK IN)
+                            2. ITEMS RECEIVED (STOCK IN)
                         </div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981', marginTop: 4 }}>
                             +{num(periodReceivedUnits)}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {locale === 'en' ? 'Supplier receipts & intake' : 'Réceptions fournisseurs'}
+                            {locale === 'en' ? 'New deliveries from suppliers' : 'Livraisons fournisseurs'}
                         </div>
                     </div>
 
                     <div className="report-kpi-cell">
                         <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            3. ISSUED (STOCK OUT)
+                            3. ITEMS SENT OUT (STOCK OUT)
                         </div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>
                             -{num(periodIssuedUnits)}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {locale === 'en' ? 'Allocated & dispatched' : 'Sorties & allocations'}
+                            {locale === 'en' ? 'Sent to work lines or buyers' : 'Envoyé en production ou clients'}
                         </div>
                     </div>
 
                     <div className="report-kpi-cell">
                         <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            4. ITEMS TO REORDER
+                            4. RUNNING LOW
                         </div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 800, color: lowStockCount > 0 ? '#f59e0b' : 'var(--text)', marginTop: 4 }}>
                             {lowStockCount}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {locale === 'en' ? 'At or below reorder level' : 'Au seuil minimum'}
+                            {locale === 'en' ? 'Needs new order soon' : 'À commander bientôt'}
                         </div>
                     </div>
 
@@ -686,7 +686,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             {outOfStockCount}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                            {locale === 'en' ? 'Zero available balance' : 'Stock épuisé (0)'}
+                            {locale === 'en' ? 'Completely empty (0 left)' : 'Stock épuisé (0)'}
                         </div>
                     </div>
                 </div>
@@ -713,10 +713,10 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 color: 'var(--text)',
                             }}
                         >
-                            {locale === 'en' ? 'I. CURRENT STOCK BALANCES & VALUATION REGISTER' : 'I. REGISTRE DES DISPONIBILITÉS & VALORISATION DU STOCK'}
+                            {locale === 'en' ? 'I. CURRENT STOCK AND TOTAL VALUE' : 'I. ARTICLES EN STOCK ET VALEUR TOTALE'}
                         </h3>
                         <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)' }}>
-                            {stockItems.length} {locale === 'en' ? 'tracked item lines' : 'articles enregistrés'}
+                            {stockItems.length} {locale === 'en' ? 'items tracked' : 'articles enregistrés'}
                         </span>
                     </div>
 
@@ -725,14 +725,14 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             <thead>
                                 <tr>
                                     <th style={{ width: 34, textAlign: 'center' }}>#</th>
-                                    <th>{locale === 'en' ? 'Item Name & Specification' : 'Nom de l\'article'}</th>
-                                    <th style={{ width: 110 }}>{locale === 'en' ? 'SKU / Code' : 'Code SKU'}</th>
-                                    <th style={{ width: 120 }}>{locale === 'en' ? 'Category' : 'Catégorie'}</th>
-                                    <th style={{ width: 130 }}>{locale === 'en' ? 'Warehouse / Store' : 'Emplacement'}</th>
-                                    <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'On-Hand' : 'En stock'}</th>
-                                    <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'Available' : 'Disponible'}</th>
-                                    <th style={{ width: 75, textAlign: 'right' }}>{locale === 'en' ? 'Reorder' : 'Seuil'}</th>
-                                    <th style={{ width: 95, textAlign: 'right' }}>{locale === 'en' ? 'Unit Cost' : 'Coût unit.'}</th>
+                                    <th>{locale === 'en' ? 'Item Name' : 'Nom de l\'article'}</th>
+                                    <th style={{ width: 110 }}>{locale === 'en' ? 'Item Code (SKU)' : 'Code (SKU)'}</th>
+                                    <th style={{ width: 120 }}>{locale === 'en' ? 'Type' : 'Type'}</th>
+                                    <th style={{ width: 130 }}>{locale === 'en' ? 'Store Room' : 'Emplacement'}</th>
+                                    <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'In Stock' : 'En stock'}</th>
+                                    <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'Ready to Use' : 'Prêt à l\'usage'}</th>
+                                    <th style={{ width: 75, textAlign: 'right' }}>{locale === 'en' ? 'Min Level' : 'Niveau min.'}</th>
+                                    <th style={{ width: 95, textAlign: 'right' }}>{locale === 'en' ? 'Cost per Item' : 'Prix unitaire'}</th>
                                     <th style={{ width: 115, textAlign: 'right' }}>{locale === 'en' ? 'Total Value' : 'Valeur totale'}</th>
                                     <th style={{ width: 95, textAlign: 'center' }}>{locale === 'en' ? 'Status' : 'Statut'}</th>
                                 </tr>
@@ -776,11 +776,11 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                                     </span>
                                                 ) : item.isLowStock ? (
                                                     <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 99, background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}>
-                                                        {locale === 'en' ? 'LOW STOCK' : 'RÉAPPRO.'}
+                                                        {locale === 'en' ? 'LOW STOCK' : 'STOCK FAIBLE'}
                                                     </span>
                                                 ) : (
                                                     <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 99, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}>
-                                                        {locale === 'en' ? 'IN STOCK' : 'OPTIMAL'}
+                                                        {locale === 'en' ? 'IN STOCK' : 'EN STOCK'}
                                                     </span>
                                                 )}
                                             </td>
@@ -791,7 +791,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             <tfoot>
                                 <tr>
                                     <td colSpan={5} style={{ textTransform: 'uppercase' }}>
-                                        {locale === 'en' ? 'TOTAL INVENTORY VALUATION & VOLUME' : 'VALORISATION & VOLUME GLOBAL DU STOCK'}
+                                        {locale === 'en' ? 'TOTAL STOCK VALUE & QUANTITY' : 'VALEUR TOTALE & QUANTITÉ EN STOCK'}
                                     </td>
                                     <td style={{ textAlign: 'right' }}>{num(totalOnHandUnits)}</td>
                                     <td colSpan={3}></td>
@@ -827,10 +827,10 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 color: 'var(--text)',
                             }}
                         >
-                            {locale === 'en' ? 'II. PERIOD STOCK MOVEMENTS REGISTER (RECEIPTS & ISSUES)' : 'II. REGISTRE DES MOUVEMENTS DE STOCK DU PÉRIODE (ENTRÉES & SORTIES)'}
+                            {locale === 'en' ? 'II. ITEMS RECEIVED AND SENT OUT IN THIS PERIOD' : 'II. ARTICLES REÇUS ET SORTIS SUR CETTE PÉRIODE'}
                         </h3>
                         <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)' }}>
-                            {movementRows.length} {locale === 'en' ? 'transactions recorded' : 'transactions enregistrées'}
+                            {movementRows.length} {locale === 'en' ? 'activities recorded' : 'activités enregistrées'}
                         </span>
                     </div>
 
@@ -839,16 +839,16 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             <thead>
                                 <tr>
                                     <th style={{ width: 34, textAlign: 'center' }}>#</th>
-                                    <th style={{ width: 140 }}>{locale === 'en' ? 'Date & Time' : 'Date & Heure'}</th>
-                                    <th style={{ width: 90 }}>{locale === 'en' ? 'Type' : 'Type'}</th>
+                                    <th style={{ width: 140 }}>{locale === 'en' ? 'Time' : 'Date & Heure'}</th>
+                                    <th style={{ width: 90 }}>{locale === 'en' ? 'Action' : 'Action'}</th>
                                     <th>{locale === 'en' ? 'Item Name' : 'Article'}</th>
-                                    <th style={{ width: 95 }}>{locale === 'en' ? 'SKU' : 'SKU'}</th>
-                                    <th style={{ width: 125 }}>{locale === 'en' ? 'Warehouse' : 'Entrepôt'}</th>
-                                    <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Qty Delta (+/-)' : 'Quantité'}</th>
-                                    <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Balance' : 'Solde'}</th>
-                                    <th style={{ width: 90, textAlign: 'right' }}>{locale === 'en' ? 'Unit Cost' : 'Coût unit.'}</th>
+                                    <th style={{ width: 95 }}>{locale === 'en' ? 'Item Code (SKU)' : 'Code (SKU)'}</th>
+                                    <th style={{ width: 125 }}>{locale === 'en' ? 'Store Room' : 'Emplacement'}</th>
+                                    <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Added / Sent Out' : 'Quantité'}</th>
+                                    <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Stock Left' : 'Stock restant'}</th>
+                                    <th style={{ width: 90, textAlign: 'right' }}>{locale === 'en' ? 'Cost per Item' : 'Prix unitaire'}</th>
                                     <th style={{ width: 110, textAlign: 'right' }}>{locale === 'en' ? 'Total Value' : 'Valeur'}</th>
-                                    <th style={{ width: 180 }}>{locale === 'en' ? 'Reason / Reference' : 'Référence / Motif'}</th>
+                                    <th style={{ width: 180 }}>{locale === 'en' ? 'Note / Reason' : 'Note / Raison'}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -875,7 +875,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                                         color: m.isPositive ? '#10b981' : '#f59e0b',
                                                     }}
                                                 >
-                                                    {m.type}
+                                                    {m.isPositive ? (locale === 'en' ? 'RECEIVED' : 'REÇU') : (locale === 'en' ? 'SENT OUT' : 'SORTI')}
                                                 </span>
                                             </td>
                                             <td style={{ fontWeight: 700 }}>{m.itemName}</td>
@@ -909,13 +909,13 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             <tfoot>
                                 <tr>
                                     <td colSpan={6} style={{ textTransform: 'uppercase' }}>
-                                        {locale === 'en' ? 'PERIOD NET STOCK FLOW' : 'FLUX NET DE STOCK SUR LA PÉRIODE'}
+                                        {locale === 'en' ? 'STOCK ADDED VS SENT OUT' : 'DIFFÉRENCE ENTRÉES VS SORTIES'}
                                     </td>
                                     <td style={{ textAlign: 'right', color: periodReceivedUnits >= periodIssuedUnits ? '#10b981' : '#ef4444' }}>
                                         {num(periodReceivedUnits - periodIssuedUnits)}
                                     </td>
                                     <td colSpan={4} style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                                        {locale === 'en' ? `Received: +${num(periodReceivedUnits)} | Issued: -${num(periodIssuedUnits)}` : `Reçus : +${num(periodReceivedUnits)} | Sortis : -${num(periodIssuedUnits)}`}
+                                        {locale === 'en' ? `Received: +${num(periodReceivedUnits)} | Sent Out: -${num(periodIssuedUnits)}` : `Reçus : +${num(periodReceivedUnits)} | Sortis : -${num(periodIssuedUnits)}`}
                                     </td>
                                 </tr>
                             </tfoot>
@@ -948,10 +948,10 @@ export default function WarehouseReportPage({ user, locale }: Props) {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem' }}>
                         <div style={{ fontWeight: 800, textTransform: 'uppercase', color: 'var(--text)' }}>
-                            {locale === 'en' ? 'VERIFIED BY (FACTORY / OPERATIONS)' : 'VÉRIFIÉ PAR (DIRECTEUR OPÉRATIONS)'}
+                            {locale === 'en' ? 'CHECKED BY (FACTORY MANAGER)' : 'VÉRIFIÉ PAR (DIRECTEUR USINE)'}
                         </div>
                         <div style={{ marginTop: 2, color: 'var(--text)' }}>Factory Operations Manager</div>
-                        <div style={{ color: 'var(--muted)' }}>Quality &amp; Inventory Auditor</div>
+                        <div style={{ color: 'var(--muted)' }}>Inventory Manager</div>
                         <div style={{ marginTop: 18, borderBottom: '1px solid var(--line)', width: '80%' }}></div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{locale === 'en' ? 'Signature & Date' : 'Signature & Date'}</div>
                     </div>
