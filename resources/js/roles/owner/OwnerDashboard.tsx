@@ -1,19 +1,11 @@
 import { useMemo, useState } from 'react';
 import type { HomeProps } from '../types';
-import { ActivityList } from './components/ActivityList';
 import { KpiCard } from './components/KpiCard';
 import { TrendChart } from './components/TrendChart';
 import { makeFormat } from '../../core/format';
 import './owner.css';
-import { CashSection } from './sections/CashSection';
-import { CustomersSection } from './sections/CustomersSection';
-import { EquipmentSection } from './sections/EquipmentSection';
-import { PeopleSection } from './sections/PeopleSection';
 import { ProductionFlowSection } from './sections/ProductionFlowSection';
 import { ProductionSection } from './sections/ProductionSection';
-import { QualitySection } from './sections/QualitySection';
-import { SafetySection } from './sections/SafetySection';
-import { StockSection } from './sections/StockSection';
 import { ownerText } from './text';
 import { useOwnerOverview } from './useOwnerOverview';
 
@@ -26,7 +18,7 @@ const PERIOD_OPTIONS = [
     { value: 'custom', labelKey: 'custom' },
 ];
 
-export default function OwnerDashboard({ user, locale, onNavigate, pages }: HomeProps) {
+export default function OwnerDashboard({ user, locale }: HomeProps) {
     const [period, setPeriod] = useState<number | string>(30);
     const [startDate, setStartDate] = useState(() => {
         const d = new Date();
@@ -167,13 +159,18 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
                         />
                     </div>
 
-                    <div className="ow-analytics-grid">
+                    {/* Row 2: Developed Analytics Chart */}
+                    <div style={{ marginBottom: '20px' }}>
                         <TrendChart
                             trend={data.trend}
                             text={text}
                             format={format}
                             currency={currency}
                         />
+                    </div>
+
+                    {/* Row 3: Stage Operational Overview Table */}
+                    <div style={{ marginBottom: '20px' }}>
                         {data.flow ? (
                             <ProductionFlowSection
                                 data={data.flow}
@@ -184,29 +181,6 @@ export default function OwnerDashboard({ user, locale, onNavigate, pages }: Home
                         ) : (
                             <ProductionSection data={data.production} text={text} format={format} />
                         )}
-                    </div>
-
-                    <div className="ow-grid">
-                        <CashSection data={data.cash} text={text} format={format} />
-                        <StockSection data={data.stock} text={text} format={format} />
-                        <QualitySection data={data.quality} text={text} format={format} />
-                        <CustomersSection data={data.customers} text={text} format={format} />
-                        <PeopleSection data={data.people} text={text} format={format} />
-                        <EquipmentSection data={data.equipment} text={text} format={format} />
-                    </div>
-
-                    <div className="ow-bottom-grid">
-                        <SafetySection data={data.safety} text={text} format={format} />
-                        <ActivityList
-                            entries={data.activity}
-                            text={text}
-                            format={format}
-                            onViewAll={
-                                pages.includes('activity')
-                                    ? () => onNavigate('activity')
-                                    : undefined
-                            }
-                        />
                     </div>
                 </>
             )}

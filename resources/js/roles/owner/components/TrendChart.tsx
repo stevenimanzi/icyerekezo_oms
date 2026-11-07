@@ -27,7 +27,9 @@ export function TrendChart({ trend, text, format, currency }: Props) {
 
     const formatValue = (value: number) =>
         metric === 'revenue' ? `${currency} ${format.whole(value)}` : format.whole(value);
-    const hasData = trend.some((point) => point[metric] > 0);
+    
+    const metricTotal = trend.reduce((sum, point) => sum + (point[metric] || 0), 0);
+    const hasData = trend && trend.length > 0;
 
     const metricExplanaion = {
         revenue: 'Blue line represents total factory revenue (RWF) generated from fulfilled orders and sales.',
@@ -36,10 +38,15 @@ export function TrendChart({ trend, text, format, currency }: Props) {
     };
 
     return (
-        <article className="panel ow-trend">
-            <div className="panel-title">
-                <h2>{text.trend}</h2>
-                <div className="ow-tabs" role="tablist">
+        <article className="panel ow-trend" style={{ padding: '20px 24px' }}>
+            <div className="panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                    <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{text.trend}</h2>
+                    <span style={{ fontSize: '13px', color: '#64748b' }}>
+                        Total for this period: <b style={{ color: '#0f172a' }}>{formatValue(metricTotal)}</b>
+                    </span>
+                </div>
+                <div className="ow-tabs" role="tablist" style={{ margin: 0 }}>
                     {(Object.keys(text.trendTabs) as Metric[]).map((key) => (
                         <button
                             key={key}
@@ -59,7 +66,7 @@ export function TrendChart({ trend, text, format, currency }: Props) {
                     alignItems: 'center',
                     gap: '8px',
                     padding: '8px 14px',
-                    margin: '0 0 12px 0',
+                    margin: '0 0 16px 0',
                     background: '#eff6ff',
                     border: '1px solid #bfdbfe',
                     borderRadius: '8px',
@@ -78,7 +85,7 @@ export function TrendChart({ trend, text, format, currency }: Props) {
                 />
                 <span>{metricExplanaion[metric]}</span>
             </div>
-            <div className="ow-chart">
+            <div className="ow-chart" style={{ width: '100%', height: '320px', padding: 0 }}>
                 {hasData ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={trend} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
@@ -91,27 +98,28 @@ export function TrendChart({ trend, text, format, currency }: Props) {
                             <CartesianGrid
                                 strokeDasharray="3 3"
                                 vertical={false}
-                                stroke="var(--line)"
+                                stroke="var(--line, #e2e8f0)"
                             />
                             <XAxis
                                 dataKey="label"
                                 tickLine={false}
                                 axisLine={false}
-                                tick={{ fill: 'var(--muted)', fontSize: 12 }}
+                                tick={{ fill: 'var(--muted, #64748b)', fontSize: 12 }}
                             />
                             <YAxis
                                 tickLine={false}
                                 axisLine={false}
                                 width={56}
-                                tick={{ fill: 'var(--muted)', fontSize: 12 }}
+                                tick={{ fill: 'var(--muted, #64748b)', fontSize: 12 }}
                                 tickFormatter={(value: number) => format.compact(value)}
                             />
                             <Tooltip
                                 formatter={(value) => formatValue(Number(value))}
                                 contentStyle={{
-                                    background: 'var(--panel)',
-                                    border: '1px solid var(--line)',
+                                    background: 'var(--panel, #ffffff)',
+                                    border: '1px solid var(--line, #e2e8f0)',
                                     borderRadius: 10,
+                                    fontSize: '12px',
                                 }}
                             />
                             <Area

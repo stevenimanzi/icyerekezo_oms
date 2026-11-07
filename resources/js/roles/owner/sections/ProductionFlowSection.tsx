@@ -54,38 +54,53 @@ export function ProductionFlowSection({ data, text, format, locale }: Props) {
                 </div>
             </div>
 
-            <div className="ui-table-wrap ow-flow-table-wrap">
-                <table className="ui-table">
+            <div className="ui-table-wrap ow-flow-table-wrap" style={{ marginTop: 12 }}>
+                <table className="ui-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr>
-                            <th>{locale === 'fr' ? 'Étape' : 'Department'}</th>
-                            <th className="num">{locale === 'fr' ? '1. Entrants' : '1. Input'}</th>
-                            <th className="num">{locale === 'fr' ? '2. Sortie' : '2. Output'}</th>
-                            <th className="num">{locale === 'fr' ? 'En cours' : 'In Progress'}</th>
-                            <th className="num">{locale === 'fr' ? '3. Défauts' : '3. Damaged'}</th>
-                            <th>{locale === 'fr' ? '4. Statut' : '4. Status'}</th>
+                            <th style={{ textAlign: 'left', padding: '10px 14px' }}>{locale === 'fr' ? 'Atelier / Département' : 'Department Stage'}</th>
+                            <th style={{ textAlign: 'left', padding: '10px 14px' }}>{locale === 'fr' ? '1. Pièces entrantes' : '1. Input Pieces'}</th>
+                            <th style={{ textAlign: 'left', padding: '10px 14px' }}>{locale === 'fr' ? '2. Sortie terminée' : '2. Output Produced'}</th>
+                            <th style={{ textAlign: 'left', padding: '10px 14px' }}>{locale === 'fr' ? 'En cours (WIP)' : 'In Progress (WIP)'}</th>
+                            <th style={{ textAlign: 'left', padding: '10px 14px' }}>{locale === 'fr' ? '3. Défauts / Rebuts' : '3. Damaged Pieces'}</th>
+                            <th style={{ textAlign: 'left', padding: '10px 14px' }}>{locale === 'fr' ? '4. Statut Qualité' : '4. Quality Status'}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {data.stages.map((st) => {
                             const totalInput = st.here + st.done;
                             return (
-                                <tr key={st.key}>
-                                    <td>
-                                        <b>{st.label[locale]}</b>
+                                <tr key={st.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ textAlign: 'left', padding: '12px 14px' }}>
+                                        <b style={{ color: '#0f172a' }}>{st.label[locale]}</b>
                                     </td>
-                                    <td className="num">{format.whole(totalInput)}</td>
-                                    <td className="num" style={{ color: 'var(--ui-good, #10b981)', fontWeight: 700 }}>
-                                        {format.whole(st.done)}
+                                    <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: '#334155' }}>
+                                        {format.whole(totalInput)} pcs
                                     </td>
-                                    <td className="num" style={{ fontWeight: 600 }}>
-                                        {format.whole(st.here)}
+                                    <td style={{ textAlign: 'left', padding: '12px 14px', color: '#16a34a', fontWeight: 700 }}>
+                                        {format.whole(st.done)} pcs
                                     </td>
-                                    <td className="num">
-                                        <b className={st.damaged > 0 ? 'bad' : ''}>{format.whole(st.damaged)}</b>
+                                    <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: '#2563eb' }}>
+                                        {format.whole(st.here)} pcs
                                     </td>
-                                    <td>
-                                        <span className={`status-pill ${st.damaged === 0 ? 'success' : 'warning'}`}>
+                                    <td style={{ textAlign: 'left', padding: '12px 14px', color: st.damaged > 0 ? '#dc2626' : '#64748b', fontWeight: st.damaged > 0 ? 700 : 500 }}>
+                                        {format.whole(st.damaged)} pcs
+                                    </td>
+                                    <td style={{ textAlign: 'left', padding: '12px 14px' }}>
+                                        <span
+                                            style={{
+                                                fontSize: '11px',
+                                                fontWeight: 700,
+                                                padding: '3px 8px',
+                                                borderRadius: '6px',
+                                                background: st.damaged === 0 ? '#dcfce7' : '#fef3c7',
+                                                color: st.damaged === 0 ? '#15803d' : '#b45309',
+                                                border: `1px solid ${st.damaged === 0 ? '#86efac' : '#fde68a'}`,
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                            }}
+                                        >
                                             {st.damaged === 0 ? '✓ PASSED' : (locale === 'fr' ? 'AUDITÉ' : 'AUDITED')}
                                         </span>
                                     </td>
