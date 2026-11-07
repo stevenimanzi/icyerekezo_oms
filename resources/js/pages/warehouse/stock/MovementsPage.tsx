@@ -174,37 +174,37 @@ export default function MovementsPage({ user, locale, direction, tabs, alternate
                                     {data?.movements.data.length ? (
                                         data.movements.data.map((row) => (
                                             <tr key={row.id}>
-                                                <td>
+                                                <td style={{ whiteSpace: 'nowrap' }}>
                                                     {format.dateTime(row.at)}
-                                                    <small>{row.by ?? text.none}</small>
                                                 </td>
                                                 <td>
-                                                    <b>{row.item ?? text.none}</b>
-                                                    <small>
-                                                        {row.color && (
+                                                    <div style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                                        {row.item ?? text.none}
+                                                    </div>
+                                                    {row.color && (
+                                                        <div style={{ marginTop: 2 }}>
                                                             <span className="ui-colour">
                                                                 {row.color}
                                                             </span>
-                                                        )}{' '}
-                                                        {row.sku}
-                                                    </small>
+                                                        </div>
+                                                    )}
                                                 </td>
-                                                <td>
+                                                <td style={{ whiteSpace: 'nowrap' }}>
                                                     <span
                                                         className={`ui-chip ${direction === 'in' ? 'ok' : row.type === 'waste' ? 'bad' : 'warn'}`}
                                                     >
                                                         {typeLabels[row.type] ?? row.type}
                                                     </span>
                                                 </td>
-                                                <td className="num">
+                                                <td className="num" style={{ whiteSpace: 'nowrap' }}>
                                                     <b>{format.number(row.quantity)}</b>{' '}
                                                     {row.unit ?? ''}
                                                 </td>
-                                                <td className="num">{format.money(row.value)}</td>
-                                                <td>{row.warehouse ?? text.none}</td>
+                                                <td className="num" style={{ whiteSpace: 'nowrap' }}>{format.money(row.value)}</td>
+                                                <td style={{ whiteSpace: 'nowrap' }}>{row.warehouse ?? text.none}</td>
                                                 <td>
                                                     {row.supplier && (
-                                                        <b>{text.stockIn.from(row.supplier)}</b>
+                                                        <div><b>{text.stockIn.from(row.supplier)}</b></div>
                                                     )}
                                                     {row.supplier ? (
                                                         <small>{row.note}</small>

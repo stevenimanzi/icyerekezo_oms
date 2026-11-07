@@ -26,18 +26,17 @@ export function StockTable({ rows, text, format, showHeld }: Props) {
                         rows.map((row) => (
                             <tr key={row.id}>
                                 <td>
-                                    <b>{row.name}</b>
-                                    <small>
-                                        {row.color && (
+                                    <div style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{row.name}</div>
+                                    {row.color && (
+                                        <div style={{ marginTop: 2 }}>
                                             <span className="ui-colour">{row.color}</span>
-                                        )}{' '}
-                                        {row.sku}
-                                    </small>
+                                        </div>
+                                    )}
                                 </td>
-                                <td className="num">
+                                <td className="num" style={{ whiteSpace: 'nowrap' }}>
                                     <b>{format.number(row.on_hand)}</b> {row.unit ?? ''}
                                 </td>
-                                <td className="num">{format.number(row.available)}</td>
+                                <td className="num" style={{ whiteSpace: 'nowrap' }}>{format.number(row.available)}</td>
                                 {showHeld && (
                                     <td className="num">
                                         {row.held > 0 ? format.number(row.held) : text.none}
