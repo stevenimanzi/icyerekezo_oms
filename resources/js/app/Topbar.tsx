@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
     Bell,
     ChevronDown,
-    Languages,
     LogOut,
     Menu,
     Moon,
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { Labels } from '../core/labels';
 import type { AppNotificationItem, AuthUser, Locale } from '../core/types';
+import { LanguageFlagDropdown } from '../auth/CountryFlags';
 import { useGlobalSearch } from './hooks/useGlobalSearch';
 import type { NotificationsState } from './hooks/useNotifications';
 import { NotificationCenter } from './NotificationCenter';
@@ -125,13 +125,7 @@ export function Topbar({
                 )}
             </label>
             <div className="top-actions">
-                <button
-                    className="locale-btn"
-                    onClick={() => onLocaleChange(locale === 'en' ? 'fr' : 'en')}
-                >
-                    <Languages size={17} />
-                    <span>{locale === 'en' ? 'FR' : 'EN'}</span>
-                </button>
+                <LanguageFlagDropdown locale={locale} onChange={onLocaleChange} size={24} />
                 <button
                     className="icon-btn"
                     onClick={() => onThemeChange(!dark)}

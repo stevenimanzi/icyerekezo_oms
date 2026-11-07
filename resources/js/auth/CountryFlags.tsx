@@ -49,9 +49,11 @@ export function FranceFlag({ size = 28 }: { size?: number }) {
 export function LanguageFlagDropdown({
     locale,
     onChange,
+    size = 28,
 }: {
     locale: Locale;
     onChange: (next: Locale) => void;
+    size?: number;
 }) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -76,7 +78,7 @@ export function LanguageFlagDropdown({
                 aria-label="Select Language"
                 aria-expanded={open}
             >
-                {locale === 'en' ? <UkFlag size={28} /> : <FranceFlag size={28} />}
+                {locale === 'en' ? <UkFlag size={size} /> : <FranceFlag size={size} />}
             </button>
 
             {open && (
