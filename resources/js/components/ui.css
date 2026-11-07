@@ -1,12 +1,12 @@
 .ui {
-    --ui-good: #15803d;
-    --ui-good-bg: #dcfce7;
+    --ui-good: #166534;
+    --ui-good-bg: transparent;
     --ui-warn: #b45309;
-    --ui-warn-bg: #fef3c7;
+    --ui-warn-bg: transparent;
     --ui-bad: #b91c1c;
-    --ui-bad-bg: #fee2e2;
+    --ui-bad-bg: transparent;
     --ui-grey: #475569;
-    --ui-grey-bg: #e2e8f0;
+    --ui-grey-bg: transparent;
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -14,14 +14,14 @@
 
 [data-theme='dark'] .ui,
 [data-theme='dark'] .ui-overlay {
-    --ui-good: #4ade80;
-    --ui-good-bg: #14301f;
-    --ui-warn: #fbbf24;
-    --ui-warn-bg: #3a2a0c;
-    --ui-bad: #f87171;
-    --ui-bad-bg: #3b1616;
+    --ui-good: #22c55e;
+    --ui-good-bg: transparent;
+    --ui-warn: #f59e0b;
+    --ui-warn-bg: transparent;
+    --ui-bad: #ef4444;
+    --ui-bad-bg: transparent;
     --ui-grey: #cbd5e1;
-    --ui-grey-bg: #263246;
+    --ui-grey-bg: transparent;
 }
 
 .ui .page-heading {
@@ -327,32 +327,49 @@
 }
 
 .ui-chip {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
 }
 
-.ui-chip.paid {
-    background: var(--ui-good-bg);
-    color: var(--ui-good);
+.ui-chip.paid,
+.ui-chip.ok,
+.ui-chip.approved,
+.ui-chip.received,
+.ui-chip.good {
+    background: transparent !important;
+    color: #166534 !important;
 }
 
-.ui-chip.partially_paid {
-    background: var(--ui-warn-bg);
-    color: var(--ui-warn);
+.ui-chip.partially_paid,
+.ui-chip.warn,
+.ui-chip.pending,
+.ui-chip.sent,
+.ui-chip.waiting,
+.ui-chip.low {
+    background: transparent !important;
+    color: #b45309 !important;
 }
 
-.ui-chip.unpaid {
-    background: var(--ui-bad-bg);
-    color: var(--ui-bad);
+.ui-chip.unpaid,
+.ui-chip.bad,
+.ui-chip.rejected,
+.ui-chip.out {
+    background: transparent !important;
+    color: #b91c1c !important;
 }
 
-.ui-chip.cancelled {
-    background: var(--ui-grey-bg);
-    color: var(--ui-grey);
+.ui-chip.cancelled,
+.ui-chip.grey {
+    background: transparent !important;
+    color: #64748b !important;
 }
 
 .ui-pager {

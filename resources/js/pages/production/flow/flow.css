@@ -35,26 +35,34 @@
 .ui-chip.ok,
 .ui-chip.approved,
 .ui-chip.received {
-    background: var(--ui-good-bg);
-    color: var(--ui-good);
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #166534 !important;
+    font-weight: 700;
 }
 
 .ui-chip.warn,
 .ui-chip.pending,
 .ui-chip.sent {
-    background: var(--ui-warn-bg);
-    color: var(--ui-warn);
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #b45309 !important;
+    font-weight: 700;
 }
 
 .ui-chip.bad,
 .ui-chip.rejected {
-    background: var(--ui-bad-bg);
-    color: var(--ui-bad);
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #b91c1c !important;
+    font-weight: 700;
 }
 
 .ui-chip.grey {
-    background: var(--ui-grey-bg);
-    color: var(--ui-grey);
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #64748b !important;
+    font-weight: 700;
 }
 
 .ui-struck {

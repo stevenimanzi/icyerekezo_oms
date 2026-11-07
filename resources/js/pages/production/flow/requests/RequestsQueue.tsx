@@ -186,7 +186,7 @@ export default function RequestsQueue({ locale }: Props) {
                                                                 fontSize: 12,
                                                                 fontWeight: 700,
                                                                 borderRadius: 6,
-                                                                background: short ? '#cbd5e1' : '#16a34a',
+                                                                background: short ? '#cbd5e1' : '#166534',
                                                                 color: '#ffffff',
                                                                 border: 'none',
                                                                 cursor: short ? 'not-allowed' : 'pointer',
@@ -194,7 +194,7 @@ export default function RequestsQueue({ locale }: Props) {
                                                                 alignItems: 'center',
                                                                 justifyContent: 'center',
                                                                 whiteSpace: 'nowrap',
-                                                                boxShadow: short ? 'none' : '0 1px 2px rgba(22, 163, 74, 0.25)',
+                                                                boxShadow: short ? 'none' : '0 1px 2px rgba(22, 101, 52, 0.25)',
                                                                 transition: 'all 0.15s ease',
                                                             }}
                                                         >
@@ -269,8 +269,8 @@ export default function RequestsQueue({ locale }: Props) {
                                     height: 32,
                                     fontSize: 13,
                                     borderRadius: 6,
-                                    background: deciding.kind === 'approve' ? '#16a34a' : '#dc2626',
-                                    borderColor: deciding.kind === 'approve' ? '#15803d' : '#b91c1c',
+                                    background: deciding.kind === 'approve' ? '#166534' : '#dc2626',
+                                    borderColor: deciding.kind === 'approve' ? '#14532d' : '#b91c1c',
                                     color: '#ffffff',
                                 }}
                             >

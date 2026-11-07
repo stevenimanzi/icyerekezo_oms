@@ -1000,11 +1000,9 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                                     <span
                                                         className="admin-status"
                                                         style={{
-                                                            background: 'rgba(239, 68, 68, 0.12)',
-                                                            color: '#dc2626',
-                                                            padding: '4px 8px',
-                                                            borderRadius: 6,
-                                                            fontSize: 11,
+                                                            background: 'transparent',
+                                                            color: '#b91c1c',
+                                                            fontSize: 12,
                                                             fontWeight: 700,
                                                         }}
                                                     >
@@ -1014,11 +1012,9 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                                     <span
                                                         className="admin-status"
                                                         style={{
-                                                            background: 'rgba(245, 158, 11, 0.12)',
-                                                            color: '#d97706',
-                                                            padding: '4px 8px',
-                                                            borderRadius: 6,
-                                                            fontSize: 11,
+                                                            background: 'transparent',
+                                                            color: '#b45309',
+                                                            fontSize: 12,
                                                             fontWeight: 700,
                                                         }}
                                                     >
@@ -1028,11 +1024,9 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                                     <span
                                                         className="admin-status"
                                                         style={{
-                                                            background: 'rgba(16, 185, 129, 0.12)',
-                                                            color: '#16a34a',
-                                                            padding: '4px 8px',
-                                                            borderRadius: 6,
-                                                            fontSize: 11,
+                                                            background: 'transparent',
+                                                            color: '#166534',
+                                                            fontSize: 12,
                                                             fontWeight: 700,
                                                         }}
                                                     >

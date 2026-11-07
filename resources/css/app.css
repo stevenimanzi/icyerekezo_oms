@@ -10888,20 +10888,126 @@ select:focus {
     border-bottom: none !important;
 }
 
-/* Status Badges & Pills */
+/* Status Badges & Pills - Pure Colored Text without Backgrounds */
 .status,
 .admin-status,
-.status-pill {
+.status-pill,
+.ui-chip,
+.tag,
+.badge,
+.order-status,
+.plan-badge {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 5px !important;
-    padding: 3px 10px !important;
-    border-radius: 9999px !important;
-    font-size: 11px !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    font-size: 12px !important;
     font-weight: 700 !important;
-    letter-spacing: 0.02em !important;
-    line-height: 1.3 !important;
-    border: 1px solid transparent;
+    line-height: 1.4 !important;
+}
+
+/* Dark Green for All Success / Active / Approved / Good / Delivered States */
+.status.active,
+.status.completed,
+.status.success,
+.status.ok,
+.status.approved,
+.admin-status.active,
+.admin-status.completed,
+.admin-status.success,
+.admin-status.system-online,
+.admin-status.accepted,
+.admin-status.delivered,
+.ui-chip.ok,
+.ui-chip.approved,
+.ui-chip.received,
+.ui-chip.paid,
+.ui-chip.good,
+.status-pill.active,
+.status-pill.success {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #166534 !important; /* Dark Green */
+}
+
+/* Warm Amber / Orange for Pending / Waiting / Warning / Partial States */
+.status.pending,
+.status.warning,
+.admin-status.pending,
+.admin-status.warning,
+.admin-status.running,
+.admin-status.partial,
+.ui-chip.warn,
+.ui-chip.pending,
+.ui-chip.sent,
+.ui-chip.partially_paid,
+.ui-chip.waiting,
+.ui-chip.low,
+.status-pill.pending,
+.status-pill.warning {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #b45309 !important; /* Warm Amber */
+}
+
+/* Crimson Red for Rejected / Suspended / Failed / Out of Stock States */
+.status.suspended,
+.status.failed,
+.status.danger,
+.status.rejected,
+.admin-status.suspended,
+.admin-status.failed,
+.admin-status.critical,
+.admin-status.maintenance-enabled,
+.admin-status.rejected,
+.ui-chip.bad,
+.ui-chip.rejected,
+.ui-chip.unpaid,
+.ui-chip.out,
+.ui-chip.cancelled,
+.status-pill.danger,
+.status-pill.rejected {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #b91c1c !important; /* Crimson Red */
+}
+
+/* Slate Gray for Inactive / Neutral */
+.admin-status.inactive,
+.ui-chip.grey,
+.status-pill.inactive {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #64748b !important;
+}
+
+[data-theme='dark'] .status.active,
+[data-theme='dark'] .admin-status.active,
+[data-theme='dark'] .ui-chip.ok,
+[data-theme='dark'] .ui-chip.approved {
+    background: transparent !important;
+    color: #22c55e !important;
+}
+
+[data-theme='dark'] .status.pending,
+[data-theme='dark'] .admin-status.pending,
+[data-theme='dark'] .ui-chip.warn,
+[data-theme='dark'] .ui-chip.pending {
+    background: transparent !important;
+    color: #f59e0b !important;
+}
+
+[data-theme='dark'] .status.rejected,
+[data-theme='dark'] .admin-status.rejected,
+[data-theme='dark'] .ui-chip.bad,
+[data-theme='dark'] .ui-chip.rejected {
+    background: transparent !important;
+    color: #ef4444 !important;
 }
 
 /* Chat UI Polish */

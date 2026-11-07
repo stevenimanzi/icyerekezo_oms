@@ -769,15 +769,15 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
                                                 {item.isOutOfStock ? (
-                                                    <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 99, background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}>
+                                                    <span style={{ display: 'inline-flex', background: 'transparent', color: '#b91c1c', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
                                                         {locale === 'en' ? 'OUT OF STOCK' : 'ÉPUISÉ'}
                                                     </span>
                                                 ) : item.isLowStock ? (
-                                                    <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 99, background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}>
+                                                    <span style={{ display: 'inline-flex', background: 'transparent', color: '#b45309', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
                                                         {locale === 'en' ? 'LOW STOCK' : 'STOCK FAIBLE'}
                                                     </span>
                                                 ) : (
-                                                    <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 99, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}>
+                                                    <span style={{ display: 'inline-flex', background: 'transparent', color: '#166534', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
                                                         {locale === 'en' ? 'IN STOCK' : 'EN STOCK'}
                                                     </span>
                                                 )}
@@ -864,12 +864,10 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                                 <span
                                                     style={{
                                                         fontWeight: 800,
-                                                        fontSize: '0.7rem',
+                                                        fontSize: '0.75rem',
                                                         display: 'inline-flex',
-                                                        padding: '2px 7px',
-                                                        borderRadius: 4,
-                                                        background: m.isPositive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                                                        color: m.isPositive ? '#10b981' : '#f59e0b',
+                                                        background: 'transparent',
+                                                        color: m.isPositive ? '#166534' : '#b45309',
                                                     }}
                                                 >
                                                     {m.isPositive ? (locale === 'en' ? 'RECEIVED' : 'REÇU') : (locale === 'en' ? 'SENT OUT' : 'SORTI')}
@@ -881,7 +879,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                                 style={{
                                                     textAlign: 'right',
                                                     fontWeight: 800,
-                                                    color: m.quantityDelta > 0 ? '#10b981' : 'var(--text)',
+                                                    color: m.quantityDelta > 0 ? '#166534' : 'var(--text)',
                                                 }}
                                             >
                                                 {m.quantityDelta > 0 ? `+${num(m.quantityDelta)}` : num(m.quantityDelta)}
