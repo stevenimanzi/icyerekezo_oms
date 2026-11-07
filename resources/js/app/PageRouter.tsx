@@ -63,6 +63,9 @@ const IncomingRequestsPage = lazy(() => import('../pages/warehouse/IncomingReque
 const StockInPage = lazy(() => import('../pages/warehouse/stock/StockInPage'));
 const StockOutPage = lazy(() => import('../pages/warehouse/stock/StockOutPage'));
 const StockOverviewPage = lazy(() => import('../pages/warehouse/stock/StockOverviewPage'));
+const WarehouseReportPage = lazy(
+    () => import('../pages/warehouse/stock/WarehouseReportPage'),
+);
 const InventoryManagementPage = lazy(() => import('../pages/warehouse/InventoryManagementPage'));
 const LogisticsOverviewPage = lazy(() => import('../pages/logistics/LogisticsOverviewPage'));
 const MachinesPage = lazy(() => import('../pages/production/MachinesPage'));
@@ -227,6 +230,12 @@ function CurrentPage({
     if (activePage === 'packing-report' || (flags.isPackagingUser && activePage === 'reports')) {
         return <PackingReportPage user={user} locale={locale} />;
     }
+    if (
+        activePage === 'warehouse-report' ||
+        ((flags.isWarehouseUser || user.workspace === 'warehouse') && activePage === 'reports')
+    ) {
+        return <WarehouseReportPage user={user} locale={locale} />;
+    }
 
     if (flags.hasProductionFlow) {
         const flowStage = FLOW_STAGE_PAGES[activePage];
@@ -242,7 +251,12 @@ function CurrentPage({
                 />
             );
         }
-        if (activePage === 'reports' && !flags.isLogisticsUser)
+        if (
+            activePage === 'reports' &&
+            !flags.isLogisticsUser &&
+            !flags.isWarehouseUser &&
+            user.workspace !== 'warehouse'
+        )
             return <FactoryReportPage user={user} locale={locale} />;
         const materialStage = FLOW_MATERIAL_PAGES[activePage];
 
@@ -344,6 +358,9 @@ function CurrentPage({
             return <TeamManagementPage />;
         case 'reports':
         case 'logistics-reports':
+            if (flags.isWarehouseUser || user.workspace === 'warehouse') {
+                return <WarehouseReportPage user={user} locale={locale} />;
+            }
             return (
                 <ReportsPage
                     key={activePage}
