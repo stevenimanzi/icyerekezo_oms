@@ -273,7 +273,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                             </>
                                         )}
                                         <td>
-                                            {canWork && (
+                                            {(canWork || capabilities.inspect) ? (
                                                 <div className="ui-row-actions">
                                                     {capabilities.inspect && !lot.held && (lot.awaiting_quality > 0 || lot.good > 0 || lot.cut > 0) && (
                                                         <button
@@ -285,7 +285,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                             {locale === 'en' ? 'Inspect QC' : 'Contrôler QC'}
                                                         </button>
                                                     )}
-                                                    {isCutting && (
+                                                    {canWork && isCutting && (
                                                         <button
                                                             className="ui-link"
                                                             disabled={lot.held}
@@ -296,7 +296,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                             {text.work.cutMore}
                                                         </button>
                                                     )}
-                                                    {!isCutting && lot.wip > 0 && (
+                                                    {canWork && !isCutting && lot.wip > 0 && (
                                                         <button
                                                             className="primary-btn"
                                                             disabled={lot.held}
@@ -311,7 +311,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                                   )}
                                                         </button>
                                                     )}
-                                                    {isPacking && lot.ready_for_stock > 0 && (
+                                                    {canWork && isPacking && lot.ready_for_stock > 0 && (
                                                         <button
                                                             className="secondary-btn"
                                                             disabled={lot.held}
@@ -322,7 +322,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                             {text.work.sendToStock} →
                                                         </button>
                                                     )}
-                                                    {lot.outbox > 0 &&
+                                                    {canWork && lot.outbox > 0 &&
                                                         stage.destinations.map((to) => (
                                                             <button
                                                                 key={to}
@@ -342,7 +342,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                                 →
                                                             </button>
                                                         ))}
-                                                    {lot.outbox === 0 && !isPacking && (lot.cut > 0 || lot.good > 0) &&
+                                                    {canWork && lot.outbox === 0 && !isPacking && (lot.cut > 0 || lot.good > 0) &&
                                                         stage.destinations.map((to) => (
                                                             <button
                                                                 key={to}
@@ -365,6 +365,8 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                             </button>
                                                         ))}
                                                 </div>
+                                            ) : (
+                                                <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>—</span>
                                             )}
                                         </td>
                                     </tr>

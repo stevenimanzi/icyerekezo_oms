@@ -55,7 +55,42 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
     };
     const close = () => setModal(null);
 
-    const canWork = Boolean(data?.capabilities.work);
+    const isProductionManager =
+        user.roles?.some(
+            (r) =>
+                r.slug === 'production-manager' ||
+                r.slug === 'production-supervisor' ||
+                r.slug === 'factory-manager' ||
+                r.slug === 'factory-administrator',
+        ) ||
+        user.workspace === 'production' ||
+        user.workspace === 'factory';
+
+    const isQualityManager =
+        user.roles?.some(
+            (r) =>
+                r.slug === 'quality-manager' ||
+                r.slug === 'quality-controller' ||
+                r.slug === 'quality-officer' ||
+                r.slug === 'quality-control',
+        ) || user.workspace === 'quality';
+
+    // Production managers oversee and view progress, but CANNOT record new work
+    const canWork = !isProductionManager && Boolean(data?.capabilities.work);
+
+    // Quality inspection strictly only for Quality Control Manager / Quality roles
+    const canInspect = isQualityManager && !isProductionManager && Boolean(data?.capabilities.inspect);
+
+    const safeData = data
+        ? {
+              ...data,
+              capabilities: {
+                  ...data.capabilities,
+                  work: canWork,
+                  inspect: canInspect,
+              },
+          }
+        : null;
 
     return (
         <section className="ui">
@@ -69,7 +104,7 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
                         <RefreshCw size={15} />
                         {text.refresh}
                     </button>
-                    {data?.capabilities.inspect && data.lots.length > 0 && (
+                    {canInspect && data && data.lots.length > 0 && (
                         <button
                             className="secondary-btn"
                             onClick={() => setModal({ kind: 'inspect', lot: data.lots[0] })}
@@ -116,12 +151,12 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
                 </div>
             )}
 
-            {data && (
+            {safeData && (
                 <>
-                    <FlowChain stage={data.stage} locale={locale} text={text} />
+                    <FlowChain stage={safeData.stage} locale={locale} text={text} />
 
                     <div className="ui-kpis eight">
-                        {buildKpis(stage, data, text).map((kpi) => (
+                        {buildKpis(stage, safeData, text).map((kpi) => (
                             <article
                                 className={`panel ui-kpi ${kpi.alert ? 'alert' : ''}`}
                                 key={kpi.label}
@@ -148,7 +183,7 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
 
                     {tab === 'work' && (
                         <WorkTab
-                            data={data}
+                            data={safeData}
                             locale={locale}
                             text={text}
                             format={format}
@@ -157,7 +192,7 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
                     )}
                     {tab === 'history' && (
                         <HistoryTab
-                            data={data}
+                            data={safeData}
                             locale={locale}
                             text={text}
                             format={format}

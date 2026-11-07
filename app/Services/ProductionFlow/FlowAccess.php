@@ -27,7 +27,14 @@ final class FlowAccess
 
     public function canWork(string $stage): bool
     {
-        return $this->isManager() || (bool) array_intersect(ProductionFlowCatalog::STAGES[$stage]['roles'] ?? [], $this->roleSlugs);
+        // Production managers, supervisors, and factory administrators oversee and monitor,
+        // but do NOT record new production entries (cutting, sewing, finishing, packing).
+        // Recording new work entries is strictly restricted to line operators.
+        if ((bool) array_intersect(ProductionFlowCatalog::MANAGER_ROLES, $this->roleSlugs)) {
+            return false;
+        }
+
+        return (bool) array_intersect(ProductionFlowCatalog::STAGES[$stage]['roles'] ?? [], $this->roleSlugs);
     }
 
     public function workStages(): array
@@ -42,8 +49,13 @@ final class FlowAccess
 
     public function canInspect(): bool
     {
-        return $this->user->is_platform_admin
-            || (bool) array_intersect(['quality-officer', 'quality-manager', 'quality-controller', 'quality-control'], $this->roleSlugs);
+        // Quality inspection is strictly restricted to quality control manager/officer roles only.
+        // Production managers, supervisors, factory administrators must never see or perform quality inspection.
+        if ((bool) array_intersect(ProductionFlowCatalog::MANAGER_ROLES, $this->roleSlugs)) {
+            return false;
+        }
+
+        return (bool) array_intersect(['quality-manager', 'quality-controller', 'quality-officer', 'quality-control'], $this->roleSlugs);
     }
 
     public function defaultStage(): ?string
