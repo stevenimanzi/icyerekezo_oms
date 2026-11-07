@@ -203,29 +203,29 @@ export default function FactoryReportPage({ user, locale }: Props) {
     let runningIndex = 0;
 
     return (
-        <section className="module-page factory-report-page" style={{ padding: '20px 24px', maxWidth: 1240, margin: '0 auto', background: '#ffffff' }}>
+        <section className="module-page factory-report-page" style={{ padding: '20px 24px', maxWidth: 1240, margin: '0 auto', background: 'transparent', color: 'var(--text)' }}>
             <style>{`
-                .excel-table-container,
-                .excel-table-container table,
-                .excel-table-container thead,
-                .excel-table-container tbody,
-                .excel-table-container tfoot,
-                .excel-table-container tr {
-                    background-color: #ffffff !important;
-                    background: #ffffff !important;
+                .excel-table-container {
+                    background: var(--panel);
+                    color: var(--text);
+                    border: 1px solid var(--line);
+                    border-radius: 12px;
+                    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+                }
+                .excel-table-container table {
+                    border: 1px solid var(--line);
+                    background: var(--panel);
                 }
                 .excel-table-container th {
-                    background-color: #ffffff !important;
-                    background: #ffffff !important;
-                    color: #000000 !important;
-                    border: 1pt solid #000000 !important;
-                    font-weight: 700 !important;
+                    background: var(--soft, rgba(248, 250, 252, 0.7));
+                    color: var(--muted);
+                    border: 1px solid var(--line);
+                    font-weight: 700;
                 }
                 .excel-table-container td {
-                    background-color: #ffffff !important;
-                    background: #ffffff !important;
-                    color: #000000 !important;
-                    border: 1pt solid #000000 !important;
+                    background: var(--panel);
+                    color: var(--text);
+                    border: 1px solid var(--line);
                 }
                 .print-signatures-block {
                     display: none !important;
@@ -234,6 +234,28 @@ export default function FactoryReportPage({ user, locale }: Props) {
                     display: none !important;
                 }
                 @media print {
+                    .excel-table-container,
+                    .excel-table-container table,
+                    .excel-table-container thead,
+                    .excel-table-container tbody,
+                    .excel-table-container tfoot,
+                    .excel-table-container tr {
+                        background-color: #ffffff !important;
+                        background: #ffffff !important;
+                    }
+                    .excel-table-container th {
+                        background-color: #ffffff !important;
+                        background: #ffffff !important;
+                        color: #000000 !important;
+                        border: 1pt solid #000000 !important;
+                        font-weight: 700 !important;
+                    }
+                    .excel-table-container td {
+                        background-color: #ffffff !important;
+                        background: #ffffff !important;
+                        color: #000000 !important;
+                        border: 1pt solid #000000 !important;
+                    }
                     @page {
                         size: landscape;
                         margin: 5mm 5mm;

@@ -153,6 +153,33 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
 
     return (
         <section className="ow warehouse-dashboard" style={{ padding: '0 0 40px' }}>
+            <style>{`
+                .warehouse-kpi-row {
+                    display: grid !important;
+                    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+                    gap: 12px !important;
+                    align-items: stretch !important;
+                }
+                .warehouse-kpi-card {
+                    height: 100% !important;
+                    min-height: 124px !important;
+                    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+                }
+                .warehouse-kpi-card:hover {
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06) !important;
+                }
+                @media (max-width: 1240px) {
+                    .warehouse-kpi-row {
+                        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                    }
+                }
+                @media (max-width: 680px) {
+                    .warehouse-kpi-row {
+                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                    }
+                }
+            `}</style>
             {/* Header */}
             <div className="page-heading">
                 <div>
@@ -213,22 +240,15 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         gap: 12,
                         padding: '14px 18px',
                         border: '1px solid var(--line)',
-                        borderRadius: 10,
+                        borderRadius: 12,
                         background: 'var(--panel)',
                         cursor: 'pointer',
                         textAlign: 'left',
+                        transition: 'all 0.2s ease',
                     }}
                 >
-                    <div
-                        style={{
-                            background: 'rgba(16, 185, 129, 0.12)',
-                            color: '#10b981',
-                            padding: 10,
-                            borderRadius: 8,
-                            display: 'flex',
-                        }}
-                    >
-                        <PackagePlus size={20} />
+                    <div style={{ color: '#10b981', display: 'flex', alignItems: 'center' }}>
+                        <PackagePlus size={24} />
                     </div>
                     <div>
                         <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Entrée de stock' : 'Stock In'}</strong>
@@ -247,22 +267,15 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         gap: 12,
                         padding: '14px 18px',
                         border: '1px solid var(--line)',
-                        borderRadius: 10,
+                        borderRadius: 12,
                         background: 'var(--panel)',
                         cursor: 'pointer',
                         textAlign: 'left',
+                        transition: 'all 0.2s ease',
                     }}
                 >
-                    <div
-                        style={{
-                            background: 'rgba(239, 68, 68, 0.12)',
-                            color: '#ef4444',
-                            padding: 10,
-                            borderRadius: 8,
-                            display: 'flex',
-                        }}
-                    >
-                        <PackageMinus size={20} />
+                    <div style={{ color: '#ef4444', display: 'flex', alignItems: 'center' }}>
+                        <PackageMinus size={24} />
                     </div>
                     <div>
                         <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Sortie de stock' : 'Stock Out'}</strong>
@@ -281,22 +294,15 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         gap: 12,
                         padding: '14px 18px',
                         border: '1px solid var(--line)',
-                        borderRadius: 10,
+                        borderRadius: 12,
                         background: 'var(--panel)',
                         cursor: 'pointer',
                         textAlign: 'left',
+                        transition: 'all 0.2s ease',
                     }}
                 >
-                    <div
-                        style={{
-                            background: 'rgba(59, 130, 246, 0.12)',
-                            color: '#3b82f6',
-                            padding: 10,
-                            borderRadius: 8,
-                            display: 'flex',
-                        }}
-                    >
-                        <Package size={20} />
+                    <div style={{ color: '#3b82f6', display: 'flex', alignItems: 'center' }}>
+                        <Package size={24} />
                     </div>
                     <div>
                         <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Catalogue Produits' : 'Product Catalog'}</strong>
@@ -315,22 +321,15 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         gap: 12,
                         padding: '14px 18px',
                         border: '1px solid var(--line)',
-                        borderRadius: 10,
+                        borderRadius: 12,
                         background: 'var(--panel)',
                         cursor: 'pointer',
                         textAlign: 'left',
+                        transition: 'all 0.2s ease',
                     }}
                 >
-                    <div
-                        style={{
-                            background: 'rgba(139, 92, 246, 0.12)',
-                            color: '#8b5cf6',
-                            padding: 10,
-                            borderRadius: 8,
-                            display: 'flex',
-                        }}
-                    >
-                        <FileText size={20} />
+                    <div style={{ color: '#8b5cf6', display: 'flex', alignItems: 'center' }}>
+                        <FileText size={24} />
                     </div>
                     <div>
                         <strong style={{ display: 'block', fontSize: 14 }}>{isFr ? 'Rapports de stock' : 'Stock Reports'}</strong>
@@ -341,105 +340,170 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 </button>
             </div>
 
-            {/* 6 Key KPIs */}
+            {/* 6 Key KPIs - ALL ON FIRST ROW WITH IDENTICAL WIDTH & HEIGHT */}
             <div
+                className="warehouse-kpi-row"
                 style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    gap: 14,
-                    marginBottom: 20,
+                    gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+                    gap: 12,
+                    marginBottom: 22,
+                    alignItems: 'stretch',
                 }}
             >
                 {/* Total Value */}
-                <article className="panel" style={{ padding: '16px 18px', position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>
-                            {isFr ? 'Valeur totale du stock' : 'Total Stock Value'}
+                <article
+                    className="panel warehouse-kpi-card"
+                    style={{
+                        padding: '16px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        height: '100%',
+                        minHeight: 124,
+                        borderRadius: 12,
+                        border: '1px solid var(--line)',
+                        background: 'var(--panel)',
+                        position: 'relative',
+                        transition: 'all 0.2s ease',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {isFr ? 'Valeur stock' : 'Stock Value'}
                         </small>
                         <span style={{ color: '#2563eb' }}><Boxes size={18} /></span>
                     </div>
-                    <strong style={{ display: 'block', fontSize: 24, marginTop: 8, color: 'var(--text)' }}>
+                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {format.money(totalValue)}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {isFr ? `${itemsInStock} articles actifs` : `${itemsInStock} active items`}
                     </p>
                 </article>
 
                 {/* Received in period */}
-                <article className="panel" style={{ padding: '16px 18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>
+                <article
+                    className="panel warehouse-kpi-card"
+                    style={{
+                        padding: '16px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        height: '100%',
+                        minHeight: 124,
+                        borderRadius: 12,
+                        border: '1px solid var(--line)',
+                        background: 'var(--panel)',
+                        position: 'relative',
+                        transition: 'all 0.2s ease',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             {isFr ? 'Entrées (Période)' : 'Stock In (Period)'}
                         </small>
                         <span style={{ color: '#10b981' }}><ArrowDownRight size={18} /></span>
                     </div>
-                    <strong style={{ display: 'block', fontSize: 24, marginTop: 8, color: '#10b981' }}>
+                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: '#10b981', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         +{format.moneyShort(receivedValue)}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-                        {isFr ? 'Marchandises réceptionnées' : 'Total incoming value'}
+                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {isFr ? 'Marchandises reçues' : 'Total incoming value'}
                     </p>
                 </article>
 
                 {/* Issued in period */}
-                <article className="panel" style={{ padding: '16px 18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>
+                <article
+                    className="panel warehouse-kpi-card"
+                    style={{
+                        padding: '16px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        height: '100%',
+                        minHeight: 124,
+                        borderRadius: 12,
+                        border: '1px solid var(--line)',
+                        background: 'var(--panel)',
+                        position: 'relative',
+                        transition: 'all 0.2s ease',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             {isFr ? 'Sorties (Période)' : 'Stock Out (Period)'}
                         </small>
                         <span style={{ color: '#f59e0b' }}><ArrowUpRight size={18} /></span>
                     </div>
-                    <strong style={{ display: 'block', fontSize: 24, marginTop: 8, color: '#f59e0b' }}>
+                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: '#f59e0b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         -{format.moneyShort(issuedValue)}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {isFr ? 'Distribué en production' : 'Total issued to lines'}
                     </p>
                 </article>
 
                 {/* Items to reorder */}
                 <article
-                    className="panel"
+                    className="panel warehouse-kpi-card"
                     style={{
-                        padding: '16px 18px',
-                        borderLeft: lowStockCount > 0 ? '4px solid #f59e0b' : '1px solid var(--line)',
+                        padding: '16px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        height: '100%',
+                        minHeight: 124,
+                        borderRadius: 12,
+                        border: '1px solid var(--line)',
+                        background: 'var(--panel)',
+                        position: 'relative',
+                        transition: 'all 0.2s ease',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             {isFr ? 'À réapprovisionner' : 'Items to Reorder'}
                         </small>
                         <span style={{ color: '#f59e0b' }}><AlertTriangle size={18} /></span>
                     </div>
-                    <strong style={{ display: 'block', fontSize: 24, marginTop: 8, color: lowStockCount > 0 ? '#d97706' : 'var(--text)' }}>
+                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: lowStockCount > 0 ? '#d97706' : 'var(--text)', whiteSpace: 'nowrap' }}>
                         {lowStockCount}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {lowStockCount > 0
-                            ? (isFr ? 'Stock inférieur au seuil' : 'Below safety threshold')
+                            ? (isFr ? 'Stock sous le seuil' : 'Below safety threshold')
                             : (isFr ? 'Niveaux corrects' : 'All levels adequate')}
                     </p>
                 </article>
 
                 {/* Out of stock */}
                 <article
-                    className="panel"
+                    className="panel warehouse-kpi-card"
                     style={{
-                        padding: '16px 18px',
-                        borderLeft: outOfStockCount > 0 ? '4px solid #ef4444' : '1px solid var(--line)',
+                        padding: '16px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        height: '100%',
+                        minHeight: 124,
+                        borderRadius: 12,
+                        border: '1px solid var(--line)',
+                        background: 'var(--panel)',
+                        position: 'relative',
+                        transition: 'all 0.2s ease',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>
-                            {isFr ? 'Rupture de stock' : 'Out of Stock'}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {isFr ? 'Rupture stock' : 'Out of Stock'}
                         </small>
                         <span style={{ color: '#ef4444' }}><ShieldAlert size={18} /></span>
                     </div>
-                    <strong style={{ display: 'block', fontSize: 24, marginTop: 8, color: outOfStockCount > 0 ? '#dc2626' : 'var(--text)' }}>
+                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: outOfStockCount > 0 ? '#dc2626' : 'var(--text)', whiteSpace: 'nowrap' }}>
                         {outOfStockCount}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {outOfStockCount > 0
                             ? (isFr ? 'Quantité nulle (0)' : 'Zero balance items')
                             : (isFr ? 'Aucune rupture' : 'No stockouts')}
@@ -447,18 +511,33 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 </article>
 
                 {/* Quality / Quarantine */}
-                <article className="panel" style={{ padding: '16px 18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <small style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>
-                            {isFr ? 'En contrôle qualité' : 'Held for Quality'}
+                <article
+                    className="panel warehouse-kpi-card"
+                    style={{
+                        padding: '16px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        height: '100%',
+                        minHeight: 124,
+                        borderRadius: 12,
+                        border: '1px solid var(--line)',
+                        background: 'var(--panel)',
+                        position: 'relative',
+                        transition: 'all 0.2s ease',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {isFr ? 'Contrôle qualité' : 'Held for Quality'}
                         </small>
                         <span style={{ color: '#8b5cf6' }}><Clock size={18} /></span>
                     </div>
-                    <strong style={{ display: 'block', fontSize: 24, marginTop: 8, color: 'var(--text)' }}>
+                    <strong style={{ display: 'block', fontSize: 20, marginTop: 6, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap' }}>
                         {heldQuality}
                     </strong>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-                        {isFr ? 'Lots en attente d’inspection' : 'Batches in QA / quarantine'}
+                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {isFr ? 'Lots en inspection' : 'Batches in QA / quarantine'}
                     </p>
                 </article>
             </div>

@@ -93,7 +93,6 @@ export default function WarehouseReportPage({ user, locale }: Props) {
         const rawList: any[] = inventoryOverview?.stock || [];
         const catalogList: any[] = inventoryOverview?.catalog || [];
 
-        // If stock array is empty, fallback to catalog
         let items: any[] = [];
         if (rawList.length > 0) {
             items = rawList.map((s, idx) => ({
@@ -145,7 +144,6 @@ export default function WarehouseReportPage({ user, locale }: Props) {
 
     // Build Stock Movement Ledger Rows for the period
     const movementRows = useMemo(() => {
-        // Collect transactions from reportData.inventory OR inventoryOverview.recent_transactions
         const reportTxs: any[] = reportData?.inventory || [];
         const overviewTxs: any[] = inventoryOverview?.recent_transactions || inventoryOverview?.transactions || [];
 
@@ -208,37 +206,107 @@ export default function WarehouseReportPage({ user, locale }: Props) {
     return (
         <section
             className="module-page warehouse-report-page"
-            style={{ padding: '20px 24px', maxWidth: 1240, margin: '0 auto', background: '#ffffff' }}
+            style={{ padding: '20px 24px', maxWidth: 1280, margin: '0 auto', color: 'var(--text)' }}
         >
             <style>{`
-                .excel-table-container,
-                .excel-table-container table,
-                .excel-table-container thead,
-                .excel-table-container tbody,
-                .excel-table-container tfoot,
-                .excel-table-container tr {
-                    background-color: #ffffff !important;
-                    background: #ffffff !important;
+                .warehouse-report-card {
+                    background: var(--panel);
+                    color: var(--text);
+                    border: 1px solid var(--line);
+                    border-radius: 14px;
+                    padding: 24px 28px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+                    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
                 }
-                .excel-table-container th {
-                    background-color: #ffffff !important;
-                    background: #ffffff !important;
-                    color: #000000 !important;
-                    border: 1pt solid #000000 !important;
-                    font-weight: 700 !important;
+                .report-kpi-matrix {
+                    display: grid;
+                    grid-template-columns: repeat(5, 1fr);
+                    border: 1px solid var(--line);
+                    border-radius: 12px;
+                    overflow: hidden;
+                    margin-bottom: 24px;
+                    background: var(--panel);
                 }
-                .excel-table-container td {
-                    background-color: #ffffff !important;
-                    background: #ffffff !important;
-                    color: #000000 !important;
-                    border: 1pt solid #000000 !important;
+                .report-kpi-cell {
+                    padding: 14px 16px;
+                    border-right: 1px solid var(--line);
+                    display: flex;
+                    flex-direction: column;
+                    justifyContent: space-between;
+                    min-height: 96px;
+                }
+                .report-kpi-cell:last-child {
+                    border-right: none;
+                }
+                .report-data-table {
+                    width: 100%;
+                    border-collapse: separate;
+                    border-spacing: 0;
+                    border: 1px solid var(--line);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    font-size: 0.8rem;
+                }
+                .report-data-table th {
+                    background: var(--soft, rgba(248, 250, 252, 0.6));
+                    color: var(--muted);
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    padding: 10px 12px;
+                    border-bottom: 1px solid var(--line);
+                    border-right: 1px solid var(--line);
+                    text-align: left;
+                }
+                .report-data-table th:last-child {
+                    border-right: none;
+                }
+                .report-data-table td {
+                    background: var(--panel);
+                    color: var(--text);
+                    padding: 9px 12px;
+                    border-bottom: 1px solid var(--line);
+                    border-right: 1px solid var(--line);
+                    transition: background 0.15s ease;
+                }
+                .report-data-table td:last-child {
+                    border-right: none;
+                }
+                .report-data-table tr:last-child td {
+                    border-bottom: none;
+                }
+                .report-data-table tbody tr:hover td {
+                    background: var(--soft, rgba(241, 245, 249, 0.6));
+                }
+                .report-data-table tfoot td {
+                    background: var(--soft, rgba(248, 250, 252, 0.8));
+                    font-weight: 800;
+                    border-top: 2px solid var(--line);
                 }
                 .print-signatures-block {
                     display: none !important;
                 }
                 .print-footer-block {
-                    display: none !important;
+                    display: flex;
+                    justifyContent: space-between;
+                    align-items: center;
+                    margin-top: 18px;
+                    padding-top: 10px;
+                    border-top: 1px solid var(--line);
+                    font-size: 0.72rem;
+                    color: var(--muted);
                 }
+
+                @media (max-width: 900px) {
+                    .report-kpi-matrix {
+                        grid-template-columns: repeat(2, 1fr) !important;
+                    }
+                    .report-kpi-cell {
+                        border-bottom: 1px solid var(--line) !important;
+                    }
+                }
+
                 @media print {
                     @page {
                         size: landscape;
@@ -247,69 +315,58 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                     nav, aside, .app-sidebar, .module-actions, .no-print, button, .ui-tabs, .app-header, .app-shell-header {
                         display: none !important;
                     }
-                    header:not(.excel-table-container header):not(.sheet-print-header) {
-                        display: none !important;
-                    }
                     body, #root, .app-layout, .app-content, .module-page {
                         background: #ffffff !important;
-                        background-color: #ffffff !important;
                         padding: 0 !important;
                         margin: 0 !important;
                         color: #000000 !important;
                         box-shadow: none !important;
                         width: 100% !important;
-                        max-width: 100% !important;
                     }
-                    .excel-table-container {
+                    .warehouse-report-card {
                         box-shadow: none !important;
                         border: 1.5pt solid #000000 !important;
                         background: #ffffff !important;
-                        background-color: #ffffff !important;
                         padding: 12px 14px !important;
                         margin: 0 !important;
                         width: 100% !important;
-                        max-width: 100% !important;
-                        box-sizing: border-box !important;
-                        overflow: visible !important;
+                        border-radius: 0 !important;
+                        color: #000000 !important;
                     }
-                    .report-table-scroll-wrapper {
-                        overflow: visible !important;
-                        width: 100% !important;
-                        margin-bottom: 12px !important;
-                    }
-                    table.report-print-table {
-                        width: 100% !important;
-                        table-layout: fixed !important;
-                        border-collapse: collapse !important;
+                    .report-kpi-matrix {
+                        border: 1pt solid #000000 !important;
                         background: #ffffff !important;
-                        background-color: #ffffff !important;
-                        font-size: 0.72rem !important;
+                        border-radius: 0 !important;
+                        grid-template-columns: repeat(5, 1fr) !important;
                     }
-                    table.report-print-table th, table.report-print-table td {
+                    .report-kpi-cell {
+                        border-right: 1pt solid #000000 !important;
                         background: #ffffff !important;
-                        background-color: #ffffff !important;
+                        color: #000000 !important;
+                    }
+                    .report-data-table {
+                        border: 1pt solid #000000 !important;
+                        border-radius: 0 !important;
+                        font-size: 0.70rem !important;
+                    }
+                    .report-data-table th, .report-data-table td {
+                        background: #ffffff !important;
                         color: #000000 !important;
                         border: 1pt solid #000000 !important;
-                        padding: 5px 4px !important;
-                        word-break: break-word !important;
-                        overflow-wrap: break-word !important;
-                        white-space: normal !important;
-                        line-height: 1.2 !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
-                    tr {
-                        page-break-inside: avoid;
-                        page-break-after: auto;
+                        padding: 4px 4px !important;
                     }
                     .print-signatures-block {
-                        display: block !important;
+                        display: grid !important;
                         margin-top: 16px !important;
                         page-break-inside: avoid !important;
+                        border: 1.5pt solid #000000 !important;
+                        background: #ffffff !important;
+                        color: #000000 !important;
                     }
                     .print-footer-block {
                         display: flex !important;
-                        page-break-inside: avoid !important;
+                        border-top: 1pt solid #000000 !important;
+                        color: #000000 !important;
                     }
                 }
             `}</style>
@@ -321,7 +378,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: 16,
+                    marginBottom: 18,
                     flexWrap: 'wrap',
                     gap: 12,
                 }}
@@ -329,20 +386,20 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                 <div>
                     <h1
                         style={{
-                            fontSize: '1.4rem',
+                            fontSize: '1.45rem',
                             fontWeight: 800,
                             margin: 0,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.03em',
+                            letterSpacing: '-0.02em',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 8,
+                            gap: 10,
+                            color: 'var(--text)',
                         }}
                     >
-                        <Warehouse size={22} color="#1e40af" />
+                        <Warehouse size={24} style={{ color: '#2563eb' }} />
                         {locale === 'en' ? 'Warehouse & Stock Inventory Report' : "Rapport d'Inventaire et du Stock"}
                     </h1>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--muted)' }}>
                         {locale === 'en'
                             ? 'Comprehensive warehouse ledger: stock in (receipts), stock out (issues/dispatch), inventory valuation, adjustments, and reorder status.'
                             : "Grand livre du magasin : entrées en stock (réceptions), sorties (distributions), valorisation, ajustements et seuils de réapprovisionnement."}
@@ -359,7 +416,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             alignItems: 'center',
                             gap: 6,
                             padding: '8px 14px',
-                            borderRadius: 6,
+                            borderRadius: 8,
                             cursor: 'pointer',
                         }}
                     >
@@ -374,10 +431,8 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             alignItems: 'center',
                             gap: 6,
                             padding: '8px 14px',
-                            borderRadius: 6,
+                            borderRadius: 8,
                             cursor: 'pointer',
-                            background: '#f1f5f9',
-                            border: '1px solid #cbd5e1',
                         }}
                     >
                         <Printer size={15} />
@@ -391,9 +446,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             alignItems: 'center',
                             gap: 6,
                             padding: '8px 16px',
-                            borderRadius: 6,
-                            background: '#000000',
-                            color: '#ffffff',
+                            borderRadius: 8,
                             fontWeight: 600,
                             cursor: 'pointer',
                             border: 'none',
@@ -409,60 +462,61 @@ export default function WarehouseReportPage({ user, locale }: Props) {
             <div
                 className="panel no-print"
                 style={{
-                    background: '#ffffff',
-                    border: '1px solid #000000',
-                    borderRadius: 4,
-                    padding: '12px 16px',
+                    background: 'var(--panel)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 12,
+                    padding: '12px 18px',
                     marginBottom: 20,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginRight: 4 }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 4 }}>
                             {locale === 'en' ? 'Period:' : 'Période :'}
                         </span>
                         <button
                             className={period === 'today' ? 'primary-btn' : 'secondary-btn'}
                             onClick={() => handleQuickPeriod('today')}
-                            style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+                            style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 8 }}
                         >
                             {locale === 'en' ? 'Today' : "Aujourd'hui"}
                         </button>
                         <button
                             className={period === 'yesterday' ? 'primary-btn' : 'secondary-btn'}
                             onClick={() => handleQuickPeriod('yesterday')}
-                            style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+                            style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 8 }}
                         >
                             {locale === 'en' ? 'Yesterday' : 'Hier'}
                         </button>
                         <button
                             className={period === 'week' ? 'primary-btn' : 'secondary-btn'}
                             onClick={() => handleQuickPeriod('week')}
-                            style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+                            style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 8 }}
                         >
                             {locale === 'en' ? 'Last 7 Days' : '7 derniers jours'}
                         </button>
                         <button
                             className={period === 'month' ? 'primary-btn' : 'secondary-btn'}
                             onClick={() => handleQuickPeriod('month')}
-                            style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+                            style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 8 }}
                         >
                             {locale === 'en' ? 'This Month' : 'Ce mois'}
                         </button>
                     </div>
 
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
-                            <Calendar size={14} color="#64748b" />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)' }}>
+                            <Calendar size={14} style={{ color: 'var(--muted)' }} />
                             <span>{locale === 'en' ? 'Specific Date:' : 'Date spécifique :'}</span>
                             <input
                                 type="date"
                                 value={specificDate}
                                 onChange={(e) => handleSpecificDate(e.target.value)}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
+                                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: '0.8rem' }}
                             />
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)' }}>
                             <span>{locale === 'en' ? 'From:' : 'Du :'}</span>
                             <input
                                 type="date"
@@ -473,10 +527,10 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                     setSpecificDate('');
                                     setFromDate(e.target.value);
                                 }}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
+                                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: '0.8rem' }}
                             />
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)' }}>
                             <span>{locale === 'en' ? 'To:' : 'Au :'}</span>
                             <input
                                 type="date"
@@ -487,16 +541,16 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                     setSpecificDate('');
                                     setToDate(e.target.value);
                                 }}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
+                                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: '0.8rem' }}
                             />
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
-                            <Filter size={14} color="#64748b" />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)' }}>
+                            <Filter size={14} style={{ color: 'var(--muted)' }} />
                             <span>{locale === 'en' ? 'Category:' : 'Catégorie :'}</span>
                             <select
                                 value={itemFilter}
                                 onChange={(e) => setItemFilter(e.target.value as any)}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem', fontWeight: 600 }}
+                                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: '0.8rem', fontWeight: 600 }}
                             >
                                 <option value="all">{locale === 'en' ? 'All Stock Items' : 'Tous les articles'}</option>
                                 <option value="raw_material">{locale === 'en' ? 'Raw Materials (Fabric)' : 'Matières premières'}</option>
@@ -505,13 +559,13 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             </select>
                         </label>
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={14} color="#64748b" style={{ position: 'absolute', left: 8 }} />
+                            <Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
                             <input
                                 type="text"
                                 placeholder={locale === 'en' ? 'Search SKU / Item...' : 'Rechercher article/SKU...'}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                style={{ padding: '4px 8px 4px 28px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem', width: 170 }}
+                                style={{ padding: '6px 10px 6px 30px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: '0.8rem', width: 180 }}
                             />
                         </div>
                     </div>
@@ -520,28 +574,19 @@ export default function WarehouseReportPage({ user, locale }: Props) {
 
             {error && <div className="admin-alert error no-print" style={{ marginBottom: 16 }}>{error}</div>}
 
-            {/* OFFICIAL PRINTABLE AUDIT SHEET CONTAINER */}
-            <article
-                className="excel-table-container"
-                style={{
-                    background: '#ffffff',
-                    color: '#000000',
-                    border: '1.5pt solid #000000',
-                    borderRadius: 2,
-                    padding: '24px 28px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                }}
-            >
+            {/* OFFICIAL AUDIT REPORT CARD CONTAINER (SUPPORTS LIGHT & DARK MODE ON SCREEN, PURE WHITE ON PRINT) */}
+            <article className="warehouse-report-card">
                 {/* OFFICIAL DOCUMENT HEADER */}
                 <div
-                    className="sheet-print-header"
                     style={{
-                        borderBottom: '2pt solid #000000',
-                        paddingBottom: 14,
-                        marginBottom: 18,
+                        borderBottom: '2px solid var(--line)',
+                        paddingBottom: 16,
+                        marginBottom: 20,
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'flex-start',
+                        flexWrap: 'wrap',
+                        gap: 16,
                     }}
                 >
                     <div>
@@ -552,207 +597,189 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 margin: 0,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.02em',
-                                color: '#000000',
+                                color: 'var(--text)',
                             }}
                         >
                             {user.current_factory?.name || 'ICYEREKEZO OMS FACTORY'}
                         </h2>
                         <div
                             style={{
-                                fontSize: '1.15rem',
+                                fontSize: '1.05rem',
                                 fontWeight: 800,
                                 margin: '4px 0 0 0',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.02em',
-                                color: '#000000',
+                                color: 'var(--muted)',
                             }}
                         >
                             {locale === 'en' ? 'WAREHOUSE & STOCK INVENTORY AUDIT REPORT' : "RAPPORT D'AUDIT D'INVENTAIRE ET DU STOCK"}
                         </div>
                     </div>
-                    <div style={{ textAlign: 'left', fontSize: '0.82rem', lineHeight: 1.6, borderLeft: '1.5pt solid #000000', paddingLeft: 16 }}>
+                    <div style={{ textAlign: 'left', fontSize: '0.82rem', lineHeight: 1.6, borderLeft: '2px solid var(--line)', paddingLeft: 16 }}>
                         <div><b>PERIOD:</b> {fromDate === toDate ? fromDate : `${fromDate} to ${toDate}`}</div>
                         <div><b>SCOPE:</b> WAREHOUSE &amp; INVENTORY ONLY</div>
                         <div><b>PREPARED BY:</b> {user.name} ({user.roles?.[0]?.name || 'Warehouse Keeper'})</div>
                         <div>
                             <b>STOCK HEALTH:</b>{' '}
-                            <span style={{ fontWeight: 800, textDecoration: 'underline' }}>
+                            <span style={{ fontWeight: 800, textDecoration: 'underline', color: Number(optimalRate) >= 80 ? '#10b981' : '#f59e0b' }}>
                                 {Number(optimalRate) >= 80 ? 'OPTIMAL' : 'ATTENTION REQUIRED'} ({optimalRate}%)
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* 5-COLUMN KPI SUMMARY MATRIX (MATCHING FACTORY AUDIT BOXES) */}
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(5, 1fr)',
-                        gap: 0,
-                        border: '1pt solid #000000',
-                        marginBottom: 20,
-                        background: '#ffffff',
-                        textAlign: 'center',
-                    }}
-                >
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>
+                {/* 5-COLUMN KPI SUMMARY MATRIX */}
+                <div className="report-kpi-matrix">
+                    <div className="report-kpi-cell">
+                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             1. TOTAL STOCK VALUATION
                         </div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text)', marginTop: 4 }}>
                             {money(totalStockValuation)}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                             {num(totalOnHandUnits)} {locale === 'en' ? 'units on hand' : 'unités en stock'}
                         </div>
                     </div>
 
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>
+                    <div className="report-kpi-cell">
+                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             2. RECEIVED (STOCK IN)
                         </div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>
-                            {num(periodReceivedUnits)} {locale === 'en' ? 'units' : 'unités'}
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981', marginTop: 4 }}>
+                            +{num(periodReceivedUnits)}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                             {locale === 'en' ? 'Supplier receipts & intake' : 'Réceptions fournisseurs'}
                         </div>
                     </div>
 
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>
+                    <div className="report-kpi-cell">
+                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             3. ISSUED (STOCK OUT)
                         </div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4 }}>
-                            {num(periodIssuedUnits)} {locale === 'en' ? 'units' : 'unités'}
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>
+                            -{num(periodIssuedUnits)}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                             {locale === 'en' ? 'Allocated & dispatched' : 'Sorties & allocations'}
                         </div>
                     </div>
 
-                    <div style={{ padding: '10px 8px', borderRight: '1pt solid #000000', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>
+                    <div className="report-kpi-cell">
+                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             4. ITEMS TO REORDER
                         </div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: lowStockCount > 0 ? '#b91c1c' : '#000000' }}>
-                            {lowStockCount} {locale === 'en' ? 'items' : 'articles'}
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: lowStockCount > 0 ? '#f59e0b' : 'var(--text)', marginTop: 4 }}>
+                            {lowStockCount}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                             {locale === 'en' ? 'At or below reorder level' : 'Au seuil minimum'}
                         </div>
                     </div>
 
-                    <div style={{ padding: '10px 8px', background: '#ffffff' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>
+                    <div className="report-kpi-cell">
+                        <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             5. OUT OF STOCK
                         </div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, color: outOfStockCount > 0 ? '#b91c1c' : '#000000' }}>
-                            {outOfStockCount} {locale === 'en' ? 'items' : 'articles'}
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: outOfStockCount > 0 ? '#ef4444' : 'var(--text)', marginTop: 4 }}>
+                            {outOfStockCount}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#444444' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                             {locale === 'en' ? 'Zero available balance' : 'Stock épuisé (0)'}
                         </div>
                     </div>
                 </div>
 
                 {/* SECTION 1: CURRENT STOCK BALANCES & VALUATION */}
-                <div style={{ marginBottom: 24 }}>
+                <div style={{ marginBottom: 28 }}>
                     <div
                         style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'baseline',
-                            marginBottom: 8,
-                            borderBottom: '1.5pt solid #000000',
-                            paddingBottom: 4,
+                            marginBottom: 10,
+                            borderBottom: '1px solid var(--line)',
+                            paddingBottom: 6,
                         }}
                     >
                         <h3
                             style={{
-                                fontSize: '0.95rem',
-                                fontWeight: 900,
+                                fontSize: '0.92rem',
+                                fontWeight: 800,
                                 margin: 0,
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.03em',
+                                letterSpacing: '0.04em',
+                                color: 'var(--text)',
                             }}
                         >
                             {locale === 'en' ? 'I. CURRENT STOCK BALANCES & VALUATION REGISTER' : 'I. REGISTRE DES DISPONIBILITÉS & VALORISATION DU STOCK'}
                         </h3>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#333' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)' }}>
                             {stockItems.length} {locale === 'en' ? 'tracked item lines' : 'articles enregistrés'}
                         </span>
                     </div>
 
                     <div className="report-table-scroll-wrapper" style={{ overflowX: 'auto' }}>
-                        <table
-                            className="report-print-table"
-                            style={{
-                                width: '100%',
-                                borderCollapse: 'collapse',
-                                fontSize: '0.78rem',
-                                border: '1pt solid #000000',
-                                textAlign: 'left',
-                            }}
-                        >
+                        <table className="report-data-table">
                             <thead>
-                                <tr style={{ borderBottom: '1.5pt solid #000000', background: '#f8fafc' }}>
-                                    <th style={{ padding: '6px 8px', width: '30px', textAlign: 'center' }}>#</th>
-                                    <th style={{ padding: '6px 8px' }}>{locale === 'en' ? 'Item Name & Specification' : 'Nom de l\'article'}</th>
-                                    <th style={{ padding: '6px 8px', width: '100px' }}>{locale === 'en' ? 'SKU / Code' : 'Code SKU'}</th>
-                                    <th style={{ padding: '6px 8px', width: '110px' }}>{locale === 'en' ? 'Category' : 'Catégorie'}</th>
-                                    <th style={{ padding: '6px 8px', width: '130px' }}>{locale === 'en' ? 'Warehouse / Store' : 'Emplacement'}</th>
-                                    <th style={{ padding: '6px 8px', width: '75px', textAlign: 'right' }}>{locale === 'en' ? 'On-Hand' : 'En stock'}</th>
-                                    <th style={{ padding: '6px 8px', width: '75px', textAlign: 'right' }}>{locale === 'en' ? 'Available' : 'Disponible'}</th>
-                                    <th style={{ padding: '6px 8px', width: '75px', textAlign: 'right' }}>{locale === 'en' ? 'Reorder' : 'Seuil'}</th>
-                                    <th style={{ padding: '6px 8px', width: '90px', textAlign: 'right' }}>{locale === 'en' ? 'Unit Cost' : 'Coût unit.'}</th>
-                                    <th style={{ padding: '6px 8px', width: '110px', textAlign: 'right' }}>{locale === 'en' ? 'Total Value' : 'Valeur totale'}</th>
-                                    <th style={{ padding: '6px 8px', width: '90px', textAlign: 'center' }}>{locale === 'en' ? 'Status' : 'Statut'}</th>
+                                <tr>
+                                    <th style={{ width: 34, textAlign: 'center' }}>#</th>
+                                    <th>{locale === 'en' ? 'Item Name & Specification' : 'Nom de l\'article'}</th>
+                                    <th style={{ width: 110 }}>{locale === 'en' ? 'SKU / Code' : 'Code SKU'}</th>
+                                    <th style={{ width: 120 }}>{locale === 'en' ? 'Category' : 'Catégorie'}</th>
+                                    <th style={{ width: 130 }}>{locale === 'en' ? 'Warehouse / Store' : 'Emplacement'}</th>
+                                    <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'On-Hand' : 'En stock'}</th>
+                                    <th style={{ width: 80, textAlign: 'right' }}>{locale === 'en' ? 'Available' : 'Disponible'}</th>
+                                    <th style={{ width: 75, textAlign: 'right' }}>{locale === 'en' ? 'Reorder' : 'Seuil'}</th>
+                                    <th style={{ width: 95, textAlign: 'right' }}>{locale === 'en' ? 'Unit Cost' : 'Coût unit.'}</th>
+                                    <th style={{ width: 115, textAlign: 'right' }}>{locale === 'en' ? 'Total Value' : 'Valeur totale'}</th>
+                                    <th style={{ width: 95, textAlign: 'center' }}>{locale === 'en' ? 'Status' : 'Statut'}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {stockItems.length === 0 ? (
                                     <tr>
-                                        <td colSpan={11} style={{ textAlign: 'center', padding: '16px', color: '#666' }}>
+                                        <td colSpan={11} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
                                             {locale === 'en' ? 'No stock records found matching filter.' : 'Aucun article trouvé dans le stock.'}
                                         </td>
                                     </tr>
                                 ) : (
                                     stockItems.map((item, idx) => (
-                                        <tr key={item.id} style={{ borderBottom: '1pt solid #000000' }}>
-                                            <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
-                                            <td style={{ padding: '5px 8px', fontWeight: 700 }}>{item.name}</td>
-                                            <td style={{ padding: '5px 8px', fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.sku}</td>
-                                            <td style={{ padding: '5px 8px', textTransform: 'capitalize' }}>
+                                        <tr key={item.id}>
+                                            <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--muted)' }}>{idx + 1}</td>
+                                            <td style={{ fontWeight: 700 }}>{item.name}</td>
+                                            <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--muted)' }}>{item.sku}</td>
+                                            <td style={{ textTransform: 'capitalize' }}>
                                                 {String(item.type).replace('_', ' ')}
                                             </td>
-                                            <td style={{ padding: '5px 8px' }}>{item.warehouse}</td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>
-                                                {num(item.onHand)} <span style={{ fontSize: '0.7rem', color: '#666' }}>{item.unit}</span>
+                                            <td>{item.warehouse}</td>
+                                            <td style={{ textAlign: 'right', fontWeight: 700 }}>
+                                                {num(item.onHand)} <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{item.unit}</span>
                                             </td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'right' }}>
                                                 {num(item.available)}
                                             </td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'right', color: '#444' }}>
+                                            <td style={{ textAlign: 'right', color: 'var(--muted)' }}>
                                                 {num(item.reorderLevel)}
                                             </td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'right' }}>
                                                 {money(item.unitCost)}
                                             </td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>
+                                            <td style={{ textAlign: 'right', fontWeight: 700 }}>
                                                 {money(item.stockValue)}
                                             </td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'center' }}>
+                                            <td style={{ textAlign: 'center' }}>
                                                 {item.isOutOfStock ? (
-                                                    <span style={{ fontWeight: 800, color: '#b91c1c', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                                                    <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 99, background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}>
                                                         {locale === 'en' ? 'OUT OF STOCK' : 'ÉPUISÉ'}
                                                     </span>
                                                 ) : item.isLowStock ? (
-                                                    <span style={{ fontWeight: 800, color: '#b45309', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                                                    <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 99, background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}>
                                                         {locale === 'en' ? 'LOW STOCK' : 'RÉAPPRO.'}
                                                     </span>
                                                 ) : (
-                                                    <span style={{ fontWeight: 700, color: '#15803d', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                                                    <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 99, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}>
                                                         {locale === 'en' ? 'IN STOCK' : 'OPTIMAL'}
                                                     </span>
                                                 )}
@@ -762,14 +789,14 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 )}
                             </tbody>
                             <tfoot>
-                                <tr style={{ borderTop: '2pt solid #000000', fontWeight: 800, background: '#f8fafc' }}>
-                                    <td colSpan={5} style={{ padding: '7px 8px', textTransform: 'uppercase' }}>
+                                <tr>
+                                    <td colSpan={5} style={{ textTransform: 'uppercase' }}>
                                         {locale === 'en' ? 'TOTAL INVENTORY VALUATION & VOLUME' : 'VALORISATION & VOLUME GLOBAL DU STOCK'}
                                     </td>
-                                    <td style={{ padding: '7px 8px', textAlign: 'right' }}>{num(totalOnHandUnits)}</td>
-                                    <td colSpan={3} style={{ padding: '7px 8px' }}></td>
-                                    <td style={{ padding: '7px 8px', textAlign: 'right' }}>{money(totalStockValuation)}</td>
-                                    <td style={{ padding: '7px 8px', textAlign: 'center', fontSize: '0.72rem' }}>
+                                    <td style={{ textAlign: 'right' }}>{num(totalOnHandUnits)}</td>
+                                    <td colSpan={3}></td>
+                                    <td style={{ textAlign: 'right' }}>{money(totalStockValuation)}</td>
+                                    <td style={{ textAlign: 'center', fontSize: '0.72rem', color: '#10b981' }}>
                                         {optimalRate}% {locale === 'en' ? 'Optimal' : 'Conforme'}
                                     </td>
                                 </tr>
@@ -779,105 +806,100 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                 </div>
 
                 {/* SECTION 2: STOCK MOVEMENTS LEDGER (RECEIPTS & ISSUES) */}
-                <div style={{ marginBottom: 20 }}>
+                <div style={{ marginBottom: 24 }}>
                     <div
                         style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'baseline',
-                            marginBottom: 8,
-                            borderBottom: '1.5pt solid #000000',
-                            paddingBottom: 4,
+                            marginBottom: 10,
+                            borderBottom: '1px solid var(--line)',
+                            paddingBottom: 6,
                         }}
                     >
                         <h3
                             style={{
-                                fontSize: '0.95rem',
-                                fontWeight: 900,
+                                fontSize: '0.92rem',
+                                fontWeight: 800,
                                 margin: 0,
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.03em',
+                                letterSpacing: '0.04em',
+                                color: 'var(--text)',
                             }}
                         >
                             {locale === 'en' ? 'II. PERIOD STOCK MOVEMENTS REGISTER (RECEIPTS & ISSUES)' : 'II. REGISTRE DES MOUVEMENTS DE STOCK DU PÉRIODE (ENTRÉES & SORTIES)'}
                         </h3>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#333' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)' }}>
                             {movementRows.length} {locale === 'en' ? 'transactions recorded' : 'transactions enregistrées'}
                         </span>
                     </div>
 
                     <div className="report-table-scroll-wrapper" style={{ overflowX: 'auto' }}>
-                        <table
-                            className="report-print-table"
-                            style={{
-                                width: '100%',
-                                borderCollapse: 'collapse',
-                                fontSize: '0.78rem',
-                                border: '1pt solid #000000',
-                                textAlign: 'left',
-                            }}
-                        >
+                        <table className="report-data-table">
                             <thead>
-                                <tr style={{ borderBottom: '1.5pt solid #000000', background: '#f8fafc' }}>
-                                    <th style={{ padding: '6px 8px', width: '30px', textAlign: 'center' }}>#</th>
-                                    <th style={{ padding: '6px 8px', width: '130px' }}>{locale === 'en' ? 'Date & Time' : 'Date & Heure'}</th>
-                                    <th style={{ padding: '6px 8px', width: '90px' }}>{locale === 'en' ? 'Type' : 'Type'}</th>
-                                    <th style={{ padding: '6px 8px' }}>{locale === 'en' ? 'Item Name' : 'Article'}</th>
-                                    <th style={{ padding: '6px 8px', width: '90px' }}>{locale === 'en' ? 'SKU' : 'SKU'}</th>
-                                    <th style={{ padding: '6px 8px', width: '120px' }}>{locale === 'en' ? 'Warehouse' : 'Entrepôt'}</th>
-                                    <th style={{ padding: '6px 8px', width: '80px', textAlign: 'right' }}>{locale === 'en' ? 'Quantity (+/-)' : 'Quantité'}</th>
-                                    <th style={{ padding: '6px 8px', width: '80px', textAlign: 'right' }}>{locale === 'en' ? 'Balance' : 'Solde'}</th>
-                                    <th style={{ padding: '6px 8px', width: '85px', textAlign: 'right' }}>{locale === 'en' ? 'Unit Cost' : 'Coût unit.'}</th>
-                                    <th style={{ padding: '6px 8px', width: '105px', textAlign: 'right' }}>{locale === 'en' ? 'Total Value' : 'Valeur'}</th>
-                                    <th style={{ padding: '6px 8px', width: '180px' }}>{locale === 'en' ? 'Reason / Reference' : 'Référence / Motif'}</th>
+                                <tr>
+                                    <th style={{ width: 34, textAlign: 'center' }}>#</th>
+                                    <th style={{ width: 140 }}>{locale === 'en' ? 'Date & Time' : 'Date & Heure'}</th>
+                                    <th style={{ width: 90 }}>{locale === 'en' ? 'Type' : 'Type'}</th>
+                                    <th>{locale === 'en' ? 'Item Name' : 'Article'}</th>
+                                    <th style={{ width: 95 }}>{locale === 'en' ? 'SKU' : 'SKU'}</th>
+                                    <th style={{ width: 125 }}>{locale === 'en' ? 'Warehouse' : 'Entrepôt'}</th>
+                                    <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Qty Delta (+/-)' : 'Quantité'}</th>
+                                    <th style={{ width: 85, textAlign: 'right' }}>{locale === 'en' ? 'Balance' : 'Solde'}</th>
+                                    <th style={{ width: 90, textAlign: 'right' }}>{locale === 'en' ? 'Unit Cost' : 'Coût unit.'}</th>
+                                    <th style={{ width: 110, textAlign: 'right' }}>{locale === 'en' ? 'Total Value' : 'Valeur'}</th>
+                                    <th style={{ width: 180 }}>{locale === 'en' ? 'Reason / Reference' : 'Référence / Motif'}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {movementRows.length === 0 ? (
                                     <tr>
-                                        <td colSpan={11} style={{ textAlign: 'center', padding: '16px', color: '#666' }}>
+                                        <td colSpan={11} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
                                             {locale === 'en' ? 'No stock movement entries recorded in this period.' : 'Aucun mouvement de stock enregistré durant cette période.'}
                                         </td>
                                     </tr>
                                 ) : (
                                     movementRows.map((m, idx) => (
-                                        <tr key={m.id} style={{ borderBottom: '1pt solid #000000' }}>
-                                            <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
-                                            <td style={{ padding: '5px 8px', whiteSpace: 'nowrap' }}>{m.occurredAt}</td>
-                                            <td style={{ padding: '5px 8px' }}>
+                                        <tr key={m.id}>
+                                            <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--muted)' }}>{idx + 1}</td>
+                                            <td style={{ whiteSpace: 'nowrap' }}>{m.occurredAt}</td>
+                                            <td>
                                                 <span
                                                     style={{
                                                         fontWeight: 800,
                                                         fontSize: '0.7rem',
-                                                        color: m.isPositive ? '#15803d' : '#b45309',
+                                                        display: 'inline-flex',
+                                                        padding: '2px 7px',
+                                                        borderRadius: 4,
+                                                        background: m.isPositive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                                                        color: m.isPositive ? '#10b981' : '#f59e0b',
                                                     }}
                                                 >
                                                     {m.type}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: '5px 8px', fontWeight: 700 }}>{m.itemName}</td>
-                                            <td style={{ padding: '5px 8px', fontFamily: 'monospace', fontSize: '0.75rem' }}>{m.sku}</td>
-                                            <td style={{ padding: '5px 8px' }}>{m.warehouse}</td>
+                                            <td style={{ fontWeight: 700 }}>{m.itemName}</td>
+                                            <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--muted)' }}>{m.sku}</td>
+                                            <td>{m.warehouse}</td>
                                             <td
                                                 style={{
-                                                    padding: '5px 8px',
                                                     textAlign: 'right',
                                                     fontWeight: 800,
-                                                    color: m.quantityDelta > 0 ? '#15803d' : '#000000',
+                                                    color: m.quantityDelta > 0 ? '#10b981' : 'var(--text)',
                                                 }}
                                             >
                                                 {m.quantityDelta > 0 ? `+${num(m.quantityDelta)}` : num(m.quantityDelta)}
                                             </td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'right' }}>
                                                 {m.balanceAfter != null ? num(m.balanceAfter) : '—'}
                                             </td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'right' }}>
                                                 {money(m.unitCost)}
                                             </td>
-                                            <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>
+                                            <td style={{ textAlign: 'right', fontWeight: 700 }}>
                                                 {money(m.totalValue)}
                                             </td>
-                                            <td style={{ padding: '5px 8px', fontSize: '0.75rem', color: '#333' }}>
+                                            <td style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
                                                 {m.reason}
                                             </td>
                                         </tr>
@@ -885,14 +907,14 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 )}
                             </tbody>
                             <tfoot>
-                                <tr style={{ borderTop: '2pt solid #000000', fontWeight: 800, background: '#f8fafc' }}>
-                                    <td colSpan={6} style={{ padding: '7px 8px', textTransform: 'uppercase' }}>
+                                <tr>
+                                    <td colSpan={6} style={{ textTransform: 'uppercase' }}>
                                         {locale === 'en' ? 'PERIOD NET STOCK FLOW' : 'FLUX NET DE STOCK SUR LA PÉRIODE'}
                                     </td>
-                                    <td style={{ padding: '7px 8px', textAlign: 'right' }}>
+                                    <td style={{ textAlign: 'right', color: periodReceivedUnits >= periodIssuedUnits ? '#10b981' : '#ef4444' }}>
                                         {num(periodReceivedUnits - periodIssuedUnits)}
                                     </td>
-                                    <td colSpan={4} style={{ padding: '7px 8px', fontSize: '0.72rem', color: '#444' }}>
+                                    <td colSpan={4} style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                                         {locale === 'en' ? `Received: +${num(periodReceivedUnits)} | Issued: -${num(periodIssuedUnits)}` : `Reçus : +${num(periodReceivedUnits)} | Sortis : -${num(periodIssuedUnits)}`}
                                     </td>
                                 </tr>
@@ -905,38 +927,38 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                 <div
                     className="print-signatures-block"
                     style={{
-                        display: 'grid',
                         gridTemplateColumns: 'repeat(3, 1fr)',
                         gap: 16,
-                        border: '1.5pt solid #000000',
+                        border: '1px solid var(--line)',
+                        borderRadius: 10,
                         padding: '16px 20px',
-                        marginTop: 16,
-                        background: '#ffffff',
+                        marginTop: 18,
+                        background: 'var(--soft, #f8fafc)',
                     }}
                 >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem' }}>
-                        <div style={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                        <div style={{ fontWeight: 800, textTransform: 'uppercase', color: 'var(--text)' }}>
                             {locale === 'en' ? 'PREPARED BY (WAREHOUSE KEEPER)' : 'PRÉPARÉ PAR (RESPONSABLE MAGASIN)'}
                         </div>
-                        <div style={{ marginTop: 2 }}>{user.name}</div>
-                        <div style={{ color: '#444' }}>{user.title || 'Warehouse Keeper'}</div>
-                        <div style={{ marginTop: 18, borderBottom: '1pt solid #000000', width: '80%' }}></div>
-                        <div style={{ fontSize: '0.7rem', color: '#666' }}>{locale === 'en' ? 'Signature & Date' : 'Signature & Date'}</div>
+                        <div style={{ marginTop: 2, color: 'var(--text)' }}>{user.name}</div>
+                        <div style={{ color: 'var(--muted)' }}>{user.title || 'Warehouse Keeper'}</div>
+                        <div style={{ marginTop: 18, borderBottom: '1px solid var(--line)', width: '80%' }}></div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{locale === 'en' ? 'Signature & Date' : 'Signature & Date'}</div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem' }}>
-                        <div style={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                        <div style={{ fontWeight: 800, textTransform: 'uppercase', color: 'var(--text)' }}>
                             {locale === 'en' ? 'VERIFIED BY (FACTORY / OPERATIONS)' : 'VÉRIFIÉ PAR (DIRECTEUR OPÉRATIONS)'}
                         </div>
-                        <div style={{ marginTop: 2 }}>Factory Operations Manager</div>
-                        <div style={{ color: '#444' }}>Quality &amp; Inventory Auditor</div>
-                        <div style={{ marginTop: 18, borderBottom: '1pt solid #000000', width: '80%' }}></div>
-                        <div style={{ fontSize: '0.7rem', color: '#666' }}>{locale === 'en' ? 'Signature & Date' : 'Signature & Date'}</div>
+                        <div style={{ marginTop: 2, color: 'var(--text)' }}>Factory Operations Manager</div>
+                        <div style={{ color: 'var(--muted)' }}>Quality &amp; Inventory Auditor</div>
+                        <div style={{ marginTop: 18, borderBottom: '1px solid var(--line)', width: '80%' }}></div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{locale === 'en' ? 'Signature & Date' : 'Signature & Date'}</div>
                     </div>
 
                     <div
                         style={{
-                            border: '1.5pt dashed #000000',
+                            border: '1.5px dashed var(--line)',
                             height: '95px',
                             display: 'flex',
                             alignItems: 'center',
@@ -944,9 +966,10 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                             textAlign: 'center',
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            color: '#555',
+                            color: 'var(--muted)',
                             textTransform: 'uppercase',
                             padding: 8,
+                            borderRadius: 8,
                         }}
                     >
                         {user.current_factory?.name || 'FACTORY'}
@@ -956,19 +979,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                 </div>
 
                 {/* DOCUMENT FOOTER */}
-                <div
-                    className="print-footer-block"
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginTop: 14,
-                        paddingTop: 8,
-                        borderTop: '1pt solid #cbd5e1',
-                        fontSize: '0.7rem',
-                        color: '#666',
-                    }}
-                >
+                <div className="print-footer-block">
                     <span>
                         {user.current_factory?.name || 'ICYEREKEZO OMS'} &bull; {locale === 'en' ? 'Warehouse & Stock Inventory Ledger' : 'Grand livre de stock'}
                     </span>
