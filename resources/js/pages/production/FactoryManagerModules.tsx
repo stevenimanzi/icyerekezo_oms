@@ -899,22 +899,23 @@ export function TeamManagementPage() {
                                                         <div
                                                             style={{
                                                                 display: 'flex',
-                                                                gap: '8px',
+                                                                gap: '6px',
+                                                                alignItems: 'center',
                                                                 flexWrap: 'nowrap',
                                                                 whiteSpace: 'nowrap',
                                                             }}
                                                         >
                                                             <button
-                                                                className="table-action icon-only"
+                                                                className="table-action icon-only action-save-btn"
                                                                 title="Save changes"
                                                                 aria-label="Save changes"
                                                                 disabled={!editing[user.id]}
                                                                 onClick={() => save(user)}
                                                             >
-                                                                <Save size={17} />
+                                                                <Save size={15} />
                                                             </button>
                                                             <button
-                                                                className="table-action icon-only"
+                                                                className="table-action icon-only action-edit-btn"
                                                                 title="Edit details or password"
                                                                 aria-label="Edit details or password"
                                                                 onClick={() => {
@@ -931,16 +932,16 @@ export function TeamManagementPage() {
                                                                     setSuccess('');
                                                                 }}
                                                             >
-                                                                <Pencil size={12} />
+                                                                <Pencil size={15} />
                                                             </button>
                                                             <button
-                                                                className="table-action icon-only danger"
+                                                                className="table-action icon-only danger action-delete-btn"
                                                                 title="Remove from factory"
                                                                 aria-label="Remove from factory"
                                                                 disabled={removingId === user.id}
                                                                 onClick={() => removeUser(user)}
                                                             >
-                                                                <Trash size={12} />
+                                                                <Trash size={15} />
                                                             </button>
                                                         </div>
                                                     )}
@@ -1086,7 +1087,7 @@ export function TeamManagementPage() {
                                             </td>
                                             <td>
                                                 <button
-                                                    className="table-action icon-only"
+                                                    className="table-action icon-only action-edit-btn"
                                                     title="Edit details or password"
                                                     aria-label="Edit details or password"
                                                     onClick={() => {
@@ -1101,7 +1102,7 @@ export function TeamManagementPage() {
                                                         setSuccess('');
                                                     }}
                                                 >
-                                                    <Pencil size={12} />
+                                                    <Pencil size={15} />
                                                 </button>
                                             </td>
                                         </tr>

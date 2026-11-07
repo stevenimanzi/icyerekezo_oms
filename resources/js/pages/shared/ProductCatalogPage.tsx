@@ -705,17 +705,17 @@ function Categories({ rows, edit, remove }: any) {
                                     <td>
                                         <div className="products-row-actions">
                                             <button
-                                                className="table-action"
+                                                className="table-action action-edit-btn"
                                                 onClick={() => edit(item)}
                                             >
-                                                <Pencil size={12} />
+                                                <Pencil size={13} />
                                                 Edit
                                             </button>
                                             <button
-                                                className="table-action danger"
+                                                className="table-action danger action-delete-btn"
                                                 onClick={() => remove(item)}
                                             >
-                                                <Trash size={12} />
+                                                <Trash size={13} />
                                                 Delete
                                             </button>
                                         </div>

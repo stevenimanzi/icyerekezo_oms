@@ -263,31 +263,21 @@ export function UsersScreen({ ctx }: { ctx: AdminContext }) {
                     />,
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button
-                            className="table-action"
-                            style={{
-                                border: 'none',
-                                background: 'transparent',
-                                padding: 4,
-                            }}
+                            className="table-action icon-only"
                             title="View details"
                             onClick={() => setViewUser(item)}
                         >
-                            <Eye size={16} />
+                            <Eye size={15} />
                         </button>
                         <button
-                            className="table-action"
+                            className="table-action icon-only action-edit-btn"
                             title="Edit User"
                             onClick={() => setEditUser(item)}
                         >
-                            <Pencil size={16} />
+                            <Pencil size={15} />
                         </button>
                         <button
-                            className="table-action"
-                            style={{
-                                border: 'none',
-                                background: 'transparent',
-                                padding: 4,
-                            }}
+                            className="table-action icon-only danger action-delete-btn"
                             title="Delete user"
                             onClick={() => {
                                 if (
@@ -303,7 +293,7 @@ export function UsersScreen({ ctx }: { ctx: AdminContext }) {
                                     );
                             }}
                         >
-                            <Trash2 size={16} color="red" />
+                            <Trash2 size={15} />
                         </button>
                     </div>,
                 ])}

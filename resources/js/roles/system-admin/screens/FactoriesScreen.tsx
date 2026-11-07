@@ -67,23 +67,23 @@ export function FactoriesScreen({ ctx }: { ctx: AdminContext }) {
                         <div style={{ flex: 1 }}></div>
                         <button
                             type="button"
-                            className="table-action"
+                            className="table-action icon-only"
                             title="Change subscription"
                             onClick={() => setSubscriptionFactory(item)}
                         >
-                            <CreditCard size={16} />
+                            <CreditCard size={15} />
                         </button>
                         <button
                             type="button"
-                            className="table-action"
+                            className="table-action icon-only"
                             title="View details"
                             onClick={() => setViewFactory(item)}
                         >
-                            <Eye size={16} />
+                            <Eye size={15} />
                         </button>
                         <button
                             type="button"
-                            className="table-action"
+                            className="table-action icon-only danger action-delete-btn"
                             title="Delete factory"
                             onClick={() => {
                                 if (
@@ -99,7 +99,7 @@ export function FactoriesScreen({ ctx }: { ctx: AdminContext }) {
                                     );
                             }}
                         >
-                            <Trash2 size={16} color="red" />
+                            <Trash2 size={15} />
                         </button>
                     </div>,
                 ])}

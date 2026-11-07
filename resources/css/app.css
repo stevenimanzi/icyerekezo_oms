@@ -4901,13 +4901,12 @@ td,
 .team-users-table .admin-table td {
     font-size: 15px;
 }
-.team-users-table select,
-.team-users-table .table-action {
-    font-size: 15px;
+.team-users-table select {
+    font-size: 14px;
 }
-.team-users-table .table-action {
+.team-users-table .table-action:not(.icon-only) {
     display: inline-flex;
-    min-height: 40px;
+    min-height: 32px;
     align-items: center;
     gap: 6px;
     white-space: nowrap;
@@ -10486,28 +10485,43 @@ small,
 }
 
 .table-action.icon-only {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    color: var(--muted);
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    border: 1px solid var(--line, #cbd5e1) !important;
+    background: #ffffff !important;
+    color: #2563eb !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
 }
 
 .table-action.icon-only:hover:not(:disabled) {
-    border-color: var(--brand);
-    color: var(--brand);
+    border-color: #93c5fd !important;
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    transform: translateY(-0.5px) !important;
 }
 
 .table-action.icon-only.danger:hover:not(:disabled) {
-    border-color: #dc2626;
-    color: #dc2626;
+    border-color: #991b1b !important;
+    background: #b91c1c !important;
+    color: #ffffff !important;
+    transform: translateY(-0.5px) !important;
 }
 
 .table-action.icon-only:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
 }
 
 /* ==========================================================================
@@ -11387,86 +11401,256 @@ table td,
     padding-right: 14px !important;
 }
 
-/* Universal Danger / Delete Button System - Red Background To Show Danger Project-Wide */
-.table-action.danger,
+/* Universal Button Sizing System - Guarantees Edit and Delete Buttons Have 100% Identical Dimensions Project-Wide */
+
+/* 1. Icon-Only Action Buttons (Edit, Delete, Save, View): 32px by 32px Square */
+.table-action.icon-only,
+.table-action.icon-only.danger,
+.table-action.icon-only.action-delete-btn,
+.table-action.icon-only.action-edit-btn,
+.table-action.icon-only.action-save-btn,
+button.table-action.icon-only,
+button.table-action.icon-only.danger,
+button.delete-btn.icon-only,
+.delete-btn.icon-only {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    flex: 0 0 32px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important;
+}
+
+/* Icon-Only Icons: Standardized 15px by 15px Centered */
+.table-action.icon-only svg,
+.table-action.icon-only.danger svg,
+button.table-action.icon-only svg,
+button.delete-btn.icon-only svg {
+    width: 15px !important;
+    height: 15px !important;
+    min-width: 15px !important;
+    min-height: 15px !important;
+    max-width: 15px !important;
+    max-height: 15px !important;
+    display: block !important;
+    margin: auto !important;
+}
+
+/* Icon-Only Delete Button */
+.table-action.icon-only.danger,
+.table-action.icon-only.action-delete-btn,
+button.table-action.icon-only.danger,
+.delete-btn.icon-only {
+    background: #dc2626 !important;
+    background-color: #dc2626 !important;
+    border: 1px solid #b91c1c !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.25) !important;
+}
+
+.table-action.icon-only.danger:hover:not(:disabled),
+.table-action.icon-only.action-delete-btn:hover:not(:disabled),
+button.table-action.icon-only.danger:hover:not(:disabled),
+.delete-btn.icon-only:hover:not(:disabled) {
+    background: #b91c1c !important;
+    background-color: #b91c1c !important;
+    border-color: #991b1b !important;
+    color: #ffffff !important;
+    transform: translateY(-1px) !important;
+}
+
+.table-action.icon-only.danger svg,
+.table-action.icon-only.action-delete-btn svg,
+button.table-action.icon-only.danger svg,
+.delete-btn.icon-only svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+/* Icon-Only Edit Button */
+.table-action.icon-only:not(.danger):not(.action-save-btn),
+.table-action.icon-only.action-edit-btn,
+button.table-action.icon-only:not(.danger):not(.action-save-btn) {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #2563eb !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+.table-action.icon-only:not(.danger):not(.action-save-btn):hover:not(:disabled),
+.table-action.icon-only.action-edit-btn:hover:not(:disabled),
+button.table-action.icon-only:not(.danger):not(.action-save-btn):hover:not(:disabled) {
+    background: #eff6ff !important;
+    background-color: #eff6ff !important;
+    border-color: #93c5fd !important;
+    color: #1d4ed8 !important;
+    transform: translateY(-1px) !important;
+}
+
+.table-action.icon-only:not(.danger):not(.action-save-btn) svg,
+.table-action.icon-only.action-edit-btn svg {
+    color: #2563eb !important;
+    stroke: #2563eb !important;
+}
+
+[data-theme='dark'] .table-action.icon-only:not(.danger):not(.action-save-btn),
+[data-theme='dark'] .table-action.icon-only.action-edit-btn {
+    background: var(--panel, #1e293b) !important;
+    border-color: #334155 !important;
+    color: #60a5fa !important;
+}
+
+/* Icon-Only Save Button */
+.table-action.icon-only.action-save-btn:not(:disabled) {
+    background: #16a34a !important;
+    background-color: #16a34a !important;
+    border: 1px solid #15803d !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2) !important;
+}
+
+.table-action.icon-only.action-save-btn:not(:disabled):hover {
+    background: #15803d !important;
+    border-color: #166534 !important;
+    transform: translateY(-1px) !important;
+}
+
+.table-action.icon-only.action-save-btn:not(:disabled) svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+.table-action.icon-only.action-save-btn:disabled {
+    background: #f8fafc !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #94a3b8 !important;
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.table-action.icon-only.action-save-btn:disabled svg {
+    color: #94a3b8 !important;
+    stroke: #94a3b8 !important;
+}
+
+/* 2. Text-Based Action Buttons (Edit & Delete side-by-side with labels): 78px Width by 30px Height */
+.table-action:not(.icon-only),
+.table-action-edit,
+.table-action.danger:not(.icon-only),
 .table-action-danger,
-button.table-action.danger,
-.danger-btn,
-button.danger-btn,
-.btn-danger,
-button.btn-danger,
-.ui-btn-danger,
-.delete-btn,
-button.delete-btn,
-.table-action.icon-only.danger {
-    height: 28px !important;
-    min-height: 28px !important;
-    padding: 0 10px !important;
+button.table-action.danger:not(.icon-only),
+.danger-btn:not(.icon-only),
+button.danger-btn:not(.icon-only),
+.btn-danger:not(.icon-only),
+button.btn-danger:not(.icon-only),
+.ui-btn-danger:not(.icon-only),
+.delete-btn:not(.icon-only),
+button.delete-btn:not(.icon-only),
+.action-delete-btn:not(.icon-only),
+.action-edit-btn:not(.icon-only) {
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    width: 78px !important;
+    min-width: 78px !important;
+    max-width: 78px !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important;
+}
+
+.table-action:not(.icon-only) svg,
+.table-action-edit svg,
+.table-action.danger:not(.icon-only) svg,
+.delete-btn:not(.icon-only) svg {
+    width: 13px !important;
+    height: 13px !important;
+    flex: none !important;
+}
+
+/* Text-Based Delete Button */
+.table-action.danger:not(.icon-only),
+.table-action-danger,
+button.table-action.danger:not(.icon-only),
+.danger-btn:not(.icon-only),
+button.danger-btn:not(.icon-only),
+.btn-danger:not(.icon-only),
+button.btn-danger:not(.icon-only),
+.ui-btn-danger:not(.icon-only),
+.delete-btn:not(.icon-only),
+button.delete-btn:not(.icon-only),
+.action-delete-btn:not(.icon-only) {
     background: #dc2626 !important;
     background-color: #dc2626 !important;
     color: #ffffff !important;
     border: 1px solid #b91c1c !important;
-    border-radius: 5px !important;
-    font-size: 11.5px !important;
-    font-weight: 700 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 5px !important;
-    cursor: pointer !important;
-    white-space: nowrap !important;
-    line-height: 1 !important;
     box-shadow: 0 1px 2px rgba(220, 38, 38, 0.25) !important;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important;
 }
 
-.table-action.danger:hover,
-.table-action-danger:hover,
-button.table-action.danger:hover,
-.danger-btn:hover,
-button.danger-btn:hover,
-.btn-danger:hover,
-.delete-btn:hover,
-.table-action.icon-only.danger:hover {
+.table-action.danger:not(.icon-only):hover:not(:disabled),
+.table-action-danger:hover:not(:disabled),
+button.table-action.danger:not(.icon-only):hover:not(:disabled),
+.delete-btn:not(.icon-only):hover:not(:disabled),
+.action-delete-btn:not(.icon-only):hover:not(:disabled) {
     background: #b91c1c !important;
     border-color: #991b1b !important;
     color: #ffffff !important;
     transform: translateY(-0.5px) !important;
 }
 
-.table-action.danger svg,
-.table-action-danger svg,
-button.table-action.danger svg,
-.delete-btn svg,
-.danger-btn svg,
-.table-action.icon-only.danger svg {
-    width: 12px !important;
-    height: 12px !important;
+.table-action.danger:not(.icon-only) svg,
+.delete-btn:not(.icon-only) svg {
     color: #ffffff !important;
     stroke: #ffffff !important;
 }
 
-/* Universal Sleek Small Edit / Table Action Button */
+/* Text-Based Edit Button */
 .table-action:not(.danger):not(.delete-btn):not(.icon-only),
-.table-action-edit {
-    height: 28px !important;
-    min-height: 28px !important;
-    padding: 0 10px !important;
+.table-action-edit,
+.action-edit-btn:not(.icon-only) {
     background: #ffffff !important;
     border: 1px solid var(--line, #cbd5e1) !important;
-    border-radius: 5px !important;
     color: #2563eb !important;
-    font-size: 11.5px !important;
-    font-weight: 600 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 5px !important;
-    cursor: pointer !important;
-    white-space: nowrap !important;
-    line-height: 1 !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
-    transition: all 0.15s ease !important;
+}
+
+.table-action:not(.danger):not(.delete-btn):not(.icon-only):hover:not(:disabled),
+.table-action-edit:hover:not(:disabled),
+.action-edit-btn:not(.icon-only):hover:not(:disabled) {
+    background: #eff6ff !important;
+    border-color: #93c5fd !important;
+    color: #1d4ed8 !important;
+    transform: translateY(-0.5px) !important;
+}
+
+.table-action:not(.danger):not(.delete-btn):not(.icon-only) svg,
+.action-edit-btn:not(.icon-only) svg {
+    color: #2563eb !important;
+    stroke: #2563eb !important;
 }
 
 [data-theme='dark'] .table-action:not(.danger):not(.delete-btn):not(.icon-only),
@@ -11474,17 +11658,4 @@ button.table-action.danger svg,
     background: var(--panel, #1e293b) !important;
     border-color: var(--line, #334155) !important;
     color: #60a5fa !important;
-}
-
-.table-action:not(.danger):not(.delete-btn):not(.icon-only):hover,
-.table-action-edit:hover {
-    background: var(--soft, #f8fafc) !important;
-    border-color: #94a3b8 !important;
-    color: #1d4ed8 !important;
-}
-
-.table-action:not(.danger):not(.delete-btn) svg,
-.table-action-edit svg {
-    width: 12px !important;
-    height: 12px !important;
 }
