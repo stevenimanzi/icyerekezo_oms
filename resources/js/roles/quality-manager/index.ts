@@ -1,4 +1,4 @@
-import { BadgeCheck, ChartColumn, LayoutDashboard } from 'lucide-react';
+import { BadgeCheck, FileBarChart, LayoutDashboard } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const qualityManagerRole: RoleModule = {
@@ -10,7 +10,7 @@ export const qualityManagerRole: RoleModule = {
         return [
             ['dashboard', LayoutDashboard, labels.dashboard, '*'],
             ['quality', BadgeCheck, text('Quality', 'Qualité'), 'quality.view'],
-            ['reports', ChartColumn, labels.reports, 'reports.view'],
+            ['reports', FileBarChart, labels.reports, 'reports.view'],
         ];
     },
 };

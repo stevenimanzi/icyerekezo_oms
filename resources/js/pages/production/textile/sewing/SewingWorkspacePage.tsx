@@ -1101,7 +1101,7 @@ export default function SewingWorkspacePage({
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
                             <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
-                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>TOTAL INPUT (PCS)</div>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>TOTAL PIECES RECEIVED</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{num(totalAcceptedQty)}</div>
                             </div>
                             <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
@@ -1127,7 +1127,7 @@ export default function SewingWorkspacePage({
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left' }}>DATE</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left' }}>FABRIC &amp; STYLE</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left' }}>COLOR / SIZE</th>
-                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>INPUT (PCS)</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>PIECES RECEIVED</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>OUTPUT (SEWN)</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>DAMAGED (WASTE)</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>QUALITY CONTROL</th>
@@ -1156,7 +1156,7 @@ export default function SewingWorkspacePage({
                                                         {row.waste > 0 ? num(row.waste) : '—'}
                                                     </td>
                                                     <td style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
-                                                        {isPass ? 'QC PASSED' : row.waste > 0 ? 'QC FLAGGED' : 'PENDING'}
+                                                        {isPass ? 'PASSED QUALITY CHECKED' : row.waste > 0 ? 'QC FLAGGED' : 'PENDING'}
                                                     </td>
                                                 </tr>
                                             );

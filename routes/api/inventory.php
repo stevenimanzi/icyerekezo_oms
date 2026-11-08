@@ -22,6 +22,7 @@ Route::controller(InventoryController::class)
         Route::post('/transfers', 'transfer')->middleware('permission:inventory.adjust');
         Route::post('/stock-counts', 'stockCount')->middleware('permission:inventory.adjust');
         Route::patch('/items/{item}/status', 'updateItemStatus')->middleware('permission:inventory.adjust');
+        Route::patch('/items/{item}/price', 'updateItemPrice')->middleware('permission:products.set_price');
     });
 
 Route::controller(ProductCatalogController::class)

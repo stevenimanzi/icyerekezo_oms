@@ -143,6 +143,7 @@ export default function ProcurementOverviewPage() {
     const allowed = (permission: string) =>
         permissions.includes('*') || permissions.includes(permission);
     const canCreate = allowed('procurement.create');
+    const canRequest = canCreate || allowed('procurement.request');
     const canApprove = allowed('procurement.approve');
     const canReceive = allowed('procurement.receive');
     const canPay = allowed('finance.receive_payment');
@@ -347,7 +348,7 @@ export default function ProcurementOverviewPage() {
                             Add supplier price
                         </button>
                     )}
-                    {canCreate && (
+                    {canRequest && (
                         <button
                             className="primary-btn"
                             onClick={() => open('request', { expected_date: '', quantity: '' })}
@@ -1262,7 +1263,7 @@ function PriceTable({ suppliers }: any) {
                             <th>Item</th>
                             <th>Supplier's product code</th>
                             <th>Unit price</th>
-                            <th>Lead time</th>
+                            <th>Delivery time</th>
                             <th>Minimum order</th>
                         </tr>
                     </thead>

@@ -921,17 +921,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                 </header>
 
                 {/* Filter / Search Bar */}
-                <div style={{ marginBottom: 14, position: 'relative' }}>
-                    <Search
-                        size={16}
-                        style={{
-                            position: 'absolute',
-                            left: 12,
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: 'var(--muted)',
-                        }}
-                    />
+                <div className="search-box" style={{ marginBottom: 14 }}>
+                    <Search size={16} />
                     <input
                         type="text"
                         placeholder={isFr ? 'Rechercher par nom d’article ou code…' : 'Search by item name or code…'}

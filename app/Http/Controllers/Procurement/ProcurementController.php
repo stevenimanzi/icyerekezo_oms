@@ -10,6 +10,7 @@ use App\Models\StockTransaction;
 use App\Models\Supplier;
 use App\Models\Warehouse;
 use App\Services\InventoryLedger;
+use App\Support\Notifications\FactoryNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,6 +121,16 @@ class ProcurementController extends Controller
 
             return $document->fresh('lines.item:id,name,sku');
         });
+
+        FactoryNotifier::notify(
+            (int) $request->user()->current_factory_id,
+            'procurement.approve',
+            'New purchase request',
+            "{$document->document_number} was submitted by {$request->user()->name}: {$document->purpose}",
+            '/finance/procurement',
+            'procurement',
+            $request->user()->id,
+        );
 
         return response()->json(
             ['message' => 'Purchase request submitted for approval.', 'document' => $document],

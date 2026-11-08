@@ -76,7 +76,14 @@ final class RoleTemplateCatalog
         'warehouse-keeper' => [
             'Warehouse Keeper',
             'warehouse',
-            ['inventory.*', 'products.view', 'procurement.view', 'procurement.receive', 'reports.view'],
+            [
+                'inventory.*',
+                'products.view',
+                'procurement.view',
+                'procurement.receive',
+                'procurement.request',
+                'reports.view',
+            ],
         ],
         'procurement-officer' => [
             'Procurement Officer',
@@ -205,14 +212,22 @@ final class RoleTemplateCatalog
             ['logistics.*', 'sales.view', 'inventory.view', 'inventory.issue', 'reports.view'],
         ],
         'sales-officer' => ['Sales Officer', 'sales', ['sales.*', 'products.view', 'inventory.view', 'reports.view']],
-        'accountant' => ['Accountant', 'finance', ['finance.*', 'sales.view', 'procurement.view', 'reports.*']],
+        'accountant' => [
+            'Accountant',
+            'finance',
+            ['finance.*', 'sales.view', 'procurement.view', 'products.view', 'products.set_price', 'reports.*'],
+        ],
         'financial-manager' => [
             'Finance & Sales Manager',
             'finance',
             [
                 'finance.*',
                 'sales.*',
+                'procurement.view',
+                'procurement.create',
+                'procurement.approve',
                 'products.view',
+                'products.set_price',
                 'inventory.view',
                 'reports.view',
                 'reports.export',

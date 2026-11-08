@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PageExportButtons } from '../../../../components/ExportButtons';
 import { Download, FileText, Printer, RefreshCw, Calendar, PackageCheck } from 'lucide-react';
 import type { AuthUser, Locale } from '../../../../core/types';
 import { api } from '../../../../core/api';
@@ -172,10 +173,6 @@ export default function PackingReportPage({ user, locale }: Props) {
     const totalQcPassed = packingRows.reduce((s, r) => s + r.qcPassed, 0);
     const qcPassRate = totalOutput > 0 ? Math.round((totalQcPassed / totalOutput) * 100) : 100;
 
-    const handlePrint = () => {
-        window.print();
-    };
-
     const handleExportPdf = () => {
         const url = `/api/flow/packing-report.pdf?department=packing&from=${fromDate}&to=${toDate}`;
         window.open(url, '_blank');
@@ -324,15 +321,7 @@ export default function PackingReportPage({ user, locale }: Props) {
                             <RefreshCw size={15} className={loading ? 'spin' : ''} />
                             {locale === 'en' ? 'Refresh' : 'Actualiser'}
                         </button>
-                        <button
-                            type="button"
-                            className="secondary-btn"
-                            onClick={handlePrint}
-                            title="Print Excel Paper Table"
-                        >
-                            <Printer size={15} />
-                            {locale === 'en' ? 'Print' : 'Imprimer'}
-                        </button>
+                        <PageExportButtons title="Packing report" pdf={false} />
                         <button
                             type="button"
                             className="primary-btn"
@@ -502,12 +491,12 @@ export default function PackingReportPage({ user, locale }: Props) {
                             </tr>
                             <tr style={{ background: '#ffffff' }}>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>RECEIVED ITEM</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>INPUT (PCS)</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PIECES RECEIVED</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '17%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PRODUCT STYLE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>COLOR</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PACKED (PCS)</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PACK FLAW</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PIECES PACKED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>DEFECTIVE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '11%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PASSED</th>
                             </tr>
                         </thead>

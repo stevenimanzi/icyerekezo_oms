@@ -1,18 +1,36 @@
-import { ChartColumn, LayoutDashboard, TrendingUp, Wallet } from 'lucide-react';
+import {
+    BookOpen,
+    Boxes,
+    FileBarChart,
+    HandCoins,
+    LayoutDashboard,
+    PackageCheck,
+    ReceiptText,
+    ShoppingCart,
+    Tag,
+    Users,
+    WalletCards,
+} from 'lucide-react';
 import type { RoleModule } from '../types';
 
+/**
+ * The Finance & Sales Manager runs both the selling side and the money side of the factory, so the
+ * menu follows the money: sell, collect, record, pay, buy, then report.
+ */
 export const financialManagerRole: RoleModule = {
     id: 'financial-manager',
     matches: ({ flags }) => flags.isFinancialManager,
-    nav: ({ labels, text }) => [
+    nav: ({ text }) => [
         ['dashboard', LayoutDashboard, text('Finance & Sales', 'Finance et Ventes'), '*'],
-        ['finance', Wallet, text('Finance & Collections', 'Finance et recouvrement'), 'finance.view'],
-        ['sales', TrendingUp, text('Orders & Invoices', 'Commandes et factures'), 'sales.view'],
-        [
-            'finance-reports',
-            ChartColumn,
-            text('Finance reports', 'Rapports financiers'),
-            'reports.view',
-        ],
+        ['sales', ReceiptText, text('Orders & Invoices', 'Commandes et factures'), 'sales.view'],
+        ['clients', Users, text('Clients', 'Clients'), 'finance.view'],
+        ['finance', HandCoins, text('Money Collected', 'Encaissements'), 'finance.view'],
+        ['cashbook', BookOpen, text('Cash Book', 'Livre de caisse'), 'finance.view'],
+        ['expenses', WalletCards, text('Expenses', 'Dépenses'), 'finance.view'],
+        ['procurement', ShoppingCart, text('Purchases', 'Achats'), 'procurement.view'],
+        ['products', Tag, text('Products & Prices', 'Produits et prix'), 'products.view'],
+        ['inventory', Boxes, text('Stock Available', 'Stock disponible'), 'inventory.view'],
+        ['sold-goods', PackageCheck, text('Goods Sold & Delivered', 'Marchandises vendues'), 'finance.view'],
+        ['finance-reports', FileBarChart, text('Reports', 'Rapports'), 'reports.view'],
     ],
 };

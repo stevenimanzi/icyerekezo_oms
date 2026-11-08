@@ -11659,3 +11659,600 @@ button.table-action.danger:not(.icon-only):hover:not(:disabled),
     border-color: var(--line, #334155) !important;
     color: #60a5fa !important;
 }
+
+/* The hamburger button is for phones only. A later `.icon-btn { display: inline-flex !important }`
+   rule used to override `.menu-btn { display: none }`, so it showed on desktop. Two classes win. */
+.icon-btn.menu-btn {
+    display: none !important;
+}
+@media (max-width: 820px) {
+    .icon-btn.menu-btn {
+        display: inline-flex !important;
+    }
+}
+
+/* Sidebar for everyone: one flat list, no menu headings, small text, tight rows. */
+.sidebar nav {
+    padding: 8px 8px 6px;
+}
+.sidebar .nav-label {
+    display: none;
+}
+.sidebar .nav-item {
+    height: 30px;
+    min-height: 0;
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    gap: 9px;
+    font-size: 12.5px;
+    line-height: 1;
+}
+.sidebar .nav-item svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    opacity: 0.9;
+}
+.sidebar .nav-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Table text always stays inside its own cell
+   Long words and sentences wrap onto the next line. Only short fixed values
+   (numbers, dates, status tags, buttons) stay on one line.
+   ========================================================================== */
+.report-data-table th,
+.report-data-table td,
+.excel-table-container th,
+.excel-table-container td,
+.report-print-table th,
+.report-print-table td,
+.ui-table th,
+.ui-table td,
+.admin-table th,
+.admin-table td,
+.noguchi-flow-table th,
+.noguchi-flow-table td,
+.noguchi-daily-document th,
+.noguchi-daily-document td,
+.legacy-order-table th,
+.legacy-order-table td,
+.rg-group th,
+.rg-group td,
+.fb-table th,
+.fb-table td {
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    word-break: normal;
+    min-width: 0;
+}
+
+.admin-table td.num,
+.admin-table th.num,
+.ui-table td.num,
+.ui-table th.num,
+.rg-group td.num,
+.rg-group th.num,
+.fb-table td.num,
+.fb-table th.num,
+.admin-table td .admin-status,
+.admin-table td .table-action,
+.admin-table td button,
+.ui-table td button,
+.fb-table td button,
+.admin-table td.nowrap,
+.ui-table td.nowrap {
+    white-space: nowrap !important;
+}
+
+.admin-table td.num,
+.admin-table th.num,
+.ui-table td.num,
+.ui-table th.num,
+.fb-table td.num,
+.fb-table th.num {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Table cells wider than the screen scroll inside their own box instead of spilling out. */
+.noguchi-report-scroll,
+.noguchi-daily-scroll,
+.noguchi-cutting-table-wrap,
+.report-table-scroll,
+.rg-blocks {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.rg-block {
+    max-width: none;
+}
+
+.rg-group {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.rg-group table {
+    table-layout: auto;
+}
+
+.noguchi-flow-table td > *,
+.noguchi-flow-table th {
+    overflow-wrap: break-word;
+}
+
+/* Filters that sit above a table: dates, status, and a search box. */
+.data-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 12px;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 10px;
+    background: var(--panel, #fff);
+}
+.data-filters label {
+    display: grid;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted, #64748b);
+}
+.data-filters input,
+.data-filters select {
+    height: 34px;
+    min-width: 0;
+    padding: 0 10px;
+    border: 1px solid var(--line, #cbd5e1);
+    border-radius: 8px;
+    background: var(--panel, #fff);
+    color: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.data-filters-search {
+    flex: 1 1 220px;
+}
+.data-filters-search input {
+    width: 100%;
+}
+.data-filters-quick {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.data-filters-quick button,
+.data-filters > button {
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--line, #cbd5e1);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.data-filters-quick button:hover,
+.data-filters > button:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+.data-filters-count {
+    margin-left: auto;
+    align-self: center;
+    font-size: 12px;
+    color: var(--muted, #64748b);
+}
+
+/* Department report page */
+.dept-report {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+}
+.dept-report-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+}
+.dept-report-head h1 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+}
+.dept-report-head p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--muted, #64748b);
+}
+.dept-report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.dept-report-foot {
+    padding: 10px 14px;
+    border-top: 1px solid var(--line, #e2e8f0);
+    font-size: 12px;
+    color: var(--muted, #64748b);
+}
+.dept-report-table .empty-cell {
+    padding: 28px 12px;
+    text-align: center !important;
+    color: var(--muted, #64748b);
+}
+@media print {
+    .data-filters,
+    .dept-report-actions {
+        display: none !important;
+    }
+}
+
+/* Buttons that have a text label do not also carry a decorative icon (added by useUiEnhancer). */
+.no-btn-icon > svg:not(.spin) {
+    display: none !important;
+}
+.tf-bar {
+    margin-bottom: 10px;
+}
+
+/* ==========================================================================
+   ONE KPI CARD DESIGN
+   Every summary card in the project uses the same box, the same label and the
+   same big number. Only the words and numbers change from page to page.
+   ========================================================================== */
+@media screen {.ui-kpis,
+.kpi-grid,
+.warehouse-kpi-row,
+.ow-kpis,
+.sales-metrics,
+.quality-metrics,
+.department-metrics,
+.cutting-report-metrics,
+.fb-kpis,
+.finance-report-summary,
+.report-summary,
+.school-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+    margin-bottom: 16px !important;
+}
+
+.ui-kpi,
+.kpi-grid > article,
+.warehouse-kpi-card,
+.warehouse-kpi-row > article,
+.ow-kpi,
+.quality-kpi,
+.cutting-metric,
+.metric-card,
+.department-metric,
+.fb-kpi,
+.sales-metrics > *,
+.quality-metrics > *,
+.finance-report-summary > *,
+.report-summary > *,
+.school-kpis > *,
+.cutting-report-metrics > *,
+.department-metrics > * {
+    min-width: 0 !important;
+    min-height: 80px !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    margin: 0 !important;
+    padding: 14px 18px !important;
+    border: 1px solid var(--line, #e2e8f0) !important;
+    border-radius: 10px !important;
+    background: var(--panel, #fff) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+[data-theme='dark'] :is(.ui-kpi, .kpi-grid > article, .warehouse-kpi-card, .warehouse-kpi-row > article, .ow-kpi, .quality-kpi, .cutting-metric, .metric-card, .department-metric, .fb-kpi, .sales-metrics > *, .quality-metrics > *, .finance-report-summary > *, .report-summary > *, .school-kpis > *, .cutting-report-metrics > *, .department-metrics > *) {
+    background: var(--panel, #1e293b) !important;
+    border-color: var(--line, #334155) !important;
+}
+
+/* Cards that wrap their text in one extra div (older pages) lay out the same way. */
+.quality-kpi > div,
+.cutting-metric > div,
+.department-metric > div,
+.metric-card > div,
+.ow-kpi > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+}
+
+/* Label */
+.ui-kpi small,
+.ui-kpi > span:first-child,
+.ui-kpi .metric-copy > span,
+.ui-kpi > div > span:first-child,
+.kpi-grid > article small,
+.kpi-grid > article > span:first-child,
+.kpi-grid > article .metric-copy > span,
+.kpi-grid > article > div > span:first-child,
+.warehouse-kpi-card small,
+.warehouse-kpi-card > span:first-child,
+.warehouse-kpi-card .metric-copy > span,
+.warehouse-kpi-card > div > span:first-child,
+.warehouse-kpi-row > article small,
+.warehouse-kpi-row > article > span:first-child,
+.warehouse-kpi-row > article .metric-copy > span,
+.warehouse-kpi-row > article > div > span:first-child,
+.ow-kpi small,
+.ow-kpi > span:first-child,
+.ow-kpi .metric-copy > span,
+.ow-kpi > div > span:first-child,
+.quality-kpi small,
+.quality-kpi > span:first-child,
+.quality-kpi .metric-copy > span,
+.quality-kpi > div > span:first-child,
+.cutting-metric small,
+.cutting-metric > span:first-child,
+.cutting-metric .metric-copy > span,
+.cutting-metric > div > span:first-child,
+.metric-card small,
+.metric-card > span:first-child,
+.metric-card .metric-copy > span,
+.metric-card > div > span:first-child,
+.department-metric small,
+.department-metric > span:first-child,
+.department-metric .metric-copy > span,
+.department-metric > div > span:first-child,
+.fb-kpi small,
+.fb-kpi > span:first-child,
+.fb-kpi .metric-copy > span,
+.fb-kpi > div > span:first-child,
+.sales-metrics > * small,
+.sales-metrics > * > span:first-child,
+.sales-metrics > * .metric-copy > span,
+.sales-metrics > * > div > span:first-child,
+.quality-metrics > * small,
+.quality-metrics > * > span:first-child,
+.quality-metrics > * .metric-copy > span,
+.quality-metrics > * > div > span:first-child,
+.finance-report-summary > * small,
+.finance-report-summary > * > span:first-child,
+.finance-report-summary > * .metric-copy > span,
+.finance-report-summary > * > div > span:first-child,
+.report-summary > * small,
+.report-summary > * > span:first-child,
+.report-summary > * .metric-copy > span,
+.report-summary > * > div > span:first-child,
+.school-kpis > * small,
+.school-kpis > * > span:first-child,
+.school-kpis > * .metric-copy > span,
+.school-kpis > * > div > span:first-child,
+.cutting-report-metrics > * small,
+.cutting-report-metrics > * > span:first-child,
+.cutting-report-metrics > * .metric-copy > span,
+.cutting-report-metrics > * > div > span:first-child,
+.department-metrics > * small,
+.department-metrics > * > span:first-child,
+.department-metrics > * .metric-copy > span,
+.department-metrics > * > div > span:first-child {
+    display: block !important;
+    margin: 0 !important;
+    color: var(--muted, #64748b) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    line-height: 1.3 !important;
+    text-transform: uppercase !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Number */
+.ui-kpi strong,
+.ui-kpi b,
+.kpi-grid > article strong,
+.kpi-grid > article b,
+.warehouse-kpi-card strong,
+.warehouse-kpi-card b,
+.warehouse-kpi-row > article strong,
+.warehouse-kpi-row > article b,
+.ow-kpi strong,
+.ow-kpi b,
+.quality-kpi strong,
+.quality-kpi b,
+.cutting-metric strong,
+.cutting-metric b,
+.metric-card strong,
+.metric-card b,
+.department-metric strong,
+.department-metric b,
+.fb-kpi strong,
+.fb-kpi b,
+.sales-metrics > * strong,
+.sales-metrics > * b,
+.quality-metrics > * strong,
+.quality-metrics > * b,
+.finance-report-summary > * strong,
+.finance-report-summary > * b,
+.report-summary > * strong,
+.report-summary > * b,
+.school-kpis > * strong,
+.school-kpis > * b,
+.cutting-report-metrics > * strong,
+.cutting-report-metrics > * b,
+.department-metrics > * strong,
+.department-metrics > * b {
+    display: block !important;
+    margin: 4px 0 0 !important;
+    color: var(--text, #0f172a) !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+}
+
+/* Small note under the number */
+.ui-kpi p,
+.ui-kpi em,
+.kpi-grid > article p,
+.kpi-grid > article em,
+.warehouse-kpi-card p,
+.warehouse-kpi-card em,
+.warehouse-kpi-row > article p,
+.warehouse-kpi-row > article em,
+.ow-kpi p,
+.ow-kpi em,
+.quality-kpi p,
+.quality-kpi em,
+.cutting-metric p,
+.cutting-metric em,
+.metric-card p,
+.metric-card em,
+.department-metric p,
+.department-metric em,
+.fb-kpi p,
+.fb-kpi em,
+.sales-metrics > * p,
+.sales-metrics > * em,
+.quality-metrics > * p,
+.quality-metrics > * em,
+.finance-report-summary > * p,
+.finance-report-summary > * em,
+.report-summary > * p,
+.report-summary > * em,
+.school-kpis > * p,
+.school-kpis > * em,
+.cutting-report-metrics > * p,
+.cutting-report-metrics > * em,
+.department-metrics > * p,
+.department-metrics > * em,
+.ow-kpi .ow-kpi-note,
+.fb-kpi small {
+    display: block !important;
+    margin: 2px 0 0 !important;
+    color: var(--muted, #64748b) !important;
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.3 !important;
+    text-transform: none !important;
+}
+
+/* Coloured numbers keep their meaning (green = good, red = bad, amber = warning). */
+.fb-kpi.good b { color: #16a34a !important; }
+.fb-kpi.bad b { color: #dc2626 !important; }
+.fb-kpi.warn b { color: #d97706 !important; }
+
+/* No icons inside KPI cards. */
+.ui-kpi svg,
+.kpi-grid > article svg,
+.warehouse-kpi-card svg,
+.warehouse-kpi-row > article svg,
+.ow-kpi svg,
+.quality-kpi svg,
+.cutting-metric svg,
+.metric-card svg,
+.department-metric svg,
+.fb-kpi svg,
+.sales-metrics > * svg,
+.quality-metrics > * svg,
+.finance-report-summary > * svg,
+.report-summary > * svg,
+.school-kpis > * svg,
+.cutting-report-metrics > * svg,
+.department-metrics > * svg {
+    display: none !important;
+}
+
+}
+
+/* Search boxes: the magnifier always sits in the middle of the box, left of the text. */
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+.search-box > svg {
+    position: absolute;
+    z-index: 1;
+    left: 11px;
+    top: 50%;
+    width: 15px;
+    height: 15px;
+    transform: translateY(-50%);
+    color: var(--muted, #94a3b8);
+    pointer-events: none;
+}
+.search-box > input {
+    width: 100%;
+    min-width: 0;
+    padding-left: 34px !important;
+}
+.school-filter-grid .school-search svg {
+    top: 50% !important;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+}
+
+/* Report column titles: always on one line, small enough to fit. */
+@media screen {
+    .report-print-table th,
+    .report-data-table th,
+    .excel-table-container th,
+    .rg-group th,
+    .noguchi-flow-table th,
+    .noguchi-daily-document th,
+    .legacy-order-table th {
+        white-space: nowrap !important;
+        font-size: 0.6rem !important;
+        letter-spacing: 0 !important;
+        padding-left: 3px !important;
+        padding-right: 3px !important;
+    }
+}
+
+.export-buttons {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.export-error {
+    flex-basis: 100%;
+    color: #dc2626;
+    font-size: 12px;
+}
+
+.dept-report-subtitle {
+    margin: 0;
+    padding: 12px 14px 4px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.admin-table tr.total-row td {
+    background: rgba(148, 163, 184, 0.16);
+    border-top: 2px solid rgba(148, 163, 184, 0.5);
+}

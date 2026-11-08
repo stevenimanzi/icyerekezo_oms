@@ -1,6 +1,6 @@
 import {
     BadgeCheck,
-    ChartColumn,
+    FileBarChart,
     Cog,
     Factory,
     LayoutDashboard,
@@ -27,6 +27,6 @@ export const defaultRole: RoleModule = {
         ['logistics', Truck, labels.logistics, 'logistics.view'],
         ['team', Users, labels.people, 'users.view'],
         ['machines', Cog, labels.machines, 'maintenance.view'],
-        ['reports', ChartColumn, labels.reports, 'reports.view'],
+        ['reports', FileBarChart, labels.reports, 'reports.view'],
     ],
 };

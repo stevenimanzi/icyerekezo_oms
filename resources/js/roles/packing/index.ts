@@ -1,4 +1,4 @@
-import { ChartColumn, LayoutDashboard, PackageCheck } from 'lucide-react';
+import { FileBarChart, LayoutDashboard, PackageCheck } from 'lucide-react';
 import type { RoleModule } from '../types';
 import { requestMaterialsNav } from '../production-flow-nav';
 
@@ -14,6 +14,6 @@ export const packingRole: RoleModule = {
             'production.view',
         ],
         ...requestMaterialsNav('packing', context),
-        ['packing-report', ChartColumn, context.text('Report', 'Rapport'), 'production.view'],
+        ['packing-report', FileBarChart, context.text('Report', 'Rapport'), 'production.view'],
     ],
 };

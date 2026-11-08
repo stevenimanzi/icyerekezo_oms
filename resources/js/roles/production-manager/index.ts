@@ -1,6 +1,6 @@
 import {
     BadgeCheck,
-    ChartColumn,
+    FileBarChart,
     Factory,
     LayoutDashboard,
     Scissors,
@@ -23,7 +23,7 @@ export const productionManagerRole: RoleModule = {
             ['sewing-workspace', Shirt, text('Sewing lines', 'Lignes de couture'), 'production.view'],
             ['production', Factory, labels.planning, 'production.view'],
             ['quality', BadgeCheck, labels.control, 'quality.view'],
-            ['reports', ChartColumn, labels.reports, 'reports.view'],
+            ['reports', FileBarChart, labels.reports, 'reports.view'],
             ['inventory', Warehouse, text('Materials', 'Matières'), 'inventory.view'],
         ];
     },

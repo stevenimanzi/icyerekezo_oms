@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, LogOut, MessageCircle, Settings } from 'lucide-react';
+import { ChevronDown, ChevronRight, Headset, LogOut, Settings } from 'lucide-react';
 import type { Labels } from '../core/labels';
 import type { AuthUser, Locale } from '../core/types';
 import type { NavEntry } from './navigation';
@@ -18,6 +18,8 @@ type Props = {
     showSupport: boolean;
     isOwner: boolean;
     isSchoolUser: boolean;
+    /** One flat list: no "Menu" / "Manage" headings and tighter spacing. */
+    compact?: boolean;
     switchingFactory: number | null;
     onNavigate: (page: string) => void;
     onClose: () => void;
@@ -110,12 +112,12 @@ export function Sidebar(props: Props) {
     };
 
     return (
-        <aside className={`sidebar ${open ? 'open' : ''}`}>
+        <aside className={`sidebar ${open ? 'open' : ''} ${props.compact ? 'compact' : ''}`}>
             <div className="sidebar-head">
                 <Logo />
             </div>
             <nav>
-                <p className="nav-label">{labels.general}</p>
+                {!props.compact && <p className="nav-label">{labels.general}</p>}
                 {entries.map((entry) => {
                     if (entry.type === 'item') {
                         const ItemIcon = entry.item[1];
@@ -126,7 +128,7 @@ export function Sidebar(props: Props) {
                                 className={`nav-item ${activePage === entry.key ? 'active' : ''}`}
                                 onClick={() => go(entry.key)}
                             >
-                                <ItemIcon size={18} />
+                                <ItemIcon size={16} />
                                 <span>{entry.item[2]}</span>
                                 {badge(entry.key)}
                             </button>
@@ -171,15 +173,17 @@ export function Sidebar(props: Props) {
                 })}
                 {!user.is_platform_admin && (
                     <>
-                        <p className="nav-label">
-                            {props.isOwner ? text('Help', 'Aide') : labels.management}
-                        </p>
+                        {!props.compact && (
+                            <p className="nav-label">
+                                {props.isOwner ? text('Help', 'Aide') : labels.management}
+                            </p>
+                        )}
                         {props.showSettings && (
                             <button
                                 className={`nav-item ${activePage === 'settings' ? 'active' : ''}`}
                                 onClick={() => go('settings')}
                             >
-                                <Settings size={18} />
+                                <Settings size={16} />
                                 <span>{labels.settings}</span>
                             </button>
                         )}
@@ -188,7 +192,7 @@ export function Sidebar(props: Props) {
                                 className={`nav-item ${activePage === 'support' ? 'active' : ''}`}
                                 onClick={() => go('support')}
                             >
-                                <MessageCircle size={18} />
+                                <Headset size={16} />
                                 <span>{labels.support}</span>
                                 {chatUnread > 0 && (
                                     <i title={text('New chat messages', 'Nouveaux messages')}>

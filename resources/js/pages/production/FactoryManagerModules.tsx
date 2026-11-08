@@ -93,7 +93,7 @@ export function FlowSetupPage() {
             const result = await api('/api/factory/flow-suggestion/apply', { method: 'POST' });
             setSuccess(
                 result.message ||
-                    'Recommended departments, workstations and workflow stages are ready.',
+                    'Suggested departments, work areas and production steps are ready.',
             );
             await load();
         } catch (reason: any) {
@@ -480,7 +480,7 @@ export function ProductionFlowPage() {
                     ))
                 ) : (
                     <div className="panel empty-state">
-                        <h3>No workflow configured</h3>
+                        <h3>No production steps set up yet</h3>
                         <p>
                             Use the recommended industry flow or create your own working flow on
                             this page.
@@ -1444,7 +1444,7 @@ export function ReportsPage({
                     description={
                         productionOnly
                             ? 'Review real output, rejection, waste, downtime and progress for every category in the configured production flow.'
-                            : 'Review operational results for every department, including departments with no activity.'
+                            : 'See the results of every department, including departments with no work yet.'
                     }
                     action={
                         canExport ? (
@@ -1486,7 +1486,7 @@ export function ReportsPage({
                                 <option value="departments">Department performance</option>
                                 <option value="production">Production stages</option>
                                 <option value="inventory">Inventory movements</option>
-                                <option value="activity">Operational events</option>
+                                <option value="activity">Daily activity</option>
                             </select>
                         </label>
                     )}
@@ -1708,7 +1708,7 @@ function ReportDocument({ data }: any) {
             )}
             {!productionOnly && data.activities.length > 0 && (
                 <ReportTable
-                    title="Operational events"
+                    title="Daily activity"
                     headers={['Date', 'Recorded by', 'Event', 'Description']}
                     rows={data.activities.map((item: any) => [
                         new Date(item.created_at).toLocaleString(),

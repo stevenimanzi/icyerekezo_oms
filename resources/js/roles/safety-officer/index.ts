@@ -1,4 +1,4 @@
-import { ChartColumn, Cog, LayoutDashboard, ShieldCheck, Users } from 'lucide-react';
+import { FileBarChart, Cog, LayoutDashboard, ShieldCheck, Users } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const safetyOfficerRole: RoleModule = {
@@ -9,6 +9,6 @@ export const safetyOfficerRole: RoleModule = {
         ['safety', ShieldCheck, text('Safety', 'Sécurité'), 'safety.view'],
         ['team', Users, text('Workers', 'Employés'), 'users.view'],
         ['machines', Cog, text('Machines', 'Machines'), 'maintenance.view'],
-        ['reports', ChartColumn, text('Reports', 'Rapports'), 'reports.view'],
+        ['reports', FileBarChart, text('Reports', 'Rapports'), 'reports.view'],
     ],
 };

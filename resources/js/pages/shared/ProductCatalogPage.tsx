@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pencil, Plus, RefreshCw, Trash, Trash2, X } from 'lucide-react';
+import { RefreshCw, Trash, X } from 'lucide-react';
 import { startPolling } from '../../core/polling';
 
 const csrf = () =>
@@ -19,11 +19,11 @@ async function request(url: string, options: RequestInit = {}) {
     try {
         payload = text ? JSON.parse(text) : {};
     } catch {
-        throw new Error('The server returned an invalid response. Please sign in again.');
+        throw new Error('Something went wrong. Please sign in again.');
     }
     if (!response.ok) {
         const first = payload.errors ? Object.values(payload.errors).flat()[0] : null;
-        throw new Error(String(first || payload.message || 'Unable to save this record.'));
+        throw new Error(String(first || payload.message || 'We could not save this. Please try again.'));
     }
     return payload;
 }
@@ -47,11 +47,17 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [updated, setUpdated] = useState<Date | null>(null);
-    const [modal, setModal] = useState<'item' | 'category' | 'unit' | null>(null);
+    const [modal, setModal] = useState<'item' | 'category' | 'unit' | 'price' | null>(null);
     const [editing, setEditing] = useState<any>(null);
     const [form, setForm] = useState<any>(emptyItem);
     const [busy, setBusy] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<any>(null);
+
+    // Only the warehouse keeper records items, categories and units.
+    // Finance can only change prices.
+    const canRecord = Boolean(user?.roles?.some((role: any) => role.slug === 'warehouse-keeper'));
+    const permissions: string[] = user?.permissions || [];
+    const canPrice = permissions.includes('*') || permissions.includes('products.set_price');
 
     const load = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
@@ -71,13 +77,15 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
         return () => window.clearInterval(timer);
     }, [load]);
 
-    const open = (type: 'item' | 'category' | 'unit', row: any = null) => {
+    const open = (type: 'item' | 'category' | 'unit' | 'price', row: any = null) => {
         setEditing(row);
         setError('');
         setSuccess('');
         setModal(type);
         setForm(
-            row
+            type === 'price'
+                ? { standard_cost: String(row?.standard_cost || 0) }
+                : row
                 ? type === 'item'
                     ? {
                           name: row.name,
@@ -113,18 +121,27 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
         setError('');
         try {
             const base =
-                modal === 'item'
+                modal === 'item' || modal === 'price'
                     ? '/api/inventory/items'
                     : modal === 'category'
                       ? '/api/products/categories'
                       : '/api/products/units';
-            await request(editing ? `${base}/${editing.id}` : base, {
-                method: editing ? 'PATCH' : 'POST',
-                body: JSON.stringify(form),
-            });
+            await request(
+                modal === 'price'
+                    ? `${base}/${editing.id}/price`
+                    : editing
+                      ? `${base}/${editing.id}`
+                      : base,
+                {
+                    method: editing ? 'PATCH' : 'POST',
+                    body: JSON.stringify(form),
+                },
+            );
             setModal(null);
             setSuccess(
-                `${modal === 'item' ? 'Item' : modal === 'category' ? 'Category' : 'Unit'} ${editing ? 'updated' : 'created'} successfully.`,
+                modal === 'price'
+                    ? `Price of ${editing.name} was updated.`
+                    : `${modal === 'item' ? 'Item' : modal === 'category' ? 'Category' : 'Unit'} ${editing ? 'updated' : 'created'} successfully.`,
             );
             await load(true);
         } catch (reason: any) {
@@ -172,7 +189,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                 <div className="panel products-loading">
                     <RefreshCw className="spin" />
                     <h2>Loading products and materials</h2>
-                    <p>Connecting to the factory database...</p>
+                    <p>Please wait a moment...</p>
                 </div>
             </section>
         );
@@ -194,26 +211,27 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                     </div>
                     <h1>Products and materials</h1>
                     <p>
-                        Create and control each product, material, category and measurement unit
-                        used by this factory.
+                        {canRecord
+                            ? 'Add and manage the products, materials, categories and units used in this factory.'
+                            : 'See every product and material in this factory. You can change the price of an item.'}
                     </p>
                     <small>{updated ? 'Updated ' + updated.toLocaleTimeString() : ''}</small>
                 </div>
                 <div className="products-heading-actions">
-                    <button className="secondary-btn" onClick={() => open('item')}>
-                        <Plus />
-                        Add item
-                    </button>
-                    <button className="secondary-btn" onClick={() => open('category')}>
-                        <Plus />
-                        Add category
-                    </button>
-                    <button className="primary-btn" onClick={() => open('unit')}>
-                        <Plus />
-                        Add unit
-                    </button>
+                    {canRecord && (
+                        <>
+                            <button className="secondary-btn" onClick={() => open('item')}>
+                                Add item
+                            </button>
+                            <button className="secondary-btn" onClick={() => open('category')}>
+                                Add category
+                            </button>
+                            <button className="primary-btn" onClick={() => open('unit')}>
+                                Add unit
+                            </button>
+                        </>
+                    )}
                     <button className="secondary-btn" disabled={loading} onClick={() => load()}>
-                        <RefreshCw className={loading ? 'spin' : ''} />
                         Refresh
                     </button>
                 </div>
@@ -259,13 +277,14 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                                 rows={data.items}
                                 money={money}
                                 quantity={quantity}
-                                edit={(row: any) => open('item', row)}
+                                edit={canRecord ? (row: any) => open('item', row) : null}
+                                price={canPrice ? (row: any) => open('price', row) : null}
                             />
                         ) : tab === 'categories' ? (
                             <Categories
                                 rows={data.categories}
-                                edit={(row: any) => open('category', row)}
-                                remove={setDeleteTarget}
+                                edit={canRecord ? (row: any) => open('category', row) : null}
+                                remove={canRecord ? setDeleteTarget : null}
                             />
                         ) : tab === 'boms' ? (
                             <Boms rows={data.boms} units={units} quantity={quantity} />
@@ -273,7 +292,7 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                             <Units
                                 rows={data.units}
                                 conversions={data.conversions}
-                                edit={(row: any) => open('unit', row)}
+                                edit={canRecord ? (row: any) => open('unit', row) : null}
                             />
                         )}
                     </article>
@@ -289,14 +308,18 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                         <header>
                             <div>
                                 <h2>
-                                    {editing ? 'Edit' : 'Add'} {modal}
+                                    {modal === 'price'
+                                        ? 'Change price'
+                                        : `${editing ? 'Edit' : 'Add'} ${modal}`}
                                 </h2>
                                 <p>
-                                    {modal === 'item'
-                                        ? 'Item codes are generated automatically and cannot be duplicated.'
-                                        : modal === 'category'
-                                          ? 'Group similar factory items once.'
-                                          : 'Define a measurement used by this factory.'}
+                                    {modal === 'price'
+                                        ? editing?.name
+                                        : modal === 'item'
+                                          ? 'The item code is made for you and cannot be repeated.'
+                                          : modal === 'category'
+                                            ? 'Put similar items in one group.'
+                                            : 'A unit is how an item is counted or measured.'}
                                 </p>
                             </div>
                             <button type="button" onClick={() => setModal(null)}>
@@ -304,7 +327,23 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                             </button>
                         </header>
                         <form className="warehouse-form" onSubmit={save}>
-                            {modal === 'item' ? (
+                            {modal === 'price' ? (
+                                <div className="warehouse-form-grid">
+                                    <Field label={`New price per ${editing?.unit?.symbol || 'unit'}`}>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="any"
+                                            autoFocus
+                                            required
+                                            value={form.standard_cost}
+                                            onChange={(e) =>
+                                                setForm({ ...form, standard_cost: e.target.value })
+                                            }
+                                        />
+                                    </Field>
+                                </div>
+                            ) : modal === 'item' ? (
                                 <ItemForm form={form} setForm={setForm} data={data} />
                             ) : modal === 'category' ? (
                                 <CategoryForm form={form} setForm={setForm} />
@@ -320,12 +359,13 @@ export default function ProductCatalogPage({ user, locale }: { user: any; locale
                                     Cancel
                                 </button>
                                 <button className="primary-btn" disabled={busy}>
-                                    <Plus />
                                     {busy
                                         ? 'Saving...'
-                                        : editing
-                                          ? 'Save changes'
-                                          : `Create ${modal}`}
+                                        : modal === 'price'
+                                          ? 'Save price'
+                                          : editing
+                                            ? 'Save changes'
+                                            : `Add ${modal}`}
                                 </button>
                             </footer>
                         </form>
@@ -612,7 +652,8 @@ function Empty({ columns, text }: any) {
         </tr>
     );
 }
-function Items({ rows, money, quantity, edit }: any) {
+function Items({ rows, money, quantity, edit, price }: any) {
+    const hasActions = Boolean(edit || price);
     return (
         <>
             <PanelHeader title="Products and materials" count={rows.length} />
@@ -625,11 +666,11 @@ function Items({ rows, money, quantity, edit }: any) {
                             <th>Type</th>
                             <th>Category</th>
                             <th>Unit</th>
-                            <th>On hand</th>
-                            <th>Unit cost</th>
+                            <th>In stock</th>
+                            <th>Price per unit</th>
                             <th>Stock value</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            {hasActions && <th>Action</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -659,18 +700,32 @@ function Items({ rows, money, quantity, edit }: any) {
                                             {item.is_active ? 'Active' : 'Inactive'}
                                         </span>
                                     </td>
-                                    <td>
-                                        <button className="table-action" onClick={() => edit(item)}>
-                                            <Pencil size={12} />
-                                            Edit
-                                        </button>
-                                    </td>
+                                    {hasActions && (
+                                        <td>
+                                            {edit && (
+                                                <button
+                                                    className="table-action"
+                                                    onClick={() => edit(item)}
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
+                                            {!edit && price && (
+                                                <button
+                                                    className="table-action"
+                                                    onClick={() => price(item)}
+                                                >
+                                                    Change price
+                                                </button>
+                                            )}
+                                        </td>
+                                    )}
                                 </tr>
                             ))
                         ) : (
                             <Empty
-                                columns={10}
-                                text="No products or materials have been recorded yet."
+                                columns={hasActions ? 10 : 9}
+                                text="No products or materials have been added yet."
                             />
                         )}
                     </tbody>
@@ -680,6 +735,7 @@ function Items({ rows, money, quantity, edit }: any) {
     );
 }
 function Categories({ rows, edit, remove }: any) {
+    const hasActions = Boolean(edit || remove);
     return (
         <>
             <PanelHeader title="Item categories" count={rows.length} />
@@ -690,7 +746,7 @@ function Categories({ rows, edit, remove }: any) {
                             <th>Code</th>
                             <th>Category</th>
                             <th>Items</th>
-                            <th>Actions</th>
+                            {hasActions && <th>Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -702,28 +758,35 @@ function Categories({ rows, edit, remove }: any) {
                                     </td>
                                     <td>{item.name}</td>
                                     <td>{item.items_count}</td>
-                                    <td>
-                                        <div className="products-row-actions">
-                                            <button
-                                                className="table-action action-edit-btn"
-                                                onClick={() => edit(item)}
-                                            >
-                                                <Pencil size={13} />
-                                                Edit
-                                            </button>
-                                            <button
-                                                className="table-action danger action-delete-btn"
-                                                onClick={() => remove(item)}
-                                            >
-                                                <Trash size={13} />
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </td>
+                                    {hasActions && (
+                                        <td>
+                                            <div className="products-row-actions">
+                                                {edit && (
+                                                    <button
+                                                        className="table-action action-edit-btn"
+                                                        onClick={() => edit(item)}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                )}
+                                                {remove && (
+                                                    <button
+                                                        className="table-action danger action-delete-btn"
+                                                        onClick={() => remove(item)}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             ))
                         ) : (
-                            <Empty columns={4} text="No item categories have been created yet." />
+                            <Empty
+                                columns={hasActions ? 4 : 3}
+                                text="No item categories have been added yet."
+                            />
                         )}
                     </tbody>
                 </table>
@@ -816,6 +879,7 @@ function Boms({ rows, units, quantity }: any) {
     );
 }
 function Units({ rows, conversions, edit }: any) {
+    const hasActions = Boolean(edit);
     return (
         <>
             <PanelHeader title="Units and conversions" count={rows.length} />
@@ -826,11 +890,11 @@ function Units({ rows, conversions, edit }: any) {
                         <thead>
                             <tr>
                                 <th>Unit</th>
-                                <th>Symbol</th>
+                                <th>Short name</th>
                                 <th>Measurement</th>
-                                <th>Precision</th>
+                                <th>Decimal places</th>
                                 <th>Status</th>
-                                <th>Action</th>
+                                {hasActions && <th>Action</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -844,19 +908,20 @@ function Units({ rows, conversions, edit }: any) {
                                         <td>{unit.dimension}</td>
                                         <td>{unit.precision}</td>
                                         <td>{unit.is_active ? 'Active' : 'Inactive'}</td>
-                                        <td>
-                                            <button
-                                                className="table-action"
-                                                onClick={() => edit(unit)}
-                                            >
-                                                <Pencil size={12} />
-                                                Edit
-                                            </button>
-                                        </td>
+                                        {hasActions && (
+                                            <td>
+                                                <button
+                                                    className="table-action"
+                                                    onClick={() => edit(unit)}
+                                                >
+                                                    Edit
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             ) : (
-                                <Empty columns={6} text="No units are available." />
+                                <Empty columns={hasActions ? 6 : 5} text="No units have been added yet." />
                             )}
                         </tbody>
                     </table>

@@ -1,6 +1,6 @@
 import {
     BadgeCheck,
-    ChartColumn,
+    FileBarChart,
     Factory,
     LayoutDashboard,
     ShoppingCart,
@@ -22,7 +22,7 @@ export const internalAuditorRole: RoleModule = {
             ['quality', BadgeCheck, text('Quality', 'Qualité'), 'quality.view'],
             ['procurement', ShoppingCart, text('Purchases', 'Achats'), 'procurement.view'],
             ...productionFlowNav(context),
-            ['reports', ChartColumn, text('Reports', 'Rapports'), 'reports.view'],
+            ['reports', FileBarChart, text('Reports', 'Rapports'), 'reports.view'],
         ];
     },
 };

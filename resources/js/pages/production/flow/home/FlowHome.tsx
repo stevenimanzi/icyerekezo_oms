@@ -593,11 +593,11 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
                 </article>
             </div>
 
-            {/* Department Operational Overview Register Table (Same identity and classes as Cutting table) */}
+            {/* Department Summary Register Table (Same identity and classes as Cutting table) */}
             {own && stage && (
                 <article className="panel" style={{ marginTop: 24 }}>
                     <div className="panel-title">
-                        <h2>{stageLabel(stage, locale)} &mdash; {locale === 'fr' ? 'Bilan opérationnel' : 'Operational Overview'}</h2>
+                        <h2>{stageLabel(stage, locale)} &mdash; {locale === 'fr' ? 'Bilan opérationnel' : 'Summary'}</h2>
                         <span className="ui-chip ok" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
                             {rangeLabel}
                         </span>
@@ -650,7 +650,7 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
             {mode === 'manager' && monitor.data && (
                 <article className="panel" style={{ marginTop: 24 }}>
                     <div className="panel-title">
-                        <h2>{locale === 'fr' ? 'Bilan opérationnel des départements' : 'Department Operational Overview'}</h2>
+                        <h2>{locale === 'fr' ? 'Bilan opérationnel des départements' : 'Department Summary'}</h2>
                         <span className="ui-chip ok" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
                             {rangeLabel}
                         </span>

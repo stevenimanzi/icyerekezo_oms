@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PageExportButtons } from '../../../../components/ExportButtons';
 import { Download, FileText, Printer, RefreshCw, Calendar } from 'lucide-react';
 import type { AuthUser, Locale } from '../../../../core/types';
 import { api } from '../../../../core/api';
@@ -228,14 +229,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
                         <RefreshCw size={15} className={loading ? 'spin' : ''} />
                         {locale === 'en' ? 'Refresh' : 'Actualiser'}
                     </button>
-                    <button
-                        className="secondary-btn"
-                        onClick={() => window.print()}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, cursor: 'pointer', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
-                    >
-                        <Printer size={15} />
-                        {locale === 'en' ? 'Print' : 'Imprimer'}
-                    </button>
+                    <PageExportButtons title="Finishing report" pdf={false} />
                     <a
                         className="primary-btn"
                         href={`/api/flow/factory-report.pdf?department=finishing&period=custom&from=${fromDate}&to=${toDate}`}
@@ -353,7 +347,7 @@ export default function FinishingReportPage({ user, locale }: Props) {
                 <article className="ui-kpi">
                     <small>Flaws / Stains</small>
                     <strong style={{ color: totalDamaged > 0 ? '#b91c1c' : undefined }}>{num(totalDamaged)} pcs</strong>
-                    <p>Defective / damaged</p>
+                    <p>Defective</p>
                 </article>
 
                 <article className="ui-kpi">
@@ -413,12 +407,12 @@ export default function FinishingReportPage({ user, locale }: Props) {
                             </tr>
                             <tr style={{ background: '#ffffff' }}>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>GARMENT DESCRIPTION</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PCS RECV</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PIECES RECEIVED</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '17%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PRODUCT STYLE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>COLOR</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>SIZE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>FINISHED GOOD</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>STAINS/FLAWS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>DEFECTIVE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '11%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PASSED</th>
                             </tr>
                         </thead>

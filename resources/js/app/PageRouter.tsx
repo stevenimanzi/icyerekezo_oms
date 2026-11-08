@@ -54,6 +54,9 @@ const PackingReportPage = lazy(
 const FlowMonitorPage = lazy(() => import('../pages/production/flow/monitor/FlowMonitorPage'));
 const FactorySettingsPage = lazy(() => import('../pages/factory/FactorySettingsPage'));
 const FinanceOverviewPage = lazy(() => import('../pages/finance/FinanceOverviewPage'));
+const FinanceBooksPage = lazy(() => import('../pages/finance/FinanceBooksPage'));
+const ClientsPage = lazy(() => import('../pages/finance/ClientsPage'));
+const SoldGoodsPage = lazy(() => import('../pages/finance/SoldGoodsPage'));
 const FinancialReportsPage = lazy(() => import('../pages/finance/FinancialReportsPage'));
 const FinishingWorkspacePage = lazy(
     () => import('../pages/production/textile/finishing/FinishingWorkspacePage'),
@@ -89,6 +92,7 @@ const ProductionOperations = lazy(() => import('../pages/production/ProductionOp
 const ProfileSettingsPage = lazy(() => import('../pages/shared/ProfileSettingsPage'));
 const QualityControlPage = lazy(() => import('../pages/quality/QualityControlPage'));
 const ReportsPage = lazy(() => import('../pages/shared/ClearReportsPage'));
+const DepartmentReportPage = lazy(() => import('../pages/reports/DepartmentReportPage'));
 const SafetyOverviewPage = lazy(() => import('../pages/safety/SafetyOverviewPage'));
 const SalesOverviewPage = lazy(() => import('../pages/sales/SalesOverviewPage'));
 const ManualSalesPage = lazy(() => import('../pages/sales/manual/ManualSalesPage'));
@@ -333,6 +337,14 @@ function CurrentPage({
             );
         case 'finance':
             return <FinanceOverviewPage />;
+        case 'cashbook':
+            return <FinanceBooksPage view="cashbook" onNavigate={onNavigate} />;
+        case 'expenses':
+            return <FinanceBooksPage view="expenses" onNavigate={onNavigate} />;
+        case 'clients':
+            return <ClientsPage onNavigate={onNavigate} />;
+        case 'sold-goods':
+            return <SoldGoodsPage onNavigate={onNavigate} />;
         case 'finance-reports':
             return <FinancialReportsPage />;
         case 'hr':
@@ -361,6 +373,13 @@ function CurrentPage({
             if (flags.isWarehouseUser || user.workspace === 'warehouse') {
                 return <WarehouseReportPage user={user} locale={locale} />;
             }
+            // Each department sees its own report, never another department's.
+            if (!flags.isExecutiveUser && activePage === 'reports') {
+                if (user.workspace === 'finance') return <FinancialReportsPage />;
+                if (DEPARTMENT_REPORT_WORKSPACES.includes(user.workspace)) {
+                    return <DepartmentReportPage />;
+                }
+            }
             return (
                 <ReportsPage
                     key={activePage}
@@ -383,6 +402,8 @@ function CurrentPage({
 
     return <PageNotFound locale={locale} onNavigate={onNavigate} />;
 }
+
+const DEPARTMENT_REPORT_WORKSPACES = ['sales', 'procurement', 'quality', 'people', 'maintenance', 'safety', 'audit'];
 
 function PageNotFound({
     locale,

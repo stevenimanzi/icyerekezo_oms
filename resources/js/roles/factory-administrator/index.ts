@@ -1,6 +1,6 @@
 import {
     BadgeCheck,
-    ChartColumn,
+    FileBarChart,
     Cog,
     Factory,
     LayoutDashboard,
@@ -33,12 +33,12 @@ export const factoryAdministratorRole: RoleModule = {
             ['machines', Cog, labels.machines, 'maintenance.view'],
             [
                 'logistics-reports',
-                ChartColumn,
+                FileBarChart,
                 text('Delivery report', 'Rapport de livraison'),
                 'reports.view',
             ],
             ...productionFlowNav(context),
-            ['reports', ChartColumn, labels.reports, 'reports.view'],
+            ['reports', FileBarChart, labels.reports, 'reports.view'],
         ];
     },
 };

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PageExportButtons } from '../../../components/ExportButtons';
 import { Calendar, Download, FileText, Filter, Package, Printer, RefreshCw, Search, Warehouse } from 'lucide-react';
 import type { AuthUser, Locale } from '../../../core/types';
 import { api } from '../../../core/api';
@@ -431,38 +432,8 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                         <RefreshCw size={15} className={loading ? 'spin' : ''} />
                         {locale === 'en' ? 'Refresh' : 'Actualiser'}
                     </button>
-                    <button
-                        className="secondary-btn"
-                        onClick={() => window.print()}
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            padding: '8px 14px',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <Printer size={15} />
-                        {locale === 'en' ? 'Print' : 'Imprimer'}
-                    </button>
-                    <button
-                        className="primary-btn"
-                        onClick={() => window.print()}
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            padding: '8px 16px',
-                            borderRadius: 8,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            border: 'none',
-                        }}
-                    >
-                        <FileText size={15} />
-                        {locale === 'en' ? 'Export as PDF' : 'Exporter en PDF'}
-                    </button>
+                    <PageExportButtons title="Warehouse report" />
+                    
                 </div>
             </div>
 
@@ -566,8 +537,8 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                                 <option value="low_stock">{locale === 'en' ? 'Running Low (Needs Order)' : 'Stock faible'}</option>
                             </select>
                         </label>
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
+                        <div className="search-box">
+                            <Search size={14} />
                             <input
                                 type="text"
                                 placeholder={locale === 'en' ? 'Search by item name or code...' : 'Rechercher article/code...'}
@@ -953,7 +924,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                 {/* DOCUMENT FOOTER */}
                 <div className="print-footer-block">
                     <span>
-                        {user.current_factory?.name || 'ICYEREKEZO OMS'} &bull; {locale === 'en' ? 'Warehouse & Stock Inventory Ledger' : 'Grand livre de stock'}
+                        {user.current_factory?.name || 'ICYEREKEZO OMS'} &bull; {locale === 'en' ? 'Warehouse and Stock Record' : 'Grand livre de stock'}
                     </span>
                     <span>
                         {locale === 'en' ? 'Generated on' : 'Généré le'} {new Date().toLocaleString()} &bull; Page 1/1
