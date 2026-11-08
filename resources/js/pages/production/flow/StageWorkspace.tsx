@@ -61,22 +61,35 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
                 r.slug === 'production-manager' ||
                 r.slug === 'production-supervisor' ||
                 r.slug === 'factory-manager' ||
-                r.slug === 'factory-administrator',
+                r.slug === 'factory-administrator' ||
+                r.slug === 'factory-owner' ||
+                r.name?.toLowerCase().includes('production manager') ||
+                r.name?.toLowerCase().includes('factory manager') ||
+                r.name?.toLowerCase().includes('administrator') ||
+                r.name?.toLowerCase().includes('supervisor'),
         ) ||
         user.workspace === 'production' ||
-        user.workspace === 'factory';
+        user.workspace === 'factory' ||
+        user.workspace === 'executive' ||
+        Boolean(user.employee_profile?.job_title?.toLowerCase().includes('production manager')) ||
+        Boolean(user.employee_profile?.job_title?.toLowerCase().includes('manager'));
 
     const isQualityManager =
-        user.roles?.some(
+        !isProductionManager &&
+        (user.roles?.some(
             (r) =>
                 r.slug === 'quality-manager' ||
                 r.slug === 'quality-controller' ||
                 r.slug === 'quality-officer' ||
-                r.slug === 'quality-control',
-        ) || user.workspace === 'quality';
+                r.slug === 'quality-control' ||
+                r.name?.toLowerCase().includes('quality'),
+        ) ||
+            user.workspace === 'quality' ||
+            Boolean(user.employee_profile?.job_title?.toLowerCase().includes('quality')) ||
+            user.name?.toLowerCase().includes('quality'));
 
     // Production managers oversee and view progress, but CANNOT record new work
-    const canWork = !isProductionManager && Boolean(data?.capabilities.work);
+    const canWork = !isProductionManager && !isQualityManager && Boolean(data?.capabilities.work);
 
     // Quality inspection strictly only for Quality Control Manager / Quality roles
     const canInspect = isQualityManager && !isProductionManager && Boolean(data?.capabilities.inspect);

@@ -28,12 +28,16 @@ export const ownerRole: RoleModule = {
             ['quality', BadgeCheck, text('Quality', 'Qualité'), 'quality.view'],
             ['sales', TrendingUp, text('Sales & Marketing', 'Ventes et marketing'), 'sales.view'],
             ['logistics', Truck, text('Deliveries', 'Livraisons'), 'logistics.view'],
-            [
-                'logistics-reports',
-                FileBarChart,
-                text('Delivery report', 'Rapport de livraison'),
-                'reports.view',
-            ],
+            ...(context.flags.isNoguchiFactory
+                ? [
+                      [
+                          'logistics-reports',
+                          FileBarChart,
+                          text('Delivery report', 'Rapport de livraison'),
+                          'reports.view',
+                      ] as NavItem,
+                  ]
+                : []),
             ['team', Users, text('Team', 'Équipe'), 'users.view'],
             ...productionFlowNav(context),
             ['reports', FileBarChart, text('Reports', 'Rapports'), 'reports.view'],

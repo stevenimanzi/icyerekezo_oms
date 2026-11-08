@@ -31,12 +31,16 @@ export const factoryAdministratorRole: RoleModule = {
             ['logistics', Truck, labels.logistics, 'logistics.view'],
             ['team', Users, labels.people, 'users.view'],
             ['machines', Cog, labels.machines, 'maintenance.view'],
-            [
-                'logistics-reports',
-                FileBarChart,
-                text('Delivery report', 'Rapport de livraison'),
-                'reports.view',
-            ],
+            ...(context.flags.isNoguchiFactory
+                ? [
+                      [
+                          'logistics-reports',
+                          FileBarChart,
+                          text('Delivery report', 'Rapport de livraison'),
+                          'reports.view',
+                      ] as NavItem,
+                  ]
+                : []),
             ...productionFlowNav(context),
             ['reports', FileBarChart, labels.reports, 'reports.view'],
         ];

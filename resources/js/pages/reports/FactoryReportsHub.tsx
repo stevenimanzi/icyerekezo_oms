@@ -19,6 +19,7 @@ const ClearReportsPage = lazy(() => import('../shared/ClearReportsPage'));
 const FinancialReportsPage = lazy(() => import('../finance/FinancialReportsPage'));
 const WarehouseReportPage = lazy(() => import('../warehouse/stock/WarehouseReportPage'));
 const MachinesPage = lazy(() => import('../production/MachinesPage'));
+const LogisticsOverviewPage = lazy(() => import('../logistics/LogisticsOverviewPage'));
 
 type HubProps = {
     user: any;
@@ -45,7 +46,7 @@ const TABS: ReportTabItem[] = [
     { key: 'people', label: 'People', icon: Users },
     { key: 'maintenance', label: 'Machines', icon: Cog },
     { key: 'safety', label: 'Safety', icon: ShieldAlert },
-    { key: 'deliveries', label: 'Deliveries', icon: Truck },
+    { key: 'logistics', label: 'Logistics', icon: Truck },
 ];
 
 /** The owner, administrator and manager read every department of the active factory from one page. */
@@ -91,8 +92,9 @@ export default function FactoryReportsHub({ user, locale, hasProductionFlow, can
         case 'stock':
             body = <WarehouseReportPage user={user} locale={locale} />;
             break;
+        case 'logistics':
         case 'deliveries':
-            body = <ClearReportsPage key="deliveries" canExport={canExport} forcedScope="logistics" />;
+            body = <LogisticsOverviewPage can={can} />;
             break;
         default:
             body = hasProductionFlow ? (
