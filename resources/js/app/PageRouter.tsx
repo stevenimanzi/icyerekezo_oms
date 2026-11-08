@@ -104,6 +104,7 @@ const MaterialRequestsPage = lazy(
     () => import('../pages/production/flow/materials/MaterialRequestsPage'),
 );
 const FactoryReportPage = lazy(() => import('../pages/reports/FactoryReportPage'));
+const FactoryReportsHub = lazy(() => import('../pages/reports/FactoryReportsHub'));
 const StageWorkspace = lazy(() => import('../pages/production/flow/StageWorkspace'));
 const SystemAdminPage = lazyWithRetry(() => import('../roles/system-admin/SystemAdminPage'));
 const TeamManagementPage = lazy(() =>
@@ -239,6 +240,20 @@ function CurrentPage({
         ((flags.isWarehouseUser || user.workspace === 'warehouse') && activePage === 'reports')
     ) {
         return <WarehouseReportPage user={user} locale={locale} />;
+    }
+
+    // The owner, administrator and manager read every department of the active factory from one page.
+    if (activePage === 'reports' && flags.isExecutiveUser && !user.is_platform_admin) {
+        return (
+            <FactoryReportsHub
+                user={user}
+                locale={locale}
+                hasProductionFlow={flags.hasProductionFlow}
+                canExport={can('reports.export')}
+                can={can}
+                onNavigate={onNavigate}
+            />
+        );
     }
 
     if (flags.hasProductionFlow) {
