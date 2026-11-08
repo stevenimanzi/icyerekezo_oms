@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, Download, FileText, Printer, RefreshCw } from 'lucide-react';
+import { Calendar, Download, FileText, Printer, RefreshCw, Warehouse } from 'lucide-react';
 import type { AuthUser, Locale } from '../../core/types';
 import { api } from '../../core/api';
+import WarehouseReportPage from '../warehouse/stock/WarehouseReportPage';
 
 type Props = {
     user: AuthUser;
@@ -21,6 +22,7 @@ const DEPARTMENTS: { key: DeptKey; label: { en: string; fr: string }; unit: stri
 
 export default function FactoryReportPage({ user, locale }: Props) {
     const today = iso(new Date());
+    const [reportScope, setReportScope] = useState<'operations' | 'warehouse'>('operations');
     const [period, setPeriod] = useState<'today' | 'yesterday' | 'week' | 'month' | 'custom'>('week');
     const [fromDate, setFromDate] = useState(() => {
         const d = new Date();
@@ -336,6 +338,53 @@ export default function FactoryReportPage({ user, locale }: Props) {
                 }
             `}</style>
 
+            {/* REPORT TYPE SWITCHER: Operations vs Warehouse Stock */}
+            <div className="no-print" style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    {locale === 'en' ? 'Report Mode:' : 'Type de rapport :'}
+                </span>
+                <button
+                    type="button"
+                    className={reportScope === 'operations' ? 'primary-btn' : 'secondary-btn'}
+                    onClick={() => setReportScope('operations')}
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '7px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                    }}
+                >
+                    <FileText size={15} />
+                    {locale === 'en' ? 'Factory Operations & Quality Report' : 'Rapport Opérations & Qualité'}
+                </button>
+                <button
+                    type="button"
+                    className={reportScope === 'warehouse' ? 'primary-btn' : 'secondary-btn'}
+                    onClick={() => setReportScope('warehouse')}
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '7px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                    }}
+                >
+                    <Warehouse size={15} />
+                    {locale === 'en' ? 'Warehouse Stock Report' : 'Rapport de Stock Entrepôt'}
+                </button>
+            </div>
+
+            {reportScope === 'warehouse' ? (
+                <div style={{ marginTop: 8 }}>
+                    <WarehouseReportPage user={user} locale={locale} />
+                </div>
+            ) : (
+                <>
             {/* TOP HEADER: Clean Title & Action Buttons (Print & Export PDF, NO RECORD BUTTONS) */}
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                 <div>
@@ -459,17 +508,26 @@ export default function FactoryReportPage({ user, locale }: Props) {
                             />
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600 }}>
-                            <span>{locale === 'en' ? 'Department:' : 'Département :'}</span>
+                            <span>{locale === 'en' ? 'Department / Report:' : 'Département / Rapport :'}</span>
                             <select
-                                value={selectedDept}
-                                onChange={(e) => setSelectedDept(e.target.value as any)}
+                                value={reportScope === 'warehouse' ? 'warehouse' : selectedDept}
+                                onChange={(e) => {
+                                    if (e.target.value === 'warehouse') {
+                                        setReportScope('warehouse');
+                                        setSelectedDept('');
+                                    } else {
+                                        setReportScope('operations');
+                                        setSelectedDept(e.target.value as any);
+                                    }
+                                }}
                                 style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.8rem', fontWeight: 600 }}
                             >
-                                <option value="">{locale === 'en' ? 'All Departments' : 'Tous les Départements'}</option>
+                                <option value="">{locale === 'en' ? 'All Operations Departments' : 'Tous les Départements de Production'}</option>
                                 <option value="cutting">{locale === 'en' ? 'Cutting' : 'Coupe'}</option>
                                 <option value="sewing">{locale === 'en' ? 'Sewing' : 'Couture'}</option>
                                 <option value="finishing">{locale === 'en' ? 'Finishing' : 'Finition'}</option>
                                 <option value="packing">{locale === 'en' ? 'Packing' : 'Emballage'}</option>
+                                <option value="warehouse">{locale === 'en' ? '📦 Warehouse Stock Report' : '📦 Stock & Magasin'}</option>
                             </select>
                         </label>
                     </div>
@@ -552,31 +610,31 @@ export default function FactoryReportPage({ user, locale }: Props) {
                     <table className="report-print-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1pt solid #000000', fontSize: '0.74rem', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#ffffff', tableLayout: 'fixed' }}>
                         <thead>
                             <tr style={{ background: '#ffffff' }}>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', width: '3%', background: '#ffffff', color: '#000000', fontWeight: 800 }}>#</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800 }}>DATE</th>
-                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800 }}>DEPARTMENT</th>
-                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', width: '3%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.67rem', letterSpacing: '0.02em' }}>#</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.67rem', letterSpacing: '0.02em' }}>DATE</th>
+                                <th rowSpan={2} style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.67rem', letterSpacing: '0.02em' }}>DEPARTMENT</th>
+                                <th colSpan={2} style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.68rem', letterSpacing: '0.02em' }}>
                                     1. RECEIVED &amp; USED
                                 </th>
-                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
+                                <th colSpan={4} style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.68rem', letterSpacing: '0.02em' }}>
                                     2. OUTPUT PRODUCED
                                 </th>
-                                <th style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', width: '8%', color: '#000000', fontWeight: 800 }}>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', background: '#ffffff', width: '7%', color: '#000000', fontWeight: 900, fontSize: '0.67rem', letterSpacing: '0.02em' }}>
                                     3. DAMAGED
                                 </th>
-                                <th style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', background: '#ffffff', width: '8%', color: '#000000', fontWeight: 800 }}>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', background: '#ffffff', width: '8%', color: '#000000', fontWeight: 900, fontSize: '0.67rem', letterSpacing: '0.02em' }}>
                                     4. QUALITY
                                 </th>
                             </tr>
                             <tr style={{ background: '#ffffff' }}>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>MATERIAL / ITEM</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '10%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>QTY USED</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '17%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>GARMENT STYLE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>COLOR</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '5%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>GOOD PCS</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SCRAP/DEF</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>PASSED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>MATERIAL / ITEM</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>QTY USED</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>GARMENT STYLE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>COLOR</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', width: '5%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>SIZE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>GOOD PCS</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>SCRAP/DEF</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>PASSED</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -592,8 +650,8 @@ export default function FactoryReportPage({ user, locale }: Props) {
                                                 runningIndex += 1;
                                                 return (
                                                     <tr key={row.id || rIdx} style={{ background: '#ffffff' }}>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{runningIndex}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center' }}>{runningIndex}</td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center', whiteSpace: 'nowrap' }}>{row.date}</td>
                                                         {rIdx === 0 && (
                                                             <td
                                                                 rowSpan={rows.length}
@@ -601,40 +659,50 @@ export default function FactoryReportPage({ user, locale }: Props) {
                                                                     border: '1pt solid #000000',
                                                                     padding: '6px 4px',
                                                                     textAlign: 'center',
-                                                                    fontWeight: 800,
+                                                                    fontWeight: 900,
                                                                     background: '#ffffff',
                                                                     verticalAlign: 'middle',
                                                                     letterSpacing: '0.04em',
                                                                     color: '#000000',
+                                                                    whiteSpace: 'normal',
+                                                                    wordBreak: 'break-word',
                                                                 }}
                                                             >
                                                                 {deptName}
                                                             </td>
                                                         )}
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.materialItem}>{row.materialItem}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'left', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: 1.25 }}>
+                                                            {row.materialItem}
+                                                        </td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', fontWeight: 600, whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}>
                                                             {num(row.qtyUsed)} {deptBlock.unit}
                                                         </td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.style}>{row.style}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.color}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{row.size}</td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'left', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: 1.25 }}>
+                                                            {row.style}
+                                                        </td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 2px', textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}>
+                                                            {row.color}
+                                                        </td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 2px', textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}>
+                                                            {row.size}
+                                                        </td>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', fontWeight: 800, whiteSpace: 'nowrap' }}>
                                                             {num(row.good)}
                                                         </td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', color: row.damaged > 0 ? '#b91c1c' : '#000000', whiteSpace: 'nowrap' }}>
                                                             {num(row.damaged)}
                                                         </td>
-                                                        <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', fontWeight: 700, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                        <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
                                                             {num(row.qcPassed)}
                                                         </td>
                                                     </tr>
                                                 );
                                             })
                                         ) : (
-                                            <tr style={{ background: '#ffffff' }}>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>—</td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 3px', textAlign: 'center' }}>{fromDate}</td>
-                                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', fontWeight: 800, background: '#ffffff', color: '#000000' }}>
+                                             <tr style={{ background: '#ffffff' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center' }}>—</td>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 3px', textAlign: 'center' }}>{fromDate}</td>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'center', fontWeight: 900, background: '#ffffff', color: '#000000' }}>
                                                     {deptName}
                                                 </td>
                                                 <td colSpan={8} style={{ border: '1pt solid #000000', padding: 12, textAlign: 'center', fontStyle: 'italic', color: '#666666', background: '#ffffff' }}>
@@ -646,20 +714,20 @@ export default function FactoryReportPage({ user, locale }: Props) {
                                         {/* DEPARTMENT SUBTOTAL / DIVIDER LINE */}
                                         {rows.length > 0 && (
                                             <tr style={{ background: '#ffffff', fontWeight: 800, borderTop: '1pt solid #000000', borderBottom: '1.5pt solid #000000' }}>
-                                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', color: '#000000', fontWeight: 800 }}>
+                                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', color: '#000000', fontWeight: 900 }}>
                                                     SUBTOTAL {deptName}:
                                                 </td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', whiteSpace: 'normal', wordBreak: 'break-word' }}>
                                                     {num(deptBlock.totalUsed)} {deptBlock.unit}
                                                 </td>
-                                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '5px 4px', background: '#ffffff' }}></td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 5px', background: '#ffffff' }}></td>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', fontWeight: 900, whiteSpace: 'nowrap' }}>
                                                     {num(deptBlock.totalGood)} pcs
                                                 </td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', color: deptBlock.totalDamaged > 0 ? '#b91c1c' : '#000000', background: '#ffffff', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', color: deptBlock.totalDamaged > 0 ? '#b91c1c' : '#000000', background: '#ffffff', whiteSpace: 'nowrap' }}>
                                                     {num(deptBlock.totalDamaged)}
                                                 </td>
-                                                <td style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', background: '#ffffff', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', fontWeight: 900, whiteSpace: 'nowrap' }}>
                                                     {num(deptBlock.totalQc)}
                                                 </td>
                                             </tr>
@@ -670,20 +738,20 @@ export default function FactoryReportPage({ user, locale }: Props) {
                         </tbody>
                         <tfoot>
                             <tr style={{ background: '#ffffff', fontWeight: 900, borderTop: '2pt solid #000000' }}>
-                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.76rem', color: '#000000', fontWeight: 900 }}>
+                                <td colSpan={4} style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', fontSize: '0.76rem', color: '#000000', fontWeight: 900 }}>
                                     TOTAL FACTORY OPERATIONS:
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.70rem', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', fontSize: '0.70rem', whiteSpace: 'normal', wordBreak: 'break-word' }}>
                                     {grandInputMeters > 0 ? `${num(grandInputMeters)} m` : ''}{grandInputMeters > 0 && grandInputPieces > 0 ? ' + ' : ''}{grandInputPieces > 0 ? `${num(grandInputPieces)} pcs` : ''}
                                 </td>
-                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 4px', background: '#ffffff' }}></td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.74rem', fontWeight: 900, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                <td colSpan={3} style={{ border: '1pt solid #000000', padding: '6px 5px', background: '#ffffff' }}></td>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', fontSize: '0.74rem', fontWeight: 900, whiteSpace: 'nowrap' }}>
                                     {num(grandOutput)} pcs
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', color: grandDamaged > 0 ? '#b91c1c' : '#000000', fontSize: '0.74rem', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', color: grandDamaged > 0 ? '#b91c1c' : '#000000', fontSize: '0.74rem', whiteSpace: 'nowrap' }}>
                                     {num(grandDamaged)}
                                 </td>
-                                <td style={{ border: '1pt solid #000000', padding: '6px 4px', textAlign: 'right', background: '#ffffff', fontSize: '0.74rem', fontWeight: 900, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                <td style={{ border: '1pt solid #000000', padding: '6px 5px', textAlign: 'right', background: '#ffffff', fontSize: '0.74rem', fontWeight: 900, whiteSpace: 'nowrap' }}>
                                     {num(grandQcPassed)}
                                 </td>
                             </tr>
@@ -741,6 +809,8 @@ export default function FactoryReportPage({ user, locale }: Props) {
                     <span>Page 1 of 1 · Confidential</span>
                 </footer>
             </article>
+            </>
+            )}
         </section>
     );
 }
