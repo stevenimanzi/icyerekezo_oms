@@ -7,7 +7,7 @@
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 10px 12px;
+    padding: 8px 10px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -57,8 +57,55 @@
     color: #64748b;
 }
 
-.frh-note {
-    margin: 0;
-    color: var(--muted, #475569);
-    font-size: 13px;
+/* Enhanced styling for Financial Reports & Department Reports */
+.dept-report-table {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.dept-report-table .admin-table-wrap {
+    overflow-x: auto;
+}
+
+.dept-report-table .admin-table thead th {
+    font-weight: 800;
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #334155;
+    background: #f8fafc;
+    border-bottom: 2px solid #cbd5e1;
+    padding: 8px 10px;
+}
+
+.dept-report-table .admin-table tbody td {
+    padding: 9px 10px;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.dept-report-table .admin-table.wrap-cells td:not(.num):not(.nowrap) {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.dept-report-table .admin-table td.num,
+.dept-report-table .admin-table th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.dept-report-table .admin-table tr.total-row td {
+    font-weight: 800;
+    background: #f8fafc;
+    border-top: 2px solid #0f172a;
+    border-bottom: 2px solid #0f172a;
+    color: #0f172a;
+    padding: 10px;
 }
