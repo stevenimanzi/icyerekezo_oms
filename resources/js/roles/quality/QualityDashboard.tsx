@@ -151,7 +151,7 @@ export default function QualityDashboard({ user, locale = 'en', onNavigate }: Pr
                             <p>{isFr ? 'Taux de conformité et de défauts pour chaque étape.' : 'Pass rates and defect rates across production departments.'}</p>
                         </div>
                     </header>
-                    <div style={{ display: 'flex', gap: '16px', padding: '8px 14px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                    <div style={{ display: 'flex', gap: '16px', padding: '8px 14px', background: 'var(--soft)', borderRadius: '6px', border: '1px solid var(--line)', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#059669', display: 'inline-block' }} />
                             <span><b>{isFr ? 'Vert' : 'Green bar'}:</b> {isFr ? 'Taux de conformité (pièces validées)' : 'Pass rate (units approved for production/dispatch)'}</span>
@@ -185,7 +185,7 @@ export default function QualityDashboard({ user, locale = 'en', onNavigate }: Pr
                                 <Tooltip
                                     contentStyle={{
                                         background: 'var(--panel, #ffffff)',
-                                        border: '1px solid var(--line, #e2e8f0)',
+                                        border: '1px solid var(--line, var(--line))',
                                         borderRadius: 8,
                                         fontSize: '12px',
                                     }}
@@ -219,7 +219,7 @@ export default function QualityDashboard({ user, locale = 'en', onNavigate }: Pr
                             <p>{isFr ? 'Volume quotidien de pièces inspectées et défectueuses.' : 'Daily volume of pieces passed vs rejected across the plant.'}</p>
                         </div>
                     </header>
-                    <div style={{ display: 'flex', gap: '16px', padding: '8px 14px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                    <div style={{ display: 'flex', gap: '16px', padding: '8px 14px', background: 'var(--soft)', borderRadius: '6px', border: '1px solid var(--line)', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                             <span style={{ width: '14px', height: '3px', background: '#059669', borderRadius: '2px', display: 'inline-block' }} />
                             <span><b>{isFr ? 'Ligne verte' : 'Green line'}:</b> {isFr ? 'Unités inspectées et conformes' : 'Pieces passed and approved'}</span>
@@ -248,7 +248,7 @@ export default function QualityDashboard({ user, locale = 'en', onNavigate }: Pr
                                 <Tooltip
                                     contentStyle={{
                                         background: 'var(--panel, #ffffff)',
-                                        border: '1px solid var(--line, #e2e8f0)',
+                                        border: '1px solid var(--line, var(--line))',
                                         borderRadius: 8,
                                         fontSize: '12px',
                                     }}

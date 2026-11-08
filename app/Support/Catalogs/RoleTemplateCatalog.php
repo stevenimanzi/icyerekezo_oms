@@ -201,6 +201,11 @@ final class RoleTemplateCatalog
                 'reports.view',
             ],
         ],
+        'maintenance-manager' => [
+            'Maintenance Manager',
+            'maintenance',
+            ['maintenance.*', 'inventory.view', 'inventory.issue', 'production.view', 'users.view', 'reports.view', 'reports.export'],
+        ],
         'maintenance-technician' => [
             'Maintenance Technician',
             'maintenance',

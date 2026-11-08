@@ -181,10 +181,10 @@ export default function FinanceOverviewPage({
             {/* Top Heading */}
             <div className="page-heading" style={{ margin: 0 }}>
                 <div>
-                    <h1 style={{ fontSize: '24px', fontWeight: 700, margin: '0 0 6px 0', color: '#0f172a' }}>
+                    <h1 style={{ fontSize: '24px', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text)' }}>
                         Finance & Sales Dashboard
                     </h1>
-                    <p style={{ margin: 0, color: '#64748b', fontSize: '13.5px' }}>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: '13.5px' }}>
                         Unified real-time financial collections, revenue oversight, incoming sales orders, and receipt verification.
                     </p>
                 </div>
@@ -213,50 +213,50 @@ export default function FinanceOverviewPage({
                     gap: '12px',
                 }}
             >
-                <article className="panel" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <small style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, display: 'block' }}>
+                <article className="panel" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--line)' }}>
+                    <small style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, display: 'block' }}>
                         SALES INVOICED
                     </small>
-                    <strong style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', display: 'block', margin: '4px 0 2px 0' }}>
+                    <strong style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text)', display: 'block', margin: '4px 0 2px 0' }}>
                         {money(summary.invoiced_amount, currency)}
                     </strong>
-                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
                         Total billed across orders
                     </span>
                 </article>
 
-                <article className="panel" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <small style={{ fontSize: '12px', color: '#15803d', fontWeight: 600, display: 'block' }}>
+                <article className="panel" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--line)' }}>
+                    <small style={{ fontSize: '12px', color: 'var(--ok)', fontWeight: 600, display: 'block' }}>
                         CASH COLLECTED / PAID
                     </small>
-                    <strong style={{ fontSize: '22px', fontWeight: 800, color: '#15803d', display: 'block', margin: '4px 0 2px 0' }}>
+                    <strong style={{ fontSize: '22px', fontWeight: 800, color: 'var(--ok)', display: 'block', margin: '4px 0 2px 0' }}>
                         {money(summary.paid_amount, currency)}
                     </strong>
-                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
                         Verified customer payments
                     </span>
                 </article>
 
-                <article className="panel" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <small style={{ fontSize: '12px', color: '#b45309', fontWeight: 600, display: 'block' }}>
+                <article className="panel" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--line)' }}>
+                    <small style={{ fontSize: '12px', color: 'var(--warn)', fontWeight: 600, display: 'block' }}>
                         OUTSTANDING RECEIVABLES
                     </small>
-                    <strong style={{ fontSize: '22px', fontWeight: 800, color: '#b45309', display: 'block', margin: '4px 0 2px 0' }}>
+                    <strong style={{ fontSize: '22px', fontWeight: 800, color: 'var(--warn)', display: 'block', margin: '4px 0 2px 0' }}>
                         {money(summary.outstanding_amount, currency)}
                     </strong>
-                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
                         Remaining to be collected
                     </span>
                 </article>
 
-                <article className="panel" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <small style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, display: 'block' }}>
+                <article className="panel" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--line)' }}>
+                    <small style={{ fontSize: '12px', color: 'var(--info)', fontWeight: 600, display: 'block' }}>
                         CUSTOMER ORDERS
                     </small>
-                    <strong style={{ fontSize: '22px', fontWeight: 800, color: '#2563eb', display: 'block', margin: '4px 0 2px 0' }}>
+                    <strong style={{ fontSize: '22px', fontWeight: 800, color: 'var(--info)', display: 'block', margin: '4px 0 2px 0' }}>
                         {summary.orders_count || 0}
                     </strong>
-                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
                         {summary.pending_orders || 0} pending · {summary.delivered_orders || 0} delivered
                     </span>
                 </article>
@@ -266,31 +266,31 @@ export default function FinanceOverviewPage({
                     style={{
                         padding: '16px 20px',
                         borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        background: (summary.pending_receipts || 0) > 0 ? '#fffbeb' : '#ffffff',
+                        border: '1px solid var(--line)',
+                        background: (summary.pending_receipts || 0) > 0 ? 'var(--warn-bg)' : 'var(--panel)',
                     }}
                 >
-                    <small style={{ fontSize: '12px', color: (summary.pending_receipts || 0) > 0 ? '#b45309' : '#64748b', fontWeight: 600, display: 'block' }}>
+                    <small style={{ fontSize: '12px', color: (summary.pending_receipts || 0) > 0 ? 'var(--warn)' : 'var(--muted)', fontWeight: 600, display: 'block' }}>
                         RECEIPTS TO VERIFY
                     </small>
-                    <strong style={{ fontSize: '22px', fontWeight: 800, color: (summary.pending_receipts || 0) > 0 ? '#b45309' : '#0f172a', display: 'block', margin: '4px 0 2px 0' }}>
+                    <strong style={{ fontSize: '22px', fontWeight: 800, color: (summary.pending_receipts || 0) > 0 ? 'var(--warn)' : 'var(--text)', display: 'block', margin: '4px 0 2px 0' }}>
                         {summary.pending_receipts || 0}
                     </strong>
-                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
                         Payment proof waiting approval
                     </span>
                 </article>
             </section>
 
             {/* Row 2: Developed Full-Width Trend Chart */}
-            <article className="panel" style={{ padding: '20px 24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <article className="panel" style={{ padding: '20px 24px', borderRadius: '12px', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
                     <div>
-                        <h2 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 4px 0', color: '#0f172a' }}>
+                        <h2 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text)' }}>
                             {chartMetric === 'approved' ? 'Verified Cash Collections Trend (7 Days)' : 'Incoming Customer Orders Volume (7 Days)'}
                         </h2>
-                        <span style={{ fontSize: '13px', color: '#64748b' }}>
-                            Total for this period: <b style={{ color: '#0f172a' }}>{chartMetric === 'approved' ? money(chartTotal, currency) : `${chartTotal} orders`}</b>
+                        <span style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                            Total for this period: <b style={{ color: 'var(--text)' }}>{chartMetric === 'approved' ? money(chartTotal, currency) : `${chartTotal} orders`}</b>
                         </span>
                     </div>
 
@@ -303,8 +303,8 @@ export default function FinanceOverviewPage({
                                 borderRadius: '6px',
                                 border: '1px solid',
                                 borderColor: chartMetric === 'approved' ? '#2563eb' : '#e2e8f0',
-                                background: chartMetric === 'approved' ? '#eff6ff' : '#ffffff',
-                                color: chartMetric === 'approved' ? '#2563eb' : '#64748b',
+                                background: chartMetric === 'approved' ? 'var(--info-bg)' : 'var(--panel)',
+                                color: chartMetric === 'approved' ? 'var(--info)' : 'var(--muted)',
                                 fontWeight: 600,
                                 fontSize: '12.5px',
                                 cursor: 'pointer',
@@ -320,8 +320,8 @@ export default function FinanceOverviewPage({
                                 borderRadius: '6px',
                                 border: '1px solid',
                                 borderColor: chartMetric === 'orders' ? '#2563eb' : '#e2e8f0',
-                                background: chartMetric === 'orders' ? '#eff6ff' : '#ffffff',
-                                color: chartMetric === 'orders' ? '#2563eb' : '#64748b',
+                                background: chartMetric === 'orders' ? 'var(--info-bg)' : 'var(--panel)',
+                                color: chartMetric === 'orders' ? 'var(--info)' : 'var(--muted)',
                                 fontWeight: 600,
                                 fontSize: '12.5px',
                                 cursor: 'pointer',
@@ -340,11 +340,11 @@ export default function FinanceOverviewPage({
                         gap: '8px',
                         padding: '8px 14px',
                         marginBottom: '16px',
-                        background: '#eff6ff',
+                        background: 'var(--info-bg)',
                         border: '1px solid #bfdbfe',
                         borderRadius: '8px',
                         fontSize: '12px',
-                        color: '#1e40af',
+                        color: 'var(--info)',
                     }}
                 >
                     <span style={{ width: '16px', height: '3px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} />
@@ -375,8 +375,8 @@ export default function FinanceOverviewPage({
                             />
                             <Tooltip
                                 contentStyle={{
-                                    background: '#ffffff',
-                                    border: '1px solid #e2e8f0',
+                                    background: 'var(--panel)',
+                                    border: '1px solid var(--line)',
                                     borderRadius: 8,
                                     fontSize: '12px',
                                 }}
@@ -398,7 +398,7 @@ export default function FinanceOverviewPage({
             </article>
 
             {/* Row 3: Dual Operational Workspaces (Tabbed Navigation) */}
-            <article className="panel" style={{ padding: '20px 24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <article className="panel" style={{ padding: '20px 24px', borderRadius: '12px', border: '1px solid var(--line)' }}>
                 <div
                     style={{
                         display: 'flex',
@@ -406,7 +406,7 @@ export default function FinanceOverviewPage({
                         alignItems: 'center',
                         flexWrap: 'wrap',
                         gap: '12px',
-                        borderBottom: '1px solid #e2e8f0',
+                        borderBottom: '1px solid var(--line)',
                         paddingBottom: '12px',
                         marginBottom: '16px',
                     }}
@@ -420,7 +420,7 @@ export default function FinanceOverviewPage({
                                 borderRadius: '8px',
                                 border: 'none',
                                 background: activeTab === 'orders' ? '#2563eb' : 'transparent',
-                                color: activeTab === 'orders' ? '#ffffff' : '#64748b',
+                                color: activeTab === 'orders' ? '#ffffff' : 'var(--muted)',
                                 fontWeight: 700,
                                 fontSize: '13px',
                                 cursor: 'pointer',
@@ -437,7 +437,7 @@ export default function FinanceOverviewPage({
                                     padding: '2px 7px',
                                     borderRadius: '10px',
                                     background: activeTab === 'orders' ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
-                                    color: activeTab === 'orders' ? '#ffffff' : '#0f172a',
+                                    color: activeTab === 'orders' ? '#ffffff' : 'var(--text)',
                                 }}
                             >
                                 {orders.length}
@@ -452,7 +452,7 @@ export default function FinanceOverviewPage({
                                 borderRadius: '8px',
                                 border: 'none',
                                 background: activeTab === 'receipts' ? '#2563eb' : 'transparent',
-                                color: activeTab === 'receipts' ? '#ffffff' : '#64748b',
+                                color: activeTab === 'receipts' ? '#ffffff' : 'var(--muted)',
                                 fontWeight: 700,
                                 fontSize: '13px',
                                 cursor: 'pointer',
@@ -469,8 +469,8 @@ export default function FinanceOverviewPage({
                                         fontSize: '11px',
                                         padding: '2px 7px',
                                         borderRadius: '10px',
-                                        background: activeTab === 'receipts' ? '#ef4444' : '#fee2e2',
-                                        color: activeTab === 'receipts' ? '#ffffff' : '#dc2626',
+                                        background: activeTab === 'receipts' ? '#ef4444' : 'var(--bad-bg)',
+                                        color: activeTab === 'receipts' ? '#ffffff' : 'var(--bad)',
                                         fontWeight: 800,
                                     }}
                                 >
@@ -487,7 +487,7 @@ export default function FinanceOverviewPage({
                                 borderRadius: '8px',
                                 border: 'none',
                                 background: activeTab === 'history' ? '#2563eb' : 'transparent',
-                                color: activeTab === 'history' ? '#ffffff' : '#64748b',
+                                color: activeTab === 'history' ? '#ffffff' : 'var(--muted)',
                                 fontWeight: 700,
                                 fontSize: '13px',
                                 cursor: 'pointer',
@@ -510,7 +510,7 @@ export default function FinanceOverviewPage({
                                     onChange={(e) => setSearchOrder(e.target.value)}
                                     style={{
                                         padding: '6px 10px 6px 30px',
-                                        border: '1px solid #cbd5e1',
+                                        border: '1px solid var(--line)',
                                         borderRadius: '6px',
                                         fontSize: '12.5px',
                                         width: '210px',
@@ -523,10 +523,10 @@ export default function FinanceOverviewPage({
                                 onChange={(e) => setStatusFilter(e.target.value)}
                                 style={{
                                     padding: '6px 10px',
-                                    border: '1px solid #cbd5e1',
+                                    border: '1px solid var(--line)',
                                     borderRadius: '6px',
                                     fontSize: '12.5px',
-                                    background: '#ffffff',
+                                    background: 'var(--panel)',
                                 }}
                             >
                                 <option value="all">All Order Statuses</option>
@@ -541,10 +541,10 @@ export default function FinanceOverviewPage({
                                 onChange={(e) => setPaymentFilter(e.target.value)}
                                 style={{
                                     padding: '6px 10px',
-                                    border: '1px solid #cbd5e1',
+                                    border: '1px solid var(--line)',
                                     borderRadius: '6px',
                                     fontSize: '12.5px',
-                                    background: '#ffffff',
+                                    background: 'var(--panel)',
                                 }}
                             >
                                 <option value="all">All Payment Statuses</option>
@@ -561,16 +561,16 @@ export default function FinanceOverviewPage({
                     <div className="ui-table-wrap" style={{ overflowX: 'auto' }}>
                         <table className="ui-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
-                                <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>ORDER #</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>CUSTOMER / SCHOOL</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>ORDER STATUS</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>PAYMENT STATUS</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>TOTAL AMOUNT</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>PAID</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>BALANCE DUE</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>DATE</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>ACTIONS</th>
+                                <tr style={{ borderBottom: '2px solid var(--line)', background: 'var(--soft)' }}>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>ORDER #</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>CUSTOMER / SCHOOL</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>ORDER STATUS</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>PAYMENT STATUS</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>TOTAL AMOUNT</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>PAID</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>BALANCE DUE</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>DATE</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -582,10 +582,10 @@ export default function FinanceOverviewPage({
 
                                         return (
                                             <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
+                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 700, color: 'var(--text)' }}>
                                                     {item.document_number}
                                                 </td>
-                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: '#1e293b' }}>
+                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: 'var(--text)' }}>
                                                     {item.school?.name || item.customer_name || 'Direct Customer'}
                                                 </td>
                                                 <td style={{ textAlign: 'left', padding: '12px 14px' }}>
@@ -623,24 +623,24 @@ export default function FinanceOverviewPage({
                                                             fontWeight: 700,
                                                             padding: '3px 8px',
                                                             borderRadius: '6px',
-                                                            background: isPaid ? '#dcfce7' : isPartial ? '#fef3c7' : '#fee2e2',
-                                                            color: isPaid ? '#15803d' : isPartial ? '#b45309' : '#b91c1c',
+                                                            background: isPaid ? 'var(--ok-bg)' : isPartial ? 'var(--warn-bg)' : 'var(--bad-bg)',
+                                                            color: isPaid ? 'var(--ok)' : isPartial ? 'var(--warn)' : 'var(--bad)',
                                                             border: `1px solid ${isPaid ? '#86efac' : isPartial ? '#fde68a' : '#fca5a5'}`,
                                                         }}
                                                     >
                                                         {isPaid ? '✓ PAID' : isPartial ? 'PARTIALLY PAID' : 'UNPAID'}
                                                     </span>
                                                 </td>
-                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
+                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 700, color: 'var(--text)' }}>
                                                     {money(item.total_amount, item.currency_code || currency)}
                                                 </td>
-                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: '#15803d' }}>
+                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: 'var(--ok)' }}>
                                                     {money(item.paid_amount, item.currency_code || currency)}
                                                 </td>
-                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 700, color: balance > 0 ? '#dc2626' : '#15803d' }}>
+                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 700, color: balance > 0 ? 'var(--bad)' : 'var(--ok)' }}>
                                                     {money(balance, item.currency_code || currency)}
                                                 </td>
-                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontSize: '12px', color: '#64748b' }}>
+                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontSize: '12px', color: 'var(--muted)' }}>
                                                     {date(item.document_date)}
                                                 </td>
                                                 <td style={{ textAlign: 'left', padding: '12px 14px' }}>
@@ -656,8 +656,8 @@ export default function FinanceOverviewPage({
                                                                         padding: '4px 8px',
                                                                         borderRadius: '5px',
                                                                         border: '1px solid #86efac',
-                                                                        background: '#dcfce7',
-                                                                        color: '#15803d',
+                                                                        background: 'var(--ok-bg)',
+                                                                        color: 'var(--ok)',
                                                                         fontSize: '11px',
                                                                         fontWeight: 700,
                                                                         cursor: 'pointer',
@@ -678,8 +678,8 @@ export default function FinanceOverviewPage({
                                                                         padding: '4px 8px',
                                                                         borderRadius: '5px',
                                                                         border: '1px solid #fca5a5',
-                                                                        background: '#fee2e2',
-                                                                        color: '#dc2626',
+                                                                        background: 'var(--bad-bg)',
+                                                                        color: 'var(--bad)',
                                                                         fontSize: '11px',
                                                                         fontWeight: 700,
                                                                         cursor: 'pointer',
@@ -702,9 +702,9 @@ export default function FinanceOverviewPage({
                                                                 width: '32px',
                                                                 height: '32px',
                                                                 borderRadius: '6px',
-                                                                border: '1px solid #cbd5e1',
-                                                                background: '#ffffff',
-                                                                color: '#2563eb',
+                                                                border: '1px solid var(--line)',
+                                                                background: 'var(--panel)',
+                                                                color: 'var(--info)',
                                                                 display: 'inline-flex',
                                                                 alignItems: 'center',
                                                                 justifyContent: 'center',
@@ -720,7 +720,7 @@ export default function FinanceOverviewPage({
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan={9} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                                        <td colSpan={9} style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
                                             No customer orders match your criteria.
                                         </td>
                                     </tr>
@@ -733,7 +733,7 @@ export default function FinanceOverviewPage({
                 {/* Tab 2 Content: Payment Receipts Verification */}
                 {activeTab === 'receipts' && (
                     <div>
-                        <div style={{ marginBottom: '14px', fontSize: '13px', color: '#475569' }}>
+                        <div style={{ marginBottom: '14px', fontSize: '13px', color: 'var(--muted)' }}>
                             Customer and school submitted payment receipts. Verifying and approving automatically updates the target order balance.
                         </div>
 
@@ -741,36 +741,36 @@ export default function FinanceOverviewPage({
                             <div className="ui-table-wrap" style={{ overflowX: 'auto' }}>
                                 <table className="ui-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
-                                        <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>SCHOOL / CUSTOMER</th>
-                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>TARGET ORDER</th>
-                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>AMOUNT PAID</th>
-                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>METHOD & REFERENCE</th>
-                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>PROOF DOCUMENT</th>
-                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>REVIEW NOTE</th>
-                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>DECISION</th>
+                                        <tr style={{ borderBottom: '2px solid var(--line)', background: 'var(--soft)' }}>
+                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>SCHOOL / CUSTOMER</th>
+                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>TARGET ORDER</th>
+                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>AMOUNT PAID</th>
+                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>METHOD & REFERENCE</th>
+                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>PROOF DOCUMENT</th>
+                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>REVIEW NOTE</th>
+                                            <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>DECISION</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {pendingReceipts.map((item: any) => (
                                             <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: '#0f172a' }}>
+                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: 'var(--text)' }}>
                                                     {item.school?.name || 'Customer'}
                                                 </td>
                                                 <td style={{ textAlign: 'left', padding: '12px 14px' }}>
                                                     <b>{item.sales_document?.document_number || `Order #${item.sales_document_id}`}</b>
                                                     <br />
-                                                    <small style={{ color: '#64748b' }}>
+                                                    <small style={{ color: 'var(--muted)' }}>
                                                         Total: {money(item.sales_document?.total_amount, currency)}
                                                     </small>
                                                 </td>
-                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 800, color: '#15803d', fontSize: '14px' }}>
+                                                <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 800, color: 'var(--ok)', fontSize: '14px' }}>
                                                     {money(item.amount, currency)}
                                                 </td>
                                                 <td style={{ textAlign: 'left', padding: '12px 14px' }}>
                                                     <span style={{ fontWeight: 600 }}>{item.payment_method}</span>
                                                     <br />
-                                                    <small style={{ color: '#64748b' }}>Ref: {item.payment_reference || '—'}</small>
+                                                    <small style={{ color: 'var(--muted)' }}>Ref: {item.payment_reference || '—'}</small>
                                                 </td>
                                                 <td style={{ textAlign: 'left', padding: '12px 14px' }}>
                                                     {item.proof_url ? (
@@ -781,9 +781,9 @@ export default function FinanceOverviewPage({
                                                             style={{
                                                                 padding: '4px 10px',
                                                                 borderRadius: '5px',
-                                                                border: '1px solid #cbd5e1',
-                                                                background: '#ffffff',
-                                                                color: '#2563eb',
+                                                                border: '1px solid var(--line)',
+                                                                background: 'var(--panel)',
+                                                                color: 'var(--info)',
                                                                 fontSize: '12px',
                                                                 fontWeight: 600,
                                                                 textDecoration: 'none',
@@ -796,7 +796,7 @@ export default function FinanceOverviewPage({
                                                             View Proof
                                                         </a>
                                                     ) : (
-                                                        <span style={{ color: '#94a3b8' }}>No file attached</span>
+                                                        <span style={{ color: 'var(--muted)' }}>No file attached</span>
                                                     )}
                                                 </td>
                                                 <td style={{ textAlign: 'left', padding: '12px 14px' }}>
@@ -807,7 +807,7 @@ export default function FinanceOverviewPage({
                                                         style={{
                                                             width: '180px',
                                                             padding: '5px 8px',
-                                                            border: '1px solid #cbd5e1',
+                                                            border: '1px solid var(--line)',
                                                             borderRadius: '6px',
                                                             fontSize: '12px',
                                                         }}
@@ -865,7 +865,7 @@ export default function FinanceOverviewPage({
                                 </table>
                             </div>
                         ) : (
-                            <div style={{ textAlign: 'center', padding: '40px', background: '#f8fafc', borderRadius: '8px', color: '#64748b' }}>
+                            <div style={{ textAlign: 'center', padding: '40px', background: 'var(--soft)', borderRadius: '8px', color: 'var(--muted)' }}>
                                 ✓ All customer payment receipts have been reviewed. No submissions are pending verification.
                             </div>
                         )}
@@ -877,14 +877,14 @@ export default function FinanceOverviewPage({
                     <div className="ui-table-wrap" style={{ overflowX: 'auto' }}>
                         <table className="ui-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
-                                <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>SCHOOL / CUSTOMER</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>ORDER #</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>AMOUNT</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>DECISION</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>REVIEWED BY</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>DATE</th>
-                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: '#475569' }}>NOTE</th>
+                                <tr style={{ borderBottom: '2px solid var(--line)', background: 'var(--soft)' }}>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>SCHOOL / CUSTOMER</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>ORDER #</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>AMOUNT</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>DECISION</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>REVIEWED BY</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>DATE</th>
+                                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: '12px', color: 'var(--muted)' }}>NOTE</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -907,28 +907,28 @@ export default function FinanceOverviewPage({
                                                         fontWeight: 700,
                                                         padding: '3px 8px',
                                                         borderRadius: '6px',
-                                                        background: dec.status === 'approved' ? '#dcfce7' : '#fee2e2',
-                                                        color: dec.status === 'approved' ? '#15803d' : '#b91c1c',
+                                                        background: dec.status === 'approved' ? 'var(--ok-bg)' : 'var(--bad-bg)',
+                                                        color: dec.status === 'approved' ? 'var(--ok)' : 'var(--bad)',
                                                         border: `1px solid ${dec.status === 'approved' ? '#86efac' : '#fca5a5'}`,
                                                     }}
                                                 >
                                                     {dec.status === 'approved' ? '✓ APPROVED' : '✗ REJECTED'}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'left', padding: '12px 14px', fontSize: '12px', color: '#475569' }}>
+                                            <td style={{ textAlign: 'left', padding: '12px 14px', fontSize: '12px', color: 'var(--muted)' }}>
                                                 {dec.reviewer?.name || 'Finance Staff'}
                                             </td>
-                                            <td style={{ textAlign: 'left', padding: '12px 14px', fontSize: '12px', color: '#64748b' }}>
+                                            <td style={{ textAlign: 'left', padding: '12px 14px', fontSize: '12px', color: 'var(--muted)' }}>
                                                 {date(dec.reviewed_at)}
                                             </td>
-                                            <td style={{ textAlign: 'left', padding: '12px 14px', fontSize: '12px', color: '#64748b' }}>
+                                            <td style={{ textAlign: 'left', padding: '12px 14px', fontSize: '12px', color: 'var(--muted)' }}>
                                                 {dec.review_note || '—'}
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                                        <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)' }}>
                                             No recent decision records found.
                                         </td>
                                     </tr>

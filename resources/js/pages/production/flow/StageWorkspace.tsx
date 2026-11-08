@@ -108,7 +108,7 @@ export default function StageWorkspace({ user, locale, stage, initialTab = 'work
                         <button
                             className="secondary-btn"
                             onClick={() => setModal({ kind: 'inspect', lot: data.lots[0] })}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: '#0284c7', color: '#0284c7' }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: 'var(--info)', color: 'var(--info)' }}
                         >
                             <ShieldCheck size={15} />
                             {locale === 'en' ? 'Quality Inspection' : 'Contrôle Qualité'}

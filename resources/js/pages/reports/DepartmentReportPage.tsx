@@ -39,7 +39,7 @@ async function load(params: URLSearchParams): Promise<Report> {
 }
 
 /** The report for the signed-in user's own department. The server decides which one it is. */
-export default function DepartmentReportPage() {
+export default function DepartmentReportPage({ department }: { department?: string } = {}) {
     const [from, setFrom] = useState(daysAgo(29));
     const [to, setTo] = useState(iso(new Date()));
     const [search, setSearch] = useState('');
@@ -53,7 +53,9 @@ export default function DepartmentReportPage() {
         const timer = setTimeout(async () => {
             setLoading(true);
             try {
-                const data = await load(new URLSearchParams({ from, to, search, status }));
+                const query = new URLSearchParams({ from, to, search, status });
+                if (department) query.set('department', department);
+                const data = await load(query);
                 if (active) {
                     setReport(data);
                     setError('');
@@ -69,7 +71,7 @@ export default function DepartmentReportPage() {
             active = false;
             clearTimeout(timer);
         };
-    }, [from, to, search, status]);
+    }, [from, to, search, status, department]);
 
     const format = useMemo(() => {
         const currency = report?.currency || 'RWF';

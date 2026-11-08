@@ -144,7 +144,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                 {/* Column 1 */}
                 <label className="ui-field">
                     <span>
-                        {t.fabric} <span style={{ color: '#dc2626' }}>*</span>
+                        {t.fabric} <span style={{ color: 'var(--bad)' }}>*</span>
                     </span>
                     <select
                         value={fabricId}
@@ -152,7 +152,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                         style={{
                             width: '100%',
                             borderColor: attempted && !chosen ? '#dc2626' : undefined,
-                            background: attempted && !chosen ? '#fef2f2' : undefined,
+                            background: attempted && !chosen ? 'var(--bad-bg)' : undefined,
                         }}
                         autoFocus
                     >
@@ -166,7 +166,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                         ))}
                     </select>
                     {attempted && !chosen ? (
-                        <span className="ui-help" style={{ color: '#dc2626', fontWeight: 600 }}>
+                        <span className="ui-help" style={{ color: 'var(--bad)', fontWeight: 600 }}>
                             ⚠️ Fabric is required
                         </span>
                     ) : (
@@ -179,7 +179,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                         {/* Column 2 */}
                         <label className="ui-field">
                             <span>
-                                {t.product} <span style={{ color: '#dc2626' }}>*</span>
+                                {t.product} <span style={{ color: 'var(--bad)' }}>*</span>
                             </span>
                             <input
                                 list="flow-products"
@@ -188,7 +188,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                                 style={{
                                     width: '100%',
                                     borderColor: attempted && !hasProduct ? '#dc2626' : undefined,
-                                    background: attempted && !hasProduct ? '#fef2f2' : undefined,
+                                    background: attempted && !hasProduct ? 'var(--bad-bg)' : undefined,
                                 }}
                                 onChange={(event) => setProduct(event.target.value)}
                             />
@@ -198,7 +198,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                                 ))}
                             </datalist>
                             {attempted && !hasProduct && (
-                                <span className="ui-help" style={{ color: '#dc2626', fontWeight: 600 }}>
+                                <span className="ui-help" style={{ color: 'var(--bad)', fontWeight: 600 }}>
                                     ⚠️ Product name required
                                 </span>
                             )}
@@ -242,7 +242,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
 
                 <label className="ui-field">
                     <span>
-                        {t.fabricUsed} <span style={{ color: '#dc2626' }}>*</span>
+                        {t.fabricUsed} <span style={{ color: 'var(--bad)' }}>*</span>
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <input
@@ -269,7 +269,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                         </span>
                     </div>
                     {attempted && (!Number(fabricUsed) || Number(fabricUsed) <= 0) && (
-                        <span className="ui-help" style={{ color: '#dc2626', fontWeight: 600 }}>
+                        <span className="ui-help" style={{ color: 'var(--bad)', fontWeight: 600 }}>
                             ⚠️ Must be &gt; 0
                         </span>
                     )}
@@ -278,7 +278,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                 {/* Row 3: Good pieces, Damaged, Date */}
                 <label className="ui-field">
                     <span>
-                        {t.good} <span style={{ color: '#dc2626' }}>*</span>
+                        {t.good} <span style={{ color: 'var(--bad)' }}>*</span>
                     </span>
                     <input
                         type="number"
@@ -299,7 +299,7 @@ export function CutModal({ lot, data, text, format, onClose, onDone }: Props) {
                         onChange={(event) => setGood(event.target.value)}
                     />
                     {attempted && (!Number(good) || Number(good) < 1) && (
-                        <span className="ui-help" style={{ color: '#dc2626', fontWeight: 600 }}>
+                        <span className="ui-help" style={{ color: 'var(--bad)', fontWeight: 600 }}>
                             ⚠️ At least 1 piece
                         </span>
                     )}

@@ -179,7 +179,7 @@ export function SalesReports({ text, format }: Props) {
                         <div className="panel-title">
                             <h2>{t.trend}</h2>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe', margin: '0 0 12px 0', fontSize: '11.5px', color: '#1e40af' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'var(--info-bg)', borderRadius: '6px', border: '1px solid #bfdbfe', margin: '0 0 12px 0', fontSize: '11.5px', color: 'var(--info)' }}>
                             <span style={{ width: '14px', height: '3px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} />
                             <span><b>Blue line:</b> Total sales value & revenue (RWF) recorded over the selected timeframe.</span>
                         </div>

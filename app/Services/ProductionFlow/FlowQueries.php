@@ -339,7 +339,7 @@ class FlowQueries
         $byStage = (clone $entries)->selectRaw('stage, COALESCE(SUM(good_quantity), 0) as good, COALESCE(SUM(damaged_quantity), 0) as damaged, COALESCE(SUM(fabric_used), 0) as fabric_used, COALESCE(SUM(fabric_waste), 0) as fabric_waste')
             ->groupBy('stage')->get()->keyBy('stage');
 
-        $quality = QualityInspection::whereNotNull('lot_id')->where('created_at', '>=', $start)->where('created_at', '<', $end)
+        $quality = QualityInspection::whereNotNull('lot_id')->where('is_reinspection', false)->where('created_at', '>=', $start)->where('created_at', '<', $end)
             ->selectRaw('stage, COUNT(*) as checks, COALESCE(SUM(inspected_quantity), 0) as inspected, COALESCE(SUM(passed_quantity), 0) as passed, COALESCE(SUM(rejected_quantity), 0) as rejected')
             ->groupBy('stage')->get()->keyBy('stage');
 

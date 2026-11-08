@@ -229,17 +229,17 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                             <>
                                                 <td className="num">{format.whole(lot.cut)}</td>
                                                 <td className="num">
-                                                    <span style={{ color: lot.awaiting_quality > 0 ? '#b45309' : '#64748b' }}>
+                                                    <span style={{ color: lot.awaiting_quality > 0 ? 'var(--warn)' : 'var(--muted)' }}>
                                                         {format.whole(lot.awaiting_quality)}
                                                     </span>
                                                 </td>
                                                 <td className="num">
-                                                    <b style={{ color: lot.outbox > 0 ? '#15803d' : '#64748b' }}>
+                                                    <b style={{ color: lot.outbox > 0 ? 'var(--ok)' : 'var(--muted)' }}>
                                                         {format.whole(lot.outbox)}
                                                     </b>
                                                 </td>
                                                 <td className="num">
-                                                    <span style={{ color: (lot.quality_rejected || 0) > 0 ? '#b91c1c' : '#64748b', fontWeight: (lot.quality_rejected || 0) > 0 ? 700 : 400 }}>
+                                                    <span style={{ color: (lot.quality_rejected || 0) > 0 ? 'var(--bad)' : 'var(--muted)', fontWeight: (lot.quality_rejected || 0) > 0 ? 700 : 400 }}>
                                                         {format.whole(lot.quality_rejected || 0)}
                                                     </span>
                                                 </td>
@@ -251,12 +251,12 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                 </td>
                                                 <td className="num">{format.whole(lot.good)}</td>
                                                 <td className="num">
-                                                    <span style={{ color: lot.awaiting_quality > 0 ? '#b45309' : '#64748b' }}>
+                                                    <span style={{ color: lot.awaiting_quality > 0 ? 'var(--warn)' : 'var(--muted)' }}>
                                                         {format.whole(lot.awaiting_quality)}
                                                     </span>
                                                 </td>
                                                 <td className="num">
-                                                    <b style={{ color: (isPacking ? lot.ready_for_stock : lot.outbox) > 0 ? '#15803d' : '#64748b' }}>
+                                                    <b style={{ color: (isPacking ? lot.ready_for_stock : lot.outbox) > 0 ? 'var(--ok)' : 'var(--muted)' }}>
                                                         {format.whole(
                                                             isPacking
                                                                 ? lot.ready_for_stock
@@ -265,7 +265,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                     </b>
                                                 </td>
                                                 <td className="num">
-                                                    <span style={{ color: (lot.quality_rejected || 0) > 0 ? '#b91c1c' : '#64748b', fontWeight: (lot.quality_rejected || 0) > 0 ? 700 : 400 }}>
+                                                    <span style={{ color: (lot.quality_rejected || 0) > 0 ? 'var(--bad)' : 'var(--muted)', fontWeight: (lot.quality_rejected || 0) > 0 ? 700 : 400 }}>
                                                         {format.whole(lot.quality_rejected || 0)}
                                                     </span>
                                                 </td>
@@ -280,7 +280,7 @@ export function WorkTab({ data, locale, text, format, onModal }: Props) {
                                                             className="secondary-btn"
                                                             onClick={() => onModal({ kind: 'inspect', lot })}
                                                             title={locale === 'en' ? 'Quality Control Inspection' : 'Contrôle Qualité'}
-                                                            style={{ borderColor: '#0284c7', color: '#0284c7', fontSize: '0.78rem', padding: '3px 8px' }}
+                                                            style={{ borderColor: 'var(--info)', color: 'var(--info)', fontSize: '0.78rem', padding: '3px 8px' }}
                                                         >
                                                             {locale === 'en' ? 'Inspect QC' : 'Contrôler QC'}
                                                         </button>

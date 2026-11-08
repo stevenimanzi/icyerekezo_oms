@@ -756,7 +756,7 @@ class DepartmentDashboardController extends Controller
         $qualityMetrics = null;
         $recentInspections = [];
         if ($isQualityUser) {
-            $inspectionsQuery = QualityInspection::withoutGlobalScopes()->where('factory_id', $factoryId);
+            $inspectionsQuery = QualityInspection::withoutGlobalScopes()->where('factory_id', $factoryId)->where('is_reinspection', false);
             $monthStart = now()->startOfMonth();
             $monthEnd = now()->endOfMonth();
 
@@ -916,7 +916,7 @@ class DepartmentDashboardController extends Controller
         }
 
         // Quality control metrics across whole factory
-        $allInspections = QualityInspection::withoutGlobalScopes()->where('factory_id', $factoryId);
+        $allInspections = QualityInspection::withoutGlobalScopes()->where('factory_id', $factoryId)->where('is_reinspection', false);
         if ($period !== 'all_time') {
             $allInspections->whereBetween('inspected_at', [$startDate, $endDate]);
         }

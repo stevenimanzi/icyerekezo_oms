@@ -1,4 +1,4 @@
-import { BadgeCheck, Cog, Factory, LayoutDashboard } from 'lucide-react';
+import { Activity, AlertTriangle, BadgeCheck, Cog, Factory, LayoutDashboard } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const machineOperatorRole: RoleModule = {
@@ -9,5 +9,7 @@ export const machineOperatorRole: RoleModule = {
         ['production', Factory, labels.planning, 'production.view'],
         ['quality', BadgeCheck, labels.control, 'quality.view'],
         ['machines', Cog, labels.machines, 'maintenance.view'],
+        ['maint-performance', Activity, 'Log machine work', 'maintenance.create'],
+        ['maint-problems', AlertTriangle, 'Report a problem', 'maintenance.create'],
     ],
 };

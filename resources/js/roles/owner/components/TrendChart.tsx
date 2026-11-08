@@ -41,9 +41,9 @@ export function TrendChart({ trend, text, format, currency }: Props) {
         <article className="panel ow-trend" style={{ padding: '20px 24px' }}>
             <div className="panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
                 <div>
-                    <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{text.trend}</h2>
-                    <span style={{ fontSize: '13px', color: '#64748b' }}>
-                        Total for this period: <b style={{ color: '#0f172a' }}>{formatValue(metricTotal)}</b>
+                    <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: 'var(--text)' }}>{text.trend}</h2>
+                    <span style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                        Total for this period: <b style={{ color: 'var(--text)' }}>{formatValue(metricTotal)}</b>
                     </span>
                 </div>
                 <div className="ow-tabs" role="tablist" style={{ margin: 0 }}>
@@ -67,11 +67,11 @@ export function TrendChart({ trend, text, format, currency }: Props) {
                     gap: '8px',
                     padding: '8px 14px',
                     margin: '0 0 16px 0',
-                    background: '#eff6ff',
+                    background: 'var(--info-bg)',
                     border: '1px solid #bfdbfe',
                     borderRadius: '8px',
                     fontSize: '12px',
-                    color: '#1e40af',
+                    color: 'var(--info)',
                 }}
             >
                 <span
@@ -117,7 +117,7 @@ export function TrendChart({ trend, text, format, currency }: Props) {
                                 formatter={(value) => formatValue(Number(value))}
                                 contentStyle={{
                                     background: 'var(--panel, #ffffff)',
-                                    border: '1px solid var(--line, #e2e8f0)',
+                                    border: '1px solid var(--line, var(--line))',
                                     borderRadius: 10,
                                     fontSize: '12px',
                                 }}

@@ -43,6 +43,7 @@ export function getRoleFlags(user: AuthUser) {
         isProductionPlanner: hasRole('production-planner'),
         isProductionSupervisor: hasRole('production-supervisor'),
         isMaintenanceTechnician: hasRole('maintenance-technician'),
+        isMaintenanceManager: hasRole('maintenance-manager'),
         isQualityManager: hasRole('quality-manager'),
         isHrOfficer: hasRole('hr-officer'),
         isSafetyOfficer: hasRole('health-safety-officer'),

@@ -373,6 +373,7 @@ final class OwnerOverviewReport
     {
         $inspections = QualityInspection::withoutGlobalScopes()
             ->where('factory_id', $this->factoryId)
+            ->where('is_reinspection', false)
             ->whereIn('result', ['passed', 'failed', 'conditional']);
 
         $current = (clone $inspections)->whereBetween('inspected_at', [$this->start, $this->end]);
@@ -392,6 +393,11 @@ final class OwnerOverviewReport
             'pass_rate' => $rate($current),
             'previous_pass_rate' => $rate($previous),
             'rejected_quantity' => (float) (clone $current)->sum('rejected_quantity'),
+            'recovered_quantity' => (float) QualityInspection::withoutGlobalScopes()
+                ->where('factory_id', $this->factoryId)
+                ->where('is_reinspection', true)
+                ->whereBetween('inspected_at', [$this->start, $this->end])
+                ->sum('passed_quantity'),
             'pending' => QualityInspection::withoutGlobalScopes()
                 ->where('factory_id', $this->factoryId)
                 ->where('result', 'pending')

@@ -606,17 +606,17 @@ export default function SewingWorkspacePage({
                                                     <td>{num(item.available_qty)}</td>
                                                     <td>
                                                         {isPassed ? (
-                                                            <span style={{ color: '#059669', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                            <span style={{ color: 'var(--ok)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                                                 <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#059669' }}></span>
                                                                 {locale === 'en' ? 'QC Passed' : 'QC Validé'}
                                                             </span>
                                                         ) : isFailed ? (
-                                                            <span style={{ color: '#dc2626', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }} title={item.qc_defect_details || ''}>
+                                                            <span style={{ color: 'var(--bad)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }} title={item.qc_defect_details || ''}>
                                                                 <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#dc2626' }}></span>
                                                                 {locale === 'en' ? `QC Failed (${item.qc_rejected || 'Defect'})` : `Échec QC (${item.qc_rejected || 'Défaut'})`}
                                                             </span>
                                                         ) : (
-                                                            <span style={{ color: '#d97706', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                            <span style={{ color: 'var(--warn)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                                                 <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#d97706' }}></span>
                                                                 {locale === 'en' ? 'Awaiting QC' : 'En attente QC'}
                                                             </span>
@@ -1076,7 +1076,7 @@ export default function SewingWorkspacePage({
                             Download Official PDF (Excel Format)
                         </a>
                     </section>
-                    <article className="panel" style={{ background: '#fff', border: '1.5px solid #000', borderRadius: 4, padding: 24, color: '#000' }}>
+                    <article className="panel" style={{ background: 'var(--panel)', border: '1.5px solid #000', borderRadius: 4, padding: 24, color: '#000' }}>
                         <div style={{ borderBottom: '2px solid #000', paddingBottom: 12, marginBottom: 16 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                                 <div>
@@ -1100,19 +1100,19 @@ export default function SewingWorkspacePage({
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
-                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
+                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: 'var(--soft)' }}>
                                 <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>TOTAL PIECES RECEIVED</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{num(totalAcceptedQty)}</div>
                             </div>
-                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
+                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: 'var(--soft)' }}>
                                 <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>TOTAL OUTPUT (SEWN)</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{num(totalSewnQty)}</div>
                             </div>
-                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
+                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: 'var(--soft)' }}>
                                 <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>DAMAGED / WASTE</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{num(totalDamagedQty)}</div>
                             </div>
-                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: '#fafafa' }}>
+                            <div style={{ border: '1px solid #000', padding: '8px 10px', background: 'var(--soft)' }}>
                                 <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>QUALITY CONTROL</div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
                                     {totalDamagedQty === 0 && totalSewnQty > 0 ? 'PASSED (100%)' : totalSewnQty > 0 ? `VERIFIED (${(100 - Number(wastePercent)).toFixed(1)}%)` : 'PENDING'}
@@ -1163,7 +1163,7 @@ export default function SewingWorkspacePage({
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan={7} style={{ border: '1px solid #000', padding: 12, textAlign: 'center', color: '#666' }}>
+                                            <td colSpan={7} style={{ border: '1px solid #000', padding: 12, textAlign: 'center', color: 'var(--muted)' }}>
                                                 {locale === 'en'
                                                     ? 'No sewing operations recorded for the selected dates.'
                                                     : 'Aucun enregistrement ne correspond aux dates sélectionnées.'}
@@ -1186,7 +1186,7 @@ export default function SewingWorkspacePage({
                                     <div>Name: {user.name}</div>
                                     <div>Role: Sewing Floor Lead</div>
                                     <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
-                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--muted)' }}>Signature &amp; Date</div>
                                 </div>
                                 <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
                                     <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
@@ -1195,7 +1195,7 @@ export default function SewingWorkspacePage({
                                     <div>Name: _________________</div>
                                     <div>Role: Production Supervisor</div>
                                     <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
-                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--muted)' }}>Signature &amp; Date</div>
                                 </div>
                                 <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
                                     <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
@@ -1204,7 +1204,7 @@ export default function SewingWorkspacePage({
                                     <div>Name: _________________</div>
                                     <div>Status: Verified &amp; Accepted</div>
                                     <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
-                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--muted)' }}>Signature &amp; Date</div>
                                 </div>
                                 <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
                                     <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
@@ -1213,12 +1213,12 @@ export default function SewingWorkspacePage({
                                     <div>Name: _________________</div>
                                     <div>Decision: Approved</div>
                                     <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
-                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--muted)' }}>Signature &amp; Date</div>
                                 </div>
                             </div>
                         </div>
 
-                        <footer style={{ marginTop: 14, paddingTop: 8, borderTop: '0.5px solid #888', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#444' }}>
+                        <footer style={{ marginTop: 14, paddingTop: 8, borderTop: '0.5px solid #888', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--muted)' }}>
                             <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} &middot; OFFICIAL SEWING OPERATIONS REGISTER</span>
                             <span>Generated by ICYEREKEZO OMS</span>
                         </footer>

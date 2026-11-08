@@ -18,7 +18,7 @@ export function MovementChart({ movement, text, format }: Props) {
             <div className="panel-title">
                 <h2>{copy.movementTitle}</h2>
             </div>
-            <div className="ui-legend" style={{ display: 'flex', flexWrap: 'wrap', gap: '18px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', margin: '0 0 16px 0', fontSize: '12px' }}>
+            <div className="ui-legend" style={{ display: 'flex', flexWrap: 'wrap', gap: '18px', padding: '10px 14px', background: 'var(--soft)', borderRadius: '8px', border: '1px solid var(--line)', margin: '0 0 16px 0', fontSize: '12px' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     <i style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#16a34a', display: 'inline-block' }} />
                     <b>{copy.received}</b> (Green: Stock received into warehouse): {format.money(movement.received_value)}

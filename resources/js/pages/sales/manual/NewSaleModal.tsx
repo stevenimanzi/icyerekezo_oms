@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { api } from '../../../core/api';
 import type { Format } from '../../../core/format';
 import { Modal } from '../../../components/Modal';
@@ -248,7 +248,7 @@ export function NewSaleModal({ options, text, format, onClose, onSaved }: Props)
                                                         ⚠️ Exceeds stock: only {format.number(getStock(String(item.id)))} available
                                                     </span>
                                                 ) : (
-                                                    <span style={{ color: '#059669', fontWeight: 500 }}>
+                                                    <span style={{ color: 'var(--ok)', fontWeight: 500 }}>
                                                         ✓ {format.number(getStock(String(item.id)))} available in stock
                                                     </span>
                                                 )}

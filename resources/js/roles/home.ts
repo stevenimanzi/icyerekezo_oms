@@ -6,6 +6,8 @@ const DepartmentDashboard = lazy(() => import('./default/DepartmentDashboard'));
 const ExecutiveDashboard = lazy(() => import('./factory-administrator/ExecutiveDashboard'));
 const FinancialManagerHome = lazy(() => import('./financial-manager/Home'));
 const HrOfficerHome = lazy(() => import('./hr-officer/Home'));
+const LogisticsHome = lazy(() => import('./logistics/Home'));
+const MaintenanceHome = lazy(() => import('./maintenance-manager/Home'));
 const OwnerDashboard = lazy(() => import('./owner/OwnerDashboard'));
 const RoleHome = lazy(() => import('./default/RoleHome'));
 const FlowStageHome = lazy(() => import('../pages/production/flow/home/StageHome'));
@@ -19,6 +21,8 @@ export function homeFor(flags: RoleFlags): HomeComponent {
     if (flags.isExecutiveUser) return flags.hasProductionFlow ? OwnerDashboard : ExecutiveDashboard;
     if (flags.isFinancialManager || flags.isFinanceUser || flags.isSalesUser) return FinancialManagerHome;
     if (flags.isHrOfficer) return HrOfficerHome;
+    if (flags.isMaintenanceManager || flags.isMaintenanceTechnician) return MaintenanceHome;
+    if (flags.isLogisticsUser && !flags.isNoguchiFactory) return LogisticsHome;
     if (flags.isSafetyOfficer) return SafetyOfficerHome;
     if (flags.isQualityUser || flags.isQualityManager) return QualityDashboard;
     if (flags.isWarehouseUser) return WarehouseDashboard;

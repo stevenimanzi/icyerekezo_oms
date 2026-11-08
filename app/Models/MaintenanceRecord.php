@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
         'maintenance_type',
         'title',
         'description',
+        'cause',
         'priority',
         'status',
         'scheduled_at',
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Model;
         'downtime_minutes',
         'cost',
         'resolution',
+        'parts_used',
     ]),
 ]
 class MaintenanceRecord extends Model

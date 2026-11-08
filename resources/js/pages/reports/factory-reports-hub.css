@@ -1,0 +1,132 @@
+.frh {
+    display: grid;
+    gap: 14px;
+}
+
+.frh-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 6px;
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 12px;
+    background: var(--panel, #fff);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.frh-tabs button {
+    border: 0;
+    background: transparent;
+    color: var(--muted, #475569);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.frh-tabs button:hover {
+    background: var(--soft, #f1f5f9);
+    color: var(--text, #0f172a);
+}
+
+.frh-tabs button.active {
+    background: var(--brand, #0f766e);
+    color: #fff;
+}
+
+.frh-overview {
+    display: grid;
+    gap: 14px;
+}
+
+.frh-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+}
+
+.frh-dates {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.frh-dates label {
+    display: grid;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted, #475569);
+}
+
+.frh-dates input[type='date'] {
+    padding: 7px 9px;
+    border: 1px solid var(--line, #cbd5e1);
+    border-radius: 8px;
+    background: var(--panel, #fff);
+    color: var(--text, #0f172a);
+    font: inherit;
+}
+
+.frh-quick,
+.frh-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.frh-quick button,
+.frh-actions > button {
+    padding: 7px 11px;
+    border: 1px solid var(--line, #cbd5e1);
+    border-radius: 8px;
+    background: var(--panel, #fff);
+    color: var(--text, #0f172a);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.frh-quick button:hover,
+.frh-actions > button:hover {
+    background: var(--soft, #f1f5f9);
+}
+
+.frh-note {
+    margin: 0;
+    color: var(--muted, #475569);
+    font-size: 13px;
+}
+
+.frh-alerts ul {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+}
+
+.frh-alerts li {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 4px solid #2563eb;
+    background: rgba(37, 99, 235, 0.08);
+    color: var(--text, #0f172a);
+}
+
+.frh-alerts li.warning {
+    border-left-color: #d97706;
+    background: rgba(217, 119, 6, 0.1);
+}
+
+.frh-alerts li.critical {
+    border-left-color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+}

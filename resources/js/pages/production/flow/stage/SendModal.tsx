@@ -115,9 +115,9 @@ export function SendModal({ lot, stage, to, locale, text, onClose, onDone }: Pro
             {lot.quality_rejected && lot.quality_rejected > 0 && (
                 <div
                     style={{
-                        background: '#fffbeb',
+                        background: 'var(--warn-bg)',
                         border: '1px solid #fef3c7',
-                        color: '#92400e',
+                        color: 'var(--warn)',
                         padding: '10px 12px',
                         borderRadius: 6,
                         marginBottom: 14,
@@ -125,7 +125,7 @@ export function SendModal({ lot, stage, to, locale, text, onClose, onDone }: Pro
                         lineHeight: 1.4,
                     }}
                 >
-                    <strong style={{ color: '#b45309' }}>
+                    <strong style={{ color: 'var(--warn)' }}>
                         {locale === 'en' ? 'Quality Control Alert:' : 'Alerte Contrôle Qualité :'}
                     </strong>{' '}
                     {locale === 'en'
@@ -147,9 +147,9 @@ export function SendModal({ lot, stage, to, locale, text, onClose, onDone }: Pro
             {lot.outbox <= 0 && (!lot.quality_rejected || lot.quality_rejected === 0) && (
                 <div
                     style={{
-                        background: '#eff6ff',
+                        background: 'var(--info-bg)',
                         border: '1px solid #bfdbfe',
-                        color: '#1e40af',
+                        color: 'var(--info)',
                         padding: '10px 12px',
                         borderRadius: 6,
                         marginBottom: 14,
@@ -165,7 +165,7 @@ export function SendModal({ lot, stage, to, locale, text, onClose, onDone }: Pro
 
             <p className="ui-help" style={{ margin: 0 }}>
                 {[lot.product, lot.color, lot.size].filter(Boolean).join(' · ')} —{' '}
-                <strong style={{ color: lot.outbox > 0 ? '#15803d' : '#b91c1c' }}>
+                <strong style={{ color: lot.outbox > 0 ? 'var(--ok)' : 'var(--bad)' }}>
                     {t.ready(lot.outbox)}
                 </strong>
             </p>

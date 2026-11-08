@@ -406,3 +406,45 @@
     color: var(--muted, #64748b);
     font-size: 11px;
 }
+
+/* Row buttons, detail lines and the red dialog button used by the delivery workspace */
+.fb-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.fb-detail-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+}
+.fb-detail-line span {
+    color: var(--muted);
+}
+.fb-detail-line b {
+    text-align: right;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+.danger-btn {
+    height: 42px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 9px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.danger-btn:hover {
+    background: #b91c1c;
+}
+.danger-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

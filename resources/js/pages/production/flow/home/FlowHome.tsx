@@ -407,7 +407,7 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
                                 borderRadius: '6px',
                                 border: 'none',
                                 background: '#eef2ff',
-                                color: '#4f46e5',
+                                color: 'var(--info)',
                                 cursor: 'pointer',
                             }}
                         >
@@ -473,7 +473,7 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
             {/* Whole project stage cards: ONLY shown for production manager, never on stage dashboards */}
             {mode === 'manager' && monitor.data && (
                 <div style={{ marginBottom: 24 }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#4f46e5', marginBottom: 8 }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--info)', marginBottom: 8 }}>
                         {words.wholeProject} &mdash; {words.stageCards}
                     </div>
                     <div
@@ -511,7 +511,7 @@ export default function FlowHome({ user, locale, onNavigate, mode }: Props) {
                                 : (locale === 'fr' ? `Pièces terminées (${rangeLabel})` : `Pieces finished (${rangeLabel})`)}
                         </h2>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 0 12px 0', fontSize: '11.5px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', padding: '8px 12px', background: 'var(--soft)', borderRadius: '6px', border: '1px solid var(--line)', margin: '0 0 12px 0', fontSize: '11.5px' }}>
                         {keys.map((key) => (
                             <span key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                                 <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: COLOURS[key], display: 'inline-block' }} />

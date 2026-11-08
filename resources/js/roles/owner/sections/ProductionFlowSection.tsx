@@ -72,18 +72,18 @@ export function ProductionFlowSection({ data, text, format, locale }: Props) {
                             return (
                                 <tr key={st.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                     <td style={{ textAlign: 'left', padding: '12px 14px' }}>
-                                        <b style={{ color: '#0f172a' }}>{st.label[locale]}</b>
+                                        <b style={{ color: 'var(--text)' }}>{st.label[locale]}</b>
                                     </td>
-                                    <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: '#334155' }}>
+                                    <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: 'var(--text)' }}>
                                         {format.whole(totalInput)} pcs
                                     </td>
-                                    <td style={{ textAlign: 'left', padding: '12px 14px', color: '#16a34a', fontWeight: 700 }}>
+                                    <td style={{ textAlign: 'left', padding: '12px 14px', color: 'var(--ok)', fontWeight: 700 }}>
                                         {format.whole(st.done)} pcs
                                     </td>
-                                    <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: '#2563eb' }}>
+                                    <td style={{ textAlign: 'left', padding: '12px 14px', fontWeight: 600, color: 'var(--info)' }}>
                                         {format.whole(st.here)} pcs
                                     </td>
-                                    <td style={{ textAlign: 'left', padding: '12px 14px', color: st.damaged > 0 ? '#dc2626' : '#64748b', fontWeight: st.damaged > 0 ? 700 : 500 }}>
+                                    <td style={{ textAlign: 'left', padding: '12px 14px', color: st.damaged > 0 ? 'var(--bad)' : 'var(--muted)', fontWeight: st.damaged > 0 ? 700 : 500 }}>
                                         {format.whole(st.damaged)} pcs
                                     </td>
                                     <td style={{ textAlign: 'left', padding: '12px 14px' }}>
@@ -93,8 +93,8 @@ export function ProductionFlowSection({ data, text, format, locale }: Props) {
                                                 fontWeight: 700,
                                                 padding: '3px 8px',
                                                 borderRadius: '6px',
-                                                background: st.damaged === 0 ? '#dcfce7' : '#fef3c7',
-                                                color: st.damaged === 0 ? '#15803d' : '#b45309',
+                                                background: st.damaged === 0 ? 'var(--ok-bg)' : 'var(--warn-bg)',
+                                                color: st.damaged === 0 ? 'var(--ok)' : 'var(--warn)',
                                                 border: `1px solid ${st.damaged === 0 ? '#86efac' : '#fde68a'}`,
                                                 display: 'inline-flex',
                                                 alignItems: 'center',

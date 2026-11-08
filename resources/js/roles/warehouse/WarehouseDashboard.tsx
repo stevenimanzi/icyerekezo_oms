@@ -253,7 +253,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         transition: 'all 0.2s ease',
                     }}
                 >
-                    <div style={{ color: '#10b981', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ color: 'var(--ok)', display: 'flex', alignItems: 'center' }}>
                         <PackagePlus size={24} />
                     </div>
                     <div>
@@ -280,7 +280,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         transition: 'all 0.2s ease',
                     }}
                 >
-                    <div style={{ color: '#ef4444', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ color: 'var(--bad)', display: 'flex', alignItems: 'center' }}>
                         <PackageMinus size={24} />
                     </div>
                     <div>
@@ -366,8 +366,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         flexDirection: 'column',
                         justifyContent: 'center',
                         borderRadius: 6,
-                        border: '1px solid var(--line, #e2e8f0)',
-                        background: '#ffffff',
+                        border: '1px solid var(--line, var(--line))',
+                        background: 'var(--panel)',
                     }}
                 >
                     <small
@@ -422,8 +422,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         flexDirection: 'column',
                         justifyContent: 'center',
                         borderRadius: 6,
-                        border: '1px solid var(--line, #e2e8f0)',
-                        background: '#ffffff',
+                        border: '1px solid var(--line, var(--line))',
+                        background: 'var(--panel)',
                     }}
                 >
                     <small
@@ -448,7 +448,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                             fontSize: 15.5,
                             marginTop: 3,
                             fontWeight: 800,
-                            color: '#10b981',
+                            color: 'var(--ok)',
                             whiteSpace: 'nowrap',
                             letterSpacing: '-0.02em',
                         }}
@@ -478,8 +478,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         flexDirection: 'column',
                         justifyContent: 'center',
                         borderRadius: 6,
-                        border: '1px solid var(--line, #e2e8f0)',
-                        background: '#ffffff',
+                        border: '1px solid var(--line, var(--line))',
+                        background: 'var(--panel)',
                     }}
                 >
                     <small
@@ -534,8 +534,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         flexDirection: 'column',
                         justifyContent: 'center',
                         borderRadius: 6,
-                        border: '1px solid var(--line, #e2e8f0)',
-                        background: '#ffffff',
+                        border: '1px solid var(--line, var(--line))',
+                        background: 'var(--panel)',
                     }}
                 >
                     <small
@@ -560,7 +560,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                             fontSize: 15.5,
                             marginTop: 3,
                             fontWeight: 800,
-                            color: lowStockCount > 0 ? '#d97706' : 'var(--text)',
+                            color: lowStockCount > 0 ? 'var(--warn)' : 'var(--text)',
                             whiteSpace: 'nowrap',
                         }}
                     >
@@ -591,8 +591,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         flexDirection: 'column',
                         justifyContent: 'center',
                         borderRadius: 6,
-                        border: '1px solid var(--line, #e2e8f0)',
-                        background: '#ffffff',
+                        border: '1px solid var(--line, var(--line))',
+                        background: 'var(--panel)',
                     }}
                 >
                     <small
@@ -617,7 +617,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                             fontSize: 15.5,
                             marginTop: 3,
                             fontWeight: 800,
-                            color: outOfStockCount > 0 ? '#dc2626' : 'var(--text)',
+                            color: outOfStockCount > 0 ? 'var(--bad)' : 'var(--text)',
                             whiteSpace: 'nowrap',
                         }}
                     >
@@ -648,8 +648,8 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                         flexDirection: 'column',
                         justifyContent: 'center',
                         borderRadius: 6,
-                        border: '1px solid var(--line, #e2e8f0)',
-                        background: '#ffffff',
+                        border: '1px solid var(--line, var(--line))',
+                        background: 'var(--panel)',
                     }}
                 >
                     <small
@@ -720,7 +720,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                     : `Number of items received and sent out over the last ${days} days.`}
                             </p>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 12, fontWeight: 500, padding: '8px 12px', background: '#f8fafc', borderRadius: 6, border: '1px solid #e2e8f0', marginTop: 8 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 12, fontWeight: 500, padding: '8px 12px', background: 'var(--soft)', borderRadius: 6, border: '1px solid var(--line)', marginTop: 8 }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <i style={{ width: 12, height: 12, borderRadius: 3, background: '#10b981', display: 'inline-block' }} />
                                 <span><b>{isFr ? 'Barre verte (Reçu)' : 'Green bar (Received)'}:</b> {isFr ? 'Articles réceptionnés en stock magasin' : 'Stock items received and added to warehouse inventory'}</span>
@@ -850,7 +850,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                 borderRadius: 8,
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#d97706', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--warn)', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
                                 <AlertTriangle size={15} />
                                 <span>{isFr ? 'Articles nécessitant une attention' : 'Items that Need Attention'}</span>
                             </div>
@@ -906,7 +906,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                         border: 'none',
                                         borderBottom: active ? '2px solid #2563eb' : '2px solid transparent',
                                         background: 'transparent',
-                                        color: active ? '#2563eb' : 'var(--muted)',
+                                        color: active ? 'var(--info)' : 'var(--muted)',
                                         cursor: 'pointer',
                                         position: 'relative',
                                         bottom: -1,
@@ -992,7 +992,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                                         className="admin-status"
                                                         style={{
                                                             background: 'transparent',
-                                                            color: '#b91c1c',
+                                                            color: 'var(--bad)',
                                                             fontSize: 12,
                                                             fontWeight: 700,
                                                         }}
@@ -1004,7 +1004,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                                         className="admin-status"
                                                         style={{
                                                             background: 'transparent',
-                                                            color: '#b45309',
+                                                            color: 'var(--warn)',
                                                             fontSize: 12,
                                                             fontWeight: 700,
                                                         }}
@@ -1016,7 +1016,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                                         className="admin-status"
                                                         style={{
                                                             background: 'transparent',
-                                                            color: '#10b981',
+                                                            color: 'var(--ok)',
                                                             fontSize: 12,
                                                             fontWeight: 700,
                                                         }}
@@ -1085,7 +1085,7 @@ export default function WarehouseDashboard({ user, locale, onNavigate }: HomePro
                                                 style={{
                                                     textAlign: 'right',
                                                     fontWeight: 700,
-                                                    color: isPositive ? '#16a34a' : '#ef4444',
+                                                    color: isPositive ? 'var(--ok)' : 'var(--bad)',
                                                 }}
                                             >
                                                 {isPositive ? `+${delta}` : delta} {tx.unit || ''}

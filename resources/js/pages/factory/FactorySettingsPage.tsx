@@ -71,7 +71,9 @@ const tabs = [
     { key: 'reports', label: 'Report design', icon: FileText },
 ];
 
-export default function FactorySettingsPage() {
+export default function FactorySettingsPage({ limited = false }: { limited?: boolean } = {}) {
+    // A factory manager only sees the tabs that belong to running the day: no report design and no operating rules.
+    const visibleTabs = limited ? tabs.filter((tab) => tab.key !== 'controls' && tab.key !== 'reports') : tabs;
     const [data, setData] = useState<any>(null);
     const [form, setForm] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('profile');
@@ -199,7 +201,7 @@ export default function FactorySettingsPage() {
             {success && <div className="admin-alert success">{success}</div>}
 
             <nav className="panel factory-settings-tabs" aria-label="Factory settings sections">
-                {tabs.map(({ key, label, icon: Icon }) => (
+                {visibleTabs.map(({ key, label, icon: Icon }) => (
                     <button
                         type="button"
                         key={key}
@@ -395,7 +397,7 @@ export default function FactorySettingsPage() {
                         </Card>
                     )}
 
-                    {activeTab === 'controls' && (
+                    {!limited && activeTab === 'controls' && (
                         <Card
                             icon={ShieldCheck}
                             title="Operating controls"
@@ -458,7 +460,7 @@ export default function FactorySettingsPage() {
                         </Card>
                     )}
 
-                    {activeTab === 'reports' && (
+                    {!limited && activeTab === 'reports' && (
                         <Card
                             icon={FileText}
                             title="Report design"

@@ -73,7 +73,7 @@ export function OverviewScreen({ ctx }: { ctx: AdminContext }) {
                         <span>Current data</span>
                     </div>
                 </header>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', padding: '6px 14px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', padding: '6px 14px', background: 'var(--soft)', borderRadius: '6px', border: '1px solid var(--line)', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '14px', height: '3px', background: '#1597e5', borderRadius: '2px', display: 'inline-block' }} />
                         <span><b>Blue line:</b> Total onboarded factories</span>

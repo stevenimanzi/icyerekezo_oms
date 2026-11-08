@@ -1084,7 +1084,7 @@ export default function CuttingWorkspacePage({
                         </div>
                     </section>
 
-                    <article className="panel" style={{ border: '1px solid #000', borderRadius: 4, padding: 18, background: '#ffffff', color: '#000000' }}>
+                    <article className="panel" style={{ border: '1px solid #000', borderRadius: 4, padding: 18, background: 'var(--panel)', color: '#000000' }}>
                         <header style={{ borderBottom: '2px solid #000', paddingBottom: 12, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
                                 <small style={{ fontWeight: 'bold', letterSpacing: '0.05em', color: '#444444' }}>OFFICIAL PRODUCTION REGISTER &middot; EXCEL GRID FORMAT</small>
@@ -1158,7 +1158,7 @@ export default function CuttingWorkspacePage({
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan={10} style={{ border: '1px solid #000', padding: 18, textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
+                                            <td colSpan={10} style={{ border: '1px solid #000', padding: 18, textAlign: 'center', fontStyle: 'italic', color: 'var(--muted)' }}>
                                                 {locale === 'en'
                                                     ? 'No cutting operations match the selected dates.'
                                                     : 'Aucun enregistrement de coupe pour la période sélectionnée.'}
@@ -1193,7 +1193,7 @@ export default function CuttingWorkspacePage({
                                     <div>Name: {user.name}</div>
                                     <div>Role: Cutting Operator</div>
                                     <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
-                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--muted)' }}>Signature &amp; Date</div>
                                 </div>
                                 <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
                                     <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
@@ -1202,7 +1202,7 @@ export default function CuttingWorkspacePage({
                                     <div>Name: _________________</div>
                                     <div>Role: Cutting Supervisor</div>
                                     <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
-                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--muted)' }}>Signature &amp; Date</div>
                                 </div>
                                 <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
                                     <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
@@ -1211,7 +1211,7 @@ export default function CuttingWorkspacePage({
                                     <div>Name: _________________</div>
                                     <div>Status: [ X ] Verified Passed</div>
                                     <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
-                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--muted)' }}>Signature &amp; Date</div>
                                 </div>
                                 <div style={{ border: '1px solid #000', padding: 10, fontSize: '0.8rem' }}>
                                     <div style={{ fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: 4, marginBottom: 8 }}>
@@ -1220,12 +1220,12 @@ export default function CuttingWorkspacePage({
                                     <div>Name: _________________</div>
                                     <div>Decision: Approved</div>
                                     <div style={{ marginTop: 22, borderBottom: '1px solid #000' }}></div>
-                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#555' }}>Signature &amp; Date</div>
+                                    <div style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--muted)' }}>Signature &amp; Date</div>
                                 </div>
                             </div>
                         </div>
 
-                        <footer style={{ marginTop: 14, paddingTop: 8, borderTop: '0.5px solid #888', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#444' }}>
+                        <footer style={{ marginTop: 14, paddingTop: 8, borderTop: '0.5px solid #888', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--muted)' }}>
                             <span>{user.current_factory?.name || 'ICYEREKEZO OMS'} &middot; OFFICIAL CUTTING OPERATIONS REGISTER</span>
                             <span>Generated by ICYEREKEZO OMS</span>
                         </footer>

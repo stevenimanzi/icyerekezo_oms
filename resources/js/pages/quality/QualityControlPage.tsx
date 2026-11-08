@@ -264,7 +264,7 @@ function PackedBatchQueue({ batches, onInspect, canRecord, title, actionLabel, w
                                             {actionLabel}
                                         </button>
                                     ) : (
-                                        <span style={{ fontSize: '12px', color: '#64748b' }}>{waitingLabel}</span>
+                                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{waitingLabel}</span>
                                     )}
                                 </td>
                             </tr>

@@ -111,6 +111,7 @@ class FactoryReport
             ->sortKeys()->values()->all();
 
         $qcChecks = QualityInspection::where('stage', $stage)
+            ->where('is_reinspection', false)
             ->where('created_at', '>=', $start)
             ->where('created_at', '<=', $end)
             ->get();
@@ -231,6 +232,8 @@ class FactoryReport
         $checks = QualityInspection::whereNotNull('lot_id')->where('created_at', '>=', $start)->where('created_at', '<=', $end)
             ->with(['lot:id,lot_number', 'inspector:id,name'])->latest('id')->get();
 
+        $recheckRows = $checks->where('is_reinspection', true);
+        $checks = $checks->where('is_reinspection', false)->values();
         $inspected = (int) $checks->sum('inspected_quantity');
         $passed = (int) $checks->sum('passed_quantity');
 
@@ -251,6 +254,8 @@ class FactoryReport
 
         return [
             'checks' => $checks->count(),
+            'rechecks' => $recheckRows->count(),
+            'recovered' => (int) $recheckRows->sum('passed_quantity'),
             'inspected' => $inspected,
             'passed' => $passed,
             'rejected' => (int) $checks->sum('rejected_quantity'),

@@ -12,6 +12,7 @@ import { hrOfficerRole } from './hr-officer';
 import { internalAuditorRole } from './internal-auditor';
 import { logisticsNavGroups, logisticsRole } from './logistics';
 import { machineOperatorRole } from './machine-operator';
+import { maintenanceManagerRole } from './maintenance-manager';
 import { maintenanceTechnicianRole } from './maintenance-technician';
 import { ownerRole } from './owner';
 import { packingRole } from './packing';
@@ -37,6 +38,7 @@ export const ROLES: RoleModule[] = [
     financialManagerRole,
     productionPlannerRole,
     productionSupervisorRole,
+    maintenanceManagerRole,
     maintenanceTechnicianRole,
     qualityManagerRole,
     hrOfficerRole,
@@ -80,7 +82,6 @@ export function navGroupsFor(context: RoleContext): Record<string, NavGroup> {
     const { flags } = context;
 
     if (flags.isSchoolUser) return schoolNavGroups(context);
-    if (flags.isLogisticsUser && !flags.isNoguchiFactory) return logisticsNavGroups(context);
     if (flags.isFactoryAdmin || flags.isFactoryOwner) return executiveNavGroups(context);
 
     return {};

@@ -34,7 +34,7 @@ class LogisticsController extends Controller
                 'in_transit' => (clone $shipments)->where('status', 'in_transit')->count(),
                 'delivered' => (clone $shipments)->where('status', 'delivered')->count(),
                 'delayed' => (clone $shipments)
-                    ->whereNotIn('status', ['delivered', 'cancelled'])
+                    ->whereIn('status', ['planned', 'ready'])
                     ->where('planned_dispatch_at', '<', now())
                     ->count(),
                 'proof_of_delivery' => (clone $shipments)->whereNotNull('proof_reference')->count(),
@@ -53,7 +53,7 @@ class LogisticsController extends Controller
                 'pending_to_be_delivered' => (clone $salesOrders)->where('status', 'pending')->count(),
                 'ready_to_be_delivered' => (clone $salesOrders)->where('status', 'accepted')->count(),
                 'partial_delivered' => (clone $salesOrders)->where('status', 'partial')->count(),
-                'delivered_orders' => (clone $salesOrders)->where('status', 'delivered')->count(),
+                'delivered_orders' => (clone $salesOrders)->whereIn('status', ['delivered', 'completed'])->count(),
             ],
             'shipments' => Shipment::with(['vehicle', 'salesDocument:id,document_number'])
                 ->latest('planned_dispatch_at')
@@ -97,6 +97,7 @@ class LogisticsController extends Controller
             'delivery_notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $order = SalesDocument::findOrFail($data['sales_document_id']);
+        $this->ensureVehicleFree($data['delivery_vehicle_id'] ?? null, null);
         abort_unless(
             in_array($order->status, ['accepted', 'confirmed', 'processing', 'ready'], true),
             409,
@@ -157,6 +158,9 @@ class LogisticsController extends Controller
             'You do not have permission for this shipment action.',
         );
         $oldVehicle = $shipment->delivery_vehicle_id;
+        if ($data['action'] === 'ready') {
+            $this->ensureVehicleFree($data['delivery_vehicle_id'] ?? null, $shipment->id);
+        }
         DB::transaction(function () use ($shipment, $data, $oldVehicle) {
             if ($data['action'] === 'ready') {
                 abort_unless(
@@ -373,6 +377,61 @@ class LogisticsController extends Controller
                 'document' => $document->load('uploadedBy:id,name'),
             ],
             201,
+        );
+    }
+
+    /** The delivery list with filters: what to prepare, what is on the road and what was delivered. */
+    public function deliveries(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::in(['open', 'planned', 'ready', 'in_transit', 'delivered', 'cancelled', 'late'])],
+            'search' => ['nullable', 'string', 'max:100'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+        $status = $filters['status'] ?? null;
+        $search = trim((string) ($filters['search'] ?? ''));
+
+        $query = Shipment::with(['vehicle:id,registration_number,vehicle_type,driver_name,driver_phone', 'salesDocument:id,document_number,item_count'])
+            ->when($status === 'open', fn ($q) => $q->whereIn('status', ['planned', 'ready', 'in_transit']))
+            ->when($status === 'late', fn ($q) => $q->whereIn('status', ['planned', 'ready'])->where('planned_dispatch_at', '<', now()))
+            ->when($status && ! in_array($status, ['open', 'late'], true), fn ($q) => $q->where('status', $status))
+            ->when($filters['from'] ?? null, fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
+            ->when($search !== '', function ($q) use ($search) {
+                $term = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
+                $q->where(fn ($inner) => $inner
+                    ->where('shipment_number', 'like', $term)
+                    ->orWhere('customer_name', 'like', $term)
+                    ->orWhere('destination', 'like', $term)
+                    ->orWhere('received_by', 'like', $term)
+                    ->orWhere('proof_reference', 'like', $term)
+                    ->orWhereHas('salesDocument', fn ($order) => $order->where('document_number', 'like', $term)));
+            });
+
+        return response()->json([
+            'shipments' => (clone $query)->latest('id')->limit(300)->get(),
+            'total' => (clone $query)->count(),
+            'limit' => 300,
+        ]);
+    }
+
+    /** A vehicle that is stopped for repair, switched off, or already on another delivery cannot be given a new one. */
+    private function ensureVehicleFree(?int $vehicleId, ?int $shipmentId): void
+    {
+        if (! $vehicleId) {
+            return;
+        }
+        $vehicle = DeliveryVehicle::findOrFail($vehicleId);
+        $busy = Shipment::where('delivery_vehicle_id', $vehicleId)
+            ->whereIn('status', ['ready', 'in_transit'])
+            ->when($shipmentId, fn ($q) => $q->where('id', '!=', $shipmentId))
+            ->exists();
+        abort_if($busy, 409, "{$vehicle->registration_number} is already on another delivery. Choose another vehicle.");
+        abort_if(
+            in_array($vehicle->status, ['maintenance', 'inactive'], true),
+            409,
+            "{$vehicle->registration_number} cannot be used now because it is " . ($vehicle->status === 'maintenance' ? 'being repaired.' : 'switched off.'),
         );
     }
 

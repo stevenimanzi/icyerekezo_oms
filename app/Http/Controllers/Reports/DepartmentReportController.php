@@ -42,6 +42,12 @@ class DepartmentReportController extends Controller
             ->pluck('dashboard_key')
             ->map(fn ($key) => (string) $key);
         $key = $keys->first(fn ($key) => isset(self::REPORTS[$key]));
+
+        // The owner, administrator and manager may open any department of the factory they are working in.
+        $asked = (string) $request->query('department', '');
+        if ($asked !== '' && isset(self::REPORTS[$asked]) && ExecutiveReportController::isExecutive($user, $factoryId)) {
+            $key = $asked;
+        }
         abort_unless($key, 403, 'There is no separate report for your department.');
 
         $filters = $request->validate([
@@ -96,7 +102,8 @@ class DepartmentReportController extends Controller
                 'paid' => (float) $row->paid_amount,
                 'balance' => max(0, (float) $row->total_amount - (float) $row->paid_amount),
             ]);
-        $totals = (clone $query)->selectRaw('COUNT(*) c, COALESCE(SUM(total_amount),0) t, COALESCE(SUM(paid_amount),0) p')->first();
+        // Cancelled and rejected documents stay in the list but are not counted in the totals.
+        $totals = (clone $query)->whereNotIn('status', ['cancelled', 'rejected'])->selectRaw('COUNT(*) c, COALESCE(SUM(total_amount),0) t, COALESCE(SUM(paid_amount),0) p')->first();
         $summary = (new SalesReport($factoryId, $from, $to))->build();
         $money = fn (string $label, string $key) => ['label' => $label, 'key' => $key, 'kind' => 'money'];
         $count = fn (string $label, string $key) => ['label' => $label, 'key' => $key, 'kind' => 'number'];
@@ -131,7 +138,7 @@ class DepartmentReportController extends Controller
                 ],
             ],
             'title' => 'Sales report',
-            'intro' => 'Orders and sales documents made by the sales team in the chosen dates.',
+            'intro' => 'Orders and sales documents made by the sales team in the chosen dates. Cancelled and rejected ones are listed but not counted in the totals.',
             'kpis' => [
                 ['label' => 'Documents', 'value' => (int) $totals->c, 'kind' => 'number'],
                 ['label' => 'Total value', 'value' => (float) $totals->t, 'kind' => 'money'],
@@ -185,12 +192,12 @@ class DepartmentReportController extends Controller
                 'total' => (float) $row->total_amount,
                 'expected' => $row->expected_date,
             ]);
-        $totals = (clone $query)->selectRaw('COUNT(*) c, COALESCE(SUM(d.total_amount),0) t')->first();
+        $totals = (clone $query)->whereNotIn('d.status', ['cancelled', 'rejected'])->selectRaw('COUNT(*) c, COALESCE(SUM(d.total_amount),0) t')->first();
         $open = (clone $query)->whereNotIn('d.status', ['received', 'closed', 'cancelled', 'rejected'])->count();
 
         return [
             'title' => 'Purchasing report',
-            'intro' => 'Purchase requests and orders made in the chosen dates.',
+            'intro' => 'Purchase requests and orders made in the chosen dates. Cancelled and rejected ones are listed but not counted in the totals.',
             'kpis' => [
                 ['label' => 'Documents', 'value' => (int) $totals->c, 'kind' => 'number'],
                 ['label' => 'Total value', 'value' => (float) $totals->t, 'kind' => 'money'],
@@ -233,36 +240,41 @@ class DepartmentReportController extends Controller
             ->get([
                 DB::raw('COALESCE(q.inspected_at, q.created_at) as at'),
                 'q.inspection_number', 'i.name as item', 'q.inspection_type', 'q.inspected_quantity',
-                'q.passed_quantity', 'q.rejected_quantity', 'q.result', 'u.name as inspector',
+                'q.passed_quantity', 'q.rejected_quantity', 'q.result', 'q.is_reinspection', 'u.name as inspector',
             ])
             ->map(fn ($row) => [
                 'date' => $row->at,
                 'number' => $row->inspection_number,
                 'item' => $row->item ?: 'Not named',
                 'type' => $this->words($row->inspection_type),
+                'kind' => $row->is_reinspection ? 'Re-check' : 'First check',
                 'checked' => (float) $row->inspected_quantity,
                 'passed' => (float) $row->passed_quantity,
                 'rejected' => (float) $row->rejected_quantity,
                 'result' => $this->words($row->result),
                 'inspector' => $row->inspector ?: 'Not set',
             ]);
-        $totals = (clone $query)->selectRaw('COUNT(*) c, COALESCE(SUM(q.inspected_quantity),0) k, COALESCE(SUM(q.passed_quantity),0) p, COALESCE(SUM(q.rejected_quantity),0) r')->first();
+        // A re-check measures the same pieces again, so totals and the pass rate use first checks only.
+        $totals = (clone $query)->where('q.is_reinspection', false)->selectRaw('COUNT(*) c, COALESCE(SUM(q.inspected_quantity),0) k, COALESCE(SUM(q.passed_quantity),0) p, COALESCE(SUM(q.rejected_quantity),0) r')->first();
+        $recovered = (float) (clone $query)->where('q.is_reinspection', true)->sum('q.passed_quantity');
         $rate = (float) $totals->k > 0 ? round(((float) $totals->p / (float) $totals->k) * 100, 1) : 0;
 
         return [
             'title' => 'Quality report',
-            'intro' => 'Quality checks done in the chosen dates and how many items passed.',
+            'intro' => 'Quality checks done in the chosen dates. Totals count first checks only; pieces that failed and then passed a re-check are shown as recovered.',
             'kpis' => [
-                ['label' => 'Checks done', 'value' => (int) $totals->c, 'kind' => 'number'],
+                ['label' => 'First checks done', 'value' => (int) $totals->c, 'kind' => 'number'],
                 ['label' => 'Items checked', 'value' => (float) $totals->k, 'kind' => 'number'],
                 ['label' => 'Items rejected', 'value' => (float) $totals->r, 'kind' => 'number'],
                 ['label' => 'Pass rate', 'value' => $rate, 'kind' => 'percent'],
+                ['label' => 'Recovered after re-check', 'value' => $recovered, 'kind' => 'number'],
             ],
             'columns' => [
                 ['key' => 'date', 'label' => 'Date', 'kind' => 'date'],
                 ['key' => 'number', 'label' => 'Check number', 'kind' => 'text'],
                 ['key' => 'item', 'label' => 'Item', 'kind' => 'text'],
                 ['key' => 'type', 'label' => 'Type', 'kind' => 'text'],
+                ['key' => 'kind', 'label' => 'Check', 'kind' => 'text'],
                 ['key' => 'checked', 'label' => 'Checked', 'kind' => 'number'],
                 ['key' => 'passed', 'label' => 'Passed', 'kind' => 'number'],
                 ['key' => 'rejected', 'label' => 'Rejected', 'kind' => 'number'],
@@ -282,7 +294,7 @@ class DepartmentReportController extends Controller
         $attendance = DB::table('employee_attendances')
             ->where('factory_id', $factoryId)
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->selectRaw("user_id, SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) present_days, SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) absent_days")
+            ->selectRaw("user_id, SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) present_days, SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) late_days, SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) absent_days")
             ->groupBy('user_id')
             ->get()
             ->keyBy('user_id');
@@ -291,9 +303,15 @@ class DepartmentReportController extends Controller
             ->where('status', 'approved')
             ->where('starts_at', '<=', $to->toDateString())
             ->where('ends_at', '>=', $from->toDateString())
-            ->selectRaw('user_id, SUM(days_requested) days')
+            ->get(['user_id', 'starts_at', 'ends_at'])
             ->groupBy('user_id')
-            ->pluck('days', 'user_id');
+            ->map(fn ($rows) => $rows->sum(function ($row) use ($from, $to) {
+                // Only the days that fall inside the chosen dates.
+                $start = Carbon::parse($row->starts_at)->startOfDay()->max($from->copy()->startOfDay());
+                $end = Carbon::parse($row->ends_at)->startOfDay()->min($to->copy()->startOfDay());
+
+                return $end->gte($start) ? (int) $start->diffInDays($end) + 1 : 0;
+            }));
 
         $base = DB::table('employee_profiles as p')
             ->join('users as u', 'u.id', '=', 'p.user_id')
@@ -316,6 +334,7 @@ class DepartmentReportController extends Controller
                 'status' => $this->words($row->employment_status),
                 'hired' => $row->hired_at,
                 'present' => (int) ($attendance[$row->user_id]->present_days ?? 0),
+                'late' => (int) ($attendance[$row->user_id]->late_days ?? 0),
                 'absent' => (int) ($attendance[$row->user_id]->absent_days ?? 0),
                 'leave' => (int) ($leave[$row->user_id] ?? 0),
             ]);
@@ -323,10 +342,11 @@ class DepartmentReportController extends Controller
 
         return [
             'title' => 'People report',
-            'intro' => 'Staff list with days present, absent and on leave in the chosen dates.',
+            'intro' => 'Staff list with days present (on time or late), late, absent and on leave in the chosen dates.',
             'kpis' => [
                 ['label' => 'Staff', 'value' => $rows->count(), 'kind' => 'number'],
                 ['label' => 'Days present', 'value' => $rows->sum('present'), 'kind' => 'number'],
+                ['label' => 'Days late', 'value' => $rows->sum('late'), 'kind' => 'number'],
                 ['label' => 'Days absent', 'value' => $rows->sum('absent'), 'kind' => 'number'],
                 ['label' => 'Leave waiting for a reply', 'value' => $pending, 'kind' => 'number'],
             ],
@@ -338,6 +358,7 @@ class DepartmentReportController extends Controller
                 ['key' => 'status', 'label' => 'Status', 'kind' => 'text'],
                 ['key' => 'hired', 'label' => 'Hired on', 'kind' => 'date'],
                 ['key' => 'present', 'label' => 'Days present', 'kind' => 'number'],
+                ['key' => 'late', 'label' => 'Days late', 'kind' => 'number'],
                 ['key' => 'absent', 'label' => 'Days absent', 'kind' => 'number'],
                 ['key' => 'leave', 'label' => 'Days on leave', 'kind' => 'number'],
             ],

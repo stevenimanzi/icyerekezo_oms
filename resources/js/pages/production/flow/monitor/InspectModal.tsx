@@ -256,7 +256,7 @@ export function InspectModal({
                                 <input type="number" value={nowGood + nowBad} readOnly />
                             </label>
                             <label className="ui-field">
-                                <span style={{ color: '#059669' }}>{t.nowPassed}</span>
+                                <span style={{ color: 'var(--ok)' }}>{t.nowPassed}</span>
                                 <input
                                     type="number"
                                     min={0}
@@ -268,7 +268,7 @@ export function InspectModal({
                                 />
                             </label>
                             <label className="ui-field">
-                                <span style={{ color: nowBad > 0 ? '#dc2626' : undefined }}>{t.stillFailing}</span>
+                                <span style={{ color: nowBad > 0 ? 'var(--bad)' : undefined }}>{t.stillFailing}</span>
                                 <input
                                     type="number"
                                     min={0}
@@ -283,7 +283,7 @@ export function InspectModal({
                     )}
                     {nowBad > 0 && (
                         <label className="ui-field">
-                            <span style={{ color: '#dc2626', fontWeight: 600 }}>{t.defects} *</span>
+                            <span style={{ color: 'var(--bad)', fontWeight: 600 }}>{t.defects} *</span>
                             <input
                                 value={defects}
                                 onChange={(event) => setDefects(event.target.value)}
@@ -328,7 +328,7 @@ export function InspectModal({
                     />
                 </label>
                 <label className="ui-field">
-                    <span style={{ color: '#059669' }}>{t.passed}</span>
+                    <span style={{ color: 'var(--ok)' }}>{t.passed}</span>
                     <input
                         type="number"
                         min={0}
@@ -340,7 +340,7 @@ export function InspectModal({
                     />
                 </label>
                 <label className="ui-field">
-                    <span style={{ color: Number(rejected) > 0 ? '#dc2626' : undefined }}>{t.rejected}</span>
+                    <span style={{ color: Number(rejected) > 0 ? 'var(--bad)' : undefined }}>{t.rejected}</span>
                     <input
                         type="number"
                         min={0}
@@ -368,7 +368,7 @@ export function InspectModal({
                     }}
                 >
                     <label className="ui-field" style={{ margin: 0 }}>
-                        <span style={{ color: '#dc2626', fontWeight: 600 }}>{t.defects} *</span>
+                        <span style={{ color: 'var(--bad)', fontWeight: 600 }}>{t.defects} *</span>
                         <input
                             value={defects}
                             onChange={(event) => setDefects(event.target.value)}

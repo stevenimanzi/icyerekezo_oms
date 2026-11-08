@@ -72,7 +72,7 @@ const WarehouseReportPage = lazy(
 );
 const InventoryManagementPage = lazy(() => import('../pages/warehouse/InventoryManagementPage'));
 const LogisticsOverviewPage = lazy(() => import('../pages/logistics/LogisticsOverviewPage'));
-const MachinesPage = lazy(() => import('../pages/production/MachinesPage'));
+const MaintenanceWorkspacePage = lazy(() => import('../pages/maintenance/MaintenanceWorkspacePage'));
 const NotificationsPage = lazy(() =>
     import('../pages/shared/NotificationsPage').then((module) => ({
         default: module.NotificationsPage,
@@ -105,6 +105,8 @@ const MaterialRequestsPage = lazy(
     () => import('../pages/production/flow/materials/MaterialRequestsPage'),
 );
 const FactoryReportPage = lazy(() => import('../pages/reports/FactoryReportPage'));
+const FactoryReportsHub = lazy(() => import('../pages/reports/FactoryReportsHub'));
+const LogisticsWorkspacePage = lazy(() => import('../pages/logistics/LogisticsWorkspacePage'));
 const StageWorkspace = lazy(() => import('../pages/production/flow/StageWorkspace'));
 const SystemAdminPage = lazyWithRetry(() => import('../roles/system-admin/SystemAdminPage'));
 const TeamManagementPage = lazy(() =>
@@ -242,6 +244,20 @@ function CurrentPage({
         return <WarehouseReportPage user={user} locale={locale} />;
     }
 
+    // The owner, administrator and manager read every department of the active factory from one page.
+    if (activePage === 'reports' && flags.isExecutiveUser && !user.is_platform_admin) {
+        return (
+            <FactoryReportsHub
+                user={user}
+                locale={locale}
+                hasProductionFlow={flags.hasProductionFlow}
+                canExport={can('reports.export')}
+                can={can}
+                onNavigate={onNavigate}
+            />
+        );
+    }
+
     if (flags.hasProductionFlow) {
         const flowStage = FLOW_STAGE_PAGES[activePage];
 
@@ -368,6 +384,12 @@ function CurrentPage({
         case 'dispatch':
         case 'vehicles':
         case 'delivery-confirmation':
+            // Noguchi keeps its own school-order screen; every other factory uses the simple delivery workspace.
+            if (!flags.isNoguchiFactory) {
+                const view = activePage === 'dispatch' ? 'send-out' : activePage === 'vehicles' ? 'vehicles' : activePage === 'delivery-confirmation' ? 'confirm' : 'deliveries';
+
+                return <LogisticsWorkspacePage view={view} can={can} onNavigate={onNavigate} />;
+            }
             return (
                 <LogisticsOverviewPage
                     can={can}
@@ -378,7 +400,7 @@ function CurrentPage({
             if (flags.isLogisticsUser) return <AgreementWorkspacePage can={can} />;
             break;
         case 'settings':
-            return <FactorySettingsPage />;
+            return <FactorySettingsPage limited={flags.isFactoryManager && !flags.isFactoryOwner && !user.roles.some((role) => role.slug === 'factory-administrator')} />;
         case 'team':
             return <TeamManagementPage />;
         case 'reports':
@@ -389,6 +411,7 @@ function CurrentPage({
             // Each department sees its own report, never another department's.
             if (!flags.isExecutiveUser && activePage === 'reports') {
                 if (user.workspace === 'finance') return <FinancialReportsPage />;
+                if (user.workspace === 'maintenance') return <MaintenanceWorkspacePage view="reports" can={can} onNavigate={onNavigate} />;
                 if (DEPARTMENT_REPORT_WORKSPACES.includes(user.workspace)) {
                     return <DepartmentReportPage />;
                 }
@@ -408,7 +431,15 @@ function CurrentPage({
         case 'quality':
             return <QualityControlPage can={can} user={user} flags={flags} />;
         case 'machines':
-            return <MachinesPage can={can} />;
+            return <MaintenanceWorkspacePage view="machines" can={can} onNavigate={onNavigate} />;
+        case 'maint-problems':
+            return <MaintenanceWorkspacePage view="problems" can={can} onNavigate={onNavigate} />;
+        case 'maint-performance':
+            return <MaintenanceWorkspacePage view="performance" can={can} onNavigate={onNavigate} />;
+        case 'maint-schedule':
+            return <MaintenanceWorkspacePage view="schedule" can={can} onNavigate={onNavigate} />;
+        case 'maint-reports':
+            return <MaintenanceWorkspacePage view="reports" can={can} onNavigate={onNavigate} />;
         case 'production':
             return <ProductionOperations can={can} user={user} locale={locale} />;
     }

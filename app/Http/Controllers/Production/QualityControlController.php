@@ -28,7 +28,8 @@ class QualityControlController extends Controller
         $factory = $request->user()->currentFactory;
         $hasFlow = $factory && in_array('garment_flow', $factory->feature_flags ?? []);
 
-        $base = QualityInspection::where('factory_id', $factoryId);
+        // First checks only: a re-check measures the same pieces again.
+        $base = QualityInspection::where('factory_id', $factoryId)->where('is_reinspection', false);
         $monthStart = now()->startOfMonth();
         $monthEnd = now()->endOfMonth();
 
@@ -54,6 +55,7 @@ class QualityControlController extends Controller
         $trend = collect(range(13, 0))->map(function ($daysAgo) use ($factoryId) {
             $day = today()->subDays($daysAgo);
             $dayInspections = QualityInspection::where('factory_id', $factoryId)
+                ->where('is_reinspection', false)
                 ->where(function ($q) use ($day) {
                     $q->whereDate('inspected_at', $day)
                       ->orWhere(function ($sub) use ($day) {
@@ -71,6 +73,7 @@ class QualityControlController extends Controller
 
         // Query real inspection statistics grouped by stage from database
         $stageInspectionStats = QualityInspection::where('factory_id', $factoryId)
+            ->where('is_reinspection', false)
             ->whereNotNull('stage')
             ->selectRaw('LOWER(stage) as stage, SUM(inspected_quantity) as inspected, SUM(passed_quantity) as passed, SUM(rejected_quantity) as rejected')
             ->groupBy(DB::raw('LOWER(stage)'))
@@ -203,6 +206,7 @@ class QualityControlController extends Controller
         $factoryId = $request->user()->current_factory_id;
         $base = QualityInspection::where('factory_id', $factoryId);
         $completed = (clone $base)
+            ->where('is_reinspection', false)
             ->whereIn('result', ['passed', 'failed', 'conditional'])
             ->where('inspected_at', '>=', now()->startOfMonth());
         $inspected = (float) (clone $completed)->sum('inspected_quantity');

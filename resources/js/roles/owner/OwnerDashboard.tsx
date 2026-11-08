@@ -55,7 +55,7 @@ export default function OwnerDashboard({ user, locale }: HomeProps) {
                             padding: '0.4rem 2rem 0.4rem 1rem',
                             borderRadius: '4px',
                             border: '1px solid var(--border)',
-                            background: '#ffffff',
+                            background: 'var(--panel)',
                             fontWeight: 600,
                         }}
                     >
@@ -78,10 +78,10 @@ export default function OwnerDashboard({ user, locale }: HomeProps) {
                                     fontSize: '0.875rem',
                                     borderRadius: '4px',
                                     border: '1px solid var(--border)',
-                                    background: '#ffffff',
+                                    background: 'var(--panel)',
                                 }}
                             />
-                            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>~</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>~</span>
                             <input
                                 type="date"
                                 value={endDate}
@@ -92,7 +92,7 @@ export default function OwnerDashboard({ user, locale }: HomeProps) {
                                     fontSize: '0.875rem',
                                     borderRadius: '4px',
                                     border: '1px solid var(--border)',
-                                    background: '#ffffff',
+                                    background: 'var(--panel)',
                                 }}
                             />
                         </div>

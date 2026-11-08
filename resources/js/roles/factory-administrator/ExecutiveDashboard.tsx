@@ -123,7 +123,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                             padding: '0.4rem 2rem 0.4rem 1rem',
                             borderRadius: '4px',
                             border: '1px solid var(--border)',
-                            background: '#ffffff',
+                            background: 'var(--panel)',
                             fontWeight: 600,
                         }}
                     >
@@ -151,10 +151,10 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                     fontSize: '0.875rem',
                                     borderRadius: '4px',
                                     border: '1px solid var(--border)',
-                                    background: '#ffffff',
+                                    background: 'var(--panel)',
                                 }}
                             />
-                            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>~</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>~</span>
                             <input
                                 type="date"
                                 value={endDate}
@@ -165,7 +165,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                     fontSize: '0.875rem',
                                     borderRadius: '4px',
                                     border: '1px solid var(--border)',
-                                    background: '#ffffff',
+                                    background: 'var(--panel)',
                                 }}
                             />
                         </div>
@@ -312,7 +312,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                                 <span style={{ width: '16px', height: '3px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} />
                                 <b>{isSpecialized ? (locale === 'fr' ? 'Ligne bleue (Livré réels)' : 'Blue solid line: Actual garments delivered') : (locale === 'fr' ? 'Ligne bleue (Production réelle)' : 'Blue solid line: Actual output completed')}</b>
                             </span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--muted)' }}>
                                 <span style={{ width: '16px', height: '2px', borderTop: '2px dashed #94a3b8', display: 'inline-block' }} />
                                 <span>{isSpecialized ? (locale === 'fr' ? 'Ligne grise pointillée (Commandes attendues)' : 'Grey dashed line: Total garments ordered') : (locale === 'fr' ? 'Ligne grise pointillée (Objectif planifié)' : 'Grey dashed line: Planned production target')}</span>
                             </span>

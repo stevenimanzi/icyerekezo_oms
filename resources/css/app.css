@@ -11,6 +11,14 @@
     --soft: #f8fafc;
     --brand: #2563eb;
     --sidebar: 224px;
+    --ok: #15803d;
+    --ok-bg: #dcfce7;
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+    --bad: #dc2626;
+    --bad-bg: #fee2e2;
+    --info: #2563eb;
+    --info-bg: #eff6ff;
     color-scheme: light;
 }
 :root[data-theme='dark'] {
@@ -20,6 +28,14 @@
     --muted: #99a7bc;
     --line: #263246;
     --soft: #111827;
+    --ok: #4ade80;
+    --ok-bg: rgba(34, 197, 94, 0.16);
+    --warn: #fbbf24;
+    --warn-bg: rgba(245, 158, 11, 0.16);
+    --bad: #f87171;
+    --bad-bg: rgba(239, 68, 68, 0.16);
+    --info: #60a5fa;
+    --info-bg: rgba(59, 130, 246, 0.16);
     color-scheme: dark;
 }
 * {
@@ -12304,7 +12320,8 @@ button.table-action.danger:not(.icon-only):hover:not(:disabled),
 }
 .sidebar .nav-item.active,
 .sidebar .nav-group.has-active > .nav-group-toggle {
-    background: rgba(37, 99, 235, 0.1) !important;
+    background: transparent !important;
+    background-color: transparent !important;
     color: var(--brand, #2563eb) !important;
     font-weight: 600 !important;
 }
@@ -12355,7 +12372,8 @@ button.table-action.danger:not(.icon-only):hover:not(:disabled),
 }
 [data-theme='dark'] .sidebar .nav-item.active,
 [data-theme='dark'] .sidebar .nav-group.has-active > .nav-group-toggle {
-    background: rgba(59, 130, 246, 0.18) !important;
+    background: transparent !important;
+    background-color: transparent !important;
     color: #93c5fd !important;
 }
 [data-theme='dark'] .sidebar .nav-item.active::before {
@@ -12381,4 +12399,144 @@ button.table-action.danger:not(.icon-only):hover:not(:disabled),
     .sidebar .nav-group-toggle {
         height: 38px;
     }
+}
+
+.sidebar .nav-item.active:hover,
+.sidebar .nav-group.has-active > .nav-group-toggle:hover {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* ===== Dark mode: parts that used fixed light colours and had no dark version ===== */
+[data-theme='dark'] .form-error,
+[data-theme='dark'] .admin-alert.error,
+[data-theme='dark'] .recovery-warning,
+[data-theme='dark'] .profile-alert.error,
+[data-theme='dark'] .products-confirm-body > span {
+    background: rgba(239, 68, 68, 0.14);
+    border-color: rgba(239, 68, 68, 0.38);
+    color: #fca5a5;
+}
+[data-theme='dark'] .admin-alert.success,
+[data-theme='dark'] .completed-label,
+[data-theme='dark'] .top-popover .nc-read:hover {
+    background: rgba(34, 197, 94, 0.14);
+    border-color: rgba(34, 197, 94, 0.35);
+    color: #86efac;
+}
+[data-theme='dark'] .priority,
+[data-theme='dark'] .department-production-link,
+[data-theme='dark'] .team-user-cell > span,
+[data-theme='dark'] .chat-list button > span,
+[data-theme='dark'] .nc-badge.inventory,
+[data-theme='dark'] .stage-option-help b {
+    background: rgba(59, 130, 246, 0.16);
+    color: #93c5fd;
+}
+[data-theme='dark'] .priority.high,
+[data-theme='dark'] .nc-badge.sales,
+[data-theme='dark'] .nc-copy em {
+    background: rgba(249, 115, 22, 0.16);
+    color: #fdba74;
+}
+[data-theme='dark'] .nc-badge.production {
+    background: rgba(34, 197, 94, 0.16);
+    color: #86efac;
+}
+[data-theme='dark'] .nc-badge.quality {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fca5a5;
+}
+[data-theme='dark'] .nc-badge.support {
+    background: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
+}
+[data-theme='dark'] .department-production-link small {
+    color: #9db0d3;
+}
+[data-theme='dark'] .stage-option-help div,
+[data-theme='dark'] .rg-day > header {
+    background: var(--soft) !important;
+}
+[data-theme='dark'] .ui-toolbar input {
+    background: var(--panel) !important;
+    color: var(--text);
+}
+[data-theme='dark'] .table-action.icon-only:hover:not(:disabled),
+[data-theme='dark'] .action-edit-btn:not(.icon-only):hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.18) !important;
+}
+[data-theme='dark'] .action-edit-btn:not(.icon-only),
+[data-theme='dark'] .table-action.icon-only.action-save-btn:disabled {
+    background: var(--panel) !important;
+    background-color: var(--panel) !important;
+}
+[data-theme='dark'] .ow-trend {
+    background: var(--panel);
+}
+[data-theme='dark'] .toggle {
+    background: #475569;
+}
+[data-theme='dark'] .report-table-scroll::-webkit-scrollbar-thumb {
+    background: #475569 !important;
+}
+[data-theme='dark'] .nav-item i {
+    background: rgba(251, 146, 60, 0.16);
+}
+[data-theme='dark'] .inventory-metrics article.warning strong,
+[data-theme='dark'] .sales-metrics article.warning strong,
+[data-theme='dark'] .notice-icon.warning {
+    color: #fbbf24;
+}
+[data-theme='dark'] .production-summary-card.danger b,
+[data-theme='dark'] .fb-kpi.bad b,
+[data-theme='dark'] .fb-out,
+[data-theme='dark'] .export-error,
+[data-theme='dark'] .stage-order button:last-child,
+[data-theme='dark'] .inventory-row-actions button.danger,
+[data-theme='dark'] .products-data-panel .table-action.danger,
+[data-theme='dark'] .confirm-dialog > header.danger,
+[data-theme='dark'] .notice-icon.critical,
+[data-theme='dark'] .operation-toast-error .operation-toast-icon {
+    color: #f87171;
+}
+[data-theme='dark'] .fb-btn.danger {
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.4);
+}
+[data-theme='dark'] .operation-toast-success .operation-toast-icon {
+    color: #4ade80;
+}
+[data-theme='dark'] .operation-toast-info .operation-toast-icon,
+[data-theme='dark'] .assignment-preview b,
+[data-theme='dark'] .activity-icon.blue,
+[data-theme='dark'] .product-icon,
+[data-theme='dark'] .platform-kicker,
+[data-theme='dark'] .ticket-head b,
+[data-theme='dark'] .settings-summary > svg,
+[data-theme='dark'] .activity-feed > div > span,
+[data-theme='dark'] .chat-list em,
+[data-theme='dark'] .welcome-support-icon,
+[data-theme='dark'] .notice-icon,
+[data-theme='dark'] .maintenance-screen > span,
+[data-theme='dark'] .flow-head small,
+[data-theme='dark'] .flow-line span,
+[data-theme='dark'] .workflow-editor > header small,
+[data-theme='dark'] .team-modal > header > div > span,
+[data-theme='dark'] .school-order-modal > header small,
+[data-theme='dark'] .school-payment-title small,
+[data-theme='dark'] .school-payment-summary .due b,
+[data-theme='dark'] .school-proof-upload > svg,
+[data-theme='dark'] .school-agreement-file > svg,
+[data-theme='dark'] .data-filters-quick button:hover,
+[data-theme='dark'] .ui-auto input[readonly],
+[data-theme='dark'] .ui-auto .ui-help,
+[data-theme='dark'] .ui-colour {
+    color: #60a5fa;
+}
+[data-theme='dark'] .activity-icon.violet,
+[data-theme='dark'] .product-icon.p1,
+[data-theme='dark'] .status.s1,
+[data-theme='dark'] .tc-avatar.support {
+    color: #a78bfa;
 }

@@ -55,11 +55,11 @@ interface ProductItem {
 }
 
 const STAGE_LABELS: Record<string, { label: string; labelFr: string; color: string; bg: string }> = {
-    cutting: { label: 'Cutting Stage', labelFr: 'Atelier Coupe', color: '#2563eb', bg: '#eff6ff' },
-    sewing: { label: 'Sewing Stage', labelFr: 'Atelier Couture', color: '#7c3aed', bg: '#f5f3ff' },
-    finishing: { label: 'Finishing Stage', labelFr: 'Atelier Finition', color: '#d97706', bg: '#fffbeb' },
+    cutting: { label: 'Cutting Stage', labelFr: 'Atelier Coupe', color: 'var(--info)', bg: '#eff6ff' },
+    sewing: { label: 'Sewing Stage', labelFr: 'Atelier Couture', color: 'var(--info)', bg: '#f5f3ff' },
+    finishing: { label: 'Finishing Stage', labelFr: 'Atelier Finition', color: 'var(--warn)', bg: '#fffbeb' },
     packing: { label: 'Packing Stage', labelFr: 'Atelier Emballage', color: '#0891b2', bg: '#ecfeff' },
-    finished: { label: 'Finished Output', labelFr: 'Produits Finis', color: '#16a34a', bg: '#f0fdf4' },
+    finished: { label: 'Finished Output', labelFr: 'Produits Finis', color: 'var(--ok)', bg: '#f0fdf4' },
 };
 
 const PERIOD_LABELS: Record<string, { en: string; fr: string }> = {
@@ -282,7 +282,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
     }, [targets, selectedTab, searchQuery]);
 
     return (
-        <div style={{ padding: '24px 28px', maxWidth: '1440px', margin: '0 auto', color: '#1e293b' }}>
+        <div style={{ padding: '24px 28px', maxWidth: '1440px', margin: '0 auto', color: 'var(--text)' }}>
             {/* Header */}
             <div
                 style={{
@@ -299,7 +299,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                         style={{
                             fontSize: '26px',
                             fontWeight: 700,
-                            color: '#0f172a',
+                            color: 'var(--text)',
                             margin: '0 0 6px 0',
                             letterSpacing: '-0.02em',
                             display: 'flex',
@@ -310,7 +310,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                         <Target size={26} color="#2563eb" />
                         {isFr ? 'Planification & Objectifs de Production' : 'Production Planning & Targets'}
                     </h1>
-                    <p style={{ margin: 0, color: '#64748b', fontSize: '14px', maxWidth: '720px' }}>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: '14px', maxWidth: '720px' }}>
                         {isFr
                             ? 'Définissez vos objectifs de production par produit et atelier, suivez l’avancement en temps réel et mesurez le pourcentage d’atteinte.'
                             : 'Set production output targets by product and stage, monitor live factory progress, and track % achievement towards your goals in real-time.'}
@@ -326,12 +326,12 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                             alignItems: 'center',
                             gap: '8px',
                             padding: '9px 16px',
-                            background: '#ffffff',
-                            border: '1px solid #cbd5e1',
+                            background: 'var(--panel)',
+                            border: '1px solid var(--line)',
                             borderRadius: '8px',
                             fontSize: '13px',
                             fontWeight: 500,
-                            color: '#475569',
+                            color: 'var(--muted)',
                             cursor: 'pointer',
                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                         }}
@@ -369,9 +369,9 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                     style={{
                         padding: '12px 18px',
                         borderRadius: '8px',
-                        backgroundColor: '#f0fdf4',
+                        backgroundColor: 'var(--ok-bg)',
                         border: '1px solid #86efac',
-                        color: '#166534',
+                        color: 'var(--ok)',
                         marginBottom: '20px',
                         fontSize: '14px',
                         display: 'flex',
@@ -389,9 +389,9 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                     style={{
                         padding: '12px 18px',
                         borderRadius: '8px',
-                        backgroundColor: '#fef2f2',
+                        backgroundColor: 'var(--bad-bg)',
                         border: '1px solid #fca5a5',
-                        color: '#991b1b',
+                        color: 'var(--bad)',
                         marginBottom: '20px',
                         fontSize: '14px',
                         display: 'flex',
@@ -416,15 +416,15 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                 {/* Total Target */}
                 <div
                     style={{
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--panel)',
+                        border: '1px solid var(--line)',
                         borderRadius: '12px',
                         padding: '18px 20px',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                     }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>
                             {isFr ? 'Objectif Total' : 'Total Target Units'}
                         </span>
                         <div
@@ -432,20 +432,20 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 width: '32px',
                                 height: '32px',
                                 borderRadius: '8px',
-                                background: '#eff6ff',
+                                background: 'var(--info-bg)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#2563eb',
+                                color: 'var(--info)',
                             }}
                         >
                             <Target size={18} />
                         </div>
                     </div>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', margin: '8px 0 4px 0' }}>
-                        {summary.total_target_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>pcs</span>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text)', margin: '8px 0 4px 0' }}>
+                        {summary.total_target_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--muted)' }}>pcs</span>
                     </div>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
                         {summary.total_targets_count} {isFr ? 'objectifs au total' : 'planned target goals'}
                     </span>
                 </div>
@@ -453,15 +453,15 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                 {/* Actual Output Reached */}
                 <div
                     style={{
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--panel)',
+                        border: '1px solid var(--line)',
                         borderRadius: '12px',
                         padding: '18px 20px',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                     }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>
                             {isFr ? 'Production Réalisée' : 'Actual Output Reached'}
                         </span>
                         <div
@@ -469,20 +469,20 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 width: '32px',
                                 height: '32px',
                                 borderRadius: '8px',
-                                background: '#f0fdf4',
+                                background: 'var(--ok-bg)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#16a34a',
+                                color: 'var(--ok)',
                             }}
                         >
                             <TrendingUp size={18} />
                         </div>
                     </div>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a', margin: '8px 0 4px 0' }}>
-                        {summary.total_actual_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>pcs</span>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--ok)', margin: '8px 0 4px 0' }}>
+                        {summary.total_actual_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--muted)' }}>pcs</span>
                     </div>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
                         {isFr ? 'Produits fabriqués validés' : 'Completed pieces recorded'}
                     </span>
                 </div>
@@ -490,15 +490,15 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                 {/* Remaining Needed */}
                 <div
                     style={{
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--panel)',
+                        border: '1px solid var(--line)',
                         borderRadius: '12px',
                         padding: '18px 20px',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                     }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>
                             {isFr ? 'Reste à Produire' : 'Remaining Needed'}
                         </span>
                         <div
@@ -506,20 +506,20 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 width: '32px',
                                 height: '32px',
                                 borderRadius: '8px',
-                                background: '#fffbeb',
+                                background: 'var(--warn-bg)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#d97706',
+                                color: 'var(--warn)',
                             }}
                         >
                             <Clock size={18} />
                         </div>
                     </div>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#d97706', margin: '8px 0 4px 0' }}>
-                        {summary.total_remaining_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>pcs</span>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--warn)', margin: '8px 0 4px 0' }}>
+                        {summary.total_remaining_units.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--muted)' }}>pcs</span>
                     </div>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
                         {isFr ? 'Pour compléter tous les objectifs' : 'Units needed to reach goals'}
                     </span>
                 </div>
@@ -527,15 +527,15 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                 {/* Overall Achievement Rate */}
                 <div
                     style={{
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--panel)',
+                        border: '1px solid var(--line)',
                         borderRadius: '12px',
                         padding: '18px 20px',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                     }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>
                             {isFr ? 'Taux d’Atteinte' : 'Overall Progress'}
                         </span>
                         <div
@@ -547,13 +547,13 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#7c3aed',
+                                color: 'var(--info)',
                             }}
                         >
                             <Sparkles size={18} />
                         </div>
                     </div>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', margin: '8px 0 4px 0' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text)', margin: '8px 0 4px 0' }}>
                         {summary.overall_progress_percent}%
                     </div>
                     {/* Visual Progress Bar */}
@@ -587,8 +587,8 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
             {/* Filter Tabs & Search Bar */}
             <div
                 style={{
-                    background: '#ffffff',
-                    border: '1px solid #e2e8f0',
+                    background: 'var(--panel)',
+                    border: '1px solid var(--line)',
                     borderRadius: '12px',
                     padding: '14px 18px',
                     marginBottom: '20px',
@@ -619,8 +619,8 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                     padding: '6px 14px',
                                     borderRadius: '6px',
                                     border: 'none',
-                                    background: isActive ? '#2563eb' : '#f1f5f9',
-                                    color: isActive ? '#ffffff' : '#475569',
+                                    background: isActive ? '#2563eb' : 'var(--soft)',
+                                    color: isActive ? '#ffffff' : 'var(--muted)',
                                     fontSize: '13px',
                                     fontWeight: 500,
                                     cursor: 'pointer',
@@ -644,7 +644,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                             width: '100%',
                             padding: '8px 12px',
                             fontSize: '13px',
-                            border: '1px solid #cbd5e1',
+                            border: '1px solid var(--line)',
                             borderRadius: '8px',
                             outline: 'none',
                         }}
@@ -670,8 +670,8 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                         <div
                             key={target.id}
                             style={{
-                                background: '#ffffff',
-                                border: '1px solid #e2e8f0',
+                                background: 'var(--panel)',
+                                border: '1px solid var(--line)',
                                 borderRadius: '12px',
                                 padding: '20px',
                                 boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
@@ -696,7 +696,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                             style={{
                                                 fontSize: '16px',
                                                 fontWeight: 700,
-                                                color: '#0f172a',
+                                                color: 'var(--text)',
                                                 margin: '0 0 4px 0',
                                             }}
                                         >
@@ -721,8 +721,8 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                     fontWeight: 500,
                                                     padding: '2px 8px',
                                                     borderRadius: '4px',
-                                                    background: '#f1f5f9',
-                                                    color: '#334155',
+                                                    background: 'var(--soft)',
+                                                    color: 'var(--text)',
                                                 }}
                                             >
                                                 {target.product_name || (isFr ? 'Tous les produits' : 'All Products')}
@@ -733,9 +733,9 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                     fontWeight: 500,
                                                     padding: '2px 8px',
                                                     borderRadius: '4px',
-                                                    background: '#f8fafc',
-                                                    color: '#64748b',
-                                                    border: '1px solid #e2e8f0',
+                                                    background: 'var(--soft)',
+                                                    color: 'var(--muted)',
+                                                    border: '1px solid var(--line)',
                                                 }}
                                             >
                                                 {isFr ? periodMeta.fr : periodMeta.en}
@@ -751,8 +751,8 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                 fontWeight: 700,
                                                 padding: '3px 8px',
                                                 borderRadius: '6px',
-                                                background: '#dcfce7',
-                                                color: '#15803d',
+                                                background: 'var(--ok-bg)',
+                                                color: 'var(--ok)',
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
                                                 gap: '4px',
@@ -769,8 +769,8 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                 fontWeight: 600,
                                                 padding: '3px 8px',
                                                 borderRadius: '6px',
-                                                background: '#eff6ff',
-                                                color: '#2563eb',
+                                                background: 'var(--info-bg)',
+                                                color: 'var(--info)',
                                                 whiteSpace: 'nowrap',
                                             }}
                                         >
@@ -783,7 +783,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                     <p
                                         style={{
                                             fontSize: '12px',
-                                            color: '#64748b',
+                                            color: 'var(--muted)',
                                             margin: '0 0 14px 0',
                                             lineHeight: '1.4',
                                         }}
@@ -802,14 +802,14 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                             marginBottom: '6px',
                                         }}
                                     >
-                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
                                             {isFr ? 'Avancement vers l’objectif' : 'Progress Towards Target'}
                                         </span>
                                         <span
                                             style={{
                                                 fontSize: '16px',
                                                 fontWeight: 700,
-                                                color: isPassed ? '#16a34a' : '#2563eb',
+                                                color: isPassed ? 'var(--ok)' : 'var(--info)',
                                             }}
                                         >
                                             {target.progress_percent}%
@@ -822,7 +822,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                             width: '100%',
                                             height: '8px',
                                             borderRadius: '999px',
-                                            background: '#f1f5f9',
+                                            background: 'var(--soft)',
                                             overflow: 'hidden',
                                         }}
                                     >
@@ -848,7 +848,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             fontSize: '12px',
-                                            color: '#64748b',
+                                            color: 'var(--muted)',
                                             marginTop: '8px',
                                         }}
                                     >
@@ -857,7 +857,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         </span>
                                         <span>
                                             {isPassed ? (
-                                                <span style={{ color: '#16a34a', fontWeight: 600 }}>
+                                                <span style={{ color: 'var(--ok)', fontWeight: 600 }}>
                                                     {isFr ? 'Objectif atteint !' : 'Goal reached!'}
                                                 </span>
                                             ) : (
@@ -882,14 +882,14 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                     fontSize: '12px',
                                 }}
                             >
-                                <div style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <Calendar size={14} />
                                     {target.end_date ? (
                                         <span>
                                             {isFr ? 'Échéance: ' : 'Due: '}
                                             <b>{target.end_date}</b>
                                             {target.days_left !== null && !isPassed && (
-                                                <span style={{ marginLeft: '4px', color: target.days_left <= 2 ? '#dc2626' : '#64748b' }}>
+                                                <span style={{ marginLeft: '4px', color: target.days_left <= 2 ? 'var(--bad)' : 'var(--muted)' }}>
                                                     ({target.days_left} {isFr ? 'j restants' : 'd left'})
                                                 </span>
                                             )}
@@ -905,10 +905,10 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         title={isFr ? 'Modifier' : 'Edit target'}
                                         style={{
                                             padding: '5px 8px',
-                                            background: '#f8fafc',
-                                            border: '1px solid #e2e8f0',
+                                            background: 'var(--soft)',
+                                            border: '1px solid var(--line)',
                                             borderRadius: '6px',
-                                            color: '#475569',
+                                            color: 'var(--muted)',
                                             cursor: 'pointer',
                                         }}
                                     >
@@ -919,10 +919,10 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         title={isFr ? 'Supprimer' : 'Delete target'}
                                         style={{
                                             padding: '5px 8px',
-                                            background: '#fef2f2',
+                                            background: 'var(--bad-bg)',
                                             border: '1px solid #fecaca',
                                             borderRadius: '6px',
-                                            color: '#dc2626',
+                                            color: 'var(--bad)',
                                             cursor: 'pointer',
                                         }}
                                     >
@@ -939,16 +939,16 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
             {filteredTargets.length === 0 && !loading && (
                 <div
                     style={{
-                        background: '#ffffff',
-                        border: '1px dashed #cbd5e1',
+                        background: 'var(--panel)',
+                        border: '1px dashed var(--line)',
                         borderRadius: '12px',
                         padding: '48px 24px',
                         textAlign: 'center',
-                        color: '#64748b',
+                        color: 'var(--muted)',
                     }}
                 >
                     <Target size={40} color="#94a3b8" style={{ margin: '0 auto 12px auto' }} />
-                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#334155', margin: '0 0 6px 0' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)', margin: '0 0 6px 0' }}>
                         {isFr ? 'Aucun objectif trouvé' : 'No production targets found'}
                     </h3>
                     <p style={{ fontSize: '13px', margin: '0 0 16px 0' }}>
@@ -978,8 +978,8 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
             {targets.length > 0 && (
                 <div
                     style={{
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--panel)',
+                        border: '1px solid var(--line)',
                         borderRadius: '12px',
                         overflow: 'hidden',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
@@ -988,16 +988,16 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                     <div
                         style={{
                             padding: '16px 20px',
-                            borderBottom: '1px solid #e2e8f0',
+                            borderBottom: '1px solid var(--line)',
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
                         }}
                     >
-                        <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
+                        <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
                             {isFr ? 'Tableau Récapitulatif des Objectifs' : 'Production Targets Overview'}
                         </h2>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
                             {targets.length} {isFr ? 'objectifs au total' : 'total goals'}
                         </span>
                     </div>
@@ -1005,29 +1005,29 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                     <div style={{ overflowX: 'auto', width: '100%' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                             <thead>
-                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                <tr style={{ background: 'var(--soft)', borderBottom: '1px solid var(--line)' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--muted)' }}>
                                         {isFr ? 'Objectif' : 'Target Goal'}
                                     </th>
-                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--muted)' }}>
                                         {isFr ? 'Produit & Atelier' : 'Product & Stage'}
                                     </th>
-                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--muted)' }}>
                                         {isFr ? 'Quantité Cible' : 'Target Qty'}
                                     </th>
-                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--muted)' }}>
                                         {isFr ? 'Réalisé' : 'Actual Reached'}
                                     </th>
-                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--muted)' }}>
                                         {isFr ? 'Reste à faire' : 'Remaining'}
                                     </th>
-                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--muted)' }}>
                                         {isFr ? '% d’Atteinte' : '% Progress'}
                                     </th>
-                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--muted)' }}>
                                         {isFr ? 'Échéance' : 'Deadline'}
                                     </th>
-                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#475569' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--muted)' }}>
                                         {isFr ? 'Actions' : 'Actions'}
                                     </th>
                                 </tr>
@@ -1045,15 +1045,15 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                             }}
                                         >
                                             <td style={{ textAlign: 'left', padding: '12px 18px' }}>
-                                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{t.title}</div>
+                                                <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t.title}</div>
                                                 {t.notes && (
-                                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
                                                         {t.notes}
                                                     </div>
                                                 )}
                                             </td>
                                             <td style={{ textAlign: 'left', padding: '12px 18px' }}>
-                                                <div style={{ fontWeight: 500, color: '#334155' }}>
+                                                <div style={{ fontWeight: 500, color: 'var(--text)' }}>
                                                     {t.product_name || (isFr ? 'Tous les produits' : 'All Products')}
                                                 </div>
                                                 <span
@@ -1071,13 +1071,13 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                     {isFr ? stageMeta.labelFr : stageMeta.label}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#0f172a' }}>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--text)' }}>
                                                 {t.target_quantity.toLocaleString()} pcs
                                             </td>
-                                            <td style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: '#16a34a' }}>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 600, color: 'var(--ok)' }}>
                                                 {t.actual_quantity.toLocaleString()} pcs
                                             </td>
-                                            <td style={{ textAlign: 'left', padding: '12px 18px', color: isPassed ? '#16a34a' : '#d97706', fontWeight: 500 }}>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px', color: isPassed ? 'var(--ok)' : 'var(--warn)', fontWeight: 500 }}>
                                                 {isPassed ? (isFr ? '0 (Atteint)' : '0 (Reached)') : `${t.remaining_quantity.toLocaleString()} pcs`}
                                             </td>
                                             <td style={{ textAlign: 'left', padding: '12px 18px' }}>
@@ -1102,7 +1102,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                     <span
                                                         style={{
                                                             fontWeight: 700,
-                                                            color: isPassed ? '#16a34a' : '#2563eb',
+                                                            color: isPassed ? 'var(--ok)' : 'var(--info)',
                                                             fontSize: '12px',
                                                         }}
                                                     >
@@ -1110,7 +1110,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td style={{ textAlign: 'left', padding: '12px 18px', color: '#64748b' }}>
+                                            <td style={{ textAlign: 'left', padding: '12px 18px', color: 'var(--muted)' }}>
                                                 {t.end_date || '—'}
                                             </td>
                                             <td style={{ textAlign: 'left', padding: '12px 18px' }}>
@@ -1120,11 +1120,11 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                         title="Edit"
                                                         style={{
                                                             padding: '4px 6px',
-                                                            background: '#f8fafc',
-                                                            border: '1px solid #cbd5e1',
+                                                            background: 'var(--soft)',
+                                                            border: '1px solid var(--line)',
                                                             borderRadius: '4px',
                                                             cursor: 'pointer',
-                                                            color: '#475569',
+                                                            color: 'var(--muted)',
                                                         }}
                                                     >
                                                         <Edit3 size={13} />
@@ -1134,11 +1134,11 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                                         title="Delete"
                                                         style={{
                                                             padding: '4px 6px',
-                                                            background: '#fef2f2',
+                                                            background: 'var(--bad-bg)',
                                                             border: '1px solid #fecaca',
                                                             borderRadius: '4px',
                                                             cursor: 'pointer',
-                                                            color: '#dc2626',
+                                                            color: 'var(--bad)',
                                                         }}
                                                     >
                                                         <Trash2 size={13} />
@@ -1174,7 +1174,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                 >
                     <div
                         style={{
-                            background: '#ffffff',
+                            background: 'var(--panel)',
                             borderRadius: '16px',
                             maxWidth: '560px',
                             width: '100%',
@@ -1186,13 +1186,13 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                         <div
                             style={{
                                 padding: '18px 24px',
-                                borderBottom: '1px solid #e2e8f0',
+                                borderBottom: '1px solid var(--line)',
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
                             }}
                         >
-                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text)' }}>
                                 {editingTarget
                                     ? (isFr ? 'Modifier l’Objectif' : 'Edit Production Target')
                                     : (isFr ? 'Définir un Nouvel Objectif' : 'Set New Production Target')}
@@ -1202,7 +1202,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 style={{
                                     background: 'none',
                                     border: 'none',
-                                    color: '#94a3b8',
+                                    color: 'var(--muted)',
                                     cursor: 'pointer',
                                     padding: '4px',
                                 }}
@@ -1217,10 +1217,10 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 <div
                                     style={{
                                         padding: '10px 14px',
-                                        background: '#fef2f2',
+                                        background: 'var(--bad-bg)',
                                         border: '1px solid #fecaca',
                                         borderRadius: '8px',
-                                        color: '#991b1b',
+                                        color: 'var(--bad)',
                                         fontSize: '13px',
                                         marginBottom: '16px',
                                     }}
@@ -1231,7 +1231,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
 
                             {/* Title */}
                             <div style={{ marginBottom: '16px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>
                                     {isFr ? 'Titre de l’Objectif *' : 'Target Title *'}
                                 </label>
                                 <input
@@ -1243,7 +1243,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                     style={{
                                         width: '100%',
                                         padding: '9px 12px',
-                                        border: '1px solid #cbd5e1',
+                                        border: '1px solid var(--line)',
                                         borderRadius: '8px',
                                         fontSize: '14px',
                                         outline: 'none',
@@ -1255,7 +1255,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                             {/* Product and Stage */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>
                                         {isFr ? 'Produit Cible' : 'Target Product'}
                                     </label>
                                     <select
@@ -1264,10 +1264,10 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         style={{
                                             width: '100%',
                                             padding: '9px 12px',
-                                            border: '1px solid #cbd5e1',
+                                            border: '1px solid var(--line)',
                                             borderRadius: '8px',
                                             fontSize: '14px',
-                                            background: '#ffffff',
+                                            background: 'var(--panel)',
                                             outline: 'none',
                                             boxSizing: 'border-box',
                                         }}
@@ -1282,7 +1282,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 </div>
 
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>
                                         {isFr ? 'Atelier / Étape *' : 'Target Stage *'}
                                     </label>
                                     <select
@@ -1291,10 +1291,10 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         style={{
                                             width: '100%',
                                             padding: '9px 12px',
-                                            border: '1px solid #cbd5e1',
+                                            border: '1px solid var(--line)',
                                             borderRadius: '8px',
                                             fontSize: '14px',
-                                            background: '#ffffff',
+                                            background: 'var(--panel)',
                                             outline: 'none',
                                             boxSizing: 'border-box',
                                         }}
@@ -1311,7 +1311,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                             {/* Quantity and Period */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>
                                         {isFr ? 'Quantité Cible (pcs) *' : 'Target Quantity (pcs) *'}
                                     </label>
                                     <input
@@ -1323,7 +1323,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         style={{
                                             width: '100%',
                                             padding: '9px 12px',
-                                            border: '1px solid #cbd5e1',
+                                            border: '1px solid var(--line)',
                                             borderRadius: '8px',
                                             fontSize: '14px',
                                             outline: 'none',
@@ -1333,7 +1333,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 </div>
 
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>
                                         {isFr ? 'Période' : 'Period Type'}
                                     </label>
                                     <select
@@ -1342,10 +1342,10 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         style={{
                                             width: '100%',
                                             padding: '9px 12px',
-                                            border: '1px solid #cbd5e1',
+                                            border: '1px solid var(--line)',
                                             borderRadius: '8px',
                                             fontSize: '14px',
-                                            background: '#ffffff',
+                                            background: 'var(--panel)',
                                             outline: 'none',
                                             boxSizing: 'border-box',
                                         }}
@@ -1361,7 +1361,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                             {/* Dates */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>
                                         {isFr ? 'Date de Début' : 'Start Date'}
                                     </label>
                                     <input
@@ -1371,7 +1371,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         style={{
                                             width: '100%',
                                             padding: '9px 12px',
-                                            border: '1px solid #cbd5e1',
+                                            border: '1px solid var(--line)',
                                             borderRadius: '8px',
                                             fontSize: '14px',
                                             outline: 'none',
@@ -1381,7 +1381,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                 </div>
 
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>
                                         {isFr ? 'Date d’Échéance Cible' : 'Target Deadline'}
                                     </label>
                                     <input
@@ -1391,7 +1391,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                         style={{
                                             width: '100%',
                                             padding: '9px 12px',
-                                            border: '1px solid #cbd5e1',
+                                            border: '1px solid var(--line)',
                                             borderRadius: '8px',
                                             fontSize: '14px',
                                             outline: 'none',
@@ -1403,7 +1403,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
 
                             {/* Notes */}
                             <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>
                                     {isFr ? 'Instructions / Notes' : 'Notes / Floor Instructions'}
                                 </label>
                                 <textarea
@@ -1414,7 +1414,7 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                     style={{
                                         width: '100%',
                                         padding: '9px 12px',
-                                        border: '1px solid #cbd5e1',
+                                        border: '1px solid var(--line)',
                                         borderRadius: '8px',
                                         fontSize: '14px',
                                         outline: 'none',
@@ -1431,12 +1431,12 @@ export default function ProductionOperations({ locale = 'en' }: { can?: any; use
                                     onClick={() => setIsModalOpen(false)}
                                     style={{
                                         padding: '9px 16px',
-                                        background: '#f1f5f9',
+                                        background: 'var(--soft)',
                                         border: 'none',
                                         borderRadius: '8px',
                                         fontSize: '13px',
                                         fontWeight: 600,
-                                        color: '#475569',
+                                        color: 'var(--muted)',
                                         cursor: 'pointer',
                                     }}
                                 >

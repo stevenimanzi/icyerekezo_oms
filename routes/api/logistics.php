@@ -7,6 +7,7 @@ Route::controller(LogisticsController::class)
     ->prefix('logistics')
     ->group(function () {
         Route::get('/overview', 'overview')->middleware('permission:logistics.view');
+        Route::get('/deliveries', 'deliveries')->middleware('permission:logistics.view');
         Route::post('/shipments', 'storeShipment')->middleware('permission:logistics.plan');
         Route::patch('/shipments/{shipment}', 'updateShipment')->middleware(
             'permission:logistics.dispatch|logistics.deliver',

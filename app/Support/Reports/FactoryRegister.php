@@ -130,7 +130,7 @@ final class FactoryRegister
 
     private function quality(CarbonInterface $start, CarbonInterface $end, callable $extra): void
     {
-        $checks = QualityInspection::whereNotNull('lot_id')->where('created_at', '>=', $start)->where('created_at', '<=', $end)
+        $checks = QualityInspection::whereNotNull('lot_id')->where('is_reinspection', false)->where('created_at', '>=', $start)->where('created_at', '<=', $end)
             ->with('lot.product:id,name')->get();
 
         foreach ($checks as $check) {

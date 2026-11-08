@@ -356,7 +356,7 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
                             borderRadius: '8px',
                             border: 'none',
                             background: loading ? 'var(--soft)' : '#eef2ff',
-                            color: loading ? 'var(--muted)' : '#4f46e5',
+                            color: loading ? 'var(--muted)' : 'var(--info)',
                             cursor: loading ? 'not-allowed' : 'pointer',
                             transition: 'all 0.2s',
                         }}
@@ -603,7 +603,7 @@ function LogisticsCharts({ trends, fr, money }: any) {
                         </p>
                     </div>
                 </header>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe', margin: '0 16px 10px 16px', fontSize: '11.5px', color: '#1e40af' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'var(--info-bg)', borderRadius: '6px', border: '1px solid #bfdbfe', margin: '0 16px 10px 16px', fontSize: '11.5px', color: 'var(--info)' }}>
                     <span style={{ width: '14px', height: '3px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} />
                     <span><b>{fr ? 'Ligne bleue' : 'Blue line'}:</b> {fr ? 'Nombre de commandes clients passées par mois' : 'Volume of client orders placed per month'}</span>
                 </div>
@@ -658,7 +658,7 @@ function LogisticsCharts({ trends, fr, money }: any) {
                         </p>
                     </div>
                 </header>
-                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: 'var(--soft)', borderRadius: '6px', border: '1px solid var(--line)', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#8b5cf6', display: 'inline-block' }} />
                         <span><b>{fr ? 'Violet' : 'Purple bar'}:</b> {fr ? 'Expéditions sorties d’usine' : 'Dispatched from factory'}</span>
@@ -726,7 +726,7 @@ function ProductionCharts({ trends, fr }: any) {
                         </p>
                     </div>
                 </header>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#f0fdf4', borderRadius: '6px', border: '1px solid #bbf7d0', margin: '0 16px 10px 16px', fontSize: '11.5px', color: '#166534' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'var(--ok-bg)', borderRadius: '6px', border: '1px solid #bbf7d0', margin: '0 16px 10px 16px', fontSize: '11.5px', color: 'var(--ok)' }}>
                     <span style={{ width: '14px', height: '3px', background: '#10b981', borderRadius: '2px', display: 'inline-block' }} />
                     <span><b>{fr ? 'Ligne verte' : 'Green line'}:</b> {fr ? 'Nombre total d’articles finis produits chaque mois' : 'Total garment units produced per month'}</span>
                 </div>
@@ -775,7 +775,7 @@ function ProductionCharts({ trends, fr }: any) {
                         </p>
                     </div>
                 </header>
-                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: 'var(--soft)', borderRadius: '6px', border: '1px solid var(--line)', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ef4444', display: 'inline-block' }} />
                         <span><b>{fr ? 'Rouge' : 'Red bar'}:</b> {fr ? 'Pièces rejetées/défauts de fabrication' : 'Garment units rejected or rework'}</span>
@@ -938,7 +938,7 @@ function WarehouseStockChart({ trends, fr, number }: any) {
                         </p>
                     </div>
                 </header>
-                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
+                <div style={{ display: 'flex', gap: '14px', padding: '6px 12px', background: 'var(--soft)', borderRadius: '6px', border: '1px solid var(--line)', margin: '0 16px 10px 16px', fontSize: '11.5px' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10b981', display: 'inline-block' }} />
                         <span><b>{fr ? 'Vert' : 'Green bar'}:</b> {fr ? 'Stock reçu et entré en magasin' : 'Stock received and entered into warehouse'}</span>
@@ -1696,7 +1696,7 @@ function ProjectOverviewSection({ overview, fr, number }: any) {
                             fontWeight: 700,
                             letterSpacing: '0.08em',
                             textTransform: 'uppercase',
-                            color: '#4f46e5',
+                            color: 'var(--info)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
@@ -1730,7 +1730,7 @@ function ProjectOverviewSection({ overview, fr, number }: any) {
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                             {fr ? 'Unités produites' : 'Produced Units'}
                         </div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#16a34a' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--ok)' }}>
                             {number(total_completed_units)}
                         </div>
                     </div>
@@ -1739,7 +1739,7 @@ function ProjectOverviewSection({ overview, fr, number }: any) {
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                             {fr ? 'Taux de réussite QC' : 'Overall QC Pass'}
                         </div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--info)' }}>
                             {overall_quality_pass_rate}%
                         </div>
                     </div>
@@ -1792,7 +1792,7 @@ function ProjectOverviewSection({ overview, fr, number }: any) {
                         >
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4f46e5' }}>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--info)' }}>
                                         {idx + 1}. {p.department}
                                     </span>
                                     <span
@@ -1802,8 +1802,8 @@ function ProjectOverviewSection({ overview, fr, number }: any) {
                                             padding: '2px 6px',
                                             borderRadius: '4px',
                                             background: '#f3f4f6',
-                                            border: '1px solid #e5e7eb',
-                                            color: '#111827',
+                                            border: '1px solid var(--line)',
+                                            color: 'var(--text)',
                                         }}
                                     >
                                         {p.status}
@@ -1831,17 +1831,17 @@ function ProjectOverviewSection({ overview, fr, number }: any) {
                                 </div>
                                 <div style={{ padding: '4px 6px', background: 'var(--soft)', borderRadius: '4px' }}>
                                     <div style={{ color: 'var(--muted)', fontSize: '0.68rem' }}>OUTPUT</div>
-                                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#16a34a' }}>{number(p.output)}</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--ok)' }}>{number(p.output)}</div>
                                     <div style={{ fontSize: '0.65rem', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.output_label}</div>
                                 </div>
                                 <div style={{ padding: '4px 6px', background: 'var(--soft)', borderRadius: '4px' }}>
                                     <div style={{ color: 'var(--muted)', fontSize: '0.68rem' }}>DAMAGED</div>
-                                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: p.damaged > 0 ? '#dc2626' : 'var(--text)' }}>{number(p.damaged)}</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: p.damaged > 0 ? 'var(--bad)' : 'var(--text)' }}>{number(p.damaged)}</div>
                                     <div style={{ fontSize: '0.65rem', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.damaged_label}</div>
                                 </div>
                                 <div style={{ padding: '4px 6px', background: 'var(--soft)', borderRadius: '4px' }}>
                                     <div style={{ color: 'var(--muted)', fontSize: '0.68rem' }}>QC STATUS</div>
-                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#2563eb', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--info)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {p.qc_status}
                                     </div>
                                     <div style={{ fontSize: '0.65rem', color: 'var(--muted)' }}>VERIFIED</div>
