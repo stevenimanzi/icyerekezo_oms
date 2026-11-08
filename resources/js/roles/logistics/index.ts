@@ -1,6 +1,6 @@
 import {
     Car,
-    ChartColumn,
+    FileBarChart,
     CheckCheck,
     ClipboardList,
     FileSignature,
@@ -35,7 +35,7 @@ export const logisticsRole: RoleModule = {
                 'logistics.deliver',
             ],
             ['agreement', FileSignature, text('Agreement', 'Accord'), 'logistics.view'],
-            ['reports', ChartColumn, labels.reports, 'reports.view'],
+            ['reports', FileBarChart, labels.reports, 'reports.view'],
         ];
     },
 };

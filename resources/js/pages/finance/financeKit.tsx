@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { PageExportButtons } from '../../components/ExportButtons';
 import { RefreshCw } from 'lucide-react';
 import { api } from '../../core/api';
 import './finance-books.css';
@@ -126,6 +127,7 @@ export function PageHead({
             </div>
             <div className="fb-actions">
                 {children}
+                <PageExportButtons title={title} />
                 {onRefresh && (
                     <button type="button" onClick={onRefresh} disabled={loading}>
                         <RefreshCw size={14} className={loading ? 'spin' : ''} />

@@ -1,4 +1,4 @@
-import { BadgeCheck, ChartColumn, Cog, Factory, LayoutDashboard } from 'lucide-react';
+import { BadgeCheck, FileBarChart, Cog, Factory, LayoutDashboard } from 'lucide-react';
 import type { RoleModule } from '../types';
 import { productionFlowNav } from '../production-flow-nav';
 
@@ -14,7 +14,7 @@ export const productionSupervisorRole: RoleModule = {
             ['quality', BadgeCheck, labels.control, 'quality.view'],
             ['machines', Cog, labels.machines, 'maintenance.view'],
             ...productionFlowNav(context),
-            ['reports', ChartColumn, labels.reports, 'reports.view'],
+            ['reports', FileBarChart, labels.reports, 'reports.view'],
         ];
     },
 };

@@ -1,4 +1,4 @@
-import { ChartColumn, Cog, Factory, LayoutDashboard, Users } from 'lucide-react';
+import { FileBarChart, Cog, Factory, LayoutDashboard, Users } from 'lucide-react';
 import type { RoleModule } from '../types';
 import { productionFlowNav } from '../production-flow-nav';
 
@@ -20,12 +20,12 @@ export const factoryManagerRole: RoleModule = {
             ['machines', Cog, labels.machines, 'maintenance.view'],
             [
                 'logistics-reports',
-                ChartColumn,
+                FileBarChart,
                 text('Delivery report', 'Rapport de livraison'),
                 'reports.view',
             ],
             ...productionFlowNav(context),
-            ['reports', ChartColumn, labels.reports, 'reports.view'],
+            ['reports', FileBarChart, labels.reports, 'reports.view'],
         ];
     },
 };

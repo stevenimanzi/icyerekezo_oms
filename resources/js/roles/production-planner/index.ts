@@ -1,4 +1,4 @@
-import { ChartColumn, Factory, LayoutDashboard, Package, Warehouse } from 'lucide-react';
+import { FileBarChart, Factory, LayoutDashboard, Package, Warehouse } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const productionPlannerRole: RoleModule = {
@@ -9,6 +9,6 @@ export const productionPlannerRole: RoleModule = {
         ['production', Factory, text('Planning', 'Planification'), 'production.view'],
         ['products', Package, labels.products, 'products.view'],
         ['inventory', Warehouse, text('Materials', 'Matières'), 'inventory.view'],
-        ['reports', ChartColumn, labels.reports, 'reports.view'],
+        ['reports', FileBarChart, labels.reports, 'reports.view'],
     ],
 };

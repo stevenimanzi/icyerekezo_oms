@@ -317,7 +317,7 @@ class FinanceController extends Controller
                     ],
                 );
         } else {
-            $payload['trend'] = $this->buildRevenueTrend($from, $to, $ordersBase, $receiptsBase);
+            $payload['trend'] = $this->buildRevenueTrend($from, $to, $ordersBase, $receiptsBase, $directPaymentsBase);
         }
 
         return response()->json($payload);
@@ -340,7 +340,7 @@ class FinanceController extends Controller
         };
     }
 
-    private function buildRevenueTrend(Carbon $from, Carbon $to, $ordersBase, $receiptsBase): array
+    private function buildRevenueTrend(Carbon $from, Carbon $to, $ordersBase, $receiptsBase, $directPaymentsBase): array
     {
         $monthly = $from->diffInDays($to) > 62;
         $rows = [];
@@ -354,9 +354,15 @@ class FinanceController extends Controller
                 'invoiced' => (float) (clone $ordersBase)
                     ->whereBetween('document_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
                     ->sum('total_amount'),
-                'collected' => (float) (clone $receiptsBase)
-                    ->whereBetween('reviewed_at', [$periodStart->copy()->startOfDay(), $periodEnd->copy()->endOfDay()])
-                    ->sum('amount'),
+                'collected' => round(
+                    (float) (clone $receiptsBase)
+                        ->whereBetween('reviewed_at', [$periodStart->copy()->startOfDay(), $periodEnd->copy()->endOfDay()])
+                        ->sum('amount')
+                    + (float) (clone $directPaymentsBase)
+                        ->whereBetween('paid_on', [$periodStart->toDateString(), $periodEnd->toDateString()])
+                        ->sum('amount'),
+                    2,
+                ),
             ];
             $monthly ? $cursor->addMonthNoOverflow() : $cursor->addDay();
         }

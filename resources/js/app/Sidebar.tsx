@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, LogOut, MessageCircle, Settings } from 'lucide-react';
+import { ChevronDown, ChevronRight, Headset, LogOut, Settings } from 'lucide-react';
 import type { Labels } from '../core/labels';
 import type { AuthUser, Locale } from '../core/types';
 import type { NavEntry } from './navigation';
@@ -128,7 +128,7 @@ export function Sidebar(props: Props) {
                                 className={`nav-item ${activePage === entry.key ? 'active' : ''}`}
                                 onClick={() => go(entry.key)}
                             >
-                                <ItemIcon size={18} />
+                                <ItemIcon size={16} />
                                 <span>{entry.item[2]}</span>
                                 {badge(entry.key)}
                             </button>
@@ -183,7 +183,7 @@ export function Sidebar(props: Props) {
                                 className={`nav-item ${activePage === 'settings' ? 'active' : ''}`}
                                 onClick={() => go('settings')}
                             >
-                                <Settings size={18} />
+                                <Settings size={16} />
                                 <span>{labels.settings}</span>
                             </button>
                         )}
@@ -192,7 +192,7 @@ export function Sidebar(props: Props) {
                                 className={`nav-item ${activePage === 'support' ? 'active' : ''}`}
                                 onClick={() => go('support')}
                             >
-                                <MessageCircle size={18} />
+                                <Headset size={16} />
                                 <span>{labels.support}</span>
                                 {chatUnread > 0 && (
                                     <i title={text('New chat messages', 'Nouveaux messages')}>

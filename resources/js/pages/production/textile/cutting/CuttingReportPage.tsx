@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PageExportButtons } from '../../../../components/ExportButtons';
 import { Download, FileText, Printer, RefreshCw, Scissors, Calendar } from 'lucide-react';
 import type { AuthUser, Locale } from '../../../../core/types';
 import { api } from '../../../../core/api';
@@ -280,14 +281,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
                         <RefreshCw size={15} className={loading ? 'spin' : ''} />
                         {locale === 'en' ? 'Refresh' : 'Actualiser'}
                     </button>
-                    <button
-                        className="secondary-btn"
-                        onClick={() => window.print()}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, cursor: 'pointer', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
-                    >
-                        <Printer size={15} />
-                        {locale === 'en' ? 'Print' : 'Imprimer'}
-                    </button>
+                    <PageExportButtons title="Cutting report" pdf={false} />
                     <a
                         className="primary-btn"
                         href={`/api/flow/cutting-report.pdf?period=custom&from=${fromDate}&to=${toDate}`}
@@ -406,7 +400,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
                 <article className="ui-kpi">
                     <small>Damaged / Waste</small>
                     <strong style={{ color: totalDamaged > 0 ? '#b91c1c' : undefined }}>{num(totalDamaged)} pcs</strong>
-                    <p>Scraps &amp; defective cuts</p>
+                    <p>Defective</p>
                 </article>
 
                 <article className="ui-kpi">
@@ -473,7 +467,7 @@ export default function CuttingReportPage({ user, locale }: Props) {
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>COLOR</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SIZE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>GOOD PIECES</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SCRAP OR DEFECTIVE</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>DEFECTIVE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>PASSED</th>
                             </tr>
                         </thead>

@@ -502,8 +502,8 @@ export default function FinanceOverviewPage({
 
                     {activeTab === 'orders' && (
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <div style={{ position: 'relative' }}>
-                                <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
+                            <div className="search-box">
+                                <Search size={14} />
                                 <input
                                     placeholder="Search order or school..."
                                     value={searchOrder}

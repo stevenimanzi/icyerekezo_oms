@@ -11671,18 +11671,33 @@ button.table-action.danger:not(.icon-only):hover:not(:disabled),
     }
 }
 
-/* Compact sidebar (Finance & Sales Manager): one flat list, tighter rows. */
-.sidebar.compact nav {
+/* Sidebar for everyone: one flat list, no menu headings, small text, tight rows. */
+.sidebar nav {
     padding: 8px 8px 6px;
 }
-.sidebar.compact .nav-item {
-    height: 32px;
-    margin: 0;
-    gap: 10px;
-    font-size: 13px;
+.sidebar .nav-label {
+    display: none;
 }
-.sidebar.compact .nav-item svg {
+.sidebar .nav-item {
+    height: 30px;
+    min-height: 0;
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    gap: 9px;
+    font-size: 12.5px;
+    line-height: 1;
+}
+.sidebar .nav-item svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
     opacity: 0.9;
+}
+.sidebar .nav-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -12169,4 +12184,75 @@ button.table-action.danger:not(.icon-only):hover:not(:disabled),
     display: none !important;
 }
 
+}
+
+/* Search boxes: the magnifier always sits in the middle of the box, left of the text. */
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+.search-box > svg {
+    position: absolute;
+    z-index: 1;
+    left: 11px;
+    top: 50%;
+    width: 15px;
+    height: 15px;
+    transform: translateY(-50%);
+    color: var(--muted, #94a3b8);
+    pointer-events: none;
+}
+.search-box > input {
+    width: 100%;
+    min-width: 0;
+    padding-left: 34px !important;
+}
+.school-filter-grid .school-search svg {
+    top: 50% !important;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+}
+
+/* Report column titles: always on one line, small enough to fit. */
+@media screen {
+    .report-print-table th,
+    .report-data-table th,
+    .excel-table-container th,
+    .rg-group th,
+    .noguchi-flow-table th,
+    .noguchi-daily-document th,
+    .legacy-order-table th {
+        white-space: nowrap !important;
+        font-size: 0.6rem !important;
+        letter-spacing: 0 !important;
+        padding-left: 3px !important;
+        padding-right: 3px !important;
+    }
+}
+
+.export-buttons {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.export-error {
+    flex-basis: 100%;
+    color: #dc2626;
+    font-size: 12px;
+}
+
+.dept-report-subtitle {
+    margin: 0;
+    padding: 12px 14px 4px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.admin-table tr.total-row td {
+    background: rgba(148, 163, 184, 0.16);
+    border-top: 2px solid rgba(148, 163, 184, 0.5);
 }

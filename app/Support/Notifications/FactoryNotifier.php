@@ -63,6 +63,29 @@ class FactoryNotifier
         }
     }
 
+    /** Everyone who works in the factory, except the person who made the change. */
+    public static function notifyEveryone(
+        int $factoryId,
+        string $title,
+        string $body,
+        ?string $url = null,
+        string $category = 'general',
+        ?int $excludeUserId = null,
+    ): void {
+        $users = User::where('is_platform_admin', false)
+            ->where('is_active', true)
+            ->whereHas(
+                'factories',
+                fn ($query) => $query->where('factories.id', $factoryId)->where('factory_user.is_active', true),
+            )
+            ->when($excludeUserId, fn ($query) => $query->where('id', '!=', $excludeUserId))
+            ->get();
+
+        if ($users->isNotEmpty()) {
+            Notification::send($users, new AppNotification($title, $body, $url, $category));
+        }
+    }
+
     public static function notifyUser(int $userId, string $title, string $body, ?string $url = null, string $category = 'general'): void
     {
         $user = User::find($userId);

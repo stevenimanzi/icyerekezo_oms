@@ -1,5 +1,5 @@
 import {
-    ChartColumn,
+    FileBarChart,
     LayoutDashboard,
     Package,
     PackageMinus,
@@ -19,6 +19,6 @@ export const warehouseRole: RoleModule = {
         ['inventory', Warehouse, labels.warehouse, 'inventory.view'],
         ['procurement', ShoppingCart, text('Purchase requests', "Demandes d'achat"), 'procurement.view'],
         ['products', Package, labels.products, 'products.view'],
-        ['reports', ChartColumn, labels.reports, 'reports.view'],
+        ['reports', FileBarChart, labels.reports, 'reports.view'],
     ],
 };

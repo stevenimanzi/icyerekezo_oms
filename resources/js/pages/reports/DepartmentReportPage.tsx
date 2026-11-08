@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { ExportButtons } from '../../components/ExportButtons';
+import type { ExportDoc } from '../../core/exportDocument';
 
 type Column = { key: string; label: string; kind: 'text' | 'money' | 'number' | 'date' };
 type Kpi = { label: string; value: number; kind: 'money' | 'number' | 'percent' };
@@ -10,6 +12,7 @@ type Report = {
     kpis: Kpi[];
     columns: Column[];
     rows: Record<string, any>[];
+    extra_tables?: { heading: string; columns: Column[]; rows: Record<string, any>[] }[];
     statuses: { value: string; label: string }[];
     status_label?: string;
     search_hint?: string;
@@ -107,20 +110,25 @@ export default function DepartmentReportPage() {
               ? `${format.number(item.value)}%`
               : format.number(item.value);
 
-    const download = () => {
-        if (!report) return;
-        const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
-        const lines = [
-            report.columns.map((column) => escape(column.label)).join(','),
-            ...report.rows.map((row) =>
-                report.columns.map((column) => escape(String(row[column.key] ?? ''))).join(','),
-            ),
-        ];
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
-        link.download = `${report.title.toLowerCase().replaceAll(' ', '-')}-${from}-to-${to}.csv`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+    const exportDoc = (): ExportDoc | null => {
+        if (!report) return null;
+        const table = (heading: string, columns: Column[], rows: Record<string, any>[]) => ({
+            heading,
+            columns: columns.map((column) => ({ label: column.label, kind: column.kind })),
+            rows: rows.map((row) => columns.map((column) => row[column.key])),
+        });
+
+        return {
+            title: report.title,
+            subtitle: `From ${from} to ${to}${status ? ` · ${status}` : ''}${search ? ` · "${search}"` : ''}`,
+            summary: report.kpis.map((item) => ({ label: item.label, value: kpi(item) })),
+            tables: [
+                table('Details', report.columns, report.rows),
+                ...(report.extra_tables || [])
+                    .filter((extra) => extra.rows.length)
+                    .map((extra) => table(extra.heading, extra.columns, extra.rows)),
+            ],
+        };
     };
 
     const setRange = (start: string) => {
@@ -136,12 +144,7 @@ export default function DepartmentReportPage() {
                     <p>{report?.intro || 'Loading your department report…'}</p>
                 </div>
                 <div className="dept-report-actions no-print">
-                    <button className="secondary-btn" onClick={() => window.print()} disabled={!report}>
-                        Print
-                    </button>
-                    <button className="primary-btn" onClick={download} disabled={!report?.rows.length}>
-                        Download as CSV
-                    </button>
+                    <ExportButtons doc={exportDoc} disabled={!report} />
                 </div>
             </header>
 
@@ -245,6 +248,38 @@ export default function DepartmentReportPage() {
                                 : '.'}
                         </footer>
                     </article>
+
+                    {(report.extra_tables || [])
+                        .filter((extra) => extra.rows.length)
+                        .map((extra) => (
+                            <article className="panel dept-report-table" key={extra.heading}>
+                                <h2 className="dept-report-subtitle">{extra.heading}</h2>
+                                <div className="admin-table-wrap">
+                                    <table className="admin-table wrap-cells">
+                                        <thead>
+                                            <tr>
+                                                {extra.columns.map((column) => (
+                                                    <th key={column.key} className={cellClass(column)}>
+                                                        {column.label}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {extra.rows.map((row, index) => (
+                                                <tr key={index}>
+                                                    {extra.columns.map((column) => (
+                                                        <td key={column.key} className={cellClass(column)}>
+                                                            {show(column, row)}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </article>
+                        ))}
                 </>
             )}
         </section>

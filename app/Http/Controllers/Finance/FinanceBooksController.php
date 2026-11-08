@@ -121,9 +121,6 @@ class FinanceBooksController extends Controller
             'method' => ['required', Rule::in(SalesPayment::METHODS)],
             'reference' => ['nullable', 'string', 'max:120'],
             'entry_date' => ['required', 'date', 'before_or_equal:today'],
-            'employee_id' => ['nullable', 'integer'],
-            'period' => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
-            'confirm_duplicate' => ['nullable', 'boolean'],
         ]);
 
         $allowed = array_keys($data['direction'] === 'in' ? FinanceEntry::IN_CATEGORIES : FinanceEntry::OUT_CATEGORIES);
@@ -131,37 +128,7 @@ class FinanceBooksController extends Controller
             throw ValidationException::withMessages(['category' => 'Choose a category from the list.']);
         }
 
-        $employeeId = null;
-        $period = null;
-        if ($data['category'] === 'payroll') {
-            $employee = $this->employeesQuery($factoryId)->find($data['employee_id'] ?? 0);
-            if (! $employee) {
-                throw ValidationException::withMessages(['employee_id' => 'Choose the employee being paid.']);
-            }
-            if (empty($data['period'])) {
-                throw ValidationException::withMessages(['period' => 'Choose the month this pay is for.']);
-            }
-            $employeeId = $employee->id;
-            $period = $data['period'];
-            $data['party'] = $employee->name;
-
-            $alreadyPaid = FinanceEntry::where('category', 'payroll')
-                ->where('employee_id', $employeeId)
-                ->where('period', $period)
-                ->whereNull('voided_at')
-                ->exists();
-            if ($alreadyPaid && ! ($data['confirm_duplicate'] ?? false)) {
-                return response()->json(
-                    [
-                        'duplicate' => true,
-                        'message' => "{$employee->name} has already been paid for {$period}. Confirm to record another payment.",
-                    ],
-                    409,
-                );
-            }
-        }
-
-        $entry = DB::transaction(function () use ($request, $factoryId, $data, $employeeId, $period) {
+        $entry = DB::transaction(function () use ($request, $factoryId, $data) {
             $year = Carbon::parse($data['entry_date'])->format('Y');
             $sequence = FinanceEntry::withoutGlobalScopes()
                 ->where('factory_id', $factoryId)
@@ -175,8 +142,6 @@ class FinanceBooksController extends Controller
                 'category' => $data['category'],
                 'description' => $data['description'],
                 'party' => $data['party'] ?? null,
-                'employee_id' => $employeeId,
-                'period' => $period,
                 'amount' => round((float) $data['amount'], 2),
                 'method' => $data['method'],
                 'reference' => $data['reference'] ?? null,
@@ -213,71 +178,6 @@ class FinanceBooksController extends Controller
         AuditLog::record('finance.entry_voided', "Cancelled {$entry->entry_number}: {$data['reason']}", $entry);
 
         return response()->json(['message' => "{$entry->entry_number} cancelled."]);
-    }
-
-    // ------------------------------------------------------------------ payroll
-
-    public function payroll(Request $request): JsonResponse
-    {
-        $factoryId = $this->factoryId($request);
-        $data = $request->validate(['month' => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/']]);
-        $month = $data['month'] ?? today()->format('Y-m');
-
-        $employees = $this->employeesQuery($factoryId)
-            ->with(['roles' => fn ($query) => $query->where('role_user.factory_id', $factoryId)])
-            ->orderBy('name')
-            ->get(['users.id', 'users.name', 'users.email']);
-        $profiles = EmployeeProfile::with('department:id,name')->get()->keyBy('user_id');
-        $payments = FinanceEntry::where('category', 'payroll')
-            ->whereNull('voided_at')
-            ->whereIn('employee_id', $employees->pluck('id'))
-            ->orderByDesc('entry_date')
-            ->orderByDesc('id')
-            ->get();
-        $lastPayment = $payments->groupBy('employee_id')->map->first();
-        $paidThisMonth = $payments->where('period', $month)->groupBy('employee_id')->map(fn (Collection $rows) => (float) $rows->sum('amount'));
-
-        $rows = $employees->map(function (User $employee) use ($profiles, $lastPayment, $paidThisMonth) {
-            $profile = $profiles->get($employee->id);
-            $last = $lastPayment->get($employee->id);
-
-            return [
-                'id' => $employee->id,
-                'name' => $employee->name,
-                'email' => $employee->email,
-                'role' => $employee->roles->pluck('name')->implode(', '),
-                'job_title' => $profile?->job_title,
-                'department' => $profile?->department?->name,
-                'last_amount' => $last ? (float) $last->amount : null,
-                'last_period' => $last?->period,
-                'last_paid_on' => $last?->entry_date?->toDateString(),
-                'paid_this_month' => (float) ($paidThisMonth->get($employee->id) ?? 0),
-            ];
-        })->values();
-
-        return response()->json([
-            'month' => $month,
-            'summary' => [
-                'employees' => $rows->count(),
-                'paid_count' => $rows->where('paid_this_month', '>', 0)->count(),
-                'unpaid_count' => $rows->where('paid_this_month', '<=', 0)->count(),
-                'month_total' => round((float) $rows->sum('paid_this_month'), 2),
-            ],
-            'employees' => $rows,
-            'history' => $payments->take(100)->map(fn (FinanceEntry $entry) => [
-                'id' => $entry->id,
-                'entry_number' => $entry->entry_number,
-                'employee' => $employees->firstWhere('id', $entry->employee_id)?->name ?? $entry->party,
-                'period' => $entry->period,
-                'entry_date' => $entry->entry_date?->toDateString(),
-                'amount' => (float) $entry->amount,
-                'method' => $entry->method,
-                'reference' => $entry->reference,
-            ])->values(),
-            'methods' => SalesPayment::METHODS,
-            'currency' => $this->currency($request),
-            'can_record' => $request->user()->hasPermission('finance.manage_books'),
-        ]);
     }
 
     // ------------------------------------------------------------------ clients
@@ -534,18 +434,6 @@ class FinanceBooksController extends Controller
             ->where('d.factory_id', $factoryId)
             ->where('d.document_type', 'customer_order')
             ->whereNotIn('d.status', self::EXCLUDED_ORDER_STATUSES);
-    }
-
-    private function employeesQuery(int $factoryId)
-    {
-        return User::query()
-            ->where('users.is_platform_admin', false)
-            ->where('users.is_active', true)
-            ->whereNull('users.school_id')
-            ->whereHas(
-                'factories',
-                fn ($query) => $query->where('factories.id', $factoryId)->where('factory_user.is_active', true),
-            );
     }
 
     /**

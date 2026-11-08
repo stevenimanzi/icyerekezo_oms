@@ -39,8 +39,7 @@ export default function ClientsPage({ onNavigate }: { onNavigate?: (page: string
                 <div className="fb-filters">
                     <label className="fb-search">
                         Find a client
-                        <Search size={14} />
-                        <input placeholder="School or customer name" value={search} onChange={(event) => setSearch(event.target.value)} />
+                        <span className="search-box"><Search size={14} /><input placeholder="School or customer name" value={search} onChange={(event) => setSearch(event.target.value)} /></span>
                     </label>
                     <label className="fb-check">
                         <input type="checkbox" checked={owing} onChange={(event) => setOwing(event.target.checked)} />

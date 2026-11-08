@@ -3,7 +3,7 @@ import { WifiOff } from 'lucide-react';
 import { api } from '../core/api';
 import { labels } from '../core/labels';
 import type { AppNotificationItem, AuthUser } from '../core/types';
-import { buildRoleContext, navGroupsFor } from '../roles/registry';
+import { buildRoleContext } from '../roles/registry';
 import { useAppearance } from './hooks/useAppearance';
 import { useConnectivity } from './hooks/useConnectivity';
 import { useLowStockCount } from './hooks/useLowStockCount';
@@ -12,7 +12,7 @@ import { useUiEnhancer } from './useUiEnhancer';
 import { useNotifications } from './hooks/useNotifications';
 import { NotificationToasts } from './NotificationCenter';
 import { usePageNavigation } from './hooks/usePageNavigation';
-import { createAccess, groupNav, visibleNav } from './navigation';
+import { createAccess, visibleNav } from './navigation';
 import { PageRouter } from './PageRouter';
 import { pageKeyFromPath } from './routing';
 import { Sidebar } from './Sidebar';
@@ -36,7 +36,11 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
     const { flags } = context;
 
     const nav = useMemo(() => visibleNav(context, access), [context, access]);
-    const entries = useMemo(() => groupNav(nav, navGroupsFor(context)), [nav, context]);
+    // One flat list for everyone: no menu categories.
+    const entries = useMemo(
+        () => nav.map((item) => ({ type: 'item' as const, key: item[0], item })),
+        [nav],
+    );
     const availablePages = useMemo(() => nav.map(([page]) => page), [nav]);
 
     const showSettings =
@@ -98,7 +102,7 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
                 showSupport={showSupport}
                 isOwner={flags.isFactoryOwner}
                 isSchoolUser={flags.isSchoolUser}
-                compact={flags.isFinancialManager}
+                compact
                 switchingFactory={switchingFactory}
                 onNavigate={setActivePage}
                 onClose={() => setSidebarOpen(false)}

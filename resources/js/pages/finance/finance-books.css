@@ -178,17 +178,7 @@
     height: auto;
     padding: 8px 10px;
 }
-.fb-search {
-    position: relative;
-}
-.fb-search svg {
-    position: absolute;
-    left: 10px;
-    top: 9px;
-    color: #94a3b8;
-}
-.fb-search input {
-    padding-left: 30px;
+.fb-search .search-box input {
     width: 230px;
 }
 .fb-check {
@@ -354,7 +344,7 @@
     .fb-form .two {
         grid-template-columns: 1fr;
     }
-    .fb-search input {
+    .fb-search .search-box input {
         width: 100%;
     }
 }

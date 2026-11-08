@@ -1,7 +1,6 @@
 import {
     BookOpen,
     Boxes,
-    Banknote,
     FileBarChart,
     HandCoins,
     LayoutDashboard,
@@ -28,7 +27,6 @@ export const financialManagerRole: RoleModule = {
         ['finance', HandCoins, text('Money Collected', 'Encaissements'), 'finance.view'],
         ['cashbook', BookOpen, text('Cash Book', 'Livre de caisse'), 'finance.view'],
         ['expenses', WalletCards, text('Expenses', 'Dépenses'), 'finance.view'],
-        ['payroll', Banknote, text('Staff Pay', 'Paie du personnel'), 'finance.view'],
         ['procurement', ShoppingCart, text('Purchases', 'Achats'), 'procurement.view'],
         ['products', Tag, text('Products & Prices', 'Produits et prix'), 'products.view'],
         ['inventory', Boxes, text('Stock Available', 'Stock disponible'), 'inventory.view'],

@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use App\Support\Notifications\FactoryNotifier;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 #[
     Fillable([
@@ -27,6 +29,32 @@ class AuditLog extends Model
     protected function casts(): array
     {
         return ['old_values' => 'array', 'new_values' => 'array', 'created_at' => 'datetime'];
+    }
+
+    /** Every recorded change is also told to the people who work in that factory (with a sound in the app). */
+    protected static function booted(): void
+    {
+        static::created(function (self $log) {
+            $event = (string) $log->event;
+            if (! $log->factory_id || str_starts_with($event, 'platform.') || str_starts_with($event, 'auth.')) {
+                return;
+            }
+
+            try {
+                $title = Str::of($event)->replace(['_', '.'], ' ')->lower()->ucfirst()->toString();
+                $who = $log->user_id ? User::whereKey($log->user_id)->value('name') : null;
+                FactoryNotifier::notifyEveryone(
+                    (int) $log->factory_id,
+                    $title,
+                    trim(($log->description ?: $title) . ($who ? " (by {$who})" : '')),
+                    null,
+                    'activity',
+                    $log->user_id ? (int) $log->user_id : null,
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
     }
 
     public function user()

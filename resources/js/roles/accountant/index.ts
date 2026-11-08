@@ -1,4 +1,4 @@
-import { ChartColumn, LayoutDashboard, ShoppingCart, TrendingUp } from 'lucide-react';
+import { FileBarChart, LayoutDashboard, ShoppingCart, TrendingUp } from 'lucide-react';
 import type { RoleModule } from '../types';
 
 export const accountantRole: RoleModule = {
@@ -8,6 +8,6 @@ export const accountantRole: RoleModule = {
         ['dashboard', LayoutDashboard, labels.dashboard, '*'],
         ['sales', TrendingUp, labels.sales, 'sales.view'],
         ['procurement', ShoppingCart, labels.procurement, 'procurement.view'],
-        ['reports', ChartColumn, labels.reports, 'reports.view'],
+        ['reports', FileBarChart, labels.reports, 'reports.view'],
     ],
 };

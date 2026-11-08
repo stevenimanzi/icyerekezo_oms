@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
+use App\Support\Reports\SalesReport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -96,8 +97,39 @@ class DepartmentReportController extends Controller
                 'balance' => max(0, (float) $row->total_amount - (float) $row->paid_amount),
             ]);
         $totals = (clone $query)->selectRaw('COUNT(*) c, COALESCE(SUM(total_amount),0) t, COALESCE(SUM(paid_amount),0) p')->first();
+        $summary = (new SalesReport($factoryId, $from, $to))->build();
+        $money = fn (string $label, string $key) => ['label' => $label, 'key' => $key, 'kind' => 'money'];
+        $count = fn (string $label, string $key) => ['label' => $label, 'key' => $key, 'kind' => 'number'];
+        $text = fn (string $label, string $key) => ['label' => $label, 'key' => $key, 'kind' => 'text'];
 
         return [
+            'extra_tables' => [
+                [
+                    'heading' => 'Best customers',
+                    'columns' => [$text('Customer', 'name'), $count('Sales', 'sales'), $money('Bought', 'revenue'), $money('Still owes', 'owes')],
+                    'rows' => $summary['top_customers'],
+                ],
+                [
+                    'heading' => 'Best selling products',
+                    'columns' => [$text('Product', 'name'), $count('Quantity', 'quantity'), $money('Sales value', 'revenue')],
+                    'rows' => $summary['top_products'],
+                ],
+                [
+                    'heading' => 'How customers paid',
+                    'columns' => [$text('Method', 'method'), $count('Payments', 'payments'), $money('Amount', 'amount')],
+                    'rows' => collect($summary['payment_methods'])->map(fn ($row) => ['method' => $this->words($row['method']), 'payments' => $row['payments'], 'amount' => $row['amount']])->all(),
+                ],
+                [
+                    'heading' => 'Customers who still owe money',
+                    'columns' => [$text('Number', 'number'), $text('Customer', 'customer'), $text('Phone', 'phone'), ['label' => 'Sold on', 'key' => 'sold_on', 'kind' => 'date'], ['label' => 'Due on', 'key' => 'due_on', 'kind' => 'date'], $money('Total', 'total'), $money('Balance', 'balance'), $count('Days late', 'days_late')],
+                    'rows' => $summary['debtors'],
+                ],
+                [
+                    'heading' => 'Sales by team member',
+                    'columns' => [$text('Name', 'name'), $count('Sales', 'sales'), $money('Sales value', 'revenue')],
+                    'rows' => $summary['sellers'],
+                ],
+            ],
             'title' => 'Sales report',
             'intro' => 'Orders and sales documents made by the sales team in the chosen dates.',
             'kpis' => [
@@ -105,6 +137,8 @@ class DepartmentReportController extends Controller
                 ['label' => 'Total value', 'value' => (float) $totals->t, 'kind' => 'money'],
                 ['label' => 'Money received', 'value' => (float) $totals->p, 'kind' => 'money'],
                 ['label' => 'Still to be paid', 'value' => max(0, (float) $totals->t - (float) $totals->p), 'kind' => 'money'],
+                ['label' => 'Average sale', 'value' => (float) $summary['summary']['average_sale']['current'], 'kind' => 'money'],
+                ['label' => 'Unpaid in total', 'value' => (float) $summary['summary']['outstanding'], 'kind' => 'money'],
             ],
             'columns' => [
                 ['key' => 'date', 'label' => 'Date', 'kind' => 'date'],

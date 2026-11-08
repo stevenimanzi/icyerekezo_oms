@@ -55,7 +55,6 @@ const FlowMonitorPage = lazy(() => import('../pages/production/flow/monitor/Flow
 const FactorySettingsPage = lazy(() => import('../pages/factory/FactorySettingsPage'));
 const FinanceOverviewPage = lazy(() => import('../pages/finance/FinanceOverviewPage'));
 const FinanceBooksPage = lazy(() => import('../pages/finance/FinanceBooksPage'));
-const PayrollPage = lazy(() => import('../pages/finance/PayrollPage'));
 const ClientsPage = lazy(() => import('../pages/finance/ClientsPage'));
 const SoldGoodsPage = lazy(() => import('../pages/finance/SoldGoodsPage'));
 const FinancialReportsPage = lazy(() => import('../pages/finance/FinancialReportsPage'));
@@ -342,8 +341,6 @@ function CurrentPage({
             return <FinanceBooksPage view="cashbook" onNavigate={onNavigate} />;
         case 'expenses':
             return <FinanceBooksPage view="expenses" onNavigate={onNavigate} />;
-        case 'payroll':
-            return <PayrollPage />;
         case 'clients':
             return <ClientsPage onNavigate={onNavigate} />;
         case 'sold-goods':

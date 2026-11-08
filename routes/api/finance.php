@@ -18,7 +18,6 @@ Route::controller(FinanceBooksController::class)
         Route::get('/cashbook', 'cashbook')->middleware('permission:finance.view');
         Route::post('/entries', 'store')->middleware('permission:finance.manage_books');
         Route::post('/entries/{entry}/void', 'void')->middleware('permission:finance.manage_books');
-        Route::get('/payroll', 'payroll')->middleware('permission:finance.view');
         Route::get('/clients', 'clients')->middleware('permission:finance.view|sales.view');
         Route::get('/clients/detail', 'clientDetail')->middleware('permission:finance.view|sales.view');
         Route::get('/sold-goods', 'soldGoods')->middleware('permission:finance.view|sales.view');

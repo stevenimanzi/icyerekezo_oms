@@ -16,20 +16,18 @@ const audio = () => {
 
 /** Browsers only allow sound after the person has touched the page once, so the first click or key press unlocks it. */
 export function unlockSound() {
+    const events = ['pointerdown', 'click', 'touchstart', 'keydown'] as const;
     const unlock = () => {
-        audio()
-            ?.resume()
+        const ctx = audio();
+        ctx?.resume()
+            .then(() => {
+                if (ctx.state === 'running') events.forEach((name) => window.removeEventListener(name, unlock));
+            })
             .catch(() => {});
-        window.removeEventListener('pointerdown', unlock);
-        window.removeEventListener('keydown', unlock);
     };
-    window.addEventListener('pointerdown', unlock);
-    window.addEventListener('keydown', unlock);
+    events.forEach((name) => window.addEventListener(name, unlock));
 
-    return () => {
-        window.removeEventListener('pointerdown', unlock);
-        window.removeEventListener('keydown', unlock);
-    };
+    return () => events.forEach((name) => window.removeEventListener(name, unlock));
 }
 
 export function soundEnabled(): boolean {
@@ -51,7 +49,9 @@ export function saveSoundEnabled(enabled: boolean) {
 /** A short two-note chime made in the browser, so no sound file has to be loaded. */
 export function playChime() {
     const ctx = audio();
-    if (!ctx || ctx.state !== 'running') return;
+    if (!ctx) return;
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
+    if (ctx.state === 'closed') return;
 
     const notes: [number, number][] = [
         [880, 0],

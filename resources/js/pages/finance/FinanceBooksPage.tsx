@@ -110,9 +110,7 @@ export default function FinanceBooksPage({ view, onNavigate }: Props) {
 
     const formCategories = useMemo(
         () =>
-            (draft?.direction === 'in' ? data?.categories?.in : data?.categories?.out)?.filter(
-                (c: any) => c.value !== 'payroll',
-            ) || [],
+            (draft?.direction === 'in' ? data?.categories?.in : data?.categories?.out) || [],
         [data, draft?.direction],
     );
 
@@ -305,12 +303,11 @@ export default function FinanceBooksPage({ view, onNavigate }: Props) {
                     </label>
                     <label className="fb-search">
                         Search
-                        <Search size={14} />
-                        <input
+                        <span className="search-box"><Search size={14} /><input
                             placeholder="Description, person, reference"
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
-                        />
+                        /></span>
                     </label>
                 </div>
             </div>
@@ -319,7 +316,7 @@ export default function FinanceBooksPage({ view, onNavigate }: Props) {
                 (isExpenses ? (
                     <div className="fb-kpis">
                         <Kpi label="Total spent" value={money(summary.money_out, currency)} hint={`${range.from} to ${range.to}`} tone="bad" />
-                        <Kpi label="Staff pay" value={money(spentOn('payroll'), currency)} hint="Salaries & wages" />
+                        <Kpi label="Salaries paid" value={money(spentOn('payroll'), currency)} hint="HR payroll paid by finance" />
                         <Kpi label="Materials & suppliers" value={money(spentOn('purchases'), currency)} hint="Paid to suppliers" />
                         <Kpi label="Running costs" value={money(otherSpent, currency)} hint="Utilities, transport, rent, repairs, other" />
                     </div>
@@ -423,7 +420,7 @@ export default function FinanceBooksPage({ view, onNavigate }: Props) {
                 {data?.truncated && <p className="fb-hint">Showing the latest 1,000 movements. Narrow the dates to see the rest.</p>}
                 <p className="fb-hint">
                     Customer payments and supplier payments appear here automatically when they are recorded in Orders & Invoices or
-                    Purchases, so nothing is typed twice. Staff pay is recorded on the Staff Pay page.
+                    Purchases, so nothing is typed twice. Salaries are recorded here as an expense, under Salaries paid.
                 </p>
             </div>
 
@@ -467,7 +464,16 @@ export default function FinanceBooksPage({ view, onNavigate }: Props) {
                         </div>
                         <label>
                             Category
-                            <select value={draft.category} onChange={(event) => set({ category: event.target.value })}>
+                            <select
+                                value={draft.category}
+                                onChange={(event) =>
+                                    set(
+                                        event.target.value === 'payroll'
+                                            ? { category: 'payroll', method: 'bank_transfer' }
+                                            : { category: event.target.value },
+                                    )
+                                }
+                            >
                                 <option value="">Choose a category</option>
                                 {formCategories.map((item: any) => (
                                     <option key={item.value} value={item.value}>
@@ -478,8 +484,8 @@ export default function FinanceBooksPage({ view, onNavigate }: Props) {
                         </label>
                         {draft.direction === 'out' && (
                             <p className="fb-hint">
-                                Salaries are paid from the Staff Pay page, and materials from Purchases, so they stay linked to the right
-                                person or order.
+                                HR prepares the payroll and finance pays it. Record the payment here as Salaries paid. Materials
+                                bought for production are recorded from Purchases.
                             </p>
                         )}
                         <label>
@@ -487,7 +493,13 @@ export default function FinanceBooksPage({ view, onNavigate }: Props) {
                             <input
                                 value={draft.description}
                                 maxLength={255}
-                                placeholder={draft.direction === 'in' ? 'e.g. Sale of scrap fabric' : 'e.g. Electricity bill for November'}
+                                placeholder={
+                                    draft.direction === 'in'
+                                        ? 'e.g. Sale of old fabric'
+                                        : draft.category === 'payroll'
+                                          ? 'e.g. Salaries for November, paid by bank'
+                                          : 'e.g. Electricity bill for November'
+                                }
                                 onChange={(event) => set({ description: event.target.value })}
                             />
                         </label>

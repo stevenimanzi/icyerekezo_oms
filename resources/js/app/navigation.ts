@@ -30,7 +30,6 @@ const FEATURE_FOR_PAGE: Record<string, string> = {
     finance: 'sales',
     cashbook: 'sales',
     expenses: 'sales',
-    payroll: 'sales',
     clients: 'sales',
     'sold-goods': 'sales',
     'finance-reports': 'reports',

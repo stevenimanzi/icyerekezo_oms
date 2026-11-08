@@ -1,6 +1,6 @@
 import {
     BadgeCheck,
-    ChartColumn,
+    FileBarChart,
     Factory,
     History,
     LayoutDashboard,
@@ -30,13 +30,13 @@ export const ownerRole: RoleModule = {
             ['logistics', Truck, text('Deliveries', 'Livraisons'), 'logistics.view'],
             [
                 'logistics-reports',
-                ChartColumn,
+                FileBarChart,
                 text('Delivery report', 'Rapport de livraison'),
                 'reports.view',
             ],
             ['team', Users, text('Team', 'Équipe'), 'users.view'],
             ...productionFlowNav(context),
-            ['reports', ChartColumn, text('Reports', 'Rapports'), 'reports.view'],
+            ['reports', FileBarChart, text('Reports', 'Rapports'), 'reports.view'],
         ];
     },
 };

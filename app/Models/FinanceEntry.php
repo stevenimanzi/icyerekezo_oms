@@ -32,7 +32,7 @@ class FinanceEntry extends Model
 
     /** Money going out of the factory that is not a supplier payment. */
     public const OUT_CATEGORIES = [
-        'payroll' => 'Salaries & wages',
+        'payroll' => 'Salaries paid (HR payroll)',
         'utilities' => 'Electricity, water & internet',
         'rent' => 'Rent',
         'transport' => 'Transport & fuel',
