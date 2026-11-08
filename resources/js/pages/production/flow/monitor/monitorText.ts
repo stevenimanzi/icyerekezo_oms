@@ -48,6 +48,8 @@ const en = {
     } as Record<string, string>,
     open: 'Open',
     check: 'Quality check',
+    recheck: 'Check failed again',
+    failed: 'Failed',
     checksTitle: 'Recent quality checks',
     checksEmpty: 'No quality checks yet.',
     number: 'Check',
@@ -77,6 +79,16 @@ const en = {
             `Final check: ${n} packed pieces wait. Good pieces become sellable stock; bad pieces are written off.`,
         stageHint: (n: number) => `Bad pieces must come from the ${n} ready to send at this stage.`,
         save: 'Save check',
+        modeNew: 'New check',
+        modeRecheck: 'Check failed pieces again',
+        recheckTitle: 'Check failed pieces again',
+        failedWaiting: (n: number) =>
+            `${n} failed pieces are waiting to be checked again. Pieces that now pass are recorded as passed and move on; the rest stay on the failed list.`,
+        nothingFailed: 'No failed pieces at this stage.',
+        checkedAgain: 'Pieces checked again',
+        nowPassed: 'Now good',
+        stillFailing: 'Still bad',
+        recheckSave: 'Save re-check',
     },
 
     detail: {
@@ -189,6 +201,8 @@ const fr: typeof en = {
     statusLabels: { open: 'En cours', held: 'Bloqué', completed: 'Terminé', cancelled: 'Annulé' },
     open: 'Ouvrir',
     check: 'Contrôle qualité',
+    recheck: 'Recontrôler les refusées',
+    failed: 'Refusées',
     checksTitle: 'Derniers contrôles qualité',
     checksEmpty: 'Aucun contrôle qualité.',
     number: 'Contrôle',
@@ -216,6 +230,16 @@ const fr: typeof en = {
         stageHint: (n) =>
             `Les mauvaises pièces doivent venir des ${n} prêtes à envoyer à cette étape.`,
         save: 'Enregistrer le contrôle',
+        modeNew: 'Nouveau contrôle',
+        modeRecheck: 'Recontrôler les pièces refusées',
+        recheckTitle: 'Recontrôler les pièces refusées',
+        failedWaiting: (n) =>
+            `${n} pièces refusées attendent un nouveau contrôle. Celles qui passent sont enregistrées comme bonnes et continuent ; les autres restent refusées.`,
+        nothingFailed: 'Aucune pièce refusée à cette étape.',
+        checkedAgain: 'Pièces recontrôlées',
+        nowPassed: 'Maintenant bonnes',
+        stillFailing: 'Toujours mauvaises',
+        recheckSave: 'Enregistrer le recontrôle',
     },
 
     detail: {

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
         'rejected_quantity',
         'stock_released',
         'result',
+        'is_reinspection',
         'defect_details',
         'corrective_action',
         'notes',
@@ -38,7 +39,7 @@ class QualityInspection extends Model
 
     protected function casts(): array
     {
-        return ['inspected_at' => 'datetime', 'approved_at' => 'datetime'];
+        return ['inspected_at' => 'datetime', 'approved_at' => 'datetime', 'is_reinspection' => 'boolean'];
     }
 
     public function order()

@@ -437,6 +437,83 @@ class ProductionFlowService
         });
     }
 
+    /**
+     * Look again at pieces that failed a quality check. The pieces that now pass are recorded as passed
+     * (and move on like any other passed piece); the rest stay on the failed list for another try.
+     */
+    public function recheck(User $user, ProductionLot $lot, string $stage, array $data): QualityInspection
+    {
+        $this->requireQuality($user);
+        abort_unless(ProductionFlowCatalog::exists($stage), 422, 'Choose a stage.');
+
+        return DB::transaction(function () use ($user, $lot, $stage, $data) {
+            $lot = $this->lockLot($lot->id);
+            abort_if($lot->status === 'cancelled', 422, 'This lot was cancelled.');
+
+            $passed = (int) $data['passed_quantity'];
+            $stillBad = (int) ($data['still_failed_quantity'] ?? 0);
+            $checked = $passed + $stillBad;
+            $isFinalGate = $this->isLastStage($stage);
+            $failed = $this->balances->forLot($lot->id)['stages'][$stage]['quality_rejected'];
+
+            if ($checked < 1) {
+                throw ValidationException::withMessages(['passed_quantity' => 'Enter how many pieces you checked again.']);
+            }
+
+            if ($checked > $failed) {
+                throw ValidationException::withMessages([
+                    'passed_quantity' => "Only {$failed} failed pieces are waiting to be checked again at " . $this->label($stage) . ' for this lot.',
+                ]);
+            }
+
+            $inspection = QualityInspection::create([
+                'factory_id' => $user->current_factory_id ?? $lot->factory_id,
+                'inspection_number' => 'QI-' . now()->format('ymd') . '-' . Str::upper(Str::random(6)),
+                'lot_id' => $lot->id,
+                'stage' => $stage,
+                'item_id' => $lot->product_item_id,
+                'inspection_type' => $isFinalGate ? 'finished_goods' : 'in_process',
+                'inspected_quantity' => $checked,
+                'passed_quantity' => $passed,
+                // Pieces that still fail are already counted as failed from the first check.
+                'rejected_quantity' => 0,
+                'is_reinspection' => true,
+                'stock_released' => ! ($isFinalGate && $passed > 0),
+                'result' => $passed === 0 ? 'failed' : ($stillBad === 0 ? 'passed' : 'conditional'),
+                'defect_details' => $stillBad > 0 ? ($data['defect_details'] ?? null) : null,
+                'notes' => trim("Re-check: {$passed} passed, {$stillBad} still failing. " . ($data['notes'] ?? '')),
+                'inspector_id' => $user->id,
+                'inspected_at' => now(),
+            ]);
+
+            if ($isFinalGate && $passed > 0) {
+                $this->recoverFinishedStock($lot, $passed, $inspection);
+            }
+
+            AuditLog::record('production.quality_rechecked', "{$inspection->inspection_number}: {$passed} of {$checked} failed pieces now pass at {$this->label($stage)} for {$lot->lot_number}", $inspection);
+
+            $this->refreshStatus($lot);
+
+            return $inspection;
+        });
+    }
+
+    /** Failed pieces were written off at the final gate; pieces that pass a re-check come back into stock as passed, waiting for the storekeeper. */
+    private function recoverFinishedStock(ProductionLot $lot, int $passed, QualityInspection $inspection): void
+    {
+        $entryIds = $lot->entries()->where('stage', ProductionFlowCatalog::keys()[count(ProductionFlowCatalog::keys()) - 1])->pluck('id');
+        $origin = StockTransaction::where('reference_type', (new ProductionEntry)->getMorphClass())
+            ->whereIn('reference_id', $entryIds)
+            ->where('type', 'production_output')
+            ->first();
+
+        $warehouseId = $origin?->warehouse_id ?? $this->finishedGoodsWarehouse()->id;
+        $common = ['item_id' => $lot->product_item_id, 'warehouse_id' => $warehouseId, 'quantity' => $passed, 'reference_type' => $inspection->getMorphClass(), 'reference_id' => $inspection->id];
+
+        $this->ledger->post($common + ['type' => 'adjustment_in', 'reason' => "Passed re-check {$inspection->inspection_number}: {$lot->lot_number}"]);
+        $this->ledger->post($common + ['type' => 'quarantine', 'reason' => "Passed re-check, waiting for the storekeeper: {$lot->lot_number}"]);
+    }
+
     private function createLot(User $user, array $data): ProductionLot
     {
         $product = ! empty($data['product_item_id'])

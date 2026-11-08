@@ -18,6 +18,7 @@ import {
     useDebounced,
     useFinanceData,
 } from './financeKit';
+import { PayrollToPay } from './PayrollToPay';
 
 type Props = {
     /** 'cashbook' shows every movement of money; 'expenses' shows only money spent. */
@@ -226,6 +227,8 @@ export default function FinanceBooksPage({ view, onNavigate }: Props) {
             </PageHead>
 
             <Alerts error={error} success={success} />
+
+            {isExpenses && <PayrollToPay canPay={!!data?.can_record} onPaid={reload} />}
 
             {purchasing && (purchasing.pending_requests > 0 || purchasing.approved_requests > 0) && (
                 <div className="fb-alert info">

@@ -186,6 +186,7 @@ class FlowQueries
                     'here' => $s['wip'] + $s['outbox'] + $s['awaiting_quality'],
                     'arriving' => $s['incoming'],
                     'awaiting_quality' => $s['awaiting_quality'],
+                    'failed' => $s['quality_rejected'] ?? 0,
                 ])->all(),
             ];
         });
@@ -435,6 +436,7 @@ class FlowQueries
             'sent' => $b['sent'],
             'quality_passed' => $b['quality_passed'] ?? 0,
             'quality_rejected' => $b['quality_rejected'] ?? 0,
+            'failed_open' => $b['quality_rejected'] ?? 0,
             'qc_message' => $qcMessage,
             'qc_status' => $qcStatus,
         ];

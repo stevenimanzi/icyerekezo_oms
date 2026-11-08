@@ -14,6 +14,11 @@ use Illuminate\Database\Eloquent\Model;
         'workstation_id',
         'employee_number',
         'job_title',
+        'base_salary',
+        'overtime_rate',
+        'contract_type',
+        'phone',
+        'emergency_contact',
         'skills',
         'employment_status',
         'hired_at',
@@ -25,7 +30,7 @@ class EmployeeProfile extends Model
 
     protected function casts(): array
     {
-        return ['skills' => 'array', 'hired_at' => 'date'];
+        return ['skills' => 'array', 'hired_at' => 'date', 'base_salary' => 'decimal:2', 'overtime_rate' => 'decimal:2'];
     }
 
     public function department()

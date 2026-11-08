@@ -62,6 +62,7 @@ const FinishingWorkspacePage = lazy(
     () => import('../pages/production/textile/finishing/FinishingWorkspacePage'),
 );
 const HrOverviewPage = lazy(() => import('../pages/hr/HrOverviewPage'));
+const HrWorkspacePage = lazy(() => import('../pages/hr/HrWorkspacePage'));
 const IncomingRequestsPage = lazy(() => import('../pages/warehouse/IncomingRequestsPage'));
 const StockInPage = lazy(() => import('../pages/warehouse/stock/StockInPage'));
 const StockOutPage = lazy(() => import('../pages/warehouse/stock/StockOutPage'));
@@ -349,6 +350,18 @@ function CurrentPage({
             return <FinancialReportsPage />;
         case 'hr':
             return <HrOverviewPage />;
+        case 'hr-employees':
+            return <HrWorkspacePage view="employees" onNavigate={onNavigate} />;
+        case 'hr-attendance':
+            return <HrWorkspacePage view="attendance" onNavigate={onNavigate} />;
+        case 'hr-leave':
+            return <HrWorkspacePage view="leave" onNavigate={onNavigate} />;
+        case 'hr-overtime':
+            return <HrWorkspacePage view="overtime" onNavigate={onNavigate} />;
+        case 'hr-payroll':
+            return <HrWorkspacePage view="payroll" onNavigate={onNavigate} />;
+        case 'hr-training':
+            return <HrWorkspacePage view="training" onNavigate={onNavigate} />;
         case 'safety':
             return <SafetyOverviewPage />;
         case 'logistics':

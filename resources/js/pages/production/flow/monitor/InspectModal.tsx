@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal } from '../../../../components/Modal';
 import '../../../../components/ui.css';
 import type { Locale } from '../../../../core/types';
@@ -13,6 +13,7 @@ type Props = {
     initialLot?: number;
     initialStage?: StageKey;
     initialQuantity?: number;
+    initialMode?: 'new' | 'recheck';
     locale: Locale;
     text: FlowText;
     words: MonitorText;
@@ -26,6 +27,7 @@ export function InspectModal({
     initialLot,
     initialStage,
     initialQuantity,
+    initialMode,
     locale,
     text,
     words,
@@ -44,6 +46,9 @@ export function InspectModal({
     const [hold, setHold] = useState(false);
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
+    const [mode, setMode] = useState<'new' | 'recheck'>(initialMode ?? 'new');
+    const [nowPassed, setNowPassed] = useState('');
+    const [stillBad, setStillBad] = useState('0');
 
     const lot = lots.find((row) => String(row.id) === lotId);
     const isFinal = stage === 'packing';
@@ -63,6 +68,39 @@ export function InspectModal({
         good + bad <= checked &&
         good + bad >= 1 &&
         (bad === 0 || defects.trim().length > 0);
+
+    const failedHere =
+        balances?.stages[stage]?.quality_rejected ??
+        (lot?.stages?.[stage] as any)?.failed ??
+        0;
+    useEffect(() => {
+        if (mode === 'recheck') {
+            setNowPassed(String(failedHere));
+            setStillBad('0');
+        }
+    }, [mode, stage, lotId, failedHere]);
+    const nowGood = Number(nowPassed) || 0;
+    const nowBad = Number(stillBad) || 0;
+    const recheckReady =
+        (initialLot !== undefined || lot !== undefined) &&
+        nowGood + nowBad >= 1 &&
+        nowGood + nowBad <= failedHere &&
+        (nowBad === 0 || defects.trim().length > 0);
+
+    const handleNowPassed = (val: string) => {
+        setNowPassed(val);
+        setStillBad(String(Math.max(0, failedHere - (Number(val) || 0))));
+    };
+    const handleStillBad = (val: string) => {
+        setStillBad(val);
+        setNowPassed(String(Math.max(0, failedHere - (Number(val) || 0))));
+    };
+    const changeStage = (next: StageKey) => {
+        setStage(next);
+        const count = balances?.stages[next]?.quality_rejected ?? (lot?.stages?.[next] as any)?.failed ?? 0;
+        setNowPassed(String(count));
+        setStillBad('0');
+    };
 
     const handleInspectedChange = (val: string) => {
         setInspected(val);
@@ -93,6 +131,18 @@ export function InspectModal({
         setBusy(true);
         setError('');
         try {
+            if (mode === 'recheck') {
+                const done = await postJson<{ message: string }>('/api/flow/inspections/recheck', {
+                    lot_id: Number(lotId),
+                    stage,
+                    passed_quantity: nowGood,
+                    still_failed_quantity: nowBad,
+                    defect_details: defects.trim() || null,
+                    notes: notes.trim() || null,
+                });
+                onDone(done.message);
+                return;
+            }
             const result = await postJson<{ message: string }>('/api/flow/inspections', {
                 lot_id: Number(lotId),
                 stage,
@@ -113,20 +163,44 @@ export function InspectModal({
 
     return (
         <Modal
-            title={t.title}
+            title={mode === 'recheck' ? t.recheckTitle : t.title}
             onClose={onClose}
             footer={
                 <>
                     <button className="secondary-btn" onClick={onClose} disabled={busy}>
                         {text.cancel}
                     </button>
-                    <button className="primary-btn" onClick={submit} disabled={busy || !ready}>
-                        {busy ? text.saving : t.save}
+                    <button
+                        className="primary-btn"
+                        onClick={submit}
+                        disabled={busy || (mode === 'recheck' ? !recheckReady : !ready)}
+                    >
+                        {busy ? text.saving : mode === 'recheck' ? t.recheckSave : t.save}
                     </button>
                 </>
             }
         >
             {error && <div className="ui-error">{error}</div>}
+            <div className="ui-tabs" role="tablist" style={{ marginBottom: 12 }}>
+                {(['new', 'recheck'] as const).map((key) => (
+                    <button
+                        key={key}
+                        role="tab"
+                        type="button"
+                        aria-selected={mode === key}
+                        className={mode === key ? 'active' : ''}
+                        onClick={() => {
+                            setMode(key);
+                            if (key === 'recheck') {
+                                setNowPassed(String(failedHere));
+                                setStillBad('0');
+                            }
+                        }}
+                    >
+                        {key === 'new' ? t.modeNew : t.modeRecheck}
+                    </button>
+                ))}
+            </div>
             <div className="ui-grid">
                 <label className="ui-field">
                     {t.lot}
@@ -150,7 +224,7 @@ export function InspectModal({
                     {t.stage}
                     <select
                         value={stage}
-                        onChange={(event) => setStage(event.target.value as StageKey)}
+                        onChange={(event) => changeStage(event.target.value as StageKey)}
                     >
                         {STAGE_ORDER.map((key) => (
                             <option key={key} value={key}>
@@ -160,6 +234,71 @@ export function InspectModal({
                     </select>
                 </label>
             </div>
+            {mode === 'recheck' ? (
+                <>
+                    <div
+                        style={{
+                            background: 'color-mix(in srgb, #d97706 8%, var(--panel, #ffffff))',
+                            border: '1px solid color-mix(in srgb, #d97706 30%, transparent)',
+                            borderRadius: 10,
+                            padding: '10px 14px',
+                            fontSize: '13px',
+                            lineHeight: 1.5,
+                            fontWeight: 500,
+                        }}
+                    >
+                        {failedHere > 0 ? t.failedWaiting(failedHere) : t.nothingFailed}
+                    </div>
+                    {failedHere > 0 && (
+                        <div className="ui-grid three">
+                            <label className="ui-field">
+                                <span>{t.checkedAgain}</span>
+                                <input type="number" value={nowGood + nowBad} readOnly />
+                            </label>
+                            <label className="ui-field">
+                                <span style={{ color: '#059669' }}>{t.nowPassed}</span>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={failedHere}
+                                    step={1}
+                                    value={nowPassed}
+                                    onChange={(event) => handleNowPassed(event.target.value)}
+                                    style={{ borderColor: nowGood > 0 ? '#059669' : undefined }}
+                                />
+                            </label>
+                            <label className="ui-field">
+                                <span style={{ color: nowBad > 0 ? '#dc2626' : undefined }}>{t.stillFailing}</span>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={failedHere}
+                                    step={1}
+                                    value={stillBad}
+                                    onChange={(event) => handleStillBad(event.target.value)}
+                                    style={{ borderColor: nowBad > 0 ? '#dc2626' : undefined }}
+                                />
+                            </label>
+                        </div>
+                    )}
+                    {nowBad > 0 && (
+                        <label className="ui-field">
+                            <span style={{ color: '#dc2626', fontWeight: 600 }}>{t.defects} *</span>
+                            <input
+                                value={defects}
+                                onChange={(event) => setDefects(event.target.value)}
+                                placeholder={locale === 'fr' ? 'Précisez le défaut restant...' : 'Explain what is still wrong...'}
+                                style={{ borderColor: '#dc2626' }}
+                            />
+                        </label>
+                    )}
+                    <label className="ui-field">
+                        <span>{t.notes}</span>
+                        <textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} />
+                    </label>
+                </>
+            ) : (
+                <>
             <div
                 style={{
                     background: 'color-mix(in srgb, var(--brand, #2563eb) 8%, var(--panel, #ffffff))',
@@ -256,6 +395,8 @@ export function InspectModal({
                     placeholder={locale === 'fr' ? 'Remarques ou observations complémentaires...' : 'Optional inspection observations...'}
                 />
             </label>
+                </>
+            )}
         </Modal>
     );
 }

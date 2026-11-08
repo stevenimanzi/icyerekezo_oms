@@ -16,7 +16,7 @@ type Props = {
     words: MonitorText;
     format: Format;
     onClose: () => void;
-    onInspect: (lotId: number, balances: LotDetail['balances']) => void;
+    onInspect: (lotId: number, balances: LotDetail['balances'], mode?: 'new' | 'recheck') => void;
     onChanged: (message: string) => void;
 };
 
@@ -100,9 +100,18 @@ export function LotDetailModal({
                                 </button>
                             )
                         )}
+                        {data && STAGE_ORDER.some((key) => (data.balances.stages[key].quality_rejected ?? 0) > 0) && (
+                            <button
+                                className="secondary-btn"
+                                onClick={() => onInspect(lotId, data.balances, 'recheck')}
+                                disabled={busy}
+                            >
+                                {words.recheck}
+                            </button>
+                        )}
                         <button
                             className="primary-btn"
-                            onClick={() => data && onInspect(lotId, data.balances)}
+                            onClick={() => data && onInspect(lotId, data.balances, 'new')}
                             disabled={busy}
                         >
                             {t.check}
@@ -175,6 +184,7 @@ export function LotDetailModal({
                                     <th className="num">{t.ready}</th>
                                     <th className="num">{words.damaged}</th>
                                     <th className="num">{words.awaiting}</th>
+                                    <th className="num">{words.failed}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -190,6 +200,11 @@ export function LotDetailModal({
                                             <td className="num">{format.whole(row.damaged)}</td>
                                             <td className="num">
                                                 {format.whole(row.awaiting_quality)}
+                                            </td>
+                                            <td className="num">
+                                                <b className={(row.quality_rejected ?? 0) > 0 ? 'alert' : ''}>
+                                                    {format.whole(row.quality_rejected ?? 0)}
+                                                </b>
                                             </td>
                                         </tr>
                                     );

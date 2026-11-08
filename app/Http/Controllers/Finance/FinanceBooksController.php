@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\EmployeeProfile;
 use App\Models\FinanceEntry;
+use App\Models\PayrollRun;
 use App\Models\SalesPayment;
 use App\Models\User;
 use Carbon\Carbon;
@@ -175,9 +176,77 @@ class FinanceBooksController extends Controller
             'voided_by' => $request->user()->id,
             'void_reason' => $data['reason'],
         ]);
+        // If this was the payment of an HR payroll, that payroll goes back to "waiting to be paid".
+        PayrollRun::where('finance_entry_id', $entry->id)->where('status', 'paid')->update(['status' => 'submitted', 'paid_at' => null, 'paid_by' => null, 'finance_entry_id' => null]);
         AuditLog::record('finance.entry_voided', "Cancelled {$entry->entry_number}: {$data['reason']}", $entry);
 
         return response()->json(['message' => "{$entry->entry_number} cancelled."]);
+    }
+
+    // ------------------------------------------------------------------ payroll sent by HR
+
+    /** Payroll HR sent to finance, waiting to be paid, and the ones already paid. */
+    public function payrollRuns(Request $request): JsonResponse
+    {
+        return response()->json([
+            'runs' => PayrollRun::whereIn('status', ['submitted', 'paid'])
+                ->orderByRaw("CASE status WHEN 'submitted' THEN 0 ELSE 1 END")
+                ->orderByDesc('period')
+                ->limit(24)
+                ->get(['id', 'run_number', 'period', 'status', 'total_gross', 'total_deductions', 'total_net', 'employee_count', 'submitted_at', 'paid_at']),
+            'methods' => SalesPayment::METHODS,
+            'currency' => $this->currency($request),
+        ]);
+    }
+
+    /** Finance pays a payroll HR prepared. The money paid is recorded in the books as Salaries paid. */
+    public function payRun(Request $request, PayrollRun $run): JsonResponse
+    {
+        $factoryId = $this->factoryId($request);
+        $data = $request->validate([
+            'method' => ['required', Rule::in(SalesPayment::METHODS)],
+            'reference' => ['nullable', 'string', 'max:120'],
+            'paid_on' => ['required', 'date', 'before_or_equal:today'],
+        ]);
+
+        $entry = DB::transaction(function () use ($run, $data, $request, $factoryId) {
+            $run = PayrollRun::whereKey($run->id)->lockForUpdate()->firstOrFail();
+            abort_unless($run->status === 'submitted', 422, $run->status === 'paid' ? 'This payroll was already paid.' : 'HR has not sent this payroll to finance yet.');
+            abort_if((float) $run->total_net <= 0, 422, 'There is nothing to pay in this payroll.');
+
+            $year = Carbon::parse($data['paid_on'])->format('Y');
+            $sequence = FinanceEntry::withoutGlobalScopes()
+                ->where('factory_id', $factoryId)
+                ->where('entry_number', 'like', "FIN-{$year}-%")
+                ->lockForUpdate()
+                ->count() + 1;
+
+            $entry = FinanceEntry::create([
+                'entry_number' => sprintf('FIN-%s-%05d', $year, $sequence),
+                'direction' => 'out',
+                'category' => 'payroll',
+                'description' => 'Salaries paid - ' . Carbon::parse($run->period . '-01')->format('F Y') . " (payroll {$run->run_number}, {$run->employee_count} employees)",
+                'party' => 'Employees',
+                'period' => $run->period,
+                'amount' => $run->total_net,
+                'method' => $data['method'],
+                'reference' => $data['reference'] ?? $run->run_number,
+                'entry_date' => $data['paid_on'],
+                'recorded_by' => $request->user()->id,
+            ]);
+
+            $run->update(['status' => 'paid', 'paid_at' => now(), 'paid_by' => $request->user()->id, 'finance_entry_id' => $entry->id]);
+
+            return $entry;
+        });
+
+        AuditLog::record(
+            'finance.payroll_paid',
+            'Paid salaries for ' . Carbon::parse($run->period . '-01')->format('F Y') . ' - ' . number_format((float) $entry->amount, 0) . " ({$entry->entry_number})",
+            $entry,
+        );
+
+        return response()->json(['message' => "Salaries paid and recorded as {$entry->entry_number}.", 'entry' => $entry]);
     }
 
     // ------------------------------------------------------------------ clients

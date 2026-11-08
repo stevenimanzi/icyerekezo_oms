@@ -46,7 +46,12 @@ final class FlowBalances
             ->groupBy('lot_id');
 
         $inspections = QualityInspection::whereIn('lot_id', $lotIds)
-            ->selectRaw('lot_id, stage, SUM(passed_quantity) as passed, SUM(rejected_quantity) as rejected, COUNT(*) as total')
+            ->selectRaw('lot_id, stage,
+                SUM(passed_quantity) as passed,
+                SUM(CASE WHEN is_reinspection = 0 THEN passed_quantity ELSE 0 END) as first_passed,
+                SUM(CASE WHEN is_reinspection = 0 THEN rejected_quantity ELSE 0 END) as first_rejected,
+                SUM(CASE WHEN is_reinspection = 1 THEN passed_quantity ELSE 0 END) as recovered,
+                COUNT(*) as total')
             ->groupBy('lot_id', 'stage')
             ->get()
             ->groupBy('lot_id');
@@ -101,12 +106,16 @@ final class FlowBalances
             $pending = (int) ($arrived[$stage]->pending ?? 0);
             $shortageHere = (int) ($arrived[$stage]->shortage ?? 0);
             $passed = (int) ($inspections[$stage]->passed ?? 0);
-            $rejectedHere = (int) ($inspections[$stage]->rejected ?? 0);
+            $firstPassed = (int) ($inspections[$stage]->first_passed ?? 0);
+            $firstRejected = (int) ($inspections[$stage]->first_rejected ?? 0);
+            $recovered = (int) ($inspections[$stage]->recovered ?? 0);
+            // Pieces that failed and have not yet passed a re-check.
+            $rejectedHere = max(0, $firstRejected - $recovered);
             $isFirst = ProductionFlowCatalog::previous($stage) === null;
             $isLast = ProductionFlowCatalog::next($stage) === null;
 
             $wip = $isFirst ? 0 : max(0, $received - $good - $damagedHere);
-            $awaitingQuality = max(0, $good - $passed - $rejectedHere);
+            $awaitingQuality = max(0, $good - $firstPassed - $firstRejected);
             $outbox = $isLast ? 0 : max(0, $passed - (int) ($sent[$stage]->sent ?? 0));
 
             $stages[$stage] = [
@@ -120,6 +129,7 @@ final class FlowBalances
                 'awaiting_quality' => $awaitingQuality,
                 'quality_passed' => $passed,
                 'quality_rejected' => $rejectedHere,
+                'quality_recovered' => $recovered,
                 'inspections' => (int) ($inspections[$stage]->total ?? 0),
                 'sent' => (int) ($sent[$stage]->sent ?? 0),
             ];

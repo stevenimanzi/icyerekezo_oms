@@ -57,6 +57,7 @@ Route::controller(ProductionFlowController::class)
         Route::post('/entries/{entry}/void', 'voidEntry')->middleware('permission:production.execute');
 
         Route::post('/inspections', 'inspect')->middleware('permission:quality.inspect|quality.view');
+        Route::post('/inspections/recheck', 'recheck')->middleware('permission:quality.inspect|quality.view');
         Route::post('/lots/{lot}/hold', 'hold')->middleware('permission:quality.inspect|quality.view|production.execute|factory.manage');
         Route::post('/lots/{lot}/release', 'release')->middleware('permission:quality.inspect|quality.view|production.execute|factory.manage');
     });

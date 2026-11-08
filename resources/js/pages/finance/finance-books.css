@@ -367,3 +367,42 @@
     background: #334155;
     color: #e2e8f0;
 }
+
+.fb-muted {
+    margin: 8px 0 0;
+    font-size: 12.5px;
+    color: var(--muted, #64748b);
+}
+.fb-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.fb-panel-head h2 {
+    margin: 0 0 8px;
+}
+
+.fb-seg button.on {
+    background: #2563eb;
+    color: #fff;
+}
+.fb-table select,
+.fb-table input:not([type='checkbox']) {
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid var(--line, #cbd5e1);
+    border-radius: 6px;
+    background: var(--panel, #fff);
+    color: inherit;
+    font-size: 13px;
+    min-width: 0;
+}
+.fb-cell-input {
+    width: 110px;
+    text-align: right;
+}
+.fb-table td small {
+    color: var(--muted, #64748b);
+    font-size: 11px;
+}

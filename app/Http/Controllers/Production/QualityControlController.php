@@ -224,7 +224,6 @@ class QualityControlController extends Controller
                     'stageExecution.stage:id,name,code',
                     'batch:id,batch_number,item_id',
                     'inspector:id,name',
-                    'approver:id,name',
                 ])
                 ->latest()
                 ->paginate(25),
@@ -234,6 +233,7 @@ class QualityControlController extends Controller
                 ->limit(100)
                 ->get(),
             'packed_batches' => InventoryController::batchesAtStage($warehouseIds, 'packed', 'pending'),
+            'failed_batches' => InventoryController::batchesAtStage($warehouseIds, 'packed', 'failed'),
             'items' => Item::where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name', 'sku', 'type']),
@@ -317,16 +317,5 @@ class QualityControlController extends Controller
             $inspection->load(['order:id,order_number', 'item:id,name,sku', 'inspector:id,name']),
             201,
         );
-    }
-
-    public function approve(Request $request, QualityInspection $inspection): JsonResponse
-    {
-        abort_unless($inspection->factory_id === $request->user()->current_factory_id, 404);
-        abort_if($inspection->result === 'pending', 422, 'Complete the inspection before approval.');
-        abort_if($inspection->approved_at, 422, 'This inspection is already approved.');
-        $inspection->update(['approved_by' => $request->user()->id, 'approved_at' => now()]);
-        AuditLog::record('quality.inspection_approved', "Approved {$inspection->inspection_number}", $inspection);
-
-        return response()->json($inspection->fresh()->load('approver:id,name'));
     }
 }

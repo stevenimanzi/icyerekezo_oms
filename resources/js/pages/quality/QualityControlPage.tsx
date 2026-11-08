@@ -68,7 +68,6 @@ export default function QualityControlPage({ can, user, flags }: any) {
     );
 
     const canRecord = isQualityUser && can('quality.inspect');
-    const canApprove = isQualityUser && can('quality.approve');
 
     const load = () =>
         api('/api/quality/overview')
@@ -84,6 +83,7 @@ export default function QualityControlPage({ can, user, flags }: any) {
     const items = data?.items || [];
     const inspections = data?.inspections?.data || [];
     const packedBatches = data?.packed_batches || [];
+    const failedBatches = data?.failed_batches || [];
     const metrics = data?.metrics || {};
     const selectedOrder = orders.find(
         (order: any) => String(order.id) === String(form.production_order_id),
@@ -129,19 +129,6 @@ export default function QualityControlPage({ can, user, flags }: any) {
             setForm(emptyForm);
             setOpen(false);
             setSuccess('Quality inspection recorded.');
-            await load();
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    const approve = async (id: number) => {
-        setBusy(true);
-        try {
-            await api('/api/quality/inspections/' + id + '/approve', { method: 'POST' });
-            setSuccess('Inspection approved.');
             await load();
         } catch (e: any) {
             setError(e.message);
@@ -207,7 +194,24 @@ export default function QualityControlPage({ can, user, flags }: any) {
                 batches={packedBatches}
                 onInspect={inspectBatch}
                 canRecord={canRecord}
+                title="Packed batch awaiting inspection"
+                actionLabel="Inspect"
+                waitingLabel="Awaiting QC inspection"
+                emptyLabel="No packed batches are waiting on quality control."
             />
+
+            {failedBatches.length > 0 && (
+                <PackedBatchQueue
+                    batches={failedBatches}
+                    onInspect={inspectBatch}
+                    canRecord={canRecord}
+                    title="Failed batches - inspect again"
+                    actionLabel="Inspect again"
+                    waitingLabel="Failed - waiting for a quality inspector"
+                    emptyLabel="No failed batches."
+                    showReason
+                />
+            )}
 
             {open && canRecord && (
                 <InspectionForm
@@ -223,24 +227,20 @@ export default function QualityControlPage({ can, user, flags }: any) {
                 />
             )}
 
-            <InspectionsTable
-                inspections={inspections}
-                busy={busy}
-                canApprove={canApprove}
-                onApprove={approve}
-            />
+            <InspectionsTable inspections={inspections} />
         </section>
     );
 }
 
-function PackedBatchQueue({ batches, onInspect, canRecord }: any) {
+function PackedBatchQueue({ batches, onInspect, canRecord, title, actionLabel, waitingLabel, emptyLabel, showReason }: any) {
     return (
         <div className="admin-table-wrap">
             <table className="admin-table">
                 <thead>
                     <tr>
-                        <th style={{ textAlign: 'left' }}>Packed batch awaiting inspection</th>
+                        <th style={{ textAlign: 'left' }}>{title}</th>
                         <th style={{ textAlign: 'left' }}>Quantity</th>
+                        {showReason && <th style={{ textAlign: 'left' }}>Why it failed</th>}
                         <th style={{ textAlign: 'left' }}>Action</th>
                     </tr>
                 </thead>
@@ -252,23 +252,26 @@ function PackedBatchQueue({ batches, onInspect, canRecord }: any) {
                                     <b>{batch.name}</b>
                                 </td>
                                 <td style={{ textAlign: 'left' }}>{Number(batch.available_qty).toLocaleString()}</td>
+                                {showReason && (
+                                    <td style={{ textAlign: 'left' }}>{batch.qc_defect_details || 'Not written down'}</td>
+                                )}
                                 <td style={{ textAlign: 'left' }}>
                                     {canRecord ? (
                                         <button
                                             className="table-action"
                                             onClick={() => onInspect(batch)}
                                         >
-                                            Inspect
+                                            {actionLabel}
                                         </button>
                                     ) : (
-                                        <span style={{ fontSize: '12px', color: '#64748b' }}>Awaiting QC inspection</span>
+                                        <span style={{ fontSize: '12px', color: '#64748b' }}>{waitingLabel}</span>
                                     )}
                                 </td>
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan={3} style={{ textAlign: 'left' }}>No packed batches are waiting on quality control.</td>
+                            <td colSpan={showReason ? 4 : 3} style={{ textAlign: 'left' }}>{emptyLabel}</td>
                         </tr>
                     )}
                 </tbody>
@@ -481,7 +484,7 @@ function InspectionForm({
     );
 }
 
-function InspectionsTable({ inspections, busy, canApprove, onApprove }: any) {
+function InspectionsTable({ inspections }: any) {
     return (
         <div className="admin-table-wrap">
             <table className="admin-table">
@@ -493,7 +496,6 @@ function InspectionsTable({ inspections, busy, canApprove, onApprove }: any) {
                         <th style={{ textAlign: 'left' }}>Quantities</th>
                         <th style={{ textAlign: 'left' }}>Result</th>
                         <th style={{ textAlign: 'left' }}>Inspector</th>
-                        <th style={{ textAlign: 'left' }}>Approval</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -532,27 +534,11 @@ function InspectionsTable({ inspections, busy, canApprove, onApprove }: any) {
                                     </span>
                                 </td>
                                 <td style={{ textAlign: 'left' }}>{inspection.inspector?.name}</td>
-                                <td style={{ textAlign: 'left' }}>
-                                    {inspection.approved_at ? (
-                                        <span>Approved by {inspection.approver?.name}</span>
-                                    ) : inspection.result !== 'pending' &&
-                                      canApprove ? (
-                                        <button
-                                            className="table-action"
-                                            disabled={busy}
-                                            onClick={() => onApprove(inspection.id)}
-                                        >
-                                            Approve
-                                        </button>
-                                    ) : (
-                                        <span style={{ fontSize: '12px', color: '#64748b' }}>Awaiting approval</span>
-                                    )}
-                                </td>
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan={7} style={{ textAlign: 'left' }}>No inspections recorded yet.</td>
+                            <td colSpan={6} style={{ textAlign: 'left' }}>No inspections recorded yet.</td>
                         </tr>
                     )}
                 </tbody>

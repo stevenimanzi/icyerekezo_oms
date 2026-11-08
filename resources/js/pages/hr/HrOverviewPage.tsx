@@ -34,9 +34,9 @@ const label = (value: string) =>
         .replace(/^./, (c) => c.toUpperCase());
 const date = (value: any) => (value ? new Date(value).toLocaleDateString() : 'Not set');
 
-export default function HrOverviewPage() {
+export default function HrOverviewPage({ only }: { only?: 'attendance' | 'leave' | 'training' }) {
     const [data, setData] = useState<any>(null);
-    const [tab, setTab] = useState<'attendance' | 'leave' | 'training'>('attendance');
+    const [tab, setTab] = useState<'attendance' | 'leave' | 'training'>(only ?? 'attendance');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -183,8 +183,8 @@ export default function HrOverviewPage() {
         <section className="module-page">
             <div className="page-heading">
                 <div>
-                    <h1>Human resources</h1>
-                    <p>Track attendance, leave requests and staff training.</p>
+                    <h1>{only === 'training' ? 'Training' : 'Human resources'}</h1>
+                    <p>{only === 'training' ? 'Schedule training sessions and track who attended and was certified.' : 'Track attendance, leave requests and staff training.'}</p>
                 </div>
                 <button className="secondary-btn" disabled={loading} onClick={load}>
                     <RefreshCw className={loading ? 'spin' : ''} size={16} />
@@ -194,6 +194,8 @@ export default function HrOverviewPage() {
             {error && <div className="admin-alert error">{error}</div>}
             {success && <div className="admin-alert success">{success}</div>}
 
+            {!only && (
+                <>
             <section className="department-metrics cols-4">
                 <article className="department-metric panel">
                     <div>
@@ -292,6 +294,9 @@ export default function HrOverviewPage() {
                     Training
                 </button>
             </div>
+
+                </>
+            )}
 
             {tab === 'attendance' && (
                 <article className="panel">

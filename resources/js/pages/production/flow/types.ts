@@ -150,6 +150,7 @@ export type StageBalance = {
     awaiting_quality: number;
     quality_passed: number;
     quality_rejected: number;
+    quality_recovered?: number;
     inspections: number;
     sent: number;
 };
@@ -184,7 +185,7 @@ export type MonitorLot = {
     damaged: number;
     rejected: number;
     shortage: number;
-    stages: Record<StageKey, { here: number; arriving: number; awaiting_quality: number }>;
+    stages: Record<StageKey, { here: number; arriving: number; awaiting_quality: number; failed?: number }>;
 };
 
 export type InspectionRow = {

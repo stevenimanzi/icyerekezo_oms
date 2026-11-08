@@ -34,7 +34,7 @@ export default function FlowMonitorPage({ locale }: Props) {
     const [search, setSearch] = useState('');
     const [query, setQuery] = useState('');
     const [openLot, setOpenLot] = useState<number | null>(null);
-    const [inspecting, setInspecting] = useState<{ lotId?: number; balances?: LotBalances } | null>(
+    const [inspecting, setInspecting] = useState<{ lotId?: number; balances?: LotBalances; mode?: 'new' | 'recheck' } | null>(
         null,
     );
     const [notice, setNotice] = useState('');
@@ -117,7 +117,12 @@ export default function FlowMonitorPage({ locale }: Props) {
                         {text.refresh}
                     </button>
                     {data?.capabilities.inspect && (
-                        <button className="primary-btn" onClick={() => setInspecting({})}>
+                        <button className="secondary-btn" onClick={() => setInspecting({ mode: 'recheck' })}>
+                            {words.recheck}
+                        </button>
+                    )}
+                    {data?.capabilities.inspect && (
+                        <button className="primary-btn" onClick={() => setInspecting({ mode: 'new' })}>
                             + {words.check}
                         </button>
                     )}
@@ -363,6 +368,15 @@ export default function FlowMonitorPage({ locale }: Props) {
                                                     >
                                                         {words.open}
                                                     </button>
+                                                    {data.capabilities.inspect &&
+                                                        data.stages.some((stage) => (lot.stages[stage.key].failed ?? 0) > 0) && (
+                                                            <button
+                                                                className="ui-link"
+                                                                onClick={() => setInspecting({ lotId: lot.id, mode: 'recheck' })}
+                                                            >
+                                                                {words.recheck}
+                                                            </button>
+                                                        )}
                                                 </td>
                                             </tr>
                                         ))
@@ -447,9 +461,9 @@ export default function FlowMonitorPage({ locale }: Props) {
                     words={words}
                     format={format}
                     onClose={() => setOpenLot(null)}
-                    onInspect={(lotId, balances) => {
+                    onInspect={(lotId, balances, mode) => {
                         setOpenLot(null);
-                        setInspecting({ lotId, balances });
+                        setInspecting({ lotId, balances, mode });
                     }}
                     onChanged={changed}
                 />
@@ -460,6 +474,7 @@ export default function FlowMonitorPage({ locale }: Props) {
                     lots={data.lots.filter((lot) => lot.status !== 'cancelled')}
                     initialLot={inspecting.lotId}
                     balances={inspecting.balances}
+                    initialMode={inspecting.mode}
                     locale={locale}
                     text={text}
                     words={words}

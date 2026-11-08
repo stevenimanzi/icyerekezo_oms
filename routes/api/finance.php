@@ -16,6 +16,8 @@ Route::controller(FinanceBooksController::class)
     ->prefix('finance/books')
     ->group(function () {
         Route::get('/cashbook', 'cashbook')->middleware('permission:finance.view');
+        Route::get('/payroll-runs', 'payrollRuns')->middleware('permission:finance.view');
+        Route::post('/payroll-runs/{run}/pay', 'payRun')->middleware('permission:finance.manage_books');
         Route::post('/entries', 'store')->middleware('permission:finance.manage_books');
         Route::post('/entries/{entry}/void', 'void')->middleware('permission:finance.manage_books');
         Route::get('/clients', 'clients')->middleware('permission:finance.view|sales.view');

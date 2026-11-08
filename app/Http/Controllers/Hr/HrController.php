@@ -101,6 +101,13 @@ class HrController extends Controller
             'reason' => ['nullable', 'string', 'max:2000'],
         ]);
         $days = Carbon::parse($data['starts_at'])->diffInDays(Carbon::parse($data['ends_at'])) + 1;
+        abort_if($days > 120, 422, 'A leave request cannot be longer than 120 days.');
+        $overlaps = LeaveRequest::where('user_id', $data['user_id'])
+            ->whereIn('status', ['pending', 'approved'])
+            ->whereDate('starts_at', '<=', $data['ends_at'])
+            ->whereDate('ends_at', '>=', $data['starts_at'])
+            ->exists();
+        abort_if($overlaps, 422, 'This employee already has leave for some of those days.');
         $leave = LeaveRequest::create([...$data, 'days_requested' => $days, 'status' => 'pending']);
 
         return response()->json($leave->load('user:id,name'), 201);
