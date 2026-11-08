@@ -18,7 +18,7 @@ const DepartmentReportPage = lazy(() => import('./DepartmentReportPage'));
 const ClearReportsPage = lazy(() => import('../shared/ClearReportsPage'));
 const FinancialReportsPage = lazy(() => import('../finance/FinancialReportsPage'));
 const WarehouseReportPage = lazy(() => import('../warehouse/stock/WarehouseReportPage'));
-const MaintenanceWorkspacePage = lazy(() => import('../maintenance/MaintenanceWorkspacePage'));
+const MachinesPage = lazy(() => import('../production/MachinesPage'));
 
 type HubProps = {
     user: any;
@@ -81,6 +81,7 @@ export default function FactoryReportsHub({ user, locale, hasProductionFlow, can
         case 'procurement':
         case 'quality':
         case 'people':
+        case 'maintenance':
         case 'safety':
             body = <DepartmentReportPage key={tab} department={tab} />;
             break;
@@ -89,9 +90,6 @@ export default function FactoryReportsHub({ user, locale, hasProductionFlow, can
             break;
         case 'stock':
             body = <WarehouseReportPage user={user} locale={locale} />;
-            break;
-        case 'maintenance':
-            body = <MaintenanceWorkspacePage view="reports" can={can} onNavigate={onNavigate} />;
             break;
         case 'deliveries':
             body = <ClearReportsPage key="deliveries" canExport={canExport} forcedScope="logistics" />;
