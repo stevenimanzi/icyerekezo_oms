@@ -273,6 +273,13 @@ class ReportController extends Controller
         $logisticsOnly = ! $isExecutive && $dashboardKey === 'logistics';
         $warehouseOnly = ! $isExecutive && $dashboardKey === 'warehouse';
         $departmentOnly = ! $isExecutive && ! $logisticsOnly && ! $warehouseOnly;
+        // These departments have their own report (see DepartmentReportController and the finance
+        // reports page). They must never be handed the production report.
+        abort_if(
+            $departmentOnly && in_array($dashboardKey, ['finance', 'sales', 'procurement', 'quality', 'people', 'maintenance', 'safety', 'audit'], true),
+            403,
+            'This report is for the production team. Open your own department report instead.',
+        );
         $operationalScope = OperationalScope::for($request->user());
         $data = $request->validate([
             'scope' => ['nullable', Rule::in(['factory', 'logistics', 'warehouse', 'department'])],

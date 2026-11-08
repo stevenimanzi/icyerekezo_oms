@@ -30,7 +30,7 @@ async function api(url: string, options: RequestInit = {}) {
 }
 
 const machineStatusLabels: Record<string, string> = {
-    operational: 'Operational',
+    operational: 'Working',
     maintenance: 'Under maintenance',
     down: 'Down',
     broken: 'Broken',
@@ -508,7 +508,7 @@ export default function MachinesPage({ can }: any) {
                                             })
                                         }
                                     >
-                                        <option value="operational">Operational</option>
+                                        <option value="operational">Working</option>
                                         <option value="maintenance">Under maintenance</option>
                                         <option value="down">Down</option>
                                         <option value="broken">Broken</option>
@@ -580,8 +580,8 @@ export default function MachinesPage({ can }: any) {
                             <th>Machine</th>
                             <th>Status</th>
                             <th>Assigned</th>
-                            <th>Downtime</th>
-                            <th>Resolution / cost</th>
+                            <th>Time stopped</th>
+                            <th>How it was fixed and cost</th>
                             <th>Action</th>
                         </tr>
                     </thead>

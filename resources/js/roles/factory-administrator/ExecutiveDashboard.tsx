@@ -250,7 +250,7 @@ export default function ExecutiveDashboard({ user, locale, onNavigate }: any) {
                         <h2>
                             {locale === 'fr'
                                 ? 'Bilan opérationnel des départements'
-                                : 'Department Operational Overview'}
+                                : 'Department Summary'}
                         </h2>
                         <span className="ui-chip ok" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
                             {locale === 'fr' ? 'Registre actif' : 'Active stages'}

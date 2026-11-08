@@ -240,7 +240,7 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
                     <p style={{ margin: 0, fontWeight: 500 }}>
                         {fr
                             ? 'Chargement des données en temps réel...'
-                            : 'Loading live operational data...'}
+                            : 'Loading the latest figures...'}
                     </p>
                 </div>
             </section>
@@ -372,16 +372,16 @@ export default function DepartmentDashboard({ user, locale, onNavigate }: any) {
                 <ProjectOverviewSection overview={data?.project_overview} fr={fr} number={number} />
             )}
 
-            {/* Department Operational Overview: Applicable to all individual departments */}
+            {/* Department Summary: Applicable to all individual departments */}
             <DepartmentOverviewCard overview={data?.department_overview} fr={fr} number={number} />
 
             <div style={{ margin: '22px 0 14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
                 <div>
                     <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                        {fr ? 'Aperçu du département' : 'Department Operational Overview'} &mdash; {department?.name || user.workspace}
+                        {fr ? 'Aperçu du département' : 'Department Summary'} &mdash; {department?.name || user.workspace}
                     </h2>
                     <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                        {fr ? 'Métriques spécifiques, charges de travail et activités de ce département' : 'Detailed performance, active tasks, and operational throughput for this department'}
+                        {fr ? 'Métriques spécifiques, charges de travail et activités de ce département' : 'Results, current tasks and how much work is being done for this department'}
                     </p>
                 </div>
                 <span style={{ fontSize: '0.8rem', color: 'var(--muted)', background: 'var(--soft)', padding: '4px 10px', borderRadius: '6px' }}>
@@ -1433,7 +1433,7 @@ function PackingCharts({ data, fr, number }: any) {
             <article className="panel chart-panel" style={{ gridColumn: '1 / -1' }}>
                 <header className="department-panel-head" style={{ alignItems: 'flex-start' }}>
                     <div>
-                        <h2>{fr ? "Progression de l'emballage" : 'Packing Workflow Progress'}</h2>
+                        <h2>{fr ? "Progression de l'emballage" : 'Packing Progress'}</h2>
                         <p>
                             {fr
                                 ? 'Quantité emballée par période'
@@ -1606,7 +1606,7 @@ function DepartmentOverviewCard({ overview, fr, number }: any) {
     return (
         <article className="panel" style={{ marginBottom: 20 }}>
             <div className="panel-title">
-                <h2>{overview.department_name} &mdash; {fr ? 'Bilan opérationnel' : 'Operational Overview'}</h2>
+                <h2>{overview.department_name} &mdash; {fr ? 'Bilan opérationnel' : 'Summary'}</h2>
                 <span className="ui-chip ok" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
                     {fr ? 'Registre actif' : 'Active Register'}
                 </span>
@@ -1707,12 +1707,12 @@ function ProjectOverviewSection({ overview, fr, number }: any) {
                         {fr ? 'VUE D’ENSEMBLE DU PROJET D’USINE' : 'WHOLE FACTORY PROJECT OVERVIEW'}
                     </div>
                     <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>
-                        {factory_name} &middot; {fr ? 'État global des opérations' : 'End-to-End Operational Pipeline'}
+                        {factory_name} &middot; {fr ? 'État global des opérations' : 'From Raw Material to Delivery'}
                     </h2>
                     <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--muted)' }}>
                         {fr
                             ? 'Supervision complète de toutes les étapes de fabrication, du stock matière aux expéditions.'
-                            : 'Real-time whole project tracking across all operational departments and stages.'}
+                            : 'Live view of the whole factory, from every department and step.'}
                     </p>
                 </div>
 

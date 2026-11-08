@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Batch;
 use App\Models\Item;
 use App\Models\StockBalance;
@@ -436,6 +437,24 @@ class InventoryController extends Controller
             ['message' => 'Stock count saved and balance adjusted.', 'transaction' => $transaction],
             201,
         );
+    }
+
+    /** Finance can change what an item costs or sells for, but cannot record or edit the item itself. */
+    public function updateItemPrice(Request $request, Item $item): JsonResponse
+    {
+        abort_unless((int) $item->factory_id === (int) $request->user()->current_factory_id, 404);
+        $data = $request->validate(['standard_cost' => ['required', 'numeric', 'min:0', 'max:9999999999']]);
+        $old = (float) $item->standard_cost;
+        $item->update(['standard_cost' => $data['standard_cost']]);
+        AuditLog::record(
+            'product.price_changed',
+            "Price of {$item->name} changed from {$old} to {$item->standard_cost}",
+            $item,
+            ['standard_cost' => $old],
+            ['standard_cost' => (float) $item->standard_cost],
+        );
+
+        return response()->json(['message' => 'Price updated.', 'item' => $item->fresh('unit:id,name,symbol')]);
     }
 
     public function updateItemStatus(Request $request, Item $item): JsonResponse

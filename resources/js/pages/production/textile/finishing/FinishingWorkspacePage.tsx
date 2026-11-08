@@ -257,7 +257,7 @@ export default function FinishingWorkspacePage({
             });
             setSuccess(
                 locale === 'en'
-                    ? 'Material request submitted successfully! Pending approval.'
+                    ? 'Your material request was sent. It is waiting for approval.'
                     : 'Demande soumise avec succès !',
             );
             setRequestForm({ item_id: '', quantity: '', reason: '' });

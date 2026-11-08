@@ -1122,9 +1122,9 @@ export default function CuttingWorkspacePage({
                                         <th style={{ border: '1px solid #000', padding: '6px 8px' }}>STYLE</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px' }}>COLOR</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px' }}>SIZE</th>
-                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>GOOD PCS</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>GOOD PIECES</th>
                                         <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>DAMAGED</th>
-                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>QC PASS</th>
+                                        <th style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'right' }}>PASSED QUALITY CHECK</th>
                                     </tr>
                                 </thead>
                                 <tbody>

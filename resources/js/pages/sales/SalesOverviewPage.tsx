@@ -169,7 +169,7 @@ export default function SalesOverviewPage() {
         }
         setConfirmDialog({
             title: `Accept order ${orderNumber(item.document_number)}?`,
-            message: 'The order will move forward to fulfilment.',
+            message: 'The order will go to the next step so it can be prepared and delivered.',
             confirmLabel: 'Accept order',
             onConfirm: () => {
                 setConfirmDialog(null);
@@ -282,7 +282,7 @@ export default function SalesOverviewPage() {
                         </h1>
                         <p>
                             {special
-                                ? 'Manage school orders by class, garment, gender, size, color and fulfilment quantity.'
+                                ? 'Manage school orders by class, garment, gender, size, color and quantity delivered.'
                                 : 'Review customer demand before logistics prepares and dispatches each order.'}
                         </p>
                         <small className="sales-updated">

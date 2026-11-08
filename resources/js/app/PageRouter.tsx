@@ -93,6 +93,7 @@ const ProductionOperations = lazy(() => import('../pages/production/ProductionOp
 const ProfileSettingsPage = lazy(() => import('../pages/shared/ProfileSettingsPage'));
 const QualityControlPage = lazy(() => import('../pages/quality/QualityControlPage'));
 const ReportsPage = lazy(() => import('../pages/shared/ClearReportsPage'));
+const DepartmentReportPage = lazy(() => import('../pages/reports/DepartmentReportPage'));
 const SafetyOverviewPage = lazy(() => import('../pages/safety/SafetyOverviewPage'));
 const SalesOverviewPage = lazy(() => import('../pages/sales/SalesOverviewPage'));
 const ManualSalesPage = lazy(() => import('../pages/sales/manual/ManualSalesPage'));
@@ -375,6 +376,13 @@ function CurrentPage({
             if (flags.isWarehouseUser || user.workspace === 'warehouse') {
                 return <WarehouseReportPage user={user} locale={locale} />;
             }
+            // Each department sees its own report, never another department's.
+            if (!flags.isExecutiveUser && activePage === 'reports') {
+                if (user.workspace === 'finance') return <FinancialReportsPage />;
+                if (DEPARTMENT_REPORT_WORKSPACES.includes(user.workspace)) {
+                    return <DepartmentReportPage />;
+                }
+            }
             return (
                 <ReportsPage
                     key={activePage}
@@ -397,6 +405,8 @@ function CurrentPage({
 
     return <PageNotFound locale={locale} onNavigate={onNavigate} />;
 }
+
+const DEPARTMENT_REPORT_WORKSPACES = ['sales', 'procurement', 'quality', 'people', 'maintenance', 'safety', 'audit'];
 
 function PageNotFound({
     locale,

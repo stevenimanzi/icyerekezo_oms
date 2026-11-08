@@ -177,7 +177,7 @@ export default function SoldGoodsPage({ onNavigate }: { onNavigate?: (page: stri
                                     <th>Order</th>
                                     <th>Status</th>
                                     <th className="num">Packages</th>
-                                    <th>Dispatched</th>
+                                    <th>Sent out</th>
                                     <th>Delivered</th>
                                     <th className="num">Client still owes</th>
                                 </tr>

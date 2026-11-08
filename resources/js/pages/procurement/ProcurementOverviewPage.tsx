@@ -1263,7 +1263,7 @@ function PriceTable({ suppliers }: any) {
                             <th>Item</th>
                             <th>Supplier's product code</th>
                             <th>Unit price</th>
-                            <th>Lead time</th>
+                            <th>Delivery time</th>
                             <th>Minimum order</th>
                         </tr>
                     </thead>

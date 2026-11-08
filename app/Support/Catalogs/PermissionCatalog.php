@@ -9,7 +9,7 @@ final class PermissionCatalog
     public const MODULES = [
         'factory' => ['view', 'manage'],
         'users' => ['view', 'create', 'update', 'deactivate', 'assign_roles'],
-        'products' => ['view', 'create', 'update', 'approve'],
+        'products' => ['view', 'create', 'update', 'approve', 'set_price'],
         'procurement' => ['view', 'create', 'approve', 'receive', 'request'],
         'inventory' => ['view', 'receive', 'issue', 'transfer', 'adjust', 'count'],
         'production' => ['view', 'plan', 'approve', 'execute', 'close'],

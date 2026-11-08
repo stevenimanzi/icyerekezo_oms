@@ -472,8 +472,8 @@ export default function CuttingReportPage({ user, locale }: Props) {
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '17%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>GARMENT STYLE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>COLOR</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>GOOD PCS</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SCRAP/DEF</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>GOOD PIECES</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>SCRAP OR DEFECTIVE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, fontSize: '0.72rem' }}>PASSED</th>
                             </tr>
                         </thead>

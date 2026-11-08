@@ -8,6 +8,7 @@ import { useAppearance } from './hooks/useAppearance';
 import { useConnectivity } from './hooks/useConnectivity';
 import { useLowStockCount } from './hooks/useLowStockCount';
 import { useChatUnread } from './hooks/useChatUnread';
+import { useUiEnhancer } from './useUiEnhancer';
 import { useNotifications } from './hooks/useNotifications';
 import { NotificationToasts } from './NotificationCenter';
 import { usePageNavigation } from './hooks/usePageNavigation';
@@ -25,6 +26,7 @@ type Props = {
 
 export function AppShell({ user, onLogout, onMaintenance }: Props) {
     const { locale, setLocale, dark, setDark } = useAppearance();
+    useUiEnhancer();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
     const [switchingFactory, setSwitchingFactory] = useState<number | null>(null);

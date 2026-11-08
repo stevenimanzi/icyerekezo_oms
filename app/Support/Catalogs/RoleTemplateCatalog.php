@@ -212,7 +212,11 @@ final class RoleTemplateCatalog
             ['logistics.*', 'sales.view', 'inventory.view', 'inventory.issue', 'reports.view'],
         ],
         'sales-officer' => ['Sales Officer', 'sales', ['sales.*', 'products.view', 'inventory.view', 'reports.view']],
-        'accountant' => ['Accountant', 'finance', ['finance.*', 'sales.view', 'procurement.view', 'reports.*']],
+        'accountant' => [
+            'Accountant',
+            'finance',
+            ['finance.*', 'sales.view', 'procurement.view', 'products.view', 'products.set_price', 'reports.*'],
+        ],
         'financial-manager' => [
             'Finance & Sales Manager',
             'finance',
@@ -223,6 +227,7 @@ final class RoleTemplateCatalog
                 'procurement.create',
                 'procurement.approve',
                 'products.view',
+                'products.set_price',
                 'inventory.view',
                 'reports.view',
                 'reports.export',

@@ -788,7 +788,7 @@ function Catalog({ rows, money, quantity, edit, changeStatus, busy }: any) {
                             <th>Type</th>
                             <th>Unit</th>
                             <th>Total quantity</th>
-                            <th>Unit cost</th>
+                            <th>Price per unit</th>
                             <th>Stock value</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -850,7 +850,7 @@ function Balances({ rows, money, quantity }: any) {
                         <tr>
                             <th>Item</th>
                             <th>Warehouse</th>
-                            <th>On hand</th>
+                            <th>In stock</th>
                             <th>Reserved</th>
                             <th>Available</th>
                             <th>Value</th>

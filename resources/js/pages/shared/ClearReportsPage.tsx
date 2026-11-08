@@ -15,9 +15,9 @@ async function api(url: string) {
     try {
         data = text ? JSON.parse(text) : {};
     } catch {
-        throw new Error('The report service returned an invalid response.');
+        throw new Error('The report could not be shown. Please try again.');
     }
-    if (!response.ok) throw new Error(data.message || 'Unable to load the report.');
+    if (!response.ok) throw new Error(data.message || 'We could not load the report. Please try again.');
     return data;
 }
 
@@ -371,11 +371,11 @@ function DailyRegister({ data }: any) {
             <tr>
                 <th>STYLE</th>
                 <th>SIZE</th>
-                <th>QTY</th>
+                <th>QUANTITY</th>
                 <th>COLOR</th>
                 <th>STYLE</th>
                 <th>SIZE</th>
-                <th>QTY</th>
+                <th>QUANTITY</th>
             </tr>
         </thead>
     );

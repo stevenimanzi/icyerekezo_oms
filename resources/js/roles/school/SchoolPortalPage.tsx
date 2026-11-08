@@ -213,10 +213,10 @@ function Dashboard({ data, onNavigate, setSelected }: any) {
                     <table className="admin-table">
                         <thead>
                             <tr>
-                                <th>Ref #</th>
+                                <th>Reference</th>
                                 <th>Date</th>
                                 <th>Summary</th>
-                                <th>Financials</th>
+                                <th>Money</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -284,10 +284,10 @@ function Orders({ title, rows, setSelected }: any) {
                 <table className="admin-table">
                     <thead>
                         <tr>
-                            <th>Ref #</th>
+                            <th>Reference</th>
                             <th>Date</th>
                             <th>Summary</th>
-                            <th>Financials</th>
+                            <th>Money</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -719,7 +719,7 @@ function NewOrder({ data, load, setMessage, setError, onNavigate }: any) {
                                     <th>Class</th>
                                     <th>Item Details & Colors</th>
                                     <th>Size</th>
-                                    <th>Qty</th>
+                                    <th>Quantity</th>
                                     <th>Unit Price</th>
                                     <th>Subtotal</th>
                                 </tr>
@@ -797,7 +797,7 @@ function Financials({ data, load, setMessage, setError }: any) {
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Order Ref</th>
+                                <th>Order number</th>
                                 <th>Total Amount</th>
                                 <th>Paid</th>
                                 <th>Balance</th>
@@ -1293,7 +1293,7 @@ function ReturnsHistory({ data, onNavigate }: any) {
                             <tr>
                                 <th>Date</th>
                                 <th>Item Details</th>
-                                <th>Qty</th>
+                                <th>Quantity</th>
                                 <th>Reason</th>
                                 <th>Status</th>
                                 <th>Factory Feedback</th>

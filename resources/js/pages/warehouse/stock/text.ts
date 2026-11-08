@@ -158,7 +158,7 @@ const en = {
         onHand: 'In stock',
         available: 'Available',
         held: 'Waiting for quality',
-        reorder: 'Reorder level',
+        reorder: 'Low stock level',
         value: 'Value',
         status: 'Status',
         statusLabels: { ok: 'Good', low: 'Running low', out: 'Out of stock' } as Record<

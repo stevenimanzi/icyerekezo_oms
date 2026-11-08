@@ -502,11 +502,11 @@ export default function PackingReportPage({ user, locale }: Props) {
                             </tr>
                             <tr style={{ background: '#ffffff' }}>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>RECEIVED ITEM</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>INPUT (PCS)</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PIECES RECEIVED</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '17%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PRODUCT STYLE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>COLOR</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PACKED (PCS)</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PIECES PACKED</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PACK FLAW</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '11%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PASSED</th>
                             </tr>

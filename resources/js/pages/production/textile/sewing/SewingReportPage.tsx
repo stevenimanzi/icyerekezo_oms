@@ -461,12 +461,12 @@ export default function SewingReportPage({ user, locale }: Props) {
                             </tr>
                             <tr style={{ background: '#ffffff' }}>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>CUT MATERIAL ITEM</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PCS RECV</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PIECES RECEIVED</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '17%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>GARMENT STYLE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>COLOR</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'center', width: '6%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>SIZE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '9%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>SEWN GOOD</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>REWORK/DEF</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>NEEDS REWORK</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '11%', background: '#ffffff', color: '#000000', fontWeight: 800, overflow: 'hidden', whiteSpace: 'nowrap' }}>PASSED</th>
                             </tr>
                         </thead>

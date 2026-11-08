@@ -632,8 +632,8 @@ export default function FactoryReportPage({ user, locale }: Props) {
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'left', width: '18%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>GARMENT STYLE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>COLOR</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 2px', textAlign: 'center', width: '5%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>SIZE</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>GOOD PCS</th>
-                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>SCRAP/DEF</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>GOOD PIECES</th>
+                                <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '7%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>SCRAP OR DEFECTIVE</th>
                                 <th style={{ border: '1pt solid #000000', padding: '5px 4px', textAlign: 'right', width: '8%', background: '#ffffff', color: '#000000', fontWeight: 900, fontSize: '0.66rem', letterSpacing: '0.01em' }}>PASSED</th>
                             </tr>
                         </thead>

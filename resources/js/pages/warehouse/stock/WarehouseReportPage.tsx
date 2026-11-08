@@ -953,7 +953,7 @@ export default function WarehouseReportPage({ user, locale }: Props) {
                 {/* DOCUMENT FOOTER */}
                 <div className="print-footer-block">
                     <span>
-                        {user.current_factory?.name || 'ICYEREKEZO OMS'} &bull; {locale === 'en' ? 'Warehouse & Stock Inventory Ledger' : 'Grand livre de stock'}
+                        {user.current_factory?.name || 'ICYEREKEZO OMS'} &bull; {locale === 'en' ? 'Warehouse and Stock Record' : 'Grand livre de stock'}
                     </span>
                     <span>
                         {locale === 'en' ? 'Generated on' : 'Généré le'} {new Date().toLocaleString()} &bull; Page 1/1

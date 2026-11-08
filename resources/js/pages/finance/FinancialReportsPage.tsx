@@ -12,9 +12,9 @@ async function api(url: string) {
     try {
         data = text ? JSON.parse(text) : {};
     } catch {
-        throw new Error('The report service returned an invalid response.');
+        throw new Error('The report could not be shown. Please try again.');
     }
-    if (!response.ok) throw new Error(data.message || 'Unable to load the report.');
+    if (!response.ok) throw new Error(data.message || 'We could not load the report. Please try again.');
     return data;
 }
 
@@ -28,10 +28,10 @@ const number = (value: any) => Number(value || 0).toLocaleString();
 const date = (value: any) => (value ? new Date(value).toLocaleDateString() : '—');
 
 const REPORT_TYPES = [
-    { value: 'revenue', label: 'Revenue & collections summary' },
-    { value: 'invoices', label: 'Invoice register' },
-    { value: 'receipts', label: 'Cash receipts book' },
-    { value: 'aging', label: 'Outstanding & aging report' },
+    { value: 'revenue', label: 'Sales and money collected' },
+    { value: 'invoices', label: 'List of invoices' },
+    { value: 'receipts', label: 'Money received' },
+    { value: 'aging', label: 'Unpaid invoices and how old they are' },
 ];
 const PERIODS = [
     { value: 'today', label: 'Today' },

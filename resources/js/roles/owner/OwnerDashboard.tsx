@@ -169,7 +169,7 @@ export default function OwnerDashboard({ user, locale }: HomeProps) {
                         />
                     </div>
 
-                    {/* Row 3: Stage Operational Overview Table */}
+                    {/* Row 3: Stage Summary Table */}
                     <div style={{ marginBottom: '20px' }}>
                         {data.flow ? (
                             <ProductionFlowSection

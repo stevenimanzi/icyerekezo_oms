@@ -6,7 +6,6 @@ import {
     HandCoins,
     LayoutDashboard,
     PackageCheck,
-    PieChart,
     ReceiptText,
     ShoppingCart,
     Tag,
@@ -34,7 +33,6 @@ export const financialManagerRole: RoleModule = {
         ['products', Tag, text('Products & Prices', 'Produits et prix'), 'products.view'],
         ['inventory', Boxes, text('Stock Available', 'Stock disponible'), 'inventory.view'],
         ['sold-goods', PackageCheck, text('Goods Sold & Delivered', 'Marchandises vendues'), 'finance.view'],
-        ['finance-reports', FileBarChart, text('Finance Reports', 'Rapports financiers'), 'reports.view'],
-        ['reports', PieChart, text('Sales & Stock Reports', 'Rapports ventes et stock'), 'reports.view'],
+        ['finance-reports', FileBarChart, text('Reports', 'Rapports'), 'reports.view'],
     ],
 };

@@ -692,7 +692,7 @@ function ShipmentTable({ rows, tab, busy, action, can }: any) {
                             <th>Packages</th>
                             <th>Vehicle / driver</th>
                             <th>Status</th>
-                            <th>Dispatch time</th>
+                            <th>Time sent out</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
