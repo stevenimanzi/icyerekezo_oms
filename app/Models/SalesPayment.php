@@ -23,6 +23,11 @@ class SalesPayment extends Model
         return $this->belongsTo(SalesDocument::class, 'sales_document_id');
     }
 
+    public function salesDocument()
+    {
+        return $this->belongsTo(SalesDocument::class, 'sales_document_id');
+    }
+
     public function recorder()
     {
         return $this->belongsTo(User::class, 'recorded_by');
