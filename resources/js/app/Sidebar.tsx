@@ -18,6 +18,8 @@ type Props = {
     showSupport: boolean;
     isOwner: boolean;
     isSchoolUser: boolean;
+    /** One flat list: no "Menu" / "Manage" headings and tighter spacing. */
+    compact?: boolean;
     switchingFactory: number | null;
     onNavigate: (page: string) => void;
     onClose: () => void;
@@ -110,12 +112,12 @@ export function Sidebar(props: Props) {
     };
 
     return (
-        <aside className={`sidebar ${open ? 'open' : ''}`}>
+        <aside className={`sidebar ${open ? 'open' : ''} ${props.compact ? 'compact' : ''}`}>
             <div className="sidebar-head">
                 <Logo />
             </div>
             <nav>
-                <p className="nav-label">{labels.general}</p>
+                {!props.compact && <p className="nav-label">{labels.general}</p>}
                 {entries.map((entry) => {
                     if (entry.type === 'item') {
                         const ItemIcon = entry.item[1];
@@ -171,9 +173,11 @@ export function Sidebar(props: Props) {
                 })}
                 {!user.is_platform_admin && (
                     <>
-                        <p className="nav-label">
-                            {props.isOwner ? text('Help', 'Aide') : labels.management}
-                        </p>
+                        {!props.compact && (
+                            <p className="nav-label">
+                                {props.isOwner ? text('Help', 'Aide') : labels.management}
+                            </p>
+                        )}
                         {props.showSettings && (
                             <button
                                 className={`nav-item ${activePage === 'settings' ? 'active' : ''}`}

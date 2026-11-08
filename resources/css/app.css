@@ -11659,3 +11659,28 @@ button.table-action.danger:not(.icon-only):hover:not(:disabled),
     border-color: var(--line, #334155) !important;
     color: #60a5fa !important;
 }
+
+/* The hamburger button is for phones only. A later `.icon-btn { display: inline-flex !important }`
+   rule used to override `.menu-btn { display: none }`, so it showed on desktop. Two classes win. */
+.icon-btn.menu-btn {
+    display: none !important;
+}
+@media (max-width: 820px) {
+    .icon-btn.menu-btn {
+        display: inline-flex !important;
+    }
+}
+
+/* Compact sidebar (Finance & Sales Manager): one flat list, tighter rows. */
+.sidebar.compact nav {
+    padding: 8px 8px 6px;
+}
+.sidebar.compact .nav-item {
+    height: 32px;
+    margin: 0;
+    gap: 10px;
+    font-size: 13px;
+}
+.sidebar.compact .nav-item svg {
+    opacity: 0.9;
+}

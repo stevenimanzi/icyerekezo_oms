@@ -96,6 +96,7 @@ export function AppShell({ user, onLogout, onMaintenance }: Props) {
                 showSupport={showSupport}
                 isOwner={flags.isFactoryOwner}
                 isSchoolUser={flags.isSchoolUser}
+                compact={flags.isFinancialManager}
                 switchingFactory={switchingFactory}
                 onNavigate={setActivePage}
                 onClose={() => setSidebarOpen(false)}
